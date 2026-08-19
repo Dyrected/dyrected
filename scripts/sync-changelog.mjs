@@ -189,13 +189,39 @@ function aggregateDeduplicated() {
         cleanedText = cleanedText.replace('- ### Added\n', '');
       }
 
-      formattedItems.push(`${cleanedText}`);
+      formattedItems.push(`${cleanedText}${scopeTag}`);
     }
 
-    versionSections.push(`## [${version}]\n\n${formattedItems.join('\n\n')}`);
+    versionSections.push(`## v${version}\n\n${formattedItems.join('\n\n')}`);
   }
 
   return versionSections.join('\n\n---\n\n');
+}
+
+function escapeMdx(content) {
+  // Split content by inline and fenced code blocks so code is untouched
+  const parts = content.split(/(```[\s\S]*?```|`[^`\n]+`)/g);
+
+  return parts
+    .map((part, idx) => {
+      // Code block parts (odd indices) are preserved as-is
+      if (idx % 2 === 1) return part;
+
+      // In prose/text:
+      // 1. Wrap unescaped angle bracket tags/generics/types (<Type>, <pkg>, <Record<...>>, <NuxtImg>, etc.) in backticks
+      let safe = part
+        .replace(/<([A-Za-z_][A-Za-z0-9_.,\s:<>|*?=-]*\/?)>/g, '`<$1>`')
+        .replace(/<(\s*\/?[A-Za-z_][A-Za-z0-9_]*)/g, '`<$1`')
+        .replace(/`+<([^`]+)>`+/g, '`<$1>`');
+
+      // 2. Escape raw comparison operators `<` or `>` surrounded by whitespace
+      safe = safe
+        .replace(/(?<=\s)<(?=\s)/g, '&lt;')
+        .replace(/(?<=\s)>(?=\s)/g, '&gt;');
+
+      return safe;
+    })
+    .join('');
 }
 
 function buildRootChangelog(body) {
@@ -203,6 +229,7 @@ function buildRootChangelog(body) {
 }
 
 function buildDocsChangelog(body) {
+  const safeBody = escapeMdx(body);
   return `---
 title: Changelog
 description: Release notes and version history for the Dyrected platform.
@@ -211,7 +238,7 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
-${body}
+${safeBody}
 `;
 }
 
@@ -229,16 +256,18 @@ function updateDocsMeta() {
 function main() {
   const aggregatedBody = aggregateDeduplicated();
 
-  // Write root CHANGELOG.md
+  // Write root CHANGELOG.md (Full history across all versions)
   fs.writeFileSync(rootChangelogPath, buildRootChangelog(aggregatedBody), 'utf8');
   console.log('✔ Generated deduplicated root CHANGELOG.md');
 
-  // Write docs changelog.mdx
-  const docsDir = path.dirname(docsChangelogPath);
-  if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
-  }
-  fs.writeFileSync(docsChangelogPath, buildDocsChangelog(aggregatedBody), 'utf8');
+  // For docs changelog: show up to the latest 35 releases (all 2.x and 1.x versions)
+  const versionSections = aggregatedBody.split('\n\n---\n\n');
+  const recentSections = versionSections.slice(0, 35).join('\n\n---\n\n');
+  const docsBody = versionSections.length > 35
+    ? `${recentSections}\n\n---\n\n> For earlier release notes (v0.x), see the full [CHANGELOG.md](https://github.com/Dyrected/dyrected/blob/main/CHANGELOG.md) on GitHub.`
+    : recentSections;
+
+  fs.writeFileSync(docsChangelogPath, buildDocsChangelog(docsBody), 'utf8');
   console.log('✔ Generated deduplicated apps/docs/content/docs/start-here/changelog.mdx');
 
   // Update docs navigation

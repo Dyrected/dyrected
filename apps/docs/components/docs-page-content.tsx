@@ -103,35 +103,33 @@ export async function DocsPageContent({
         <CopyPageButton content={rawContent} />
       </div>
       <DocsBody style={{ fontFamily: "var(--font-sans, sans-serif)" }}>
-        <RuntimeLinkScope runtime={runtime}>
-          <MDX
-            components={{
-              ...defaultMdxComponents,
-              a: RuntimeAwareLink,
-              Tab,
-              Tabs,
-              Steps,
-              Step,
-              Accordion,
-              Accordions,
-              TypeTable,
-              Files,
-              File,
-              Folder,
-              CopyPromptButton,
-              SetupWizard,
-              Note,
-              Warning,
-              Mermaid,
-              RecipeExample: (props: { id: string }) => (
-                <RecipeExample {...props} runtime={runtime} />
-              ),
-              CloudOnly,
-              SelfHostedOnly,
-              script: SafeScriptTag,
-            }}
-          />
-        </RuntimeLinkScope>
+        <MDX
+          components={{
+            ...defaultMdxComponents,
+            a: RuntimeAwareLink,
+            Tab,
+            Tabs,
+            Steps,
+            Step,
+            Accordion,
+            Accordions,
+            TypeTable,
+            Files,
+            File,
+            Folder,
+            CopyPromptButton,
+            SetupWizard,
+            Note,
+            Warning,
+            Mermaid,
+            RecipeExample: (props: { id: string }) => (
+              <RecipeExample {...props} runtime={runtime} />
+            ),
+            CloudOnly,
+            SelfHostedOnly,
+            script: SafeScriptTag,
+          }}
+        />
       </DocsBody>
     </DocsPage>
   );

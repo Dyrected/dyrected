@@ -5558,41 +5558,6 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/start-here/changelog#example-4",
-    "page": "/start-here/changelog",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
-    "id": "/start-here/changelog#example-5",
-    "page": "/start-here/changelog",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
-    "id": "/start-here/changelog#example-6",
-    "page": "/start-here/changelog",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/start-here/changelog#example-7",
-    "page": "/start-here/changelog",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
-    "id": "/start-here/changelog#example-8",
-    "page": "/start-here/changelog",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
     "id": "/start-here/installation#example-1",
     "page": "/start-here/installation",
     "language": "bash",

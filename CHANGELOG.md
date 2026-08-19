@@ -2,7 +2,7 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
-## [2.8.1]
+## v2.8.1
 
 - - **Detail View Inline Editing (`editable: true`)**: Added interactive inline editing directly within the Detail View screen. Editors can toggle simple fields (such as internal notes, tags, status choices, quantities, and dates) into editable form inputs with single-click save and cancel controls, updating records immediately via the client SDK without navigating away from the detail screen.
   - **Dynamic Badge & Tag Color Palettes (`badgeColors`)**: Introduced the `badgeColors` resolution engine in Admin Detail Views. Supports 20+ named color palettes (`emerald`, `amber`, `rose`, `sky`, `indigo`, `purple`, `violet`, `zinc`, etc.), custom hex codes with automated background tints, raw Tailwind classes, and wildcard (`*`) fallback mappings.
@@ -16,11 +16,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Upload & Image Field Relationship Population (`depth >= 1`)**: Fixed `PopulationService` in `@dyrected/core` to populate `upload` and `image` field types (defaulting to the target upload collection or `media`) when queries specify `depth >= 1`. Added automatic bare-ID media resolution fallback to `<DyrectedMedia />` in `@dyrected/admin` so that media assets display immediately even if received as unpopulated IDs.
   - **Interactive Relationship Badge Links (`DetailRelationshipLink`)**: Relationship and author fields in Detail Views now render interactive linked badges featuring avatar images or initial icons, document titles, and direct navigation links to the target record. If received as an unpopulated ID string, the component automatically resolves the record title and avatar asynchronously.
   - **Tag and Array Badge Rendering**: Array fields, multiSelect lists, and JSON string arrays (such as `Tags: ["insights", "operations"]`) now automatically parse and render individual badge pills with support for `badgeColors` palettes, avoiding raw JSON string outputs.
-  - **Comprehensive Detail Reference & Type Definitions**: Added complete JSDoc annotations and automated contract generation in `@dyrected/knowledge` for all 9 Detail View helper functions (`displayField`, `displaySection`, `displayTabs`, `displayTab`, `displayGrid`, `displayRepeat`, `displayComputed`, `displayText`, `displayDivider`, `displayCustom`) and their configuration options.
+  - **Comprehensive Detail Reference & Type Definitions**: Added complete JSDoc annotations and automated contract generation in `@dyrected/knowledge` for all 9 Detail View helper functions (`displayField`, `displaySection`, `displayTabs`, `displayTab`, `displayGrid`, `displayRepeat`, `displayComputed`, `displayText`, `displayDivider`, `displayCustom`) and their configuration options. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
-## [2.8.0]
+## v2.8.0
 
   - **Detail View System**:
     - Added read-only Detail View pages and configurable layout renderers for collections (`/collections/:slug/:id`) and globals (`/globals/:slug`).
@@ -41,37 +41,37 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.7.1]
+## v2.7.1
 
 - - Scoped split-pane edit page width calculation exclusively to desktop screen breakpoints, preventing form compression on mobile viewports
   - Replaced zero-based index array warnings with human-readable collection and field slug names in CLI `sync:schema` outputs
   - Added direct documentation links to CLI schema sync warning messages and core config validation outputs
-  - Added comprehensive built-in Jexl helper utility functions (`slugify`, `lower`, `upper`, `trim`, `capitalize`, `truncate`, `readingTime`, `wordCount`, `replace`, `startsWith`, `endsWith`, `now`, `today`, `formatDate`, `addDays`, `diffDays`, `isPast`, `isFuture`, `includes`, `join`, `first`, `last`, `compact`, `unique`, `length`, `round`, `clamp`, `default`, `coalesce`, `isEmpty`, `get`) across `@dyrected/core`, `@dyrected/admin`, and CLI declarative validation
+  - Added comprehensive built-in Jexl helper utility functions (`slugify`, `lower`, `upper`, `trim`, `capitalize`, `truncate`, `readingTime`, `wordCount`, `replace`, `startsWith`, `endsWith`, `now`, `today`, `formatDate`, `addDays`, `diffDays`, `isPast`, `isFuture`, `includes`, `join`, `first`, `last`, `compact`, `unique`, `length`, `round`, `clamp`, `default`, `coalesce`, `isEmpty`, `get`) across `@dyrected/core`, `@dyrected/admin`, and CLI declarative validation (`@dyrected/admin`, `dyrected`, `@dyrected/core`)
 
 - - Isolated server observability and logger runtime dependencies under `@dyrected/core/server` to prevent Node core modules (`fs`, `worker_threads`, `stream`) and Pino from leaking into frontend client bundles.
-  - Added browser fallback module configurations for Next.js (`withDyrected`) and Nuxt module Vite build hooks to ensure clean client component compilation across Turbopack and Vite.
+  - Added browser fallback module configurations for Next.js (`withDyrected`) and Nuxt module Vite build hooks to ensure clean client component compilation across Turbopack and Vite. (`@dyrected/core`, `@dyrected/next`, `@dyrected/nuxt`)
 
 ---
 
-## [2.7.0]
+## v2.7.0
 
-- Add controlled admin theme support so host apps can drive the admin theme and receive theme changes back through the public admin API. This also fixes the admin theme provider initialization so it does not access refs during render.
+- Add controlled admin theme support so host apps can drive the admin theme and receive theme changes back through the public admin API. This also fixes the admin theme provider initialization so it does not access refs during render. (`@dyrected/admin`)
 
 - - Added dark mode SVG logo asset and theme-aware fallback rendering in `admin-shell`
   - Migrated Nuxt example component config access to `useRuntimeConfig`
   - Transitioned default live preview mode to `postMessage` across prompt templates, skills, documentation, and recipes
   - Updated Dyrected configuration, environment integration, and content modeling rules for rich text and tabbed admin layouts
-  - Modularized and consolidated prompt generation logic, AI rules, and shared rule templates
+  - Modularized and consolidated prompt generation logic, AI rules, and shared rule templates (`@dyrected/admin`, `dyrected`)
 
 - @dyrected/core@2.7.0
 
-- @dyrected/react@2.7.0
+- @dyrected/react@2.7.0 (`@dyrected/next`)
 
-- @dyrected/sdk@2.7.0
+- @dyrected/sdk@2.7.0 (`@dyrected/next`)
 
 ---
 
-## [2.6.4]
+## v2.6.4
 
 - Improve admin safety and auth onboarding across admin, core, and SDK.
 
@@ -80,7 +80,7 @@ All notable changes to the Dyrected platform are documented in this file.
   - pre-create pending invited users in auth collections so they appear in admin lists before acceptance
   - let invite and reset emails use clickable URLs with stronger email-client-safe HTML and visible link fallbacks
   - expand dashboard "Needs attention" checks with backend health and invite-related signals
-  - replace browser delete alerts with admin dialogs, including typed confirmation before deleting auth users
+  - replace browser delete alerts with admin dialogs, including typed confirmation before deleting auth users (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 - Add Cloud-safe declarative hooks, broader declarative-expression validation, and clearer config diagnostics across core, admin, Nuxt, SDK, and CLI.
 
@@ -93,7 +93,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.6.3]
+## v2.6.3
 
 - Polish the admin editing experience with better loading and layout behavior.
 
@@ -106,17 +106,17 @@ All notable changes to the Dyrected platform are documented in this file.
   - make rich text editor prose respect dark mode typography tokens
   - use configured global `admin.icon` values in the global edit header
   - @dyrected/core@2.6.3
-  - @dyrected/sdk@2.6.3
+  - @dyrected/sdk@2.6.3 (`@dyrected/admin`)
 
 - @dyrected/core@2.6.3
 
-- @dyrected/sdk@2.6.3
+- @dyrected/sdk@2.6.3 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.6.3
+- @dyrected/react@2.6.3 (`@dyrected/next`)
 
 ---
 
-## [2.6.2]
+## v2.6.2
 
 - Add controlled theme props to `DyrectedAdmin` across the admin and framework wrappers:
 
@@ -132,14 +132,14 @@ All notable changes to the Dyrected platform are documented in this file.
   - Move `MediaLibraryDialog` onto `useMediaLibrary` for internal library loading, paging, and selection state.
   - Use the public field/form APIs inside the built-in form renderer so nested field state flows through `useField` and `useDyrectedForm`.
   - Replace manual nested path string building in array, block, form, and nested-editor internals with the exported path helpers.
-  - Align internal nested field targeting with full field paths, improving consistency with the public custom-field contract.
+  - Align internal nested field targeting with full field paths, improving consistency with the public custom-field contract. (`@dyrected/admin`)
 
 - Implemented the framework-level public API first, which was the right prerequisite for docs.
   Added a framework-level public API across the admin, React, and Vue packages.
 
   - `@dyrected/admin` now ships a side-effect-free public entrypoint for controllers, helpers, and React admin primitives, without pulling in the admin app entry or its CSS.
   - `@dyrected/react` now exposes the intended top-level admin and media hooks, and re-exports the form, field, and theme React APIs from the admin public surface.
-  - `@dyrected/vue` now exposes first-class composables for admin schemas, media flows, forms, fields, and theming, and includes a Vue module shim so plain TypeScript validation works.
+  - `@dyrected/vue` now exposes first-class composables for admin schemas, media flows, forms, fields, and theming, and includes a Vue module shim so plain TypeScript validation works. (`@dyrected/admin`, `@dyrected/react`, `@dyrected/vue`)
 
 - Add a reusable public form and field API foundation to `@dyrected/admin`:
 
@@ -153,7 +153,7 @@ All notable changes to the Dyrected platform are documented in this file.
     - `useField`
   - Publish custom field component prop/context types so host apps can build `admin.component` field overrides against a stable contract.
   - Export form utility helpers (`buildSchemaShape`, `buildDefaultValues`, `getFlatErrors`, `formatPath`, `resolveContainerPath`) for advanced custom form surfaces.
-  - Keep the existing admin form engine on `react-hook-form` internally while syncing its state into the shared controller layer so public consumers and built-in forms use the same source of truth.
+  - Keep the existing admin form engine on `react-hook-form` internally while syncing its state into the shared controller layer so public consumers and built-in forms use the same source of truth. (`@dyrected/admin`)
 
 - Add a reusable public media API foundation to `@dyrected/admin`:
 
@@ -167,7 +167,7 @@ All notable changes to the Dyrected platform are documented in this file.
     - `useMediaLibrary`
   - Keep `useAddMediaFromUrl` as a backward-compatible alias while shifting the preferred public naming to `useMediaURL`.
   - Export the new media controllers, React hooks, and supporting media utilities from `@dyrected/admin` so host apps can build custom media interfaces without reimplementing ingestion logic.
-  - Preserve the existing admin media experience by keeping `MediaLibraryDialog`, `MediaPicker`, and `MediaPage` on the same controller-backed upload and URL import pipeline.
+  - Preserve the existing admin media experience by keeping `MediaLibraryDialog`, `MediaPicker`, and `MediaPage` on the same controller-backed upload and URL import pipeline. (`@dyrected/admin`)
 
 - Extend the public admin API with theme controller support and field-path ergonomics:
 
@@ -186,14 +186,14 @@ All notable changes to the Dyrected platform are documented in this file.
     - `joinFieldPath`
     - `getParentFieldPath`
   - Extend `useField` with object/array convenience helpers so nested custom fields can work with child and item paths without hand-building dot-path strings.
-  - Document the controller-first public API pattern in `packages/admin/docs/public-controller-pattern.md`.
+  - Document the controller-first public API pattern in `packages/admin/docs/public-controller-pattern.md`. (`@dyrected/admin`)
 
 - Refine workflow action behavior in the admin collection editor:
 
   - Prefer `Save draft` as the primary workflow button when an entry is currently in a published workflow state.
   - Keep unpublish-style workflow transitions out of the primary button and available from the workflow dropdown instead.
   - Preserve normal forward workflow transitions as the primary action for non-published entries.
-  - Remove the workflow comment dialog's effect-based local state reset to satisfy React Hooks lint rules without changing the required-comment flow.
+  - Remove the workflow comment dialog's effect-based local state reset to satisfy React Hooks lint rules without changing the required-comment flow. (`@dyrected/admin`)
 
 - Overhaul media library upload experience with a unified media ingestion pipeline and non-technical storage notices:
   - Add multi-file drag-and-drop dropzone with live byte-level upload progress queue in `MediaLibraryDialog`.
@@ -204,7 +204,7 @@ All notable changes to the Dyrected platform are documented in this file.
   - Add semantic source classification and visual badges (`getMediaSourceInfo`) for internal vs external media items across grid, list, and detail views.
   - Add non-technical, user-friendly `StorageNotConfiguredNotice` banner on `MediaPage` and `MediaLibraryDialog` when media storage is not configured.
   - Add "Media storage is not set up" alert item to the Dashboard "Needs attention" section when an upload collection exists without a configured storage provider.
-  - Catch `Storage not configured` errors gracefully across upload forms and format them into clear instructions asking the user to contact their developer.
+  - Catch `Storage not configured` errors gracefully across upload forms and format them into clear instructions asking the user to contact their developer. (`@dyrected/admin`)
 
 - Rewrite the public API docs around end-user goals instead of internal architecture.
 
@@ -212,47 +212,47 @@ All notable changes to the Dyrected platform are documented in this file.
   - Add focused documentation pages for media, form and field, and theme APIs in `apps/docs`, with practical guidance for custom components, dashboards, and host apps rather than framing them only as admin internals.
   - Keep the lower-level controller layer documented only as supporting context, while steering most readers toward the public React hooks in `@dyrected/react` and Vue composables in `@dyrected/vue`.
   - @dyrected/core@2.6.2
-  - @dyrected/sdk@2.6.2
+  - @dyrected/sdk@2.6.2 (`@dyrected/admin`)
 
 - @dyrected/core@2.6.2
 
-- @dyrected/sdk@2.6.2
+- @dyrected/sdk@2.6.2 (`dyrected`)
 
 - Rewrite the public API docs around end-user goals instead of internal architecture.
 
   - Rework the overview for hooks and composables so it starts from the jobs developers are trying to get done, such as media uploads, media picking, document editing, custom fields, and theme-aware shells.
   - Add focused documentation pages for media, form and field, and theme APIs in `apps/docs`, with practical guidance for custom components, dashboards, and host apps rather than framing them only as admin internals.
-  - Keep the lower-level controller layer documented only as supporting context, while steering most readers toward the public React hooks in `@dyrected/react` and Vue composables in `@dyrected/vue`.
+  - Keep the lower-level controller layer documented only as supporting context, while steering most readers toward the public React hooks in `@dyrected/react` and Vue composables in `@dyrected/vue`. (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.6.1]
+## v2.6.1
 
 - Improve workflow editing UX in the Admin for workflow-enabled and `drafts: true` collections. Editors now get faster transition actions in the entry header and list view, clearer live-vs-draft status messaging, desktop labels for header action buttons, and a manual "save draft" fallback alongside workflow transitions.
 
-  Add workflow-aware draft autosave config to collection admin options with `admin.autosave` and `admin.autosaveDelayMs`. Workflow-enabled collections now default to autosaving draft revisions without changing the published snapshot, while projects can still disable autosave per collection when they need explicit manual saves.
+  Add workflow-aware draft autosave config to collection admin options with `admin.autosave` and `admin.autosaveDelayMs`. Workflow-enabled collections now default to autosaving draft revisions without changing the published snapshot, while projects can still disable autosave per collection when they need explicit manual saves. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
-## [2.6.0]
+## v2.6.0
 
 - Add typed collection search config and backend-powered admin search across core, admin, and SDK.
 
   Improve admin document titles and list cell rendering for relationship, object, and array values, including nested relation title chains and nested field `admin.useAsTitle`.
 
-  Add join-field admin actions to show or hide `Create new` and `View all`, with `View all` opening the related collection list pre-filtered by the join relationship.
+  Add join-field admin actions to show or hide `Create new` and `View all`, with `View all` opening the related collection list pre-filtered by the join relationship. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.65]
+## v2.5.65
 
 - - Keep the edit-form change-password section inside the default tab when a collection has multiple tabs.
   - Populate nested join fields when the requested depth budget allows it, while leaving them unpopulated when depth is exhausted.
-  - Reuse a shared Postgres client per connection URL so repeated adapter construction in dev servers does not exhaust database connections.
+  - Reuse a shared Postgres client per connection URL so repeated adapter construction in dev servers does not exhaust database connections. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/db-postgres`)
 
 ---
 
-## [2.5.64]
+## v2.5.64
 
 - @dyrected/core@2.5.64
 
@@ -263,15 +263,15 @@ All notable changes to the Dyrected platform are documented in this file.
   entrypoints from the package root.
   - @dyrected/core@2.5.64
   - @dyrected/react@2.5.64
-  - @dyrected/sdk@2.5.64
+  - @dyrected/sdk@2.5.64 (`@dyrected/next`)
 
-- @dyrected/admin@2.5.64
+- @dyrected/admin@2.5.64 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
-- @dyrected/vue@2.5.64
+- @dyrected/vue@2.5.64 (`@dyrected/nuxt`)
 
 ---
 
-## [2.5.63]
+## v2.5.63
 
 - Fix workflow and draft handling across the admin UI and core collection APIs.
 
@@ -279,23 +279,23 @@ All notable changes to the Dyrected platform are documented in this file.
   - show workflow state labels and colors consistently in admin list and edit views
   - return published workflow documents correctly in public reads, including legacy entries without a materialized published snapshot
   - materialize workflow metadata on update responses so the admin can keep draft and transition state in sync
-  - improve the example auth roles setup and docs so custom auth `roles` fields use the expected array-backed shape
+  - improve the example auth roles setup and docs so custom auth `roles` fields use the expected array-backed shape (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
-## [2.5.62]
+## v2.5.62
 
 - Use server-backed logout and clear revoked stored admin sessions
 
   The admin provider still treated logout as a purely client-side action after Dyrected auth moved to revocable server-backed sessions. Logging out from the admin cleared local storage, but it did not call the server logout route, so the current session stayed valid until expiry. The provider also kept dead tokens in local storage when bootstrapping `me()` failed, which caused repeated failed auth requests on reload after a session had already been revoked.
 
-  The admin provider now calls the collection logout route before clearing local state, so admin logout actually revokes the current session. It also clears persisted auth state only on real stale-auth failures during bootstrap (`401` / `404`), so revoked or invalid stored sessions are cleaned up automatically without treating unrelated network errors as a logout.
+  The admin provider now calls the collection logout route before clearing local state, so admin logout actually revokes the current session. It also clears persisted auth state only on real stale-auth failures during bootstrap (`401` / `404`), so revoked or invalid stored sessions are cleaned up automatically without treating unrelated network errors as a logout. (`@dyrected/admin`)
 
 - Fix token-mode live preview never showing the draft
 
   In `previewMode: "token"`, the preview pane minted a valid token but discarded it before it reached the iframe, so the frame kept loading published content and never reflected edits. The mint effect depended on the `data` object, so it re-ran on every parent render; its cleanup cancelled the in-flight mint, and the `if (cancelled) return` guard then skipped applying the token. The constant re-runs also cleared the debounce timer, so minting eventually stopped firing on edits.
 
-  The effect now depends on a stable serialized key of the draft instead of the object, so it only re-runs on a real edit — cancellation now means "the draft changed again," and a successful mint is applied to the iframe as intended.
+  The effect now depends on a stable serialized key of the draft instead of the object, so it only re-runs on a real edit — cancellation now means "the draft changed again," and a successful mint is applied to the iframe as intended. (`@dyrected/admin`)
 
 - Type the SDK client and framework hooks against your generated schema automatically
 
@@ -335,7 +335,7 @@ All notable changes to the Dyrected platform are documented in this file.
   - `multiSelect` fields now generate an array of the option literals — `("admin" | "editor")[]` — instead of a loose `string[]`, so multi-valued fields like `roles` stay typed as their allowed values.
   - The SDK's schema-generic constraint was loosened to a `SchemaShape` bound so a generated `DyrectedSchema` (built from named `interface`s, which lack an implicit index signature) satisfies it. Previously the augmentation silently fell back to `BaseSchema`.
 
-  The Nuxt composables (`useDyrectedDoc`, `useDyrectedCollection`, `useDyrectedGlobal`) now return a properly typed `AsyncData<...>` instead of `any` — their `data` is typed as your document/global shape — and are constrained to your schema's slugs.
+  The Nuxt composables (`useDyrectedDoc`, `useDyrectedCollection`, `useDyrectedGlobal`) now return a properly typed `AsyncData<...>` instead of `any` — their `data` is typed as your document/global shape — and are constrained to your schema's slugs. (`dyrected`, `@dyrected/react`, `@dyrected/sdk`, `@dyrected/vue`)
 
 - Add built-in API rate limiting, proxy-aware client IP resolution, and revocable auth sessions
 
@@ -345,7 +345,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
   Auth collections also move from purely stateless login tokens to JWTs backed by hidden `__auth_sessions` records. New tokens carry a session id, auth middleware validates that the backing session is still active, logout can revoke the current session immediately, `?allSessions=true` can revoke every session for the account, and password reset / password change now invalidate active sessions as a security boundary. Refreshing a token keeps the same underlying session instead of creating a second one silently.
 
-  The docs and OpenAPI surface were updated to match the new behavior, especially around built-in rate limiting, trusted proxy setup, logout semantics, and session revocation.
+  The docs and OpenAPI surface were updated to match the new behavior, especially around built-in rate limiting, trusted proxy setup, logout semantics, and session revocation. (`@dyrected/core`)
 
 - Point package-distributed documentation references at the canonical `/docs` tree
 
@@ -353,7 +353,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
   For `@dyrected/core`, this updates JSDoc `@see` links so generated API references and editor tooling point at the current docs URLs instead of the removed `/new-docs` paths.
 
-  For `@dyrected/knowledge`, this refreshes generated references, prompt artifacts, LLM indexes, and skill outputs so published knowledge bundles link to the canonical docs paths and no longer depend on removed legacy recipe/reference pages.
+  For `@dyrected/knowledge`, this refreshes generated references, prompt artifacts, LLM indexes, and skill outputs so published knowledge bundles link to the canonical docs paths and no longer depend on removed legacy recipe/reference pages. (`@dyrected/core`)
 
 - Add `definePublishingWorkflow` to map your own role names onto the publishing workflow
 
@@ -366,13 +366,13 @@ All notable changes to the Dyrected platform are documented in this file.
     editors: ["writer"],
     publishers: ["managing-editor", "admin"],
   });
-  ```
+  ``` (`@dyrected/core`)
 
 - Fix `drafts: true` documents disappearing from the Admin list
 
   The publishing workflow synthesized from `drafts: true` (`simplePublishingWorkflow`) defined no role→capability mappings, so `canViewWorkflowDraft` returned `false` for everyone — including admins and editors. Every draft document was then filtered out of collection reads, leaving the Admin list empty.
 
-  `canViewWorkflowDraft` now treats a workflow with no `roles` (the `drafts: true` case) as ungated: any **authenticated** user can view drafts, so they show up in the Admin regardless of what a project names its roles. Unauthenticated/public readers still only ever see published content, so drafts never leak to the live site. Workflows that define explicit `roles` keep their existing capability-based gating.
+  `canViewWorkflowDraft` now treats a workflow with no `roles` (the `drafts: true` case) as ungated: any **authenticated** user can view drafts, so they show up in the Admin regardless of what a project names its roles. Unauthenticated/public readers still only ever see published content, so drafts never leak to the live site. Workflows that define explicit `roles` keep their existing capability-based gating. (`@dyrected/core`)
 
 - Add Payload-style logger config and first-class observability to Dyrected core
 
@@ -384,11 +384,11 @@ All notable changes to the Dyrected platform are documented in this file.
 
   Core services and request paths now use structured logger helpers instead of direct `console.*` calls. This includes auth, audit-failure reporting, email delivery failures, router warnings, workflow hook isolation, and request error handling.
 
-  OpenTelemetry tracing and metrics are now available behind explicit config. Dyrected can create request spans, emit request and failure metrics, export telemetry through OTLP, and expose a Prometheus scrape route only when configured. Audit logging remains a separate feature and is not merged with runtime observability.
+  OpenTelemetry tracing and metrics are now available behind explicit config. Dyrected can create request spans, emit request and failure metrics, export telemetry through OTLP, and expose a Prometheus scrape route only when configured. Audit logging remains a separate feature and is not merged with runtime observability. (`@dyrected/core`)
 
 ---
 
-## [2.5.61]
+## v2.5.61
 
 - Admin: brand accent color, wired page metadata, and list export
 
@@ -404,7 +404,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
   - **Audit log button never showed.** The `/api/schemas` response hand-serialized each collection and omitted the `audit` and `drafts` flags, so the Admin's `schema.audit` was always `undefined` and the audit-history button never rendered regardless of config. Both flags are now included in the serialized schema.
   - **Workflow/version panel hidden for existing documents.** Setting `drafts: true` synthesizes a publishing workflow via `normalizeConfig`, but the panel only appears when a document carries `__workflow` metadata — which documents created before the workflow existed (e.g. seeded content) don't have. `materializeWorkflowDocument` now treats such legacy documents as already-published live content: it surfaces them with the workflow's published state (keeping them visible to the public) so the workflow panel appears. New documents are unaffected.
-  - **Live/Draft badge missing on workflow collections.** The header publishing badge only rendered for collections without a workflow, and read the raw `status` field. It now derives from the workflow state when a workflow is present (a state flagged `published` shows "Live", otherwise "Draft"), so collections using `drafts: true` — including ones with no `status` field — show the correct badge.
+  - **Live/Draft badge missing on workflow collections.** The header publishing badge only rendered for collections without a workflow, and read the raw `status` field. It now derives from the workflow state when a workflow is present (a state flagged `published` shows "Live", otherwise "Draft"), so collections using `drafts: true` — including ones with no `status` field — show the correct badge. (`@dyrected/admin`, `@dyrected/core`)
 
 - Server-side (token) live preview now works end to end
 
@@ -420,11 +420,11 @@ All notable changes to the Dyrected platform are documented in this file.
 
   - `@dyrected/vue`: custom Vue components in the admin (custom field inputs and dashboard/list slots) now share the host app's context instead of each mounting an isolated Vue app. They can use the host app's plugins, `provide`/`inject`, Pinia, and i18n, and many custom components no longer spin up one full Vue app per instance.
   - `dyrected` (CLI): `sync:schema` now honors `DYRECTED_URL` (and the `NEXT_PUBLIC_` / `NUXT_PUBLIC_` / `VITE_` variants) from your environment. Previously the `--url` option's hardcoded default masked the env fallback, so it always synced to Dyrected Cloud regardless of your configured URL.
-  - `@dyrected/admin`: fix the admin browser-title helper resolving a collection's label — it read a non-existent `collection.label` (collections use `labels.singular` / `labels.plural`), which broke the package build. Also corrected the misleading `AdminComponents` JSDoc (`fields` is keyed by the field's `admin.component` string, not field type; `collectionList` injects list slots rather than replacing the list view).
+  - `@dyrected/admin`: fix the admin browser-title helper resolving a collection's label — it read a non-existent `collection.label` (collections use `labels.singular` / `labels.plural`), which broke the package build. Also corrected the misleading `AdminComponents` JSDoc (`fields` is keyed by the field's `admin.component` string, not field type; `collectionList` injects list slots rather than replacing the list view). (`@dyrected/admin`, `dyrected`, `@dyrected/vue`)
 
 ---
 
-## [2.5.60]
+## v2.5.60
 
 - Improve dynamic select options, frontend rendering components, and field ergonomics.
 
@@ -445,11 +445,11 @@ All notable changes to the Dyrected platform are documented in this file.
 
   - **Fixed DatePicker closing prematurely.** Intercept `pointerdown` events instead of `mousedown` on the wrapper, preventing the picker from instantly closing on click due to React event phase mismatches.
   - **Downgraded `react-day-picker` to v8.** Version 9 introduced breaking DOM/CSS structure that conflicted with our existing styling. Downgrading to the highly stable v8 restores standard navigation button interactions and styling.
-  - **Fixed `aria-hidden` focus retention warning.** Replaced `aria-hidden` with the modern `inert` attribute on the closed calendar wrapper, forcing the browser to safely drop keyboard focus and satisfy screen reader constraints when the picker closes.
+  - **Fixed `aria-hidden` focus retention warning.** Replaced `aria-hidden` with the modern `inert` attribute on the closed calendar wrapper, forcing the browser to safely drop keyboard focus and satisfy screen reader constraints when the picker closes. (`@dyrected/admin`)
 
 ---
 
-## [2.5.59]
+## v2.5.59
 
 - Fix server-side field access evaluation so field rules receive the current document `id` during API reads and updates, matching admin behavior and preventing `!id`-style rules from silently allowing protected field changes.
 
@@ -465,11 +465,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - upgrades dependencies and devDependencies separately
   - uses exact-version installs (--save-exact / --exact)
   - verifies both package.json and node_modules after install
-  - fails loudly if the installed result is still stale
+  - fails loudly if the installed result is still stale (`dyrected`, `@dyrected/core`)
 
 ---
 
-## [2.5.58]
+## v2.5.58
 
 - Add a production-ready access control model that supports booleans, Jexl strings, direct self-hosted functions, and named policies across collections, globals, and field access.
 
@@ -477,13 +477,13 @@ All notable changes to the Dyrected platform are documented in this file.
 
   Make Cloud schema sync safe by stripping function-based access rules from synced payloads, preserving only booleans, Jexl strings, and named policies, with clear warnings for unsupported rules.
 
-  Harden the admin hooks sandbox message listener so it only accepts messages from the expected iframe source.
+  Harden the admin hooks sandbox message listener so it only accepts messages from the expected iframe source. (`@dyrected/admin`, `dyrected`, `@dyrected/core`)
 
 ---
 
-## [2.5.57]
+## v2.5.57
 
-- Centralize preview URL resolution into a shared admin utility and standardize project initialization with updated defaults and enhanced schema configuration.
+- Centralize preview URL resolution into a shared admin utility and standardize project initialization with updated defaults and enhanced schema configuration. (`@dyrected/admin`, `dyrected`)
 
 - Add type-safe field builder helpers and related updates.
 
@@ -491,31 +491,31 @@ All notable changes to the Dyrected platform are documented in this file.
   - Add configurable `features` and `headingLevels` to rich-text fields. The Admin rich-text editor now enables only the configured toolbar controls and editor capabilities (disabling a feature also removes its keyboard shortcut and paste handling).
   - Migrate documentation examples, the `dyrected init` scaffold, and the `@dyrected/knowledge` recipes and prompt templates to use the new `define*Field` helpers.
   - Rename the `JWT_SECRET` environment variable to `DYRECTED_JWT_SECRET` — update your `.env` accordingly.
-  - Filter unpublished documents out of public read responses.
+  - Filter unpublished documents out of public read responses. (`@dyrected/admin`, `dyrected`, `@dyrected/core`, `@dyrected/nuxt`)
 
 ---
 
-## [2.5.56]
+## v2.5.56
 
-- Render single-field arrays as a flat, reorderable list instead of accordion cards, with the label shown once and per-row actions (duplicate, move, delete) in an overflow menu. Add a `hideLabel` admin option to suppress a field's label where it would be redundant. Hide the admin's own mobile header when embedded so the host dashboard renders a single top bar, driven via a `dyrected:toggle-menu` window event. Fix the mobile nav drawer closing immediately after opening (the close-on-navigation effect depended on the open state and re-triggered itself); it now closes only when the route changes. Refresh the dashboard update-check cache on a TTL so the banner reflects newly published versions instead of freezing on the first value seen.
+- Render single-field arrays as a flat, reorderable list instead of accordion cards, with the label shown once and per-row actions (duplicate, move, delete) in an overflow menu. Add a `hideLabel` admin option to suppress a field's label where it would be redundant. Hide the admin's own mobile header when embedded so the host dashboard renders a single top bar, driven via a `dyrected:toggle-menu` window event. Fix the mobile nav drawer closing immediately after opening (the close-on-navigation effect depended on the open state and re-triggered itself); it now closes only when the route changes. Refresh the dashboard update-check cache on a TTL so the banner reflects newly published versions instead of freezing on the first value seen. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
-## [2.5.55]
+## v2.5.55
 
 - Improve table cell rendering with default string truncation, protect primary title columns from shrinking, enlarge row actions layout, and resolve local origin preview overrides for development.
   - @dyrected/core@2.5.55
-  - @dyrected/sdk@2.5.55
+  - @dyrected/sdk@2.5.55 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.55
 
-- @dyrected/sdk@2.5.55
+- @dyrected/sdk@2.5.55 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.55
+- @dyrected/react@2.5.55 (`@dyrected/next`)
 
 ---
 
-## [2.5.54]
+## v2.5.54
 
 - feat: visual and functional enhancements to the Admin UI
 
@@ -525,11 +525,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Field Labels**: Updated `DataTable` search placeholders and View Settings column checklists to render human-readable field labels instead of raw database keys.
   - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds.
   - @dyrected/core@2.5.54
-  - @dyrected/sdk@2.5.54
+  - @dyrected/sdk@2.5.54 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.54
 
-- @dyrected/sdk@2.5.54
+- @dyrected/sdk@2.5.54 (`dyrected`)
 
 - feat: visual and functional enhancements to the Admin UI
 
@@ -537,7 +537,7 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Collection Icons**: Resolved custom collection icons (`schema.admin?.icon`) on list page headers, falling back dynamically to `Users` or `Database`.
   - **Data Table Layout**: Upgraded the `DataTable` visual presentation (borders, rounded corners, row heights, and backgrounds) to align with the media library's clean design aesthetics.
   - **Field Labels**: Updated `DataTable` search placeholders and View Settings column checklists to render human-readable field labels instead of raw database keys.
-  - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds.
+  - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds. (`@dyrected/nuxt`)
 
 - feat: add `DyrectedIcon` component for rendering `icon` field values
 
@@ -547,21 +547,21 @@ All notable changes to the Dyrected platform are documented in this file.
   - `@dyrected/vue` — `<DyrectedIcon :name="feature.icon" class="w-6 h-6" />` (backed by `lucide-vue-next`)
   - `@dyrected/nuxt` — auto-imported as `<DyrectedIcon>` (no import required)
 
-  All standard Lucide props (`size`, `color`, `strokeWidth`, `class`/`className`, …) are forwarded, plus an optional `fallback` icon name. Integration docs now document the component and include a full per-framework component reference.
+  All standard Lucide props (`size`, `color`, `strokeWidth`, `class`/`className`, …) are forwarded, plus an optional `fallback` icon name. Integration docs now document the component and include a full per-framework component reference. (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.5.53]
+## v2.5.53
 
-- Expose the field-type contracts as public types. `Block`, `BlockVariant`, `TypedField`, `FieldBase`, the per-field admin option types (`BaseFieldAdmin`, `TextFieldAdmin`, `TextareaFieldAdmin`, `EmailFieldAdmin`, `UrlFieldAdmin`, `IconFieldAdmin`, `SelectFieldAdmin`, `RadioFieldAdmin`, `BooleanFieldAdmin`, `MultiSelectFieldAdmin`, `CharacterLimitFieldAdmin`, `WordLimitFieldAdmin`), and the field hook shapes (`FieldHooks`, `FieldAdminHooks`) are now exported from `@dyrected/core`. This lets consumers and generated documentation reference the full field type surface directly. Purely additive — no runtime or existing-type changes.
+- Expose the field-type contracts as public types. `Block`, `BlockVariant`, `TypedField`, `FieldBase`, the per-field admin option types (`BaseFieldAdmin`, `TextFieldAdmin`, `TextareaFieldAdmin`, `EmailFieldAdmin`, `UrlFieldAdmin`, `IconFieldAdmin`, `SelectFieldAdmin`, `RadioFieldAdmin`, `BooleanFieldAdmin`, `MultiSelectFieldAdmin`, `CharacterLimitFieldAdmin`, `WordLimitFieldAdmin`), and the field hook shapes (`FieldHooks`, `FieldAdminHooks`) are now exported from `@dyrected/core`. This lets consumers and generated documentation reference the full field type surface directly. Purely additive — no runtime or existing-type changes. (`@dyrected/core`)
 
-- @dyrected/sdk@2.5.53
+- @dyrected/sdk@2.5.53 (`@dyrected/react`, `@dyrected/vue`)
 
-- @dyrected/admin@2.5.53
+- @dyrected/admin@2.5.53 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.5.52]
+## v2.5.52
 
 - Block icons & variants, a cleaner admin loading state, dark-mode text fix, and OpenAPI/Swagger fixes.
 
@@ -584,7 +584,7 @@ All notable changes to the Dyrected platform are documented in this file.
   - `BlocksItem` now types the optional `variant` field; it already flows to block components via prop spreading.
 
   **Backend (`@dyrected/core`)**
-  - Swagger UI now resolves its OpenAPI spec **relative to the docs page**, so `/api/docs` works when the app is mounted under a prefix (e.g. a Nuxt `apiBase: "/dyrected"`) instead of 404-ing on an absolute `/api/openapi.json`.
+  - Swagger UI now resolves its OpenAPI spec **relative to the docs page**, so `/api/docs` works when the app is mounted under a prefix (e.g. a Nuxt `apiBase: "/dyrected"`) instead of 404-ing on an absolute `/api/openapi.json`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/react`, `@dyrected/vue`)
 
 - Nested block editor, live-preview click-to-edit, and a redesigned edit page.
 
@@ -614,11 +614,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - Media picker, media card, media library dialog, and media page updated to support external media and surface upload validation errors.
 
   **SDK (`@dyrected/sdk`)**
-  - Support for external media references and upload validation feedback.
+  - Support for external media references and upload validation feedback. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.51]
+## v2.5.51
 
 - @dyrected/core@2.5.51
 
@@ -626,35 +626,35 @@ All notable changes to the Dyrected platform are documented in this file.
 
 - Traverse parent directories to detect lockfiles in monorepos/nested workspaces during package manager detection.
   - @dyrected/core@2.5.51
-  - @dyrected/sdk@2.5.51
+  - @dyrected/sdk@2.5.51 (`dyrected`)
 
-- @dyrected/react@2.5.51
+- @dyrected/react@2.5.51 (`@dyrected/next`)
 
-- @dyrected/admin@2.5.51
+- @dyrected/admin@2.5.51 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
-- @dyrected/vue@2.5.51
-
----
-
-## [2.5.50]
-
-- Resolve preview domain dynamically using schemas siteUrl, prefix/strip url field domains using siteUrl origin, and update block builder library dialog with scrollable 3-column desktop layout.
+- @dyrected/vue@2.5.51 (`@dyrected/nuxt`)
 
 ---
 
-## [2.5.49]
+## v2.5.50
 
-- Add upgrade command, non-interactive init options, and unified combobox URL field redesign.
+- Resolve preview domain dynamically using schemas siteUrl, prefix/strip url field domains using siteUrl origin, and update block builder library dialog with scrollable 3-column desktop layout. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
+## v2.5.49
+
+- Add upgrade command, non-interactive init options, and unified combobox URL field redesign. (`@dyrected/admin`, `dyrected`)
 
 - @dyrected/core@2.5.49
 
-- @dyrected/react@2.5.49
+- @dyrected/react@2.5.49 (`@dyrected/next`)
 
-- @dyrected/sdk@2.5.49
+- @dyrected/sdk@2.5.49 (`@dyrected/next`)
 
 ---
 
-## [2.5.48]
+## v2.5.48
 
 - Fix CSV importer: drag & drop, file validation, empty file rejection, invalid row handling, network failure retry, and full-page layout
   - Drag and drop now works on the upload zone (was advertised but never wired up) (CI-005)
@@ -662,83 +662,83 @@ All notable changes to the Dyrected platform are documented in this file.
   - Empty CSV files (zero data rows) are rejected with an explicit message instead of advancing to a blank mapping step (CI-006)
   - At the preview step, if all rows are invalid the Start Import button is disabled and a blocking error is shown; if some rows are invalid an acknowledgement checkbox must be checked before import can proceed, preventing silent partial data creation (CI-029)
   - Rows that fail due to network or API errors during import are tracked separately from validation failures; a "Retry N Failed Rows" button appears on the complete screen so users can retry without re-uploading or re-mapping (CI-030)
-  - CSV import now renders as a full-page layout instead of a constrained modal, giving the validation table sufficient room to display all columns and rows
+  - CSV import now renders as a full-page layout instead of a constrained modal, giving the validation table sufficient room to display all columns and rows (`@dyrected/admin`)
 
 - Improve cloud admin auth collection resolution and delegated membership handling
   - Prefer the `__admins` collection for admin auth when present, then fall back to the configured `adminAuth.collectionSlug`, then the first auth collection
   - Return the resolved admin auth collection slug in public admin auth config so the admin UI and server agree on the active auth collection
   - Pass a normalized hook request context to delegated provider membership handlers so cloud-backed user management hooks can safely read query params and request headers
-  - Preserve multipart upload behavior in the SDK by letting fetch set the multipart boundary automatically
+  - Preserve multipart upload behavior in the SDK by letting fetch set the multipart boundary automatically (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.47]
+## v2.5.47
 
 - Normalize cloud-issued admin session token roles for client-side access checks.
   - @dyrected/core@2.5.47
-  - @dyrected/sdk@2.5.47
+  - @dyrected/sdk@2.5.47 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.47
 
-- @dyrected/sdk@2.5.47
+- @dyrected/sdk@2.5.47 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.47
+- @dyrected/react@2.5.47 (`@dyrected/next`)
 
 ---
 
-## [2.5.46]
+## v2.5.46
 
 - Add low-impact dark mode support to the admin UI with system, light, and dark theme preferences.
   - @dyrected/core@2.5.46
-  - @dyrected/sdk@2.5.46
+  - @dyrected/sdk@2.5.46 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.46
 
-- @dyrected/sdk@2.5.46
+- @dyrected/sdk@2.5.46 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.46
-
----
-
-## [2.5.45]
-
-- feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks
-
-- @dyrected/sdk@2.5.45
-
-- @dyrected/admin@2.5.45
+- @dyrected/react@2.5.46 (`@dyrected/next`)
 
 ---
 
-## [2.5.44]
+## v2.5.45
 
-- Add provider membership hooks type definitions and collection controller delegation logic to redirect authentication collection CRUD requests.
+- feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks (`@dyrected/core`, `@dyrected/db-postgres`)
 
-- @dyrected/sdk@2.5.44
+- @dyrected/sdk@2.5.45 (`@dyrected/react`, `@dyrected/vue`)
 
-- @dyrected/admin@2.5.44
-
----
-
-## [2.5.43]
-
-- feat: add support for external authentication provider exchange and update Node.js requirement to 22+
+- @dyrected/admin@2.5.45 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.5.42]
+## v2.5.44
+
+- Add provider membership hooks type definitions and collection controller delegation logic to redirect authentication collection CRUD requests. (`@dyrected/core`)
+
+- @dyrected/sdk@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
+
+- @dyrected/admin@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
+
+---
+
+## v2.5.43
+
+- feat: add support for external authentication provider exchange and update Node.js requirement to 22+ (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
+## v2.5.42
 
 - feat: enable dynamic site admin authentication by supporting schema-derived config in the auth controller
 
-  refactor: modularize type definitions by extracting schemas, access, adapters, and configuration interfaces into separate files
+  refactor: modularize type definitions by extracting schemas, access, adapters, and configuration interfaces into separate files (`@dyrected/core`)
 
-- @dyrected/sdk@2.5.42
+- @dyrected/sdk@2.5.42 (`@dyrected/react`, `@dyrected/vue`)
 
-- @dyrected/admin@2.5.42
+- @dyrected/admin@2.5.42 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.5.41]
+## v2.5.41
 
 - feat(admin): fix admin panel type safety, lint warnings, and external auth flow integration
 
@@ -772,123 +772,123 @@ All notable changes to the Dyrected platform are documented in this file.
        - Extracted provider states into a centralized context to decouple core workspace bindings.
   3. Documentation & Schema Sync
      - Updated MDX docs (`apps/docs/content/docs/*`) to reflect database, storage, and field-rendering layouts.
-     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters.
+     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.40]
+## v2.5.40
 
-- fix docs and global seeding
+- fix docs and global seeding (`@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.39]
+## v2.5.39
 
 - fix: improve CSV importer data handling and simplify UI components by removing unused pagination and refactoring select options.
   - @dyrected/core@2.5.39
-  - @dyrected/sdk@2.5.39
+  - @dyrected/sdk@2.5.39 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.39
 
-- @dyrected/sdk@2.5.39
+- @dyrected/sdk@2.5.39 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.39
+- @dyrected/react@2.5.39 (`@dyrected/next`)
 
 ---
 
-## [2.5.38]
+## v2.5.38
 
 - feat: implement CSV import component with column mapping, validation, and batch processing support
   - @dyrected/core@2.5.38
-  - @dyrected/sdk@2.5.38
+  - @dyrected/sdk@2.5.38 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.38
 
-- @dyrected/sdk@2.5.38
+- @dyrected/sdk@2.5.38 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.38
+- @dyrected/react@2.5.38 (`@dyrected/next`)
 
 ---
 
-## [2.5.37]
+## v2.5.37
 
 - feat: add customizable field widths to collection edit layouts and unify list page view settings
   - Added customizable field widths (25%, 33%, 50%, 66%, 75%, 100%) to edit forms, enabling side-by-side field positioning.
   - Expanded the layout preferences API and SDK client to handle generic LayoutItem objects (`Array<{ name: string; width?: string }>`).
   - Consolidated the list view mode selector and column configure popovers into a unified "View Settings" panel.
-  - Enabled column visibility toggles (checklists) directly inside the new unified view settings popover, syncing visible columns with the data table.
+  - Enabled column visibility toggles (checklists) directly inside the new unified view settings popover, syncing visible columns with the data table. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.36]
+## v2.5.36
 
 - Native Spreadsheet Editing (Airtable-style)
   User can bulk edit with spreadsheet
   - @dyrected/core@2.5.36
-  - @dyrected/sdk@2.5.36
+  - @dyrected/sdk@2.5.36 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.36
 
-- @dyrected/sdk@2.5.36
+- @dyrected/sdk@2.5.36 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.36
+- @dyrected/react@2.5.36 (`@dyrected/next`)
 
 ---
 
-## [2.5.35]
+## v2.5.35
 
 - docs: add JSDoc comments to public API, form utilities, and core helper functions
   - @dyrected/core@2.5.35
-  - @dyrected/sdk@2.5.35
+  - @dyrected/sdk@2.5.35 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.35
 
-- @dyrected/sdk@2.5.35
+- @dyrected/sdk@2.5.35 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.35
+- @dyrected/react@2.5.35 (`@dyrected/next`)
 
 ---
 
-## [2.5.34]
+## v2.5.34
 
 - fix: add optional chaining to resolvedSchemas to prevent runtime error when accessing admin components
   - @dyrected/core@2.5.34
-  - @dyrected/sdk@2.5.34
+  - @dyrected/sdk@2.5.34 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.34
 
-- @dyrected/sdk@2.5.34
+- @dyrected/sdk@2.5.34 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.34
+- @dyrected/react@2.5.34 (`@dyrected/next`)
 
 ---
 
-## [2.5.33]
+## v2.5.33
 
 - @dyrected/core@2.5.33
 
-- @dyrected/sdk@2.5.33
+- @dyrected/sdk@2.5.33 (`@dyrected/admin`, `@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 - Await lazy Dyrected app initialization in Next.js route handlers, mount API routes
   under `/dyrected` by default, support custom route prefixes, and generate valid
   App Router scaffolding from the CLI.
   - @dyrected/core@2.5.33
-  - @dyrected/sdk@2.5.33
+  - @dyrected/sdk@2.5.33 (`dyrected`)
 
 - Await lazy Dyrected app initialization in Next.js route handlers, mount API routes
   under `/dyrected` by default, support custom route prefixes, and generate valid
   App Router scaffolding from the CLI.
   - @dyrected/core@2.5.33
   - @dyrected/react@2.5.33
-  - @dyrected/sdk@2.5.33
+  - @dyrected/sdk@2.5.33 (`@dyrected/next`)
 
-- @dyrected/admin@2.5.33
+- @dyrected/admin@2.5.33 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
-- @dyrected/vue@2.5.33
+- @dyrected/vue@2.5.33 (`@dyrected/nuxt`)
 
 ---
 
-## [2.5.32]
+## v2.5.32
 
 - @dyrected/knowledge — minor
 
@@ -920,13 +920,13 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.5.31]
+## v2.5.31
 
 - feat: add workflow reference generation scripts, improve admin documentation, and implement dashboard testing utilities
 
 ---
 
-## [2.5.30]
+## v2.5.30
 
 - ### ✨ Features & Refactors
   - **Admin UI Customization**: Implemented the Admin UI component slot injection system along with Vue bridging support, allowing developers to inject custom components natively into the dashboard and lists.
@@ -940,25 +940,25 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.5.29]
+## v2.5.29
 
-- Render type-safe collection and global Lucide icons in the sidebar with contextual fallbacks.
+- Render type-safe collection and global Lucide icons in the sidebar with contextual fallbacks. (`@dyrected/admin`)
 
 - Lower Admin UI scoped reset specificity with `:where(...)` so component utility classes can override reset styles normally.
   - @dyrected/core@2.5.29
-  - @dyrected/sdk@2.5.29
+  - @dyrected/sdk@2.5.29 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.29
 
-- @dyrected/sdk@2.5.29
+- @dyrected/sdk@2.5.29 (`dyrected`, `@dyrected/next`)
 
-- Add type-safe Lucide `admin.icon` configuration for collection and global sidebar navigation.
+- Add type-safe Lucide `admin.icon` configuration for collection and global sidebar navigation. (`@dyrected/core`)
 
-- @dyrected/react@2.5.29
+- @dyrected/react@2.5.29 (`@dyrected/next`)
 
 ---
 
-## [2.5.28]
+## v2.5.28
 
 - **Add universal sort parsing, admin CSS isolation, initial token support, and updated branding theme**
   - Added universal sort parsing in `@dyrected/core`:
@@ -992,21 +992,21 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.5.27]
+## v2.5.27
 
 - refactor: unify React dependency resolution across packages and optimize Vite/Next configuration for dependency sharing
   - @dyrected/core@2.5.27
-  - @dyrected/sdk@2.5.27
+  - @dyrected/sdk@2.5.27 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.27
 
-- @dyrected/sdk@2.5.27
+- @dyrected/sdk@2.5.27 (`dyrected`)
 
-- refactor: unify React dependency resolution across packages and optimize Vite/Next configuration for dependency sharing
+- refactor: unify React dependency resolution across packages and optimize Vite/Next configuration for dependency sharing (`@dyrected/next`, `@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.5.26]
+## v2.5.26
 
 - **UI/UX Improvement for Admin**
   1. Boolean field layout support
@@ -1032,7 +1032,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.5.25]
+## v2.5.25
 
 - feat: implement join field backend population and fix frontend display
 
@@ -1051,98 +1051,98 @@ All notable changes to the Dyrected platform are documented in this file.
   Other:
   - Add CSV export to collection list page
   - Add functional access control tests
-  - Update collection/global controller hooks
+  - Update collection/global controller hooks (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
-## [2.5.24]
+## v2.5.24
 
 - feat: implement client-side image compression and update admin-shell mobile layout with branding and user identity
   - @dyrected/core@2.5.24
-  - @dyrected/sdk@2.5.24
+  - @dyrected/sdk@2.5.24 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.24
 
-- @dyrected/sdk@2.5.24
+- @dyrected/sdk@2.5.24 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.24
+- @dyrected/react@2.5.24 (`@dyrected/next`)
 
 ---
 
-## [2.5.23]
+## v2.5.23
 
 - feat: add custom field component support, field-level error boundaries, and fix React instance mismatch in Vue bridge
 
 ---
 
-## [2.5.22]
+## v2.5.22
 
 - Fix tabs roving focus error, resolve Nuxt module production build config loading, and add user profile display in admin sidebar footer.
   - @dyrected/core@2.5.22
-  - @dyrected/sdk@2.5.22
+  - @dyrected/sdk@2.5.22 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.22
 
-- @dyrected/sdk@2.5.22
+- @dyrected/sdk@2.5.22 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.22
+- @dyrected/react@2.5.22 (`@dyrected/next`)
 
-- Fix tabs roving focus error, resolve Nuxt module production build config loading, and add user profile display in admin sidebar footer.
+- Fix tabs roving focus error, resolve Nuxt module production build config loading, and add user profile display in admin sidebar footer. (`@dyrected/nuxt`)
 
 ---
 
-## [2.5.21]
+## v2.5.21
 
 - refactor: update form-engine to use TabsList and implement dynamic hot-reloading for database configuration in Nuxt module
   - @dyrected/core@2.5.21
-  - @dyrected/sdk@2.5.21
+  - @dyrected/sdk@2.5.21 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.21
 
-- @dyrected/sdk@2.5.21
+- @dyrected/sdk@2.5.21 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.21
+- @dyrected/react@2.5.21 (`@dyrected/next`)
 
-- refactor: update form-engine to use TabsList and implement dynamic hot-reloading for database configuration in Nuxt module
+- refactor: update form-engine to use TabsList and implement dynamic hot-reloading for database configuration in Nuxt module (`@dyrected/nuxt`)
 
 ---
 
-## [2.5.20]
+## v2.5.20
 
 - feat: enable inline document creation within RelationshipPicker and add support for custom search values in SelectField
   - @dyrected/core@2.5.20
-  - @dyrected/sdk@2.5.20
+  - @dyrected/sdk@2.5.20 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.20
 
-- @dyrected/sdk@2.5.20
+- @dyrected/sdk@2.5.20 (`dyrected`, `@dyrected/next`)
 
-- @dyrected/react@2.5.20
+- @dyrected/react@2.5.20 (`@dyrected/next`)
 
 ---
 
-## [2.5.19]
+## v2.5.19
 
 - @dyrected/core@2.5.19
 
 - @dyrected/sdk@2.5.19
 
 - feat: implement lazy database initialization with auto-creation support and update config loading template strategy
-  - @dyrected/core@2.5.19
+  - @dyrected/core@2.5.19 (`@dyrected/db-postgres`)
 
-- @dyrected/react@2.5.19
+- @dyrected/react@2.5.19 (`@dyrected/next`)
 
 - feat: implement lazy database initialization with auto-creation support and update config loading template strategy
   - @dyrected/admin@2.5.19
   - @dyrected/core@2.5.19
   - @dyrected/sdk@2.5.19
-  - @dyrected/vue@2.5.19
+  - @dyrected/vue@2.5.19 (`@dyrected/nuxt`)
 
-- @dyrected/admin@2.5.19
+- @dyrected/admin@2.5.19 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 
-## [2.5.18]
+## v2.5.18
 
 - Minor improvements
   - move Admin UI to @dyrected/react, add DyrectedMedia components, and introduce withDyrected Next.js config for dependency resolution.
@@ -1150,55 +1150,55 @@ All notable changes to the Dyrected platform are documented in this file.
   - remove restrictive vertical scroll constraints across block builder, edit page, and media components
   - add password reset flow with token handling and UI views
   - add time picker field and image cropping functionality to media picker
-  - enable image cropping, add clipboard file paste to media manager, and add support for date range pickers.
+  - enable image cropping, add clipboard file paste to media manager, and add support for date range pickers. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.17]
+## v2.5.17
 
-- feat: document hook isolation behaviors, add clear button to multi-select, and optimize JEXL condition/access evaluation with memoized compilation.
+- feat: document hook isolation behaviors, add clear button to multi-select, and optimize JEXL condition/access evaluation with memoized compilation. (`@dyrected/admin`, `@dyrected/core`)
 
-- @dyrected/sdk@2.5.17
+- @dyrected/sdk@2.5.17 (`@dyrected/react`)
 
 ---
 
-## [2.5.16]
+## v2.5.16
 
 - - feat: add generic typing to defineCollection and defineGlobal, introduce HookRequestContext, and enhance DynamicOptions interfaces.
   - feat: implement automatic document shape inference for collection and global definitions via field array analysis
   - feat: enhance rich text editor link management, add time support to date picker, and update radio field props
-  - feat: add table support to rich text editor, introduce datetime field type, and improve form engine type safety.
+  - feat: add table support to rich text editor, introduce datetime field type, and improve form engine type safety. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
-## [2.5.15]
+## v2.5.15
 
 - feat: implement recursive lifecycle hooks system with collection/field level execution and admin sandbox support
-  refactor: implement flexible grid-based form layout with radio field support and make selecet and multiselect filed searchable
+  refactor: implement flexible grid-based form layout with radio field support and make selecet and multiselect filed searchable (`@dyrected/admin`, `@dyrected/core`)
 
-- @dyrected/sdk@2.5.15
+- @dyrected/sdk@2.5.15 (`@dyrected/react`)
 
 ---
 
-## [2.5.14]
+## v2.5.14
 
-- Fix branding logo rendering by replacing the buggy comma operator with `getMediaUrl`. Resolve Nuxt module template and config-load path issues, and bundle the `qs` dependency inside the SDK to eliminate browser compatibility errors.
+- Fix branding logo rendering by replacing the buggy comma operator with `getMediaUrl`. Resolve Nuxt module template and config-load path issues, and bundle the `qs` dependency inside the SDK to eliminate browser compatibility errors. (`@dyrected/admin`, `@dyrected/nuxt`, `@dyrected/sdk`)
 
 - @dyrected/core@2.5.14
 
 ---
 
-## [2.5.13]
+## v2.5.13
 
 - - Implement secure password field support (hashing, validation, and UI input form handling) and a password update endpoint.
   - Implement configuration cache invalidation for hot-reloading.
-  - Add collection schema support for labels, simplify server handler config resolution, and add a Nuxt dynamic pages setup guide.
+  - Add collection schema support for labels, simplify server handler config resolution, and add a Nuxt dynamic pages setup guide. (`@dyrected/admin`, `dyrected`, `@dyrected/core`, `@dyrected/nuxt`)
 
-- @dyrected/sdk@2.5.13
+- @dyrected/sdk@2.5.13 (`@dyrected/react`)
 
 ---
 
-## [2.5.12]
+## v2.5.12
 
 - admin
   • Introduced character‑count UI for fields with maxLength.
@@ -1206,25 +1206,25 @@ All notable changes to the Dyrected platform are documented in this file.
 
   nuxt
   • Fixed SSR data‑fetching and dynamic‑route rendering bugs.
-  • Added hot‑reloading support for configuration files.
+  • Added hot‑reloading support for configuration files. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/nuxt`)
 
-- @dyrected/sdk@2.5.12
+- @dyrected/sdk@2.5.12 (`@dyrected/react`)
 
 ---
 
-## [2.5.11]
+## v2.5.11
 
 - fix: implement interactive form validation summary and enhance field handling logic for relationships and arrays
   - @dyrected/core@2.5.11
-  - @dyrected/sdk@2.5.11
+  - @dyrected/sdk@2.5.11 (`@dyrected/admin`)
 
 - @dyrected/core@2.5.11
 
-- @dyrected/sdk@2.5.11
+- @dyrected/sdk@2.5.11 (`dyrected`, `@dyrected/react`)
 
 ---
 
-## [2.5.10]
+## v2.5.10
 
 - **`@dyrected/admin` — Patch**
   - **Media library**: Replaced the narrow Sheet sidebar with a spacious Dialog (60/40 split-view) for a WordPress-style media editing experience.
@@ -1242,27 +1242,27 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Default Query Depth**: Increased default API population depth for `findOne` and `global` endpoints to `10` to guarantee deep/full resolution of relationships and media by default.
   - **URL Field Population**: Enhanced the `PopulationService` to dynamically resolve internal `url` fields. It now populates the target document, recursively applies defaults, and rewrites the relative URL to use the target's slug (or falls back to ID).
   - **Nested Document Defaults**: The `PopulationService` now automatically applies default values to related documents during relationship population.
-  - **Recursion Depth Bug Fix**: Fixed an issue in `findOne` and `global` controllers where population starting depth was initialized incorrectly, which blocked relationship populating when depth limit was low.
+  - **Recursion Depth Bug Fix**: Fixed an issue in `findOne` and `global` controllers where population starting depth was initialized incorrectly, which blocked relationship populating when depth limit was low. (`@dyrected/admin`, `@dyrected/core`)
 
-- @dyrected/sdk@2.5.10
-
----
-
-## [2.5.9]
-
-- refactor: normalize logical operators to uppercase in parser and media-picker query
-
-- @dyrected/sdk@2.5.9
+- @dyrected/sdk@2.5.10 (`@dyrected/react`)
 
 ---
 
-## [2.5.8]
+## v2.5.9
+
+- refactor: normalize logical operators to uppercase in parser and media-picker query (`@dyrected/admin`, `@dyrected/core`)
+
+- @dyrected/sdk@2.5.9 (`@dyrected/react`)
+
+---
+
+## v2.5.8
 
 - refactor: type MediaPicker preview function with Media interface
 
 ---
 
-## [2.5.7]
+## v2.5.7
 
 - - **URL Field Evolution**: Implemented a modern dual-mode URL Field component featuring a direct toggle between external links and a dynamic internal page/document selector (complete with direct database slug binding and custom label fields).
   - **Global Settings Configuration**: Added native Global Configuration support, with robust schema validation, configuration normalization, hydration mechanisms, and full type safety across standard field components.
@@ -1274,7 +1274,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.5.6]
+## v2.5.6
 
 - # Dyrected CMS 10 Bugs Completed Resolution
 
@@ -1358,78 +1358,258 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.5.5]
+## v2.5.5
 
 - Normalize version to 2.5.5 to align all `@dyrected/*` packages in a fixed release group. All packages now move together on every future release.
 
-- Refactor source into `commands/` and `utils/` modules for maintainability.
+- Refactor source into `commands/` and `utils/` modules for maintainability. (`dyrected`)
 
-- Add MySQL adapter as a database option in `init`.
+- Add MySQL adapter as a database option in `init`. (`dyrected`)
 
-- Auto-detect framework from `package.json` and pre-select it in the prompt.
+- Auto-detect framework from `package.json` and pre-select it in the prompt. (`dyrected`)
 
-- Detect Bun lockfile in package manager detection.
+- Detect Bun lockfile in package manager detection. (`dyrected`)
 
-- **Next.js**: detect `src/` directory and App Router vs Pages Router; write files to the correct location.
+- **Next.js**: detect `src/` directory and App Router vs Pages Router; write files to the correct location. (`dyrected`)
 
-- **Next.js**: generate `instrumentation.ts` to log admin and API URLs on server start.
+- **Next.js**: generate `instrumentation.ts` to log admin and API URLs on server start. (`dyrected`)
 
-- **Nuxt**: detect `app/` srcDir and write admin page to the correct location.
+- **Nuxt**: detect `app/` srcDir and write admin page to the correct location. (`dyrected`)
 
-- **Nuxt**: auto-patch `nuxt.config.ts` to register `@dyrected/nuxt` with `adminPath`.
+- **Nuxt**: auto-patch `nuxt.config.ts` to register `@dyrected/nuxt` with `adminPath`. (`dyrected`)
 
-- Auto-generate TypeScript types after a successful `sync:schema` (`--skip-types` to opt out).
+- Auto-generate TypeScript types after a successful `sync:schema` (`--skip-types` to opt out). (`dyrected`)
 
-- Add `--help` examples to all commands.
+- Add `--help` examples to all commands. (`dyrected`)
 
-- Add `__admins` collection to generated config by default so every new project has dashboard auth.
+- Add `__admins` collection to generated config by default so every new project has dashboard auth. (`dyrected`)
 
-- Normalize version to 2.5.5 to align with the rest of the monorepo.
+- Normalize version to 2.5.5 to align with the rest of the monorepo. (`dyrected`, `@dyrected/nuxt`)
 
 - Normalize package version to 2.5.5 to align with the rest of the `@dyrected/*` monorepo.
   Versions 3.x–5.x were published in error due to incorrect major version bumps in the
   changeset workflow. Those versions have been deprecated on npm. All packages now share a
-  fixed version group and will move together on every future release.
+  fixed version group and will move together on every future release. (`@dyrected/db-mysql`)
 
-- Add `adminPath` module option to specify where the admin page is mounted.
+- Add `adminPath` module option to specify where the admin page is mounted. (`@dyrected/nuxt`)
 
-- Log admin and API URLs to the console when the Nitro dev server starts (via `listen` hook).
+- Log admin and API URLs to the console when the Nitro dev server starts (via `listen` hook). (`@dyrected/nuxt`)
+
+- Updated the CLI DX (`@dyrected/vue`)
+
+---
+
+## v2.5.4
+
+- improve Nuxt server request URL handling (`@dyrected/vue`)
+
+---
+
+## v2.5.3
+
+- Updated the CLI DX (`@dyrected/admin`)
+
+- fix react dependency issues (`@dyrected/vue`)
+
+---
+
+## v2.5.2
+
+- improve Nuxt server request URL handling (`@dyrected/admin`)
+
+- Updated the CLI DX (`@dyrected/core`)
+
+---
+
+## v2.5.1
+
+- Fixed mising CSS and added dy- prefix to all classes in components (`@dyrected/admin`)
+
+- improve Nuxt server request URL handling (`@dyrected/core`)
+
+---
+
+## v2.5.0
+
+- This release introduces a suite of new features and architectural improvements:
+  - **Admin UI Enhancements**:
+    - Clickable primary column in collection lists for faster navigation.
+    - New **Tabs Layout** and **Row Layout** for better form organization.
+    - Integrated **Icon Field** with a specialized picker.
+    - Support for **Join Fields** to represent many-to-one relationships directly in forms.
+    - **Inline Page Editing** mode via the Live Preview pane.
+  - **Architecture**:
+    - Extraction of Vue-specific logic into the new `@dyrected/vue` package.
+    - Synchronized field types and configuration across the SDK and Admin.
+  - **Integrations**:
+    - Improved Nuxt and Next.js support with updated composables and components.
+  - **Bug Fixes**:
+    - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
+    - Fixed `@dyrected/vue` package exports for modern bundler compatibility. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/vue`)
+
+---
+
+## v2.5.2 (published as 5.0.2 in error)
+
+- Updated the CLI DX (`@dyrected/db-mysql`)
+
+---
+
+## v2.5.1 (published as 5.0.1 in error)
+
+- Improve Nuxt server request URL handling (`@dyrected/db-mysql`)
+
+---
+
+## v2.5.0 (published as 5.0.0 in error)
+
+- Admin UI enhancements: clickable primary column, Tabs Layout, Row Layout, Icon Field, Join Fields, Inline Page Editing. (`@dyrected/db-mysql`)
+
+- Architecture: extraction of Vue-specific logic into `@dyrected/vue`, synchronized field types across SDK and Admin. (`@dyrected/db-mysql`)
+
+- Integrations: improved Nuxt and Next.js support. (`@dyrected/db-mysql`)
+
+- Bug fixes: resolved build failures related to shadowing type declarations in `@dyrected/core`, fixed `@dyrected/vue` package exports. (`@dyrected/db-mysql`)
+
+---
+
+## v2.4.6
+
+- Updated the CLI DX (`@dyrected/sdk`)
+
+---
+
+## v2.4.5
+
+- improve Nuxt server request URL handling (`@dyrected/sdk`)
+
+---
+
+## v2.4.4
+
+- fix react dependency issues (`@dyrected/sdk`)
+
+---
+
+## v2.4.3
+
+- change the way we import qs (`@dyrected/sdk`)
+
+---
+
+## v2.4.2
+
+- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK (`@dyrected/admin`)
+
+- This release introduces a suite of new features and architectural improvements:
+  - **Admin UI Enhancements**:
+    - Clickable primary column in collection lists for faster navigation.
+    - New **Tabs Layout** and **Row Layout** for better form organization.
+    - Integrated **Icon Field** with a specialized picker.
+    - Support for **Join Fields** to represent many-to-one relationships directly in forms.
+    - **Inline Page Editing** mode via the Live Preview pane.
+  - **Architecture**:
+    - Extraction of Vue-specific logic into the new `@dyrected/vue` package.
+    - Synchronized field types and configuration across the SDK and Admin.
+  - **Integrations**:
+    - Improved Nuxt and Next.js support with updated composables and components.
+  - **Bug Fixes**:
+    - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
+    - Fixed `@dyrected/vue` package exports for modern bundler compatibility. (`@dyrected/sdk`)
+
+---
+
+## v2.4.1
+
+- fix: include dist directory in npm package (`@dyrected/admin`)
+
+- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK (`@dyrected/core`, `@dyrected/sdk`)
+
+---
+
+## v2.4.0
+
+- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
+
+---
+
+## v2.4.1 (published as 4.0.2 in error)
+
+- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK (`@dyrected/db-mysql`)
+
+---
+
+## v2.4.0 (published as 4.0.1 in error)
+
+- fix: include dist directory in npm package (`@dyrected/db-mysql`)
+
+---
+
+## v2.4.0 (published as 4.0.0 in error)
+
+- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing. (`@dyrected/db-mysql`)
+
+---
+
+## v2.3.9
+
+- Updated the CLI DX (`@dyrected/next`, `@dyrected/nuxt`)
+
+---
+
+## v2.3.8
+
+- improve Nuxt server request URL handling (`@dyrected/next`, `@dyrected/nuxt`)
+
+---
+
+## v2.3.7
+
+- fix react dependency issues (`@dyrected/next`, `@dyrected/nuxt`)
+
+- Updated the CLI DX (`@dyrected/react`)
+
+---
+
+## v2.3.6
+
+- improve Nuxt server request URL handling (`@dyrected/react`)
+
+---
+
+## v2.3.5
 
 - Updated the CLI DX
 
+- Fixed mising CSS and added dy- prefix to all classes in components (`@dyrected/nuxt`)
+
+- fix react dependency issues (`@dyrected/react`)
+
 ---
 
-## [2.5.4]
+## v2.3.4
 
 - improve Nuxt server request URL handling
 
----
-
-## [2.5.3]
-
-- Updated the CLI DX
-
-- fix react dependency issues
-
----
-
-## [2.5.2]
-
-- improve Nuxt server request URL handling
-
-- Updated the CLI DX
-
----
-
-## [2.5.1]
-
-- Fixed mising CSS and added dy- prefix to all classes in components
-
-- improve Nuxt server request URL handling
+- This release introduces a suite of new features and architectural improvements:
+  - **Admin UI Enhancements**:
+    - Clickable primary column in collection lists for faster navigation.
+    - New **Tabs Layout** and **Row Layout** for better form organization.
+    - Integrated **Icon Field** with a specialized picker.
+    - Support for **Join Fields** to represent many-to-one relationships directly in forms.
+    - **Inline Page Editing** mode via the Live Preview pane.
+  - **Architecture**:
+    - Extraction of Vue-specific logic into the new `@dyrected/vue` package.
+    - Synchronized field types and configuration across the SDK and Admin.
+  - **Integrations**:
+    - Improved Nuxt and Next.js support with updated composables and components.
+  - **Bug Fixes**:
+    - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
+    - Fixed `@dyrected/vue` package exports for modern bundler compatibility. (`@dyrected/next`, `@dyrected/nuxt`)
 
 ---
 
-## [2.5.0]
+## v2.3.3
 
 - This release introduces a suite of new features and architectural improvements:
   - **Admin UI Enhancements**:
@@ -1447,203 +1627,23 @@ All notable changes to the Dyrected platform are documented in this file.
     - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
     - Fixed `@dyrected/vue` package exports for modern bundler compatibility.
 
----
-
-## [2.5.2 (published as 5.0.2 in error)]
-
-- Updated the CLI DX
+- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK (`@dyrected/next`, `@dyrected/nuxt`)
 
 ---
 
-## [2.5.1 (published as 5.0.1 in error)]
-
-- Improve Nuxt server request URL handling
-
----
-
-## [2.5.0 (published as 5.0.0 in error)]
-
-- Admin UI enhancements: clickable primary column, Tabs Layout, Row Layout, Icon Field, Join Fields, Inline Page Editing.
-
-- Architecture: extraction of Vue-specific logic into `@dyrected/vue`, synchronized field types across SDK and Admin.
-
-- Integrations: improved Nuxt and Next.js support.
-
-- Bug fixes: resolved build failures related to shadowing type declarations in `@dyrected/core`, fixed `@dyrected/vue` package exports.
-
----
-
-## [2.4.6]
-
-- Updated the CLI DX
-
----
-
-## [2.4.5]
-
-- improve Nuxt server request URL handling
-
----
-
-## [2.4.4]
-
-- fix react dependency issues
-
----
-
-## [2.4.3]
-
-- change the way we import qs
-
----
-
-## [2.4.2]
-
-- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
-
-- This release introduces a suite of new features and architectural improvements:
-  - **Admin UI Enhancements**:
-    - Clickable primary column in collection lists for faster navigation.
-    - New **Tabs Layout** and **Row Layout** for better form organization.
-    - Integrated **Icon Field** with a specialized picker.
-    - Support for **Join Fields** to represent many-to-one relationships directly in forms.
-    - **Inline Page Editing** mode via the Live Preview pane.
-  - **Architecture**:
-    - Extraction of Vue-specific logic into the new `@dyrected/vue` package.
-    - Synchronized field types and configuration across the SDK and Admin.
-  - **Integrations**:
-    - Improved Nuxt and Next.js support with updated composables and components.
-  - **Bug Fixes**:
-    - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
-    - Fixed `@dyrected/vue` package exports for modern bundler compatibility.
-
----
-
-## [2.4.1]
-
-- fix: include dist directory in npm package
+## v2.3.2
 
 - fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
 
 ---
 
-## [2.4.0]
+## v2.3.1
 
-- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing.
-
----
-
-## [2.4.1 (published as 4.0.2 in error)]
-
-- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
+- fix: include dist directory in npm package (`dyrected`)
 
 ---
 
-## [2.4.0 (published as 4.0.1 in error)]
-
-- fix: include dist directory in npm package
-
----
-
-## [2.4.0 (published as 4.0.0 in error)]
-
-- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing.
-
----
-
-## [2.3.9]
-
-- Updated the CLI DX
-
----
-
-## [2.3.8]
-
-- improve Nuxt server request URL handling
-
----
-
-## [2.3.7]
-
-- fix react dependency issues
-
-- Updated the CLI DX
-
----
-
-## [2.3.6]
-
-- improve Nuxt server request URL handling
-
----
-
-## [2.3.5]
-
-- Updated the CLI DX
-
-- Fixed mising CSS and added dy- prefix to all classes in components
-
-- fix react dependency issues
-
----
-
-## [2.3.4]
-
-- improve Nuxt server request URL handling
-
-- This release introduces a suite of new features and architectural improvements:
-  - **Admin UI Enhancements**:
-    - Clickable primary column in collection lists for faster navigation.
-    - New **Tabs Layout** and **Row Layout** for better form organization.
-    - Integrated **Icon Field** with a specialized picker.
-    - Support for **Join Fields** to represent many-to-one relationships directly in forms.
-    - **Inline Page Editing** mode via the Live Preview pane.
-  - **Architecture**:
-    - Extraction of Vue-specific logic into the new `@dyrected/vue` package.
-    - Synchronized field types and configuration across the SDK and Admin.
-  - **Integrations**:
-    - Improved Nuxt and Next.js support with updated composables and components.
-  - **Bug Fixes**:
-    - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
-    - Fixed `@dyrected/vue` package exports for modern bundler compatibility.
-
----
-
-## [2.3.3]
-
-- This release introduces a suite of new features and architectural improvements:
-  - **Admin UI Enhancements**:
-    - Clickable primary column in collection lists for faster navigation.
-    - New **Tabs Layout** and **Row Layout** for better form organization.
-    - Integrated **Icon Field** with a specialized picker.
-    - Support for **Join Fields** to represent many-to-one relationships directly in forms.
-    - **Inline Page Editing** mode via the Live Preview pane.
-  - **Architecture**:
-    - Extraction of Vue-specific logic into the new `@dyrected/vue` package.
-    - Synchronized field types and configuration across the SDK and Admin.
-  - **Integrations**:
-    - Improved Nuxt and Next.js support with updated composables and components.
-  - **Bug Fixes**:
-    - Resolved build failures related to shadowing type declarations in `@dyrected/core`.
-    - Fixed `@dyrected/vue` package exports for modern bundler compatibility.
-
-- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
-
----
-
-## [2.3.2]
-
-- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
-
----
-
-## [2.3.1]
-
-- fix: include dist directory in npm package
-
----
-
-## [2.3.0]
+## v2.3.0
 
 - Standardize database infrastructure and implement field promotion.
   - **Field Promotion**: Added 'promoted' option to Collection fields to extract JSON data into native SQL columns for indexing and performance.
@@ -1654,18 +1654,18 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [2.3.0 (published as 3.0.0 in error)]
+## v2.3.0 (published as 3.0.0 in error)
 
 - Standardize database infrastructure and implement field promotion.
   - **Field Promotion**: Added `promoted` option to collection fields to extract JSON data into native SQL columns for indexing and performance.
   - **Lazy Migrations**: Added `renameTo` support for seamless field renames without breaking existing data.
   - **Auto-Seeding**: Standardized `initialData` seeding logic across all adapters.
   - **MySQL Adapter**: New robust MySQL adapter implementation.
-  - **Strict Filtering**: Improved query translation parity across all SQL-based adapters.
+  - **Strict Filtering**: Improved query translation parity across all SQL-based adapters. (`@dyrected/db-mysql`)
 
 ---
 
-## [2.1.0]
+## v2.1.0
 
 - ### @dyrected/core
   - **New Discovery Workflow**: Refined the AI setup prompt with a multi-step "Phase 0" discovery process to improve initial project scoping.
@@ -1675,11 +1675,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Architecture Documentation**: Added source-level documentation explaining the use of raw SQL drivers (postgres.js/better-sqlite3) alongside Drizzle to support dynamic runtime schemas.
 
   ### @dyrected/admin
-  - **Internal Maintenance**: Synchronized internal documentation and field renderer context to support the latest core setup workflows.
+  - **Internal Maintenance**: Synchronized internal documentation and field renderer context to support the latest core setup workflows. (`@dyrected/core`)
 
 ---
 
-## [2.0.1]
+## v2.0.1
 
 - ### @dyrected/core
   - **New Discovery Workflow**: Refined the AI setup prompt with a multi-step "Phase 0" discovery process to improve initial project scoping.
@@ -1689,11 +1689,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Architecture Documentation**: Added source-level documentation explaining the use of raw SQL drivers (postgres.js/better-sqlite3) alongside Drizzle to support dynamic runtime schemas.
 
   ### @dyrected/admin
-  - **Internal Maintenance**: Synchronized internal documentation and field renderer context to support the latest core setup workflows.
+  - **Internal Maintenance**: Synchronized internal documentation and field renderer context to support the latest core setup workflows. (`@dyrected/admin`, `@dyrected/db-postgres`, `@dyrected/db-sqlite`)
 
 ---
 
-## [2.0.0]
+## v2.0.0
 
 - Updated all storage adapters to support `Uint8Array` buffers and file prefixing.
   - **Storage API Update**: The `buffer` parameter in `StorageAdapter.upload` and `resolve` now expects a `Uint8Array` instead of a Node.js `Buffer`. This ensures better compatibility across different JavaScript environments.
@@ -1702,56 +1702,56 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [1.0.10]
+## v1.0.10
+
+- bump package versions and update export conditions for admin package (`@dyrected/nuxt`)
+
+---
+
+## v1.0.9
 
 - bump package versions and update export conditions for admin package
 
 ---
 
-## [1.0.9]
+## v1.0.8
 
-- bump package versions and update export conditions for admin package
-
----
-
-## [1.0.8]
-
-- bump package versions and update export conditions for admin package
+- bump package versions and update export conditions for admin package (`dyrected`)
 
 - ### Summary of Changes
-  - **AI Setup Prompt**: Updated `packages/core/src/utils/setup-prompt.ts` to generate configuration code using class-based instantiation. This ensures that AI assistants helping with project setup will provide the preferred 1.0.x syntax.
+  - **AI Setup Prompt**: Updated `packages/core/src/utils/setup-prompt.ts` to generate configuration code using class-based instantiation. This ensures that AI assistants helping with project setup will provide the preferred 1.0.x syntax. (`@dyrected/core`)
 
-- fix: use defineEventHandler and upgrade h3 to resolve deprecation warnings in Nuxt module
+- fix: use defineEventHandler and upgrade h3 to resolve deprecation warnings in Nuxt module (`@dyrected/nuxt`)
 
 ---
 
-## [1.0.7]
+## v1.0.7
 
 - Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt.
 
 ---
 
-## [1.0.6]
+## v1.0.6
 
-- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt.
+- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt. (`@dyrected/admin`)
 
 - Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture.
 
-- bump package versions and update export conditions for admin package
+- bump package versions and update export conditions for admin package (`@dyrected/react`)
 
 ---
 
-## [1.0.5]
+## v1.0.5
 
-- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture.
+- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture. (`@dyrected/admin`)
 
-- Standardize framework integrations for Next.js and Nuxt. Fix CLI generation for Nuxt admin pages to use zero-import architecture and framework-aware env var prefixes.
+- Standardize framework integrations for Next.js and Nuxt. Fix CLI generation for Nuxt admin pages to use zero-import architecture and framework-aware env var prefixes. (`dyrected`, `@dyrected/core`)
 
-- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt.
+- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt. (`@dyrected/react`, `@dyrected/sdk`)
 
 ---
 
-## [1.0.4]
+## v1.0.4
 
 - Standardized environment variable handling across Next.js and Nuxt (prioritizing `NEXT_PUBLIC_` and `NUXT_PUBLIC_` prefixes).
   Improved CLI initialization flow by saving AI setup prompts to `dyrected-ai-prompt.md` and refining the framework-specific setup instructions.
@@ -1759,11 +1759,11 @@ All notable changes to the Dyrected platform are documented in this file.
   Added a drop-in `DyrectedAdmin` component for Next.js.
   Updated documentation with clearer self-hosted and cloud integration steps.
 
-- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture.
+- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture. (`@dyrected/react`, `@dyrected/sdk`)
 
 ---
 
-## [1.0.3]
+## v1.0.3
 
 - Standardized environment variable handling across Next.js and Nuxt integrations.
   - CLI now generates .env templates with framework-specific prefixes (NEXT*PUBLIC* / NUXT*PUBLIC*).
@@ -1773,13 +1773,13 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [1.0.1]
+## v1.0.1
 
 - Initial public release of the Dyrected CMS ecosystem.
 
 ---
 
-## [1.0.0]
+## v1.0.0
 
 - Initial major release of the Dyrected CMS ecosystem. This release establishes the core monorepo architecture, featuring a flexible CMS engine, a premium React-based Admin UI with warm light aesthetics, and native Next.js/Nuxt integrations. Key highlights include Jexl-based RBAC, a specialized media library with S3/Cloudinary support, live preview, automated audit trails, and a separated auth model for enhanced security.
 
@@ -1803,7 +1803,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
 ---
 
-## [0.3.1]
+## v0.3.1
 
 - - **Detail View Inline Editing (`editable: true`)**: Added interactive inline editing directly within the Detail View screen. Editors can toggle simple fields (such as internal notes, tags, status choices, quantities, and dates) into editable form inputs with single-click save and cancel controls, updating records immediately via the client SDK without navigating away from the detail screen.
   - **Dynamic Badge & Tag Color Palettes (`badgeColors`)**: Introduced the `badgeColors` resolution engine in Admin Detail Views. Supports 20+ named color palettes (`emerald`, `amber`, `rose`, `sky`, `indigo`, `purple`, `violet`, `zinc`, etc.), custom hex codes with automated background tints, raw Tailwind classes, and wildcard (`*`) fallback mappings.
@@ -1817,11 +1817,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - **Upload & Image Field Relationship Population (`depth >= 1`)**: Fixed `PopulationService` in `@dyrected/core` to populate `upload` and `image` field types (defaulting to the target upload collection or `media`) when queries specify `depth >= 1`. Added automatic bare-ID media resolution fallback to `<DyrectedMedia />` in `@dyrected/admin` so that media assets display immediately even if received as unpopulated IDs.
   - **Interactive Relationship Badge Links (`DetailRelationshipLink`)**: Relationship and author fields in Detail Views now render interactive linked badges featuring avatar images or initial icons, document titles, and direct navigation links to the target record. If received as an unpopulated ID string, the component automatically resolves the record title and avatar asynchronously.
   - **Tag and Array Badge Rendering**: Array fields, multiSelect lists, and JSON string arrays (such as `Tags: ["insights", "operations"]`) now automatically parse and render individual badge pills with support for `badgeColors` palettes, avoiding raw JSON string outputs.
-  - **Comprehensive Detail Reference & Type Definitions**: Added complete JSDoc annotations and automated contract generation in `@dyrected/knowledge` for all 9 Detail View helper functions (`displayField`, `displaySection`, `displayTabs`, `displayTab`, `displayGrid`, `displayRepeat`, `displayComputed`, `displayText`, `displayDivider`, `displayCustom`) and their configuration options.
+  - **Comprehensive Detail Reference & Type Definitions**: Added complete JSDoc annotations and automated contract generation in `@dyrected/knowledge` for all 9 Detail View helper functions (`displayField`, `displaySection`, `displayTabs`, `displayTab`, `displayGrid`, `displayRepeat`, `displayComputed`, `displayText`, `displayDivider`, `displayCustom`) and their configuration options. (`@dyrected/knowledge`)
 
 ---
 
-## [0.3.0]
+## v0.3.0
 
   - **Detail View System**:
     - Added read-only Detail View pages and configurable layout renderers for collections (`/collections/:slug/:id`) and globals (`/globals/:slug`).
@@ -1838,28 +1838,28 @@ All notable changes to the Dyrected platform are documented in this file.
 
   - **Knowledge & Documentation Runtime**:
     - Added runtime-aware documentation manifest generator in `@dyrected/knowledge`.
-    - Synchronized OpenAPI endpoints, recipes, and LLM reference indexes.
+    - Synchronized OpenAPI endpoints, recipes, and LLM reference indexes. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.16]
+## v0.2.16
 
 - - Added dark mode SVG logo asset and theme-aware fallback rendering in `admin-shell`
   - Migrated Nuxt example component config access to `useRuntimeConfig`
   - Transitioned default live preview mode to `postMessage` across prompt templates, skills, documentation, and recipes
   - Updated Dyrected configuration, environment integration, and content modeling rules for rich text and tabbed admin layouts
   - Modularized and consolidated prompt generation logic, AI rules, and shared rule templates
-  - @dyrected/core@2.7.0
+  - @dyrected/core@2.7.0 (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.15]
+## v0.2.15
 
-- Improve generated recipe metadata and route recipe links to the new common-patterns docs section.
+- Improve generated recipe metadata and route recipe links to the new common-patterns docs section. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.14]
+## v0.2.14
 
 - Point package-distributed documentation references at the canonical `/docs` tree
 
@@ -1867,7 +1867,7 @@ All notable changes to the Dyrected platform are documented in this file.
 
   For `@dyrected/core`, this updates JSDoc `@see` links so generated API references and editor tooling point at the current docs URLs instead of the removed `/new-docs` paths.
 
-  For `@dyrected/knowledge`, this refreshes generated references, prompt artifacts, LLM indexes, and skill outputs so published knowledge bundles link to the canonical docs paths and no longer depend on removed legacy recipe/reference pages.
+  For `@dyrected/knowledge`, this refreshes generated references, prompt artifacts, LLM indexes, and skill outputs so published knowledge bundles link to the canonical docs paths and no longer depend on removed legacy recipe/reference pages. (`@dyrected/knowledge`)
 
 - Add `definePublishingWorkflow` to map your own role names onto the publishing workflow
 
@@ -1880,11 +1880,11 @@ All notable changes to the Dyrected platform are documented in this file.
     editors: ["writer"],
     publishers: ["managing-editor", "admin"],
   });
-  ```
+  ``` (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.13]
+## v0.2.13
 
 - Admin: brand accent color, wired page metadata, and list export
 
@@ -1892,11 +1892,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - Wire `admin.meta.titleSuffix` into the browser tab title (it now reflects the current page and updates on navigation) and `admin.branding.favicon` into the page favicon. Both restore the host page's title/icon when the embedded admin unmounts.
   - Add an **Export Selected** bulk action on collection lists (export just the selected rows to CSV), and quote/escape CSV export values per RFC 4180 so values containing commas, quotes, or newlines no longer break columns.
 
-  **Breaking (shipped as patch):** removed the no-op `basename` prop from `AdminUIProps` and the `@dyrected/vue` / `@dyrected/nuxt` wrappers, and stopped the CLI from scaffolding it. The admin routes internally with a hash router, so the panel's location is determined by the route of the page you render it in. If your app passes `basename`, remove it — it had no effect.
+  **Breaking (shipped as patch):** removed the no-op `basename` prop from `AdminUIProps` and the `@dyrected/vue` / `@dyrected/nuxt` wrappers, and stopped the CLI from scaffolding it. The admin routes internally with a hash router, so the panel's location is determined by the route of the page you render it in. If your app passes `basename`, remove it — it had no effect. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.12]
+## v0.2.12
 
 - Improve dynamic select options, frontend rendering components, and field ergonomics.
 
@@ -1911,11 +1911,11 @@ All notable changes to the Dyrected platform are documented in this file.
   - **`defineTab` helper** groups a set of fields under a shared Admin tab label.
   - **Auth collections re-assert `email`/`password` integrity.** A developer-defined `email` field can no longer silently drop the injected `unique`/`required` constraints.
   - **Relationship read depth defaults to `1`** across the REST controllers, matching the SDK.
-  - Field type reference contracts now carry per-type descriptions, and the `checkbox`/`group`/`upload`/`radio-group` field docs pages were renamed to `boolean`/`object`/`image`/`radio` to match their helper names.
+  - Field type reference contracts now carry per-type descriptions, and the `checkbox`/`group`/`upload`/`radio-group` field docs pages were renamed to `boolean`/`object`/`image`/`radio` to match their helper names. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.11]
+## v0.2.11
 
 - Add type-safe field builder helpers and related updates.
 
@@ -1923,58 +1923,58 @@ All notable changes to the Dyrected platform are documented in this file.
   - Add configurable `features` and `headingLevels` to rich-text fields. The Admin rich-text editor now enables only the configured toolbar controls and editor capabilities (disabling a feature also removes its keyboard shortcut and paste handling).
   - Migrate documentation examples, the `dyrected init` scaffold, and the `@dyrected/knowledge` recipes and prompt templates to use the new `define*Field` helpers.
   - Rename the `JWT_SECRET` environment variable to `DYRECTED_JWT_SECRET` — update your `.env` accordingly.
-  - Filter unpublished documents out of public read responses.
+  - Filter unpublished documents out of public read responses. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.10]
+## v0.2.10
 
-- Document block variants and expand the generated field reference. Adds `Block`/`BlockVariant` guidance (presentation variants, switching behaviour, defaults, admin/preview) and generates the full field-type contract set — `TypedField`, `FieldBase`, every per-type field alias, the admin option types, and the dynamic-options and character/word-limit config types — into the knowledge reference.
+- Document block variants and expand the generated field reference. Adds `Block`/`BlockVariant` guidance (presentation variants, switching behaviour, defaults, admin/preview) and generates the full field-type contract set — `TypedField`, `FieldBase`, every per-type field alias, the admin option types, and the dynamic-options and character/word-limit config types — into the knowledge reference. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.9]
+## v0.2.9
 
 - AI knowledge for generating new Dyrected sites, not only migrating existing ones.
   - New content-modeling rules: greenfield site generation, content coherence, deterministic seed relationships, initial-data seeding mechanics (globals seed on any read; collections seed only on an unfiltered list read), the icon field, config authoring (keep block/field arrays inline to preserve literal types; module splitting), and adapter/deployment-target selection (file SQLite and local storage are not serverless-safe).
   - New frontend-integration rules: link/URL field resolution, site chrome via globals with safe fallbacks, and live preview / click-to-edit.
   - New `generate-site.md` template: a staged, plain-language, greenfield counterpart to `generate-cms.md`, wired through the generator and exported as `GENERATE_SITE_PROMPT`.
-  - Every new rule section links to the relevant docs page, and each rule instructs the assistant technically while forbidding technical language in replies to the user.
+  - Every new rule section links to the relevant docs page, and each rule instructs the assistant technically while forbidding technical language in replies to the user. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.8]
+## v0.2.8
 
-- Add Page Routing Rule for frontend integration guidelines in AI Rules template.
+- Add Page Routing Rule for frontend integration guidelines in AI Rules template. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.7]
+## v0.2.7
 
 - Update AI templates, generated rules, and re-compile auto-generated markdown documentation files across apps and specs.
-  - @dyrected/core@2.5.49
+  - @dyrected/core@2.5.49 (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.6]
+## v0.2.6
 
-- Modularize content-modeling and frontend-integration rules into distinct shared source files and update the setup prompts.
-
----
-
-## [0.2.5]
-
-- Add llms.txt index URL to generate-cms prompt so the AI fetches the full documentation index before navigating individual pages
+- Modularize content-modeling and frontend-integration rules into distinct shared source files and update the setup prompts. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.4]
+## v0.2.5
 
-- Expose the generated CMS setup prompt as `GENERATE_CMS_PROMPT`.
+- Add llms.txt index URL to generate-cms prompt so the AI fetches the full documentation index before navigating individual pages (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.3]
+## v0.2.4
+
+- Expose the generated CMS setup prompt as `GENERATE_CMS_PROMPT`. (`@dyrected/knowledge`)
+
+---
+
+## v0.2.3
 
 - feat(admin): fix admin panel type safety, lint warnings, and external auth flow integration
 
@@ -2008,27 +2008,27 @@ All notable changes to the Dyrected platform are documented in this file.
        - Extracted provider states into a centralized context to decouple core workspace bindings.
   3. Documentation & Schema Sync
      - Updated MDX docs (`apps/docs/content/docs/*`) to reflect database, storage, and field-rendering layouts.
-     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters.
+     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.2]
+## v0.2.2
 
-- fix docs and global seeding
+- fix docs and global seeding (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.1]
+## v0.2.1
 
 - feat: add customizable field widths to collection edit layouts and unify list page view settings
   - Added customizable field widths (25%, 33%, 50%, 66%, 75%, 100%) to edit forms, enabling side-by-side field positioning.
   - Expanded the layout preferences API and SDK client to handle generic LayoutItem objects (`Array<{ name: string; width?: string }>`).
   - Consolidated the list view mode selector and column configure popovers into a unified "View Settings" panel.
-  - Enabled column visibility toggles (checklists) directly inside the new unified view settings popover, syncing visible columns with the data table.
+  - Enabled column visibility toggles (checklists) directly inside the new unified view settings popover, syncing visible columns with the data table. (`@dyrected/knowledge`)
 
 ---
 
-## [0.2.0]
+## v0.2.0
 
 - @dyrected/knowledge — minor
 
@@ -2056,17 +2056,17 @@ All notable changes to the Dyrected platform are documented in this file.
 
   skills/dyrected — patch
 
-  Restore full SKILL.md with schema migration procedure, access-control principles, intent-to-pattern table, and generated field/recipe inventories.
+  Restore full SKILL.md with schema migration procedure, access-control principles, intent-to-pattern table, and generated field/recipe inventories. (`@dyrected/knowledge`)
 
 ---
 
-## [0.1.17]
+## v0.1.17
 
-- feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks
+- feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks (`@dyrected/docs`)
 
 ---
 
-## [0.1.16]
+## v0.1.16
 
 - feat(admin): fix admin panel type safety, lint warnings, and external auth flow integration
 
@@ -2100,27 +2100,27 @@ All notable changes to the Dyrected platform are documented in this file.
        - Extracted provider states into a centralized context to decouple core workspace bindings.
   3. Documentation & Schema Sync
      - Updated MDX docs (`apps/docs/content/docs/*`) to reflect database, storage, and field-rendering layouts.
-     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters.
+     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters. (`@dyrected/docs`)
 
 ---
 
-## [0.1.15]
+## v0.1.15
 
-- fix docs and global seeding
+- fix docs and global seeding (`@dyrected/docs`)
 
 ---
 
-## [0.1.14]
+## v0.1.14
 
 - feat: add customizable field widths to collection edit layouts and unify list page view settings
   - Added customizable field widths (25%, 33%, 50%, 66%, 75%, 100%) to edit forms, enabling side-by-side field positioning.
   - Expanded the layout preferences API and SDK client to handle generic LayoutItem objects (`Array<{ name: string; width?: string }>`).
   - Consolidated the list view mode selector and column configure popovers into a unified "View Settings" panel.
-  - Enabled column visibility toggles (checklists) directly inside the new unified view settings popover, syncing visible columns with the data table.
+  - Enabled column visibility toggles (checklists) directly inside the new unified view settings popover, syncing visible columns with the data table. (`@dyrected/docs`)
 
 ---
 
-## [0.1.13]
+## v0.1.13
 
 - @dyrected/knowledge — minor
 
@@ -2148,17 +2148,17 @@ All notable changes to the Dyrected platform are documented in this file.
 
   skills/dyrected — patch
 
-  Restore full SKILL.md with schema migration procedure, access-control principles, intent-to-pattern table, and generated field/recipe inventories.
+  Restore full SKILL.md with schema migration procedure, access-control principles, intent-to-pattern table, and generated field/recipe inventories. (`@dyrected/docs`)
 
 ---
 
-## [0.1.12]
+## v0.1.12
 
-- feat: add workflow reference generation scripts, improve admin documentation, and implement dashboard testing utilities
+- feat: add workflow reference generation scripts, improve admin documentation, and implement dashboard testing utilities (`@dyrected/docs`)
 
 ---
 
-## [0.1.11]
+## v0.1.11
 
 - ### ✨ Features & Refactors
   - **Admin UI Customization**: Implemented the Admin UI component slot injection system along with Vue bridging support, allowing developers to inject custom components natively into the dashboard and lists.
@@ -2168,11 +2168,11 @@ All notable changes to the Dyrected platform are documented in this file.
   ### 📚 Documentation
   - **Structural Changes**: Migrated feature documentation into dedicated guides.
   - **Cloud Rebrand**: Updated app dashboard documentation and references to point to the new `cloud.dyrected.com` domain.
-  - **General Polish**: Expanded and updated documentation across multiple files (including fixing the YAML parser bugs in the new markdown format).
+  - **General Polish**: Expanded and updated documentation across multiple files (including fixing the YAML parser bugs in the new markdown format). (`@dyrected/docs`)
 
 ---
 
-## [0.1.10]
+## v0.1.10
 
 - **Add universal sort parsing, admin CSS isolation, initial token support, and updated branding theme**
   - Added universal sort parsing in `@dyrected/core`:
@@ -2202,23 +2202,23 @@ All notable changes to the Dyrected platform are documented in this file.
   - Updated docs UI:
     - Docs layout/component structure refactors
     - Global docs styling update
-    - Lighter lime background styling
+    - Lighter lime background styling (`@dyrected/docs`)
 
 ---
 
-## [0.1.9]
+## v0.1.9
 
-- feat: add custom field component support, field-level error boundaries, and fix React instance mismatch in Vue bridge
-
----
-
-## [0.1.8]
-
-- refactor: type MediaPicker preview function with Media interface
+- feat: add custom field component support, field-level error boundaries, and fix React instance mismatch in Vue bridge (`@dyrected/docs`)
 
 ---
 
-## [0.1.7]
+## v0.1.8
+
+- refactor: type MediaPicker preview function with Media interface (`@dyrected/docs`)
+
+---
+
+## v0.1.7
 
 - - **URL Field Evolution**: Implemented a modern dual-mode URL Field component featuring a direct toggle between external links and a dynamic internal page/document selector (complete with direct database slug binding and custom label fields).
   - **Global Settings Configuration**: Added native Global Configuration support, with robust schema validation, configuration normalization, hydration mechanisms, and full type safety across standard field components.
@@ -2226,11 +2226,11 @@ All notable changes to the Dyrected platform are documented in this file.
     - Re-architected the Block Builder with interactive, collapsible block layout items, custom drag-and-drop sort handlers, and automatic field-value summary crawling for collapsed block previews.
     - Replaced the simple dropdown block selector with a visual center-aligned **Block Library Dialog Modal** featuring soft-indicator layer graphics.
     - Standardized external save triggers (header Save button & `⌘S` shortcut) using native HTML5 `form` attributes to bind seamlessly with the Hook Form submit engine.
-    - Enlarged block titles and integrated center-aligned dashed "Add Block" buttons directly under the block lists for optimized edit flow.
+    - Enlarged block titles and integrated center-aligned dashed "Add Block" buttons directly under the block lists for optimized edit flow. (`@dyrected/docs`)
 
 ---
 
-## [0.1.6]
+## v0.1.6
 
 - # Dyrected CMS 10 Bugs Completed Resolution
 
@@ -2310,44 +2310,44 @@ All notable changes to the Dyrected platform are documented in this file.
   pnpm test
   ```
 
-  - **Result:** **32/32 tests passed successfully!**
+  - **Result:** **32/32 tests passed successfully!** (`@dyrected/docs`)
 
 ---
 
-## [0.1.5]
+## v0.1.5
 
-- Updated the CLI DX
+- Updated the CLI DX (`@dyrected/docs`)
 
-- @dyrected/admin@2.5.51
+- @dyrected/admin@2.5.51 (`example-creator-next`)
 
-- @dyrected/core@2.5.51
+- @dyrected/core@2.5.51 (`example-creator-next`)
 
-- @dyrected/next@2.5.51
+- @dyrected/next@2.5.51 (`example-creator-next`)
 
-- @dyrected/react@2.5.51
+- @dyrected/react@2.5.51 (`example-creator-next`)
 
-- @dyrected/sdk@2.5.51
-
----
-
-## [0.1.4]
-
-- improve Nuxt server request URL handling
+- @dyrected/sdk@2.5.51 (`example-creator-next`)
 
 ---
 
-## [0.1.3]
+## v0.1.4
 
-- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
-
----
-
-## [0.1.2]
-
-- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt.
+- improve Nuxt server request URL handling (`@dyrected/docs`)
 
 ---
 
-## [0.1.1]
+## v0.1.3
 
-- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture.
+- fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK (`@dyrected/docs`)
+
+---
+
+## v0.1.2
+
+- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt. (`@dyrected/docs`)
+
+---
+
+## v0.1.1
+
+- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture. (`@dyrected/docs`)
