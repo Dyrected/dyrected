@@ -7060,6 +7060,92 @@ displaySection(
 
 ---
 
+## UX best practices for fast-scanning Detail Views
+
+A Detail View should feel like an operational dashboard tailored to the person managing the record. Follow these battle-tested UX patterns when designing layouts for your collections:
+
+### 1. The "First 2 Inches" rule (glanceable top summary)
+
+Avoid starting your layout with a heavy card or repeating the document title. Directly beneath the title bar, use a lightweight, borderless `displayGrid(4, [...])` to present high-signal indicators in the first screen:
+
+- **Primary Status Pill**: (`display: "badge"`)
+- **Secondary State**: Door check-in, fulfillment, stock level, or customer tier
+- **Primary Channels**: Clickable phone (`display: "phone"`), email (`display: "email"`), or reference ID (`display: "copyable"`)
+
+```ts
+// Tightly grouped 4-column summary bar across desktop; reflows smoothly on mobile
+displayGrid(4, [
+  displayField("status", {
+    display: "badge",
+    badgeColors: { active: "emerald", draft: "zinc", archived: "rose" },
+    label: "Status",
+  }),
+  displayField("priority", { display: "badge", label: "Priority" }),
+  displayField("phone", { display: "phone", label: "Phone" }),
+  displayField("email", { display: "email", label: "Email" }),
+]),
+```
+
+### 2. Avoid card fatigue with borderless grids and dividers
+
+Wrapping every small group of two or three fields in a `displaySection` card adds unnecessary container padding, borders, and header weight.
+
+- Use **`displayGrid` + `displayDivider({ spacing: "md" })`** for the continuous primary narrative (Contact, Key Details, Action Hub).
+- Reserve **`displaySection`** for complex, multi-field subsystems that benefit from distinct boundaries, status badges, or collapsible drawers (such as *Financial Breakdowns*, *Shipping Logistics*, or *Reviewer Notes*).
+
+### 3. Place hero action tools where the eye lands
+
+Treat the Detail View as an operational command center. If operators frequently perform tasks for a record (such as generating a QR pass, triggering a WhatsApp notification, or copying a client access URL), embed those tools directly into the flow using `displayCustomComponent()` rather than hiding them in menus.
+
+```ts
+// Hero actions placed directly below the top identity strip
+displayCustomComponent("AccessCardPreview"),
+displayCustomComponent("SendWhatsAppButton"),
+```
+
+### 4. Enable micro-interactions with `editable: true`
+
+High-velocity fields that change frequently—such as toggling an order status from "pending" to "received", modifying inventory counts, or appending quick delivery notes—should not require opening the full edit page. Set `editable: true` on these fields to allow instantaneous inline updates without navigation.
+
+```ts
+displayField("paymentStatus", {
+  display: "badge",
+  badgeColors: { received: "emerald", pending: "amber", waived: "purple" },
+  editable: true,
+}),
+displayField("deliveryNotes", {
+  editable: true,
+  hideIfEmpty: true,
+}),
+```
+
+### 5. Progressive conditional disclosure with `visible`
+
+Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+
+```ts
+// Hide the entire fulfillment card if the guest didn't place an order
+displaySection("Order & Fulfillment", [
+  // ... fields
+], {
+  span: 12,
+  icon: "Package",
+  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+}),
+```
+
+### 6. Mobile-first stacking priority
+
+Always order items in the `detail` array in the exact sequential priority an on-the-go operator needs when viewing the record on a phone:
+
+1. **Identity & Immediate Status**: Who is this and what is their current state?
+2. **Primary Action Tools**: Instant pass preview, dispatch trigger, scanner.
+3. **Operational Details**: Order quantities, payment breakdowns, fulfillment cards.
+4. **Context & Personal Notes**: Well-wishes, message notes, events schedule.
+5. **Timeline & Audit Metadata**: Submitted date, author ID, timestamps.
+
+---
+
 ## Complete Helper & Options Reference
 
 ### 1. `displayField(fieldName, options?)`

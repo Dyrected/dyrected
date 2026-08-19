@@ -1676,29 +1676,29 @@
     "id": "/editor-experience/detail-view#example-16",
     "page": "/editor-experience/detail-view",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/editor-experience/detail-view#example-17",
     "page": "/editor-experience/detail-view",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/editor-experience/detail-view#example-18",
     "page": "/editor-experience/detail-view",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/editor-experience/detail-view#example-19",
     "page": "/editor-experience/detail-view",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/editor-experience/detail-view#example-20",
@@ -2010,6 +2010,34 @@
   },
   {
     "id": "/editor-experience/detail-view#example-64",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-65",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-66",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-67",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-68",
     "page": "/editor-experience/detail-view",
     "language": "ts",
     "classification": "syntax-checked",
