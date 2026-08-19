@@ -26,16 +26,11 @@ export const Authors = defineCollection({
       ],
       { span: 12 },
     ),
-    displaySection(
-      "Author Activity & Analytics",
-      [
-        displayCustom("AuthorAnalytics", {
-          span: 12,
-          props: { timeframe: "30d" },
-        }),
-      ],
-      { span: 12 },
-    ),
+
+    displayCustom("AuthorAnalytics", {
+      span: 12,
+      props: { timeframe: "30d" },
+    }),
     displaySection(
       "Published Articles",
       [
