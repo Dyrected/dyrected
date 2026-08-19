@@ -184,22 +184,29 @@ export function DyrectedMedia({
     !media.startsWith("blob:") &&
     !media.startsWith("data:")
 
-  const targetColSlug = fieldDef?.relationTo || "media"
+  let targetColSlug = fieldDef?.relationTo;
+  if (!targetColSlug && dyContext?.schemas?.collections) {
+    const uploadCol = dyContext.schemas.collections.find((c: any) => c.upload || c.slug === "media" || c.slug === "uploads" || c.slug === "images");
+    if (uploadCol) {
+      targetColSlug = uploadCol.slug;
+    }
+  }
+  if (!targetColSlug) targetColSlug = "media";
 
   const { data: fetchedMedia } = useQuery({
     queryKey: ["media-item", targetColSlug, media],
     queryFn: async () => {
-      if (!isBareId || !dyContext?.client) return null
+      if (!isBareId || !dyContext?.client) return null;
       try {
-        const item = await dyContext.client.collection(targetColSlug).findOne(media)
-        return item
+        const item = await dyContext.client.collection(targetColSlug).findOne(media);
+        return item;
       } catch {
-        return null
+        return null;
       }
     },
     enabled: Boolean(isBareId && dyContext?.client),
     staleTime: 60_000,
-  })
+  });
 
   const currentMedia = isBareId && fetchedMedia ? fetchedMedia : media
   if (!currentMedia) return fallback ? <>{fallback}</> : null

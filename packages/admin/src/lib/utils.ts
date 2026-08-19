@@ -80,8 +80,19 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
   if (typeof val === "object" && val !== null) {
     if (val.url && typeof val.url === "string" && val.url.trim().length > 0) {
       const directUrl = val.url.trim();
-      if (directUrl.startsWith("http://") || directUrl.startsWith("https://") || directUrl.startsWith("/") || directUrl.startsWith("blob:") || directUrl.startsWith("data:")) {
+      // If it looks like a valid URL or path, just return it as is if it has a host, or if it starts with a known protocol/slash
+      if (
+        directUrl.startsWith("http://") ||
+        directUrl.startsWith("https://") ||
+        directUrl.startsWith("/") ||
+        directUrl.startsWith("blob:") ||
+        directUrl.startsWith("data:")
+      ) {
         return directUrl;
+      }
+      // If the url contains a dot and a slash (like a domain), or doesn't look like an internal relative path, return it
+      if (directUrl.includes("/") && directUrl.includes(".")) {
+        return directUrl.startsWith("//") ? directUrl : `https://${directUrl}`;
       }
       return prependBase(directUrl);
     }

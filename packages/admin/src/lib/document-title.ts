@@ -240,3 +240,44 @@ export function resolveDocumentTitle(args: {
 
   return String(entry.id ?? "");
 }
+
+const FALLBACK_AVATAR_FIELDS = [
+  "avatar",
+  "image",
+  "photo",
+  "profilePhoto",
+  "profilePicture",
+  "coverImage",
+  "thumbnail",
+  "logo",
+  "icon"
+] as const;
+
+export function resolveDocumentAvatar(args: {
+  entry: Record<string, unknown> | null | undefined;
+  collection: SchemaCollection | undefined;
+}): any {
+  const { entry, collection } = args;
+  if (!entry) return null;
+
+  // 1. Explicitly configured
+  const configured = (collection?.admin as any)?.useAsAvatar;
+  if (configured && entry[configured]) {
+    return entry[configured];
+  }
+
+  // 2. Look for the first 'upload' field in the schema
+  if (collection?.fields) {
+    const uploadField = collection.fields.find((f: any) => f.type === "upload" || f.type === "media");
+    if (uploadField?.name && entry[uploadField.name]) {
+      return entry[uploadField.name];
+    }
+  }
+
+  // 3. Fallback to common names
+  for (const field of FALLBACK_AVATAR_FIELDS) {
+    if (entry[field]) return entry[field];
+  }
+
+  return null;
+}

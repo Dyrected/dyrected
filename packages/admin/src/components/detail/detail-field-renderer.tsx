@@ -22,7 +22,7 @@ import {
   formatDate,
   getRatingSpec,
 } from "../../lib/format"
-import { resolveDocumentTitle } from "../../lib/document-title"
+import { resolveDocumentTitle, resolveDocumentAvatar } from "../../lib/document-title"
 import { cn } from "../../lib/utils"
 import { resolveBadgePresentation } from "../../lib/badge-colors"
 import { DyrectedMedia, isMediaValue } from "../media/dyrected-media"
@@ -59,7 +59,7 @@ function parseListItems(val: any): any[] {
       try {
         const parsed = JSON.parse(trimmed)
         if (Array.isArray(parsed)) return parsed
-      } catch {}
+      } catch { }
     }
     if (trimmed.includes(",") && !trimmed.startsWith("http") && !trimmed.startsWith("/")) {
       return trimmed.split(",").map((s) => s.trim()).filter(Boolean)
@@ -86,8 +86,7 @@ export function DetailRelationshipLink({
   const id = isObject ? (value.id || value._id) : String(value || "")
   const targetRelationTo =
     relationTo ||
-    (isObject ? value._meta?.collection : undefined) ||
-    (id.startsWith("author-") ? "authors" : undefined)
+    (isObject ? value._meta?.collection : undefined)
 
   const shouldFetch = !isObject && Boolean(client && id && targetRelationTo)
   const { data: fetchedDoc } = useQuery({
@@ -114,11 +113,11 @@ export function DetailRelationshipLink({
         collection: targetCollection,
         collections: schemas?.collections,
       }) || targetDoc.title || targetDoc.name || targetDoc.email || String(targetDoc.id || id)
-    : (id.startsWith("author-")
-        ? id.slice(7).split("-").map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ")
-        : (id.includes("-") ? id.split("-").map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ") : id))
+    : id
 
-  const avatarVal = targetDoc?.avatar || targetDoc?.image || targetDoc?.photo
+  const avatarVal = targetDoc
+    ? resolveDocumentAvatar({ entry: targetDoc, collection: targetCollection })
+    : null
   const targetUrl = targetRelationTo ? `/collections/${targetRelationTo}/${id}` : `/collections/${id}`
 
   return (
@@ -686,19 +685,10 @@ export function DetailFieldRenderer({
       )
     }
 
-    if (
-      fieldType === "relationship" ||
-      fieldDef?.relationTo ||
-      fieldName === "author" ||
-      fieldName === "authorId" ||
-      (typeof val === "string" && (val.startsWith("author-") || val.startsWith("user-")))
-    ) {
+    if (fieldType === "relationship" || fieldDef?.relationTo) {
       const relationTo =
         fieldDef?.relationTo ||
-        (typeof val === "object" ? val?._meta?.collection : undefined) ||
-        (fieldName === "author" || fieldName === "authorId" || (typeof val === "string" && val.startsWith("author-"))
-          ? "authors"
-          : (typeof val === "string" && val.startsWith("user-") ? "users" : undefined))
+        (typeof val === "object" ? val?._meta?.collection : undefined)
 
       if (Array.isArray(val)) {
         if (val.length === 0) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
