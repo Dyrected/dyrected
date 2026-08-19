@@ -78,12 +78,12 @@ export function DetailHeader({
             variant="link"
             size="sm"
             onClick={() => navigate(`/collections/${collection.slug}`)}
-            className="dy-h-8 dy-px-2 dy-gap-1 dy-text-muted-foreground hover:dy-text-foreground dy-shrink-0"
+            className="dy-h-8 dy-pr-2 dy-pl-0 dy-gap-1 dy-text-muted-foreground hover:dy-text-foreground dy-shrink-0"
           >
             <ChevronLeft className="dy-h-4 dy-w-4" />
             <span className="dy-truncate dy-max-w-[120px] sm:dy-max-w-none">{collectionLabel}</span>
           </Button>
-          <span className="dy-text-muted-foreground/60">/</span>
+          <span className="dy-text-muted-foreground/60"><ChevronRight className="dy-h-3 dy-w-3" /></span>
           <span className="dy-font-medium dy-text-foreground dy-truncate dy-max-w-[140px] xs:dy-max-w-[200px] sm:dy-max-w-md">
             {docTitle}
           </span>
