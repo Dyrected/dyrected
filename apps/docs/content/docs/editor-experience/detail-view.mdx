@@ -732,3 +732,836 @@ displayCustom("RevenueChart", {
 | `span` | `1–12` | `12` | Grid span in the 12-column layout. |
 | `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
 
+---
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`.
+
+{/* GENERATED:REFERENCE-DETAIL-VIEW:START */}
+## ComputedHandler
+
+Async or synchronous handler function calculating a computed metric.
+
+```ts
+export type ComputedHandler<TDoc = any> = (context: { doc: TDoc; user?: any; db?: any }) => any | Promise<any>;
+```
+
+
+## DetailComputed
+
+Computed KPI or metric card in a Detail View.
+
+```ts
+export interface DetailComputed<TDoc = any> {
+  /** Identifies this item as a computed value. */
+  type: "computed";
+  /** Unique computed identifier. */
+  id?: string;
+  /** Human-readable card label. */
+  label: string;
+  /** JEXL evaluation string. */
+  expression?: string;
+  /** Computed function handler. */
+  handler?: ComputedHandler<TDoc>;
+  /** Computed options. */
+  options?: DetailComputedOptions<TDoc>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a computed value. |
+| <code>id</code> (optional) | Unique computed identifier. |
+| <code>label</code> (required) | Human-readable card label. |
+| <code>expression</code> (optional) | JEXL evaluation string. |
+| <code>handler</code> (optional) | Computed function handler. |
+| <code>options</code> (optional) | Computed options. |
+
+
+## DetailComputedOptions
+
+Configuration options for a computed value card.
+
+```ts
+export interface DetailComputedOptions<TDoc = any> {
+  /** Unique identifier for the computed metric. */
+  id?: string;
+  /** JEXL expression string evaluated against `{ doc, user }`. */
+  expression?: string;
+  /** Async or sync function receiving `{ doc, user, db }` returning the computed value. */
+  handler?: ComputedHandler<TDoc>;
+  /** Grid width for the computed card. */
+  span?: DetailSpan;
+  /** Formatting preset for the computed value ('currency', 'percent', 'number', 'date'). */
+  format?: string;
+  /** Currency code when format is 'currency'. */
+  currency?: string;
+  /**
+   * Visibility condition for this computed card.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (optional) | Unique identifier for the computed metric. |
+| <code>expression</code> (optional) | JEXL expression string evaluated against &#96;&#123; doc, user &#125;&#96;. |
+| <code>handler</code> (optional) | Async or sync function receiving &#96;&#123; doc, user, db &#125;&#96; returning the computed value. |
+| <code>span</code> (optional) | Grid width for the computed card. |
+| <code>format</code> (optional) | Formatting preset for the computed value ('currency', 'percent', 'number', 'date'). |
+| <code>currency</code> (optional) | Currency code when format is 'currency'. |
+| <code>visible</code> (optional) | Visibility condition for this computed card. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+
+
+## DetailCustom
+
+Custom React component slot mounted in a Detail View.
+
+```ts
+export interface DetailCustom<TDoc = any> {
+  /** Identifies this item as a custom component. */
+  type: "custom";
+  /** Registered custom component name. */
+  name: string;
+  /** Custom component options. */
+  options?: DetailCustomOptions<TDoc>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a custom component. |
+| <code>name</code> (required) | Registered custom component name. |
+| <code>options</code> (optional) | Custom component options. |
+
+
+## DetailCustomOptions
+
+Configuration options for a custom React component slot.
+
+```ts
+export interface DetailCustomOptions<TDoc = any> {
+  /** Grid span in the 12-column layout. */
+  span?: DetailSpan;
+  /**
+   * Visibility condition for this custom component.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+  /** Static or initial props passed into the custom component. */
+  props?: Record<string, any>;
+  /** Inline render function receiving `{ doc, user }` (Self-hosted React runtimes). */
+  render?: (context: { doc: TDoc; user?: any; [key: string]: any }) => any;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>span</code> (optional) | Grid span in the 12-column layout. |
+| <code>visible</code> (optional) | Visibility condition for this custom component. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+| <code>props</code> (optional) | Static or initial props passed into the custom component. |
+| <code>render</code> (optional) | Inline render function receiving &#96;&#123; doc, user &#125;&#96; (Self-hosted React runtimes). |
+
+
+## DetailDivider
+
+Horizontal divider line in a Detail View layout.
+
+```ts
+export interface DetailDivider {
+  /** Identifies this item as a divider. */
+  type: "divider";
+  /** Divider options. */
+  options?: DetailDividerOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a divider. |
+| <code>options</code> (optional) | Divider options. |
+
+
+## DetailDividerOptions
+
+Configuration options for a horizontal divider line.
+
+```ts
+export interface DetailDividerOptions {
+  /** Grid span in the surrounding layout. */
+  span?: DetailSpan;
+  /**
+   * Visibility condition for this divider.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+  /** Vertical margin spacing around the divider line. */
+  spacing?: "sm" | "md" | "lg" | "none";
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>span</code> (optional) | Grid span in the surrounding layout. |
+| <code>visible</code> (optional) | Visibility condition for this divider. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+| <code>spacing</code> (optional) | Vertical margin spacing around the divider line. |
+
+
+## DetailField
+
+Declared field item in a Detail View.
+
+```ts
+export interface DetailField {
+  /** Identifies this item as a field. */
+  type: "field";
+  /** Field name or nested path in the document. */
+  field: string;
+  /** Display options for this field. */
+  options?: DisplayFieldOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a field. |
+| <code>field</code> (required) | Field name or nested path in the document. |
+| <code>options</code> (optional) | Display options for this field. |
+
+
+## DetailGrid
+
+Multi-column sub-grid layout inside a section or tab.
+
+```ts
+export interface DetailGrid {
+  /** Identifies this item as a grid. */
+  type: "grid";
+  /** Number of balanced columns in this grid. */
+  columns: number;
+  /** Child items rendered across the grid columns. */
+  items: DetailItem[];
+  /** Grid container options. */
+  options?: DetailGridOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a grid. |
+| <code>columns</code> (required) | Number of balanced columns in this grid. |
+| <code>items</code> (required) | Child items rendered across the grid columns. |
+| <code>options</code> (optional) | Grid container options. |
+
+
+## DetailGridOptions
+
+Configuration options for a sub-grid container.
+
+```ts
+export interface DetailGridOptions {
+  /** Grid width of the sub-grid container in the surrounding layout. */
+  span?: DetailSpan;
+  /**
+   * Visibility condition for this grid container.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>span</code> (optional) | Grid width of the sub-grid container in the surrounding layout. |
+| <code>visible</code> (optional) | Visibility condition for this grid container. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+
+
+## DetailItem
+
+Union of all valid item types in a Detail View schema.
+
+```ts
+export type DetailItem<TDoc = any> =
+  | DetailSection
+  | DetailTabs
+  | DetailGrid
+  | DetailField
+  | DetailRepeat
+  | DetailComputed<TDoc>
+  | DetailDivider
+  | DetailText
+  | DetailCustom<TDoc>
+  | string;
+```
+
+
+## DetailRepeat
+
+Delegated repeated array field item in a Detail View.
+
+```ts
+export interface DetailRepeat {
+  /** Identifies this item as a repeat container. */
+  type: "repeat";
+  /** Array field name in the document. */
+  field: string;
+  /** Item template schemas rendered for each element in the array. */
+  items: DetailItem[];
+  /** Repeat options. */
+  options?: DetailRepeatOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a repeat container. |
+| <code>field</code> (required) | Array field name in the document. |
+| <code>items</code> (required) | Item template schemas rendered for each element in the array. |
+| <code>options</code> (optional) | Repeat options. |
+
+
+## DetailRepeatOptions
+
+Configuration options for a repeated array field.
+
+```ts
+export interface DetailRepeatOptions {
+  /** Layout style for repeated items: 'table', 'cards', or 'list'. */
+  layout?: "table" | "cards" | "list";
+  /** Message shown when the repeated array is empty. */
+  emptyText?: string;
+  /** Grid width of the repeated container. */
+  span?: DetailSpan;
+  /**
+   * Visibility condition for this repeat container.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+  /** Field name in each row to use as the card header title (e.g. 'title', 'key', 'name'). */
+  useAsTitle?: string;
+  /** Field name in each row to use as the card header title (alias for useAsTitle). */
+  titleField?: string;
+  /** Static card title prefix or template (e.g. 'Category' or 'Card #{index}'). */
+  title?: string;
+  /** Optional icon name for card header. */
+  icon?: string;
+  /** Number of grid columns for cards layout (1, 2, 3, or 4; defaults to 3). */
+  columns?: 1 | 2 | 3 | 4;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>layout</code> (optional) | Layout style for repeated items: 'table', 'cards', or 'list'. |
+| <code>emptyText</code> (optional) | Message shown when the repeated array is empty. |
+| <code>span</code> (optional) | Grid width of the repeated container. |
+| <code>visible</code> (optional) | Visibility condition for this repeat container. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+| <code>useAsTitle</code> (optional) | Field name in each row to use as the card header title (e.g. 'title', 'key', 'name'). |
+| <code>titleField</code> (optional) | Field name in each row to use as the card header title (alias for useAsTitle). |
+| <code>title</code> (optional) | Static card title prefix or template (e.g. 'Category' or 'Card #&#123;index&#125;'). |
+| <code>icon</code> (optional) | Optional icon name for card header. |
+| <code>columns</code> (optional) | Number of grid columns for cards layout (1, 2, 3, or 4; defaults to 3). |
+
+
+## DetailSchema
+
+Detail View layout schema definition for a collection or global.
+
+```ts
+export type DetailSchema<TDoc = any> = DetailItem<TDoc>[];
+```
+
+
+## DetailSection
+
+Section container grouping fields and components in a Detail View.
+
+```ts
+export interface DetailSection {
+  /** Identifies this item as a section. */
+  type: "section";
+  /** Section heading title. */
+  title: string;
+  /** Child items rendered inside this section. */
+  items: DetailItem[];
+  /** Section container options. */
+  options?: DetailSectionOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a section. |
+| <code>title</code> (required) | Section heading title. |
+| <code>items</code> (required) | Child items rendered inside this section. |
+| <code>options</code> (optional) | Section container options. |
+
+
+## DetailSectionOptions
+
+Configuration options for a Detail View section container.
+
+```ts
+export interface DetailSectionOptions {
+  /** Lucide icon name displayed in the section header. */
+  icon?: string;
+  /** Status or counter badge displayed beside the section title. */
+  badge?: string;
+  /** Color palette name or hex code for the section badge. */
+  badgeColor?: string;
+  /** Subtitle description displayed beneath the section title. */
+  description?: string;
+  /** Grid width of the section on the main 12-column layout. */
+  span?: DetailSpan;
+  /** Internal grid column count for child items. */
+  columns?: number;
+  /** When true, allows editors to collapse and expand the section. */
+  collapsible?: boolean;
+  /** Starts the section in collapsed state when collapsible is enabled. */
+  collapsedByDefault?: boolean;
+  /**
+   * Visibility condition for this section.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   *
+   * @example `visible: "user.roles != null and 'admin' in user.roles"`
+   */
+  visible?: string | boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>icon</code> (optional) | Lucide icon name displayed in the section header. |
+| <code>badge</code> (optional) | Status or counter badge displayed beside the section title. |
+| <code>badgeColor</code> (optional) | Color palette name or hex code for the section badge. |
+| <code>description</code> (optional) | Subtitle description displayed beneath the section title. |
+| <code>span</code> (optional) | Grid width of the section on the main 12-column layout. |
+| <code>columns</code> (optional) | Internal grid column count for child items. |
+| <code>collapsible</code> (optional) | When true, allows editors to collapse and expand the section. |
+| <code>collapsedByDefault</code> (optional) | Starts the section in collapsed state when collapsible is enabled. |
+| <code>visible</code> (optional) | Visibility condition for this section. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+
+
+## DetailSpan
+
+Column span in the 12-column Detail View layout grid (1 to 12).
+
+```ts
+export type DetailSpan = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+```
+
+
+## DetailTab
+
+Single tab entry inside a tabbed container.
+
+```ts
+export interface DetailTab {
+  /** Identifies this item as a tab. */
+  type: "tab";
+  /** Tab label shown in the tab bar. */
+  label: string;
+  /** Child items rendered when this tab is active. */
+  items: DetailItem[];
+  /** Tab options. */
+  options?: DetailTabOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a tab. |
+| <code>label</code> (required) | Tab label shown in the tab bar. |
+| <code>items</code> (required) | Child items rendered when this tab is active. |
+| <code>options</code> (optional) | Tab options. |
+
+
+## DetailTabOptions
+
+Configuration options for an individual tab in `displayTabs()`.
+
+```ts
+export interface DetailTabOptions {
+  /** Lucide icon name displayed inside the tab trigger. */
+  icon?: string;
+  /** Counter or status badge rendered next to the tab label. */
+  badge?: string;
+  /** Color palette name or hex code for the tab badge. */
+  badgeColor?: string;
+  /**
+   * Visibility condition for this individual tab.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>icon</code> (optional) | Lucide icon name displayed inside the tab trigger. |
+| <code>badge</code> (optional) | Counter or status badge rendered next to the tab label. |
+| <code>badgeColor</code> (optional) | Color palette name or hex code for the tab badge. |
+| <code>visible</code> (optional) | Visibility condition for this individual tab. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+
+
+## DetailTabs
+
+Tabbed navigation container in a Detail View layout.
+
+```ts
+export interface DetailTabs {
+  /** Identifies this item as a tab container. */
+  type: "tabs";
+  /** List of tabs in this container. */
+  tabs: DetailTab[];
+  /** Tab container options. */
+  options?: DetailTabsOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a tab container. |
+| <code>tabs</code> (required) | List of tabs in this container. |
+| <code>options</code> (optional) | Tab container options. |
+
+
+## DetailTabsOptions
+
+Configuration options for a tabbed container.
+
+```ts
+export interface DetailTabsOptions {
+  /** Grid width of the tabs container on the main layout. */
+  span?: DetailSpan;
+  /** Label of the tab that should be active on initial render. */
+  defaultTab?: string;
+  /**
+   * Visibility condition for this tab container.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>span</code> (optional) | Grid width of the tabs container on the main layout. |
+| <code>defaultTab</code> (optional) | Label of the tab that should be active on initial render. |
+| <code>visible</code> (optional) | Visibility condition for this tab container. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+
+
+## DetailText
+
+Static text, heading, callout, or notice block in a Detail View.
+
+```ts
+export interface DetailText {
+  /** Identifies this item as a text block. */
+  type: "text";
+  /** Text or markdown content. */
+  content: string;
+  /** Text options. */
+  options?: DetailTextOptions;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Identifies this item as a text block. |
+| <code>content</code> (required) | Text or markdown content. |
+| <code>options</code> (optional) | Text options. |
+
+
+## DetailTextOptions
+
+Configuration options for a static text or callout block.
+
+```ts
+export interface DetailTextOptions {
+  /** Grid width in the 12-column layout. */
+  span?: DetailSpan;
+  /**
+   * Visibility condition for this text block.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+  /** Typography and alert styling variant ('body', 'heading', 'subheading', 'muted', 'caption', 'callout', 'info', 'warning'). */
+  variant?: "body" | "heading" | "subheading" | "muted" | "caption" | "callout" | "info" | "warning";
+  /** Custom CSS or Tailwind classes applied to the text wrapper. */
+  className?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>span</code> (optional) | Grid width in the 12-column layout. |
+| <code>visible</code> (optional) | Visibility condition for this text block. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. |
+| <code>variant</code> (optional) | Typography and alert styling variant ('body', 'heading', 'subheading', 'muted', 'caption', 'callout', 'info', 'warning'). |
+| <code>className</code> (optional) | Custom CSS or Tailwind classes applied to the text wrapper. |
+
+
+## displayComputed
+
+Renders a computed value calculated from document and user context.
+
+```ts
+export function displayComputed<TDoc = any>(
+  label: string,
+  expressionOrOptionsOrHandler: string | DetailComputedOptions<TDoc> | ComputedHandler<TDoc>,
+  options?: DetailComputedOptions<TDoc>,
+): DetailComputed<TDoc>
+```
+
+
+## displayCustom
+
+Renders a custom React component registered by name in the Admin panel.
+
+```ts
+export function displayCustom<TDoc = any>(name: string, options?: DetailCustomOptions<TDoc>): DetailCustom<TDoc>
+```
+
+
+## displayCustomComponent
+
+Alias for `displayCustom` to render a custom component in a Detail View layout.
+
+```ts
+export function displayCustomComponent<TDoc = any>(
+  name: string,
+  options?: DetailCustomOptions<TDoc>,
+): DetailCustom<TDoc>
+```
+
+
+## displayDivider
+
+Creates a horizontal divider line in a Detail View layout.
+
+```ts
+export function displayDivider(options?: DetailDividerOptions): DetailDivider
+```
+
+
+## displayField
+
+Declares a field for presentation in a Detail View.
+
+```ts
+export function displayField(fieldName: string, options?: DisplayFieldOptions): DetailField
+```
+
+
+## DisplayFieldOptions
+
+Configuration options for rendering a field in a Detail View.
+
+```ts
+export interface DisplayFieldOptions {
+  /** Custom label overriding the field's schema label. */
+  label?: string;
+  /** When true, hides the field label entirely and renders only the value. */
+  hideLabel?: boolean;
+  /** Informational tooltip shown next to the label. */
+  tooltip?: string;
+  /** Grid column span across the 12-column grid. */
+  span?: DetailSpan;
+  /** Specific visual representation variant (e.g. 'badge', 'currency', 'star', 'copyable'). */
+  display?: DisplayVariant;
+  /** Preset format for numbers, dates, and currencies ('currency', 'date', 'datetime', 'relative', 'number', 'percent'). */
+  format?: "currency" | "date" | "datetime" | "relative" | "number" | "percent" | string;
+  /** ISO currency code (e.g. 'USD', 'EUR') when display or format is 'currency'. */
+  currency?: string;
+  /** Color mapping for badge and tag values (named palette, hex color, Tailwind class, or wildcard). */
+  badgeColors?: Record<string, string>;
+  /** Column header for object keys when display is 'key-value'. */
+  keyLabel?: string;
+  /** Column header for object values when display is 'key-value'. */
+  valueLabel?: string;
+  /** Custom placeholder text when the field value is null, undefined, or empty. */
+  emptyText?: string;
+  /** When true, hides this entire field item if the value is null or empty. */
+  hideIfEmpty?: boolean;
+  /**
+   * When true, allows inline editing of this field in the Detail View
+   * via an interactive toggle.
+   */
+  editable?: boolean;
+  /**
+   * Visibility condition for this field item.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   * When false or evaluating to falsy, this item is hidden in the Detail View.
+   *
+   * @example `visible: "doc.status == 'published'"`
+   * @example `visible: false`
+   */
+  visible?: string | boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>label</code> (optional) | Custom label overriding the field's schema label. |
+| <code>hideLabel</code> (optional) | When true, hides the field label entirely and renders only the value. |
+| <code>tooltip</code> (optional) | Informational tooltip shown next to the label. |
+| <code>span</code> (optional) | Grid column span across the 12-column grid. |
+| <code>display</code> (optional) | Specific visual representation variant (e.g. 'badge', 'currency', 'star', 'copyable'). |
+| <code>format</code> (optional) | Preset format for numbers, dates, and currencies ('currency', 'date', 'datetime', 'relative', 'number', 'percent'). |
+| <code>currency</code> (optional) | ISO currency code (e.g. 'USD', 'EUR') when display or format is 'currency'. |
+| <code>badgeColors</code> (optional) | Color mapping for badge and tag values (named palette, hex color, Tailwind class, or wildcard). |
+| <code>keyLabel</code> (optional) | Column header for object keys when display is 'key-value'. |
+| <code>valueLabel</code> (optional) | Column header for object values when display is 'key-value'. |
+| <code>emptyText</code> (optional) | Custom placeholder text when the field value is null, undefined, or empty. |
+| <code>hideIfEmpty</code> (optional) | When true, hides this entire field item if the value is null or empty. |
+| <code>editable</code> (optional) | When true, allows inline editing of this field in the Detail View via an interactive toggle. |
+| <code>visible</code> (optional) | Visibility condition for this field item. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. When false or evaluating to falsy, this item is hidden in the Detail View. |
+
+
+## displayGrid
+
+Creates a multi-column grid layout inside a section or detail schema.
+
+```ts
+export function displayGrid(columns: number, items: DetailItem[], options?: DetailGridOptions): DetailGrid
+```
+
+
+## displayRepeat
+
+Renders an array/repeated field using a delegated display schema.
+Supports `'table'`, `'cards'`, and `'list'` layouts.
+
+```ts
+export function displayRepeat(fieldName: string, items: DetailItem[], options?: DetailRepeatOptions): DetailRepeat
+```
+
+
+## displaySection
+
+Creates a section container in a Detail View layout.
+
+```ts
+export function displaySection(title: string, items: DetailItem[], options?: DetailSectionOptions): DetailSection
+```
+
+
+## displayTab
+
+Creates a single tab entry for use within `displayTabs()`.
+
+```ts
+export function displayTab(label: string, items: DetailItem[], options?: DetailTabOptions): DetailTab
+```
+
+
+## displayTabs
+
+Creates a tabbed container in a Detail View layout.
+
+```ts
+export function displayTabs(tabs: DetailTab[], options?: DetailTabsOptions): DetailTabs
+```
+
+
+## displayText
+
+Renders static text, heading, callout, or information notice in a Detail View layout.
+
+```ts
+export function displayText(content: string, options?: DetailTextOptions): DetailText
+```
+
+
+## DisplayVariant
+
+Visual display variants supported by DetailFieldRenderer.
+
+```ts
+export type DisplayVariant =
+  | "text"
+  | "badge"
+  | "code-badge"
+  | "code"
+  | "copyable"
+  | "link"
+  | "url"
+  | "email"
+  | "phone"
+  | "currency"
+  | "percent"
+  | "progress"
+  | "star"
+  | "star-rating"
+  | "boolean"
+  | "date"
+  | "datetime"
+  | "time"
+  | "relative"
+  | "image"
+  | "avatar"
+  | "color"
+  | "color-swatches"
+  | "icon"
+  | "key-value"
+  | "table"
+  | "tags"
+  | "badges"
+  | "json";
+```
+
+
+## evaluateDetailComputed
+
+Evaluates server-side computed functions and JEXL expressions from a detail schema
+and attaches them to `doc._meta.computed`.
+
+```ts
+export async function evaluateDetailComputed(
+  detail: DetailSchema | boolean | undefined,
+  doc: any,
+  user: any,
+  db: any,
+): Promise<any>
+```
+
+
+## generateDefaultDetailSchema
+
+Generates an automatic default 12-column Detail View schema for a collection or global
+when no explicit `detail` configuration is provided.
+
+```ts
+export function generateDefaultDetailSchema(schema: {
+  fields?: Field[];
+  labels?: { singular?: string; plural?: string };
+  label?: string;
+  slug?: string;
+}): DetailSchema
+```
+
+
+## isDetailItemVisible
+
+Evaluates whether a detail item should be visible based on its `options.visible` rule.
+Supports boolean values or JEXL expressions evaluated against `{ doc, user }`.
+Works consistently for top-level and nested detail items.
+
+```ts
+export function isDetailItemVisible(item: DetailItem, doc: any, user?: any): boolean
+```
+
+
+## normalizeDetailItem
+
+Normalizes a DetailItem (which may be a shorthand string) into a standard DetailItem object.
+
+```ts
+export function normalizeDetailItem(item: DetailItem): Exclude<DetailItem, string>
+```
+{/* GENERATED:REFERENCE-DETAIL-VIEW:END */}
+
+

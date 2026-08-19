@@ -75,6 +75,10 @@ const hybridPages = {
     marker: "REFERENCE-WORKFLOWS",
     headings: [],
   },
+  "editor-experience/detail-view.mdx": {
+    marker: "REFERENCE-DETAIL-VIEW",
+    headings: [],
+  },
   "deliver-content/rest-api/overview.mdx": {
     marker: "REFERENCE-REST-API",
     headings: [],

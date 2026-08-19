@@ -62,7 +62,8 @@ export interface ReferenceEntry {
     | "hooks"
     | "adapters"
     | "sdk"
-    | "workflows";
+    | "workflows"
+    | "detail";
   sourcePackage: string;
   description: string;
   signature: string;

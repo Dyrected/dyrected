@@ -487,6 +487,16 @@
     ]
   },
   {
+    "id": "@dyrected/core:ComputedHandler",
+    "name": "ComputedHandler",
+    "kind": "type",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Async or synchronous handler function calculating a computed metric.",
+    "signature": "export type ComputedHandler<TDoc = any> = (context: { doc: TDoc; user?: any; db?: any }) => any | Promise<any>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:createLifecycleEvent",
     "name": "createLifecycleEvent",
     "kind": "function",
@@ -633,6 +643,650 @@
     "members": []
   },
   {
+    "id": "@dyrected/core:DetailComputed",
+    "name": "DetailComputed",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Computed KPI or metric card in a Detail View.",
+    "signature": "export interface DetailComputed<TDoc = any> {\n  /** Identifies this item as a computed value. */\n  type: \"computed\";\n  /** Unique computed identifier. */\n  id?: string;\n  /** Human-readable card label. */\n  label: string;\n  /** JEXL evaluation string. */\n  expression?: string;\n  /** Computed function handler. */\n  handler?: ComputedHandler<TDoc>;\n  /** Computed options. */\n  options?: DetailComputedOptions<TDoc>;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"computed\"",
+        "description": "Identifies this item as a computed value."
+      },
+      {
+        "name": "id",
+        "signature": "id?: string",
+        "description": "Unique computed identifier."
+      },
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": "Human-readable card label."
+      },
+      {
+        "name": "expression",
+        "signature": "expression?: string",
+        "description": "JEXL evaluation string."
+      },
+      {
+        "name": "handler",
+        "signature": "handler?: ComputedHandler<TDoc>",
+        "description": "Computed function handler."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailComputedOptions<TDoc>",
+        "description": "Computed options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailComputedOptions",
+    "name": "DetailComputedOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a computed value card.",
+    "signature": "export interface DetailComputedOptions<TDoc = any> {\n  /** Unique identifier for the computed metric. */\n  id?: string;\n  /** JEXL expression string evaluated against `{ doc, user }`. */\n  expression?: string;\n  /** Async or sync function receiving `{ doc, user, db }` returning the computed value. */\n  handler?: ComputedHandler<TDoc>;\n  /** Grid width for the computed card. */\n  span?: DetailSpan;\n  /** Formatting preset for the computed value ('currency', 'percent', 'number', 'date'). */\n  format?: string;\n  /** Currency code when format is 'currency'. */\n  currency?: string;\n  /**\n   * Visibility condition for this computed card.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n}",
+    "members": [
+      {
+        "name": "id",
+        "signature": "id?: string",
+        "description": "Unique identifier for the computed metric."
+      },
+      {
+        "name": "expression",
+        "signature": "expression?: string",
+        "description": "JEXL expression string evaluated against `{ doc, user }`."
+      },
+      {
+        "name": "handler",
+        "signature": "handler?: ComputedHandler<TDoc>",
+        "description": "Async or sync function receiving `{ doc, user, db }` returning the computed value."
+      },
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid width for the computed card."
+      },
+      {
+        "name": "format",
+        "signature": "format?: string",
+        "description": "Formatting preset for the computed value ('currency', 'percent', 'number', 'date')."
+      },
+      {
+        "name": "currency",
+        "signature": "currency?: string",
+        "description": "Currency code when format is 'currency'."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this computed card.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailCustom",
+    "name": "DetailCustom",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Custom React component slot mounted in a Detail View.",
+    "signature": "export interface DetailCustom<TDoc = any> {\n  /** Identifies this item as a custom component. */\n  type: \"custom\";\n  /** Registered custom component name. */\n  name: string;\n  /** Custom component options. */\n  options?: DetailCustomOptions<TDoc>;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"custom\"",
+        "description": "Identifies this item as a custom component."
+      },
+      {
+        "name": "name",
+        "signature": "name: string",
+        "description": "Registered custom component name."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailCustomOptions<TDoc>",
+        "description": "Custom component options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailCustomOptions",
+    "name": "DetailCustomOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a custom React component slot.",
+    "signature": "export interface DetailCustomOptions<TDoc = any> {\n  /** Grid span in the 12-column layout. */\n  span?: DetailSpan;\n  /**\n   * Visibility condition for this custom component.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n  /** Static or initial props passed into the custom component. */\n  props?: Record<string, any>;\n  /** Inline render function receiving `{ doc, user }` (Self-hosted React runtimes). */\n  render?: (context: { doc: TDoc; user?: any; [key: string]: any }) => any;\n}",
+    "members": [
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid span in the 12-column layout."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this custom component.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      },
+      {
+        "name": "props",
+        "signature": "props?: Record<string, any>",
+        "description": "Static or initial props passed into the custom component."
+      },
+      {
+        "name": "render",
+        "signature": "render?: (context: { doc: TDoc; user?: any; [key: string]: any }) => any",
+        "description": "Inline render function receiving `{ doc, user }` (Self-hosted React runtimes)."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailDivider",
+    "name": "DetailDivider",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Horizontal divider line in a Detail View layout.",
+    "signature": "export interface DetailDivider {\n  /** Identifies this item as a divider. */\n  type: \"divider\";\n  /** Divider options. */\n  options?: DetailDividerOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"divider\"",
+        "description": "Identifies this item as a divider."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailDividerOptions",
+        "description": "Divider options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailDividerOptions",
+    "name": "DetailDividerOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a horizontal divider line.",
+    "signature": "export interface DetailDividerOptions {\n  /** Grid span in the surrounding layout. */\n  span?: DetailSpan;\n  /**\n   * Visibility condition for this divider.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n  /** Vertical margin spacing around the divider line. */\n  spacing?: \"sm\" | \"md\" | \"lg\" | \"none\";\n}",
+    "members": [
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid span in the surrounding layout."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this divider.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      },
+      {
+        "name": "spacing",
+        "signature": "spacing?: \"sm\" | \"md\" | \"lg\" | \"none\"",
+        "description": "Vertical margin spacing around the divider line."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailField",
+    "name": "DetailField",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Declared field item in a Detail View.",
+    "signature": "export interface DetailField {\n  /** Identifies this item as a field. */\n  type: \"field\";\n  /** Field name or nested path in the document. */\n  field: string;\n  /** Display options for this field. */\n  options?: DisplayFieldOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"field\"",
+        "description": "Identifies this item as a field."
+      },
+      {
+        "name": "field",
+        "signature": "field: string",
+        "description": "Field name or nested path in the document."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DisplayFieldOptions",
+        "description": "Display options for this field."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailGrid",
+    "name": "DetailGrid",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Multi-column sub-grid layout inside a section or tab.",
+    "signature": "export interface DetailGrid {\n  /** Identifies this item as a grid. */\n  type: \"grid\";\n  /** Number of balanced columns in this grid. */\n  columns: number;\n  /** Child items rendered across the grid columns. */\n  items: DetailItem[];\n  /** Grid container options. */\n  options?: DetailGridOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"grid\"",
+        "description": "Identifies this item as a grid."
+      },
+      {
+        "name": "columns",
+        "signature": "columns: number",
+        "description": "Number of balanced columns in this grid."
+      },
+      {
+        "name": "items",
+        "signature": "items: DetailItem[]",
+        "description": "Child items rendered across the grid columns."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailGridOptions",
+        "description": "Grid container options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailGridOptions",
+    "name": "DetailGridOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a sub-grid container.",
+    "signature": "export interface DetailGridOptions {\n  /** Grid width of the sub-grid container in the surrounding layout. */\n  span?: DetailSpan;\n  /**\n   * Visibility condition for this grid container.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n}",
+    "members": [
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid width of the sub-grid container in the surrounding layout."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this grid container.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailItem",
+    "name": "DetailItem",
+    "kind": "type",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Union of all valid item types in a Detail View schema.",
+    "signature": "export type DetailItem<TDoc = any> =\n  | DetailSection\n  | DetailTabs\n  | DetailGrid\n  | DetailField\n  | DetailRepeat\n  | DetailComputed<TDoc>\n  | DetailDivider\n  | DetailText\n  | DetailCustom<TDoc>\n  | string;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DetailRepeat",
+    "name": "DetailRepeat",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Delegated repeated array field item in a Detail View.",
+    "signature": "export interface DetailRepeat {\n  /** Identifies this item as a repeat container. */\n  type: \"repeat\";\n  /** Array field name in the document. */\n  field: string;\n  /** Item template schemas rendered for each element in the array. */\n  items: DetailItem[];\n  /** Repeat options. */\n  options?: DetailRepeatOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"repeat\"",
+        "description": "Identifies this item as a repeat container."
+      },
+      {
+        "name": "field",
+        "signature": "field: string",
+        "description": "Array field name in the document."
+      },
+      {
+        "name": "items",
+        "signature": "items: DetailItem[]",
+        "description": "Item template schemas rendered for each element in the array."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailRepeatOptions",
+        "description": "Repeat options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailRepeatOptions",
+    "name": "DetailRepeatOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a repeated array field.",
+    "signature": "export interface DetailRepeatOptions {\n  /** Layout style for repeated items: 'table', 'cards', or 'list'. */\n  layout?: \"table\" | \"cards\" | \"list\";\n  /** Message shown when the repeated array is empty. */\n  emptyText?: string;\n  /** Grid width of the repeated container. */\n  span?: DetailSpan;\n  /**\n   * Visibility condition for this repeat container.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n  /** Field name in each row to use as the card header title (e.g. 'title', 'key', 'name'). */\n  useAsTitle?: string;\n  /** Field name in each row to use as the card header title (alias for useAsTitle). */\n  titleField?: string;\n  /** Static card title prefix or template (e.g. 'Category' or 'Card #{index}'). */\n  title?: string;\n  /** Optional icon name for card header. */\n  icon?: string;\n  /** Number of grid columns for cards layout (1, 2, 3, or 4; defaults to 3). */\n  columns?: 1 | 2 | 3 | 4;\n}",
+    "members": [
+      {
+        "name": "layout",
+        "signature": "layout?: \"table\" | \"cards\" | \"list\"",
+        "description": "Layout style for repeated items: 'table', 'cards', or 'list'."
+      },
+      {
+        "name": "emptyText",
+        "signature": "emptyText?: string",
+        "description": "Message shown when the repeated array is empty."
+      },
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid width of the repeated container."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this repeat container.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      },
+      {
+        "name": "useAsTitle",
+        "signature": "useAsTitle?: string",
+        "description": "Field name in each row to use as the card header title (e.g. 'title', 'key', 'name')."
+      },
+      {
+        "name": "titleField",
+        "signature": "titleField?: string",
+        "description": "Field name in each row to use as the card header title (alias for useAsTitle)."
+      },
+      {
+        "name": "title",
+        "signature": "title?: string",
+        "description": "Static card title prefix or template (e.g. 'Category' or 'Card #{index}')."
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": "Optional icon name for card header."
+      },
+      {
+        "name": "columns",
+        "signature": "columns?: 1 | 2 | 3 | 4",
+        "description": "Number of grid columns for cards layout (1, 2, 3, or 4; defaults to 3)."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailSchema",
+    "name": "DetailSchema",
+    "kind": "type",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Detail View layout schema definition for a collection or global.",
+    "signature": "export type DetailSchema<TDoc = any> = DetailItem<TDoc>[];",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DetailSection",
+    "name": "DetailSection",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Section container grouping fields and components in a Detail View.",
+    "signature": "export interface DetailSection {\n  /** Identifies this item as a section. */\n  type: \"section\";\n  /** Section heading title. */\n  title: string;\n  /** Child items rendered inside this section. */\n  items: DetailItem[];\n  /** Section container options. */\n  options?: DetailSectionOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"section\"",
+        "description": "Identifies this item as a section."
+      },
+      {
+        "name": "title",
+        "signature": "title: string",
+        "description": "Section heading title."
+      },
+      {
+        "name": "items",
+        "signature": "items: DetailItem[]",
+        "description": "Child items rendered inside this section."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailSectionOptions",
+        "description": "Section container options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailSectionOptions",
+    "name": "DetailSectionOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a Detail View section container.",
+    "signature": "export interface DetailSectionOptions {\n  /** Lucide icon name displayed in the section header. */\n  icon?: string;\n  /** Status or counter badge displayed beside the section title. */\n  badge?: string;\n  /** Color palette name or hex code for the section badge. */\n  badgeColor?: string;\n  /** Subtitle description displayed beneath the section title. */\n  description?: string;\n  /** Grid width of the section on the main 12-column layout. */\n  span?: DetailSpan;\n  /** Internal grid column count for child items. */\n  columns?: number;\n  /** When true, allows editors to collapse and expand the section. */\n  collapsible?: boolean;\n  /** Starts the section in collapsed state when collapsible is enabled. */\n  collapsedByDefault?: boolean;\n  /**\n   * Visibility condition for this section.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   *\n   * @example `visible: \"user.roles != null and 'admin' in user.roles\"`\n   */\n  visible?: string | boolean;\n}",
+    "members": [
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": "Lucide icon name displayed in the section header."
+      },
+      {
+        "name": "badge",
+        "signature": "badge?: string",
+        "description": "Status or counter badge displayed beside the section title."
+      },
+      {
+        "name": "badgeColor",
+        "signature": "badgeColor?: string",
+        "description": "Color palette name or hex code for the section badge."
+      },
+      {
+        "name": "description",
+        "signature": "description?: string",
+        "description": "Subtitle description displayed beneath the section title."
+      },
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid width of the section on the main 12-column layout."
+      },
+      {
+        "name": "columns",
+        "signature": "columns?: number",
+        "description": "Internal grid column count for child items."
+      },
+      {
+        "name": "collapsible",
+        "signature": "collapsible?: boolean",
+        "description": "When true, allows editors to collapse and expand the section."
+      },
+      {
+        "name": "collapsedByDefault",
+        "signature": "collapsedByDefault?: boolean",
+        "description": "Starts the section in collapsed state when collapsible is enabled."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this section.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailSpan",
+    "name": "DetailSpan",
+    "kind": "type",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Column span in the 12-column Detail View layout grid (1 to 12).",
+    "signature": "export type DetailSpan = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DetailTab",
+    "name": "DetailTab",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Single tab entry inside a tabbed container.",
+    "signature": "export interface DetailTab {\n  /** Identifies this item as a tab. */\n  type: \"tab\";\n  /** Tab label shown in the tab bar. */\n  label: string;\n  /** Child items rendered when this tab is active. */\n  items: DetailItem[];\n  /** Tab options. */\n  options?: DetailTabOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"tab\"",
+        "description": "Identifies this item as a tab."
+      },
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": "Tab label shown in the tab bar."
+      },
+      {
+        "name": "items",
+        "signature": "items: DetailItem[]",
+        "description": "Child items rendered when this tab is active."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailTabOptions",
+        "description": "Tab options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailTabOptions",
+    "name": "DetailTabOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for an individual tab in `displayTabs()`.",
+    "signature": "export interface DetailTabOptions {\n  /** Lucide icon name displayed inside the tab trigger. */\n  icon?: string;\n  /** Counter or status badge rendered next to the tab label. */\n  badge?: string;\n  /** Color palette name or hex code for the tab badge. */\n  badgeColor?: string;\n  /**\n   * Visibility condition for this individual tab.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n}",
+    "members": [
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": "Lucide icon name displayed inside the tab trigger."
+      },
+      {
+        "name": "badge",
+        "signature": "badge?: string",
+        "description": "Counter or status badge rendered next to the tab label."
+      },
+      {
+        "name": "badgeColor",
+        "signature": "badgeColor?: string",
+        "description": "Color palette name or hex code for the tab badge."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this individual tab.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailTabs",
+    "name": "DetailTabs",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Tabbed navigation container in a Detail View layout.",
+    "signature": "export interface DetailTabs {\n  /** Identifies this item as a tab container. */\n  type: \"tabs\";\n  /** List of tabs in this container. */\n  tabs: DetailTab[];\n  /** Tab container options. */\n  options?: DetailTabsOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"tabs\"",
+        "description": "Identifies this item as a tab container."
+      },
+      {
+        "name": "tabs",
+        "signature": "tabs: DetailTab[]",
+        "description": "List of tabs in this container."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailTabsOptions",
+        "description": "Tab container options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailTabsOptions",
+    "name": "DetailTabsOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a tabbed container.",
+    "signature": "export interface DetailTabsOptions {\n  /** Grid width of the tabs container on the main layout. */\n  span?: DetailSpan;\n  /** Label of the tab that should be active on initial render. */\n  defaultTab?: string;\n  /**\n   * Visibility condition for this tab container.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n}",
+    "members": [
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid width of the tabs container on the main layout."
+      },
+      {
+        "name": "defaultTab",
+        "signature": "defaultTab?: string",
+        "description": "Label of the tab that should be active on initial render."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this tab container.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailText",
+    "name": "DetailText",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Static text, heading, callout, or notice block in a Detail View.",
+    "signature": "export interface DetailText {\n  /** Identifies this item as a text block. */\n  type: \"text\";\n  /** Text or markdown content. */\n  content: string;\n  /** Text options. */\n  options?: DetailTextOptions;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"text\"",
+        "description": "Identifies this item as a text block."
+      },
+      {
+        "name": "content",
+        "signature": "content: string",
+        "description": "Text or markdown content."
+      },
+      {
+        "name": "options",
+        "signature": "options?: DetailTextOptions",
+        "description": "Text options."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DetailTextOptions",
+    "name": "DetailTextOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for a static text or callout block.",
+    "signature": "export interface DetailTextOptions {\n  /** Grid width in the 12-column layout. */\n  span?: DetailSpan;\n  /**\n   * Visibility condition for this text block.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   */\n  visible?: string | boolean;\n  /** Typography and alert styling variant ('body', 'heading', 'subheading', 'muted', 'caption', 'callout', 'info', 'warning'). */\n  variant?: \"body\" | \"heading\" | \"subheading\" | \"muted\" | \"caption\" | \"callout\" | \"info\" | \"warning\";\n  /** Custom CSS or Tailwind classes applied to the text wrapper. */\n  className?: string;\n}",
+    "members": [
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid width in the 12-column layout."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this text block.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`."
+      },
+      {
+        "name": "variant",
+        "signature": "variant?: \"body\" | \"heading\" | \"subheading\" | \"muted\" | \"caption\" | \"callout\" | \"info\" | \"warning\"",
+        "description": "Typography and alert styling variant ('body', 'heading', 'subheading', 'muted', 'caption', 'callout', 'info', 'warning')."
+      },
+      {
+        "name": "className",
+        "signature": "className?: string",
+        "description": "Custom CSS or Tailwind classes applied to the text wrapper."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/core:dispatchLifecycleEvent",
     "name": "dispatchLifecycleEvent",
     "kind": "function",
@@ -653,6 +1307,197 @@
     "members": []
   },
   {
+    "id": "@dyrected/core:displayComputed",
+    "name": "displayComputed",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Renders a computed value calculated from document and user context.",
+    "signature": "export function displayComputed<TDoc = any>(\n  label: string,\n  expressionOrOptionsOrHandler: string | DetailComputedOptions<TDoc> | ComputedHandler<TDoc>,\n  options?: DetailComputedOptions<TDoc>,\n): DetailComputed<TDoc>",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayCustom",
+    "name": "displayCustom",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Renders a custom React component registered by name in the Admin panel.",
+    "signature": "export function displayCustom<TDoc = any>(name: string, options?: DetailCustomOptions<TDoc>): DetailCustom<TDoc>",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayCustomComponent",
+    "name": "displayCustomComponent",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Alias for `displayCustom` to render a custom component in a Detail View layout.",
+    "signature": "export function displayCustomComponent<TDoc = any>(\n  name: string,\n  options?: DetailCustomOptions<TDoc>,\n): DetailCustom<TDoc>",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayDivider",
+    "name": "displayDivider",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Creates a horizontal divider line in a Detail View layout.",
+    "signature": "export function displayDivider(options?: DetailDividerOptions): DetailDivider",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayField",
+    "name": "displayField",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Declares a field for presentation in a Detail View.",
+    "signature": "export function displayField(fieldName: string, options?: DisplayFieldOptions): DetailField",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DisplayFieldOptions",
+    "name": "DisplayFieldOptions",
+    "kind": "interface",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Configuration options for rendering a field in a Detail View.",
+    "signature": "export interface DisplayFieldOptions {\n  /** Custom label overriding the field's schema label. */\n  label?: string;\n  /** When true, hides the field label entirely and renders only the value. */\n  hideLabel?: boolean;\n  /** Informational tooltip shown next to the label. */\n  tooltip?: string;\n  /** Grid column span across the 12-column grid. */\n  span?: DetailSpan;\n  /** Specific visual representation variant (e.g. 'badge', 'currency', 'star', 'copyable'). */\n  display?: DisplayVariant;\n  /** Preset format for numbers, dates, and currencies ('currency', 'date', 'datetime', 'relative', 'number', 'percent'). */\n  format?: \"currency\" | \"date\" | \"datetime\" | \"relative\" | \"number\" | \"percent\" | string;\n  /** ISO currency code (e.g. 'USD', 'EUR') when display or format is 'currency'. */\n  currency?: string;\n  /** Color mapping for badge and tag values (named palette, hex color, Tailwind class, or wildcard). */\n  badgeColors?: Record<string, string>;\n  /** Column header for object keys when display is 'key-value'. */\n  keyLabel?: string;\n  /** Column header for object values when display is 'key-value'. */\n  valueLabel?: string;\n  /** Custom placeholder text when the field value is null, undefined, or empty. */\n  emptyText?: string;\n  /** When true, hides this entire field item if the value is null or empty. */\n  hideIfEmpty?: boolean;\n  /**\n   * When true, allows inline editing of this field in the Detail View\n   * via an interactive toggle.\n   */\n  editable?: boolean;\n  /**\n   * Visibility condition for this field item.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   * When false or evaluating to falsy, this item is hidden in the Detail View.\n   *\n   * @example `visible: \"doc.status == 'published'\"`\n   * @example `visible: false`\n   */\n  visible?: string | boolean;\n}",
+    "members": [
+      {
+        "name": "label",
+        "signature": "label?: string",
+        "description": "Custom label overriding the field's schema label."
+      },
+      {
+        "name": "hideLabel",
+        "signature": "hideLabel?: boolean",
+        "description": "When true, hides the field label entirely and renders only the value."
+      },
+      {
+        "name": "tooltip",
+        "signature": "tooltip?: string",
+        "description": "Informational tooltip shown next to the label."
+      },
+      {
+        "name": "span",
+        "signature": "span?: DetailSpan",
+        "description": "Grid column span across the 12-column grid."
+      },
+      {
+        "name": "display",
+        "signature": "display?: DisplayVariant",
+        "description": "Specific visual representation variant (e.g. 'badge', 'currency', 'star', 'copyable')."
+      },
+      {
+        "name": "format",
+        "signature": "format?: \"currency\" | \"date\" | \"datetime\" | \"relative\" | \"number\" | \"percent\" | string",
+        "description": "Preset format for numbers, dates, and currencies ('currency', 'date', 'datetime', 'relative', 'number', 'percent')."
+      },
+      {
+        "name": "currency",
+        "signature": "currency?: string",
+        "description": "ISO currency code (e.g. 'USD', 'EUR') when display or format is 'currency'."
+      },
+      {
+        "name": "badgeColors",
+        "signature": "badgeColors?: Record<string, string>",
+        "description": "Color mapping for badge and tag values (named palette, hex color, Tailwind class, or wildcard)."
+      },
+      {
+        "name": "keyLabel",
+        "signature": "keyLabel?: string",
+        "description": "Column header for object keys when display is 'key-value'."
+      },
+      {
+        "name": "valueLabel",
+        "signature": "valueLabel?: string",
+        "description": "Column header for object values when display is 'key-value'."
+      },
+      {
+        "name": "emptyText",
+        "signature": "emptyText?: string",
+        "description": "Custom placeholder text when the field value is null, undefined, or empty."
+      },
+      {
+        "name": "hideIfEmpty",
+        "signature": "hideIfEmpty?: boolean",
+        "description": "When true, hides this entire field item if the value is null or empty."
+      },
+      {
+        "name": "editable",
+        "signature": "editable?: boolean",
+        "description": "When true, allows inline editing of this field in the Detail View\nvia an interactive toggle."
+      },
+      {
+        "name": "visible",
+        "signature": "visible?: string | boolean",
+        "description": "Visibility condition for this field item.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`.\nWhen false or evaluating to falsy, this item is hidden in the Detail View."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:displayGrid",
+    "name": "displayGrid",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Creates a multi-column grid layout inside a section or detail schema.",
+    "signature": "export function displayGrid(columns: number, items: DetailItem[], options?: DetailGridOptions): DetailGrid",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayRepeat",
+    "name": "displayRepeat",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Renders an array/repeated field using a delegated display schema.\nSupports `'table'`, `'cards'`, and `'list'` layouts.",
+    "signature": "export function displayRepeat(fieldName: string, items: DetailItem[], options?: DetailRepeatOptions): DetailRepeat",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displaySection",
+    "name": "displaySection",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Creates a section container in a Detail View layout.",
+    "signature": "export function displaySection(title: string, items: DetailItem[], options?: DetailSectionOptions): DetailSection",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayTab",
+    "name": "displayTab",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Creates a single tab entry for use within `displayTabs()`.",
+    "signature": "export function displayTab(label: string, items: DetailItem[], options?: DetailTabOptions): DetailTab",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayTabs",
+    "name": "displayTabs",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Creates a tabbed container in a Detail View layout.",
+    "signature": "export function displayTabs(tabs: DetailTab[], options?: DetailTabsOptions): DetailTabs",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:displayText",
+    "name": "displayText",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Renders static text, heading, callout, or information notice in a Detail View layout.",
+    "signature": "export function displayText(content: string, options?: DetailTextOptions): DetailText",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:DisplayTone",
     "name": "DisplayTone",
     "kind": "type",
@@ -660,6 +1505,16 @@
     "sourcePackage": "@dyrected/core",
     "description": "A semantic color for a badge or status pill in the Admin UI. The Admin panel\nmaps each tone to a themed color, so you pick meaning (`success`, `danger`)\nrather than a raw color and it stays consistent in light and dark mode.",
     "signature": "export type DisplayTone =\n  \"neutral\" | \"primary\" | \"success\" | \"warning\" | \"danger\" | \"info\";",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DisplayVariant",
+    "name": "DisplayVariant",
+    "kind": "type",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Visual display variants supported by DetailFieldRenderer.",
+    "signature": "export type DisplayVariant =\n  | \"text\"\n  | \"badge\"\n  | \"code-badge\"\n  | \"code\"\n  | \"copyable\"\n  | \"link\"\n  | \"url\"\n  | \"email\"\n  | \"phone\"\n  | \"currency\"\n  | \"percent\"\n  | \"progress\"\n  | \"star\"\n  | \"star-rating\"\n  | \"boolean\"\n  | \"date\"\n  | \"datetime\"\n  | \"time\"\n  | \"relative\"\n  | \"image\"\n  | \"avatar\"\n  | \"color\"\n  | \"color-swatches\"\n  | \"icon\"\n  | \"key-value\"\n  | \"table\"\n  | \"tags\"\n  | \"badges\"\n  | \"json\";",
     "members": []
   },
   {
@@ -843,6 +1698,16 @@
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export type EmailFieldAdmin = CharacterLimitFieldAdmin & {\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: LinkFormat;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:evaluateDetailComputed",
+    "name": "evaluateDetailComputed",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Evaluates server-side computed functions and JEXL expressions from a detail schema\nand attaches them to `doc._meta.computed`.",
+    "signature": "export async function evaluateDetailComputed(\n  detail: DetailSchema | boolean | undefined,\n  doc: any,\n  user: any,\n  db: any,\n): Promise<any>",
     "members": []
   },
   {
@@ -1232,6 +2097,16 @@
     ]
   },
   {
+    "id": "@dyrected/core:generateDefaultDetailSchema",
+    "name": "generateDefaultDetailSchema",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Generates an automatic default 12-column Detail View schema for a collection or global\nwhen no explicit `detail` configuration is provided.",
+    "signature": "export function generateDefaultDetailSchema(schema: {\n  fields?: Field[];\n  labels?: { singular?: string; plural?: string };\n  label?: string;\n  slug?: string;\n}): DetailSchema",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:GlobalAfterChangeHook",
     "name": "GlobalAfterChangeHook",
     "kind": "type",
@@ -1465,6 +2340,16 @@
     "members": []
   },
   {
+    "id": "@dyrected/core:isDetailItemVisible",
+    "name": "isDetailItemVisible",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Evaluates whether a detail item should be visible based on its `options.visible` rule.\nSupports boolean values or JEXL expressions evaluated against `{ doc, user }`.\nWorks consistently for top-level and nested detail items.",
+    "signature": "export function isDetailItemVisible(item: DetailItem, doc: any, user?: any): boolean",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:JoinField",
     "name": "JoinField",
     "kind": "type",
@@ -1643,6 +2528,16 @@
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export type MultiSelectFieldAdmin = {\n  /** How each selected value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: OptionFormat;\n  hooks?: {\n    /** Client-side option recalculation for dependent multi-select fields. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:normalizeDetailItem",
+    "name": "normalizeDetailItem",
+    "kind": "function",
+    "category": "detail",
+    "sourcePackage": "@dyrected/core",
+    "description": "Normalizes a DetailItem (which may be a shorthand string) into a standard DetailItem object.",
+    "signature": "export function normalizeDetailItem(item: DetailItem): Exclude<DetailItem, string>",
     "members": []
   },
   {

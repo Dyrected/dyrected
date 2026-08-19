@@ -633,6 +633,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:ComputedHandler",
+      "name": "ComputedHandler",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:createLifecycleEvent",
       "name": "createLifecycleEvent",
       "category": "workflows",
@@ -687,6 +693,138 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:DetailComputed",
+      "name": "DetailComputed",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailComputedOptions",
+      "name": "DetailComputedOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailCustom",
+      "name": "DetailCustom",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailCustomOptions",
+      "name": "DetailCustomOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailDivider",
+      "name": "DetailDivider",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailDividerOptions",
+      "name": "DetailDividerOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailField",
+      "name": "DetailField",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailGrid",
+      "name": "DetailGrid",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailGridOptions",
+      "name": "DetailGridOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailItem",
+      "name": "DetailItem",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailRepeat",
+      "name": "DetailRepeat",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailRepeatOptions",
+      "name": "DetailRepeatOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailSchema",
+      "name": "DetailSchema",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailSection",
+      "name": "DetailSection",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailSectionOptions",
+      "name": "DetailSectionOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailSpan",
+      "name": "DetailSpan",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailTab",
+      "name": "DetailTab",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailTabOptions",
+      "name": "DetailTabOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailTabs",
+      "name": "DetailTabs",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailTabsOptions",
+      "name": "DetailTabsOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailText",
+      "name": "DetailText",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailTextOptions",
+      "name": "DetailTextOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:dispatchLifecycleEvent",
       "name": "dispatchLifecycleEvent",
       "category": "workflows",
@@ -699,9 +837,87 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:displayComputed",
+      "name": "displayComputed",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayCustom",
+      "name": "displayCustom",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayCustomComponent",
+      "name": "displayCustomComponent",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayDivider",
+      "name": "displayDivider",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayField",
+      "name": "displayField",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DisplayFieldOptions",
+      "name": "DisplayFieldOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayGrid",
+      "name": "displayGrid",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayRepeat",
+      "name": "displayRepeat",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displaySection",
+      "name": "displaySection",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayTab",
+      "name": "displayTab",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayTabs",
+      "name": "displayTabs",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayText",
+      "name": "displayText",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:DisplayTone",
       "name": "DisplayTone",
       "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DisplayVariant",
+      "name": "DisplayVariant",
+      "category": "detail",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -744,6 +960,12 @@
       "id": "@dyrected/core:EmailFieldAdmin",
       "name": "EmailFieldAdmin",
       "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:evaluateDetailComputed",
+      "name": "evaluateDetailComputed",
+      "category": "detail",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -843,6 +1065,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:generateDefaultDetailSchema",
+      "name": "generateDefaultDetailSchema",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:GlobalAfterChangeHook",
       "name": "GlobalAfterChangeHook",
       "category": "hooks",
@@ -939,6 +1167,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:isDetailItemVisible",
+      "name": "isDetailItemVisible",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:JoinField",
       "name": "JoinField",
       "category": "fields",
@@ -1008,6 +1242,12 @@
       "id": "@dyrected/core:MultiSelectFieldAdmin",
       "name": "MultiSelectFieldAdmin",
       "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:normalizeDetailItem",
+      "name": "normalizeDetailItem",
+      "category": "detail",
       "sourcePackage": "@dyrected/core"
     },
     {

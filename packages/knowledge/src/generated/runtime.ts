@@ -3408,6 +3408,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "start-here--changelog",
+    "relativePath": "start-here/changelog",
+    "title": "Changelog",
+    "description": "Release notes and version history for the Dyrected platform.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "start-here",
+    "sourceFile": "apps/docs/content/docs/start-here/changelog.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/start-here/changelog",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/start-here/changelog",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/start-here/changelog",
+    "status": "classified"
+  },
+  {
     "id": "start-here--choose-a-runtime",
     "relativePath": "start-here/choose-a-runtime",
     "title": "Choose a Runtime",

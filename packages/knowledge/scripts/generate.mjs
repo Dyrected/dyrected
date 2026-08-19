@@ -576,11 +576,16 @@ const coreTypePaths = {
   schemaConfig: path.join(coreTypesRoot, "schema-config.ts"),
   schemaCore: path.join(coreTypesRoot, "schema-core.ts"),
   schemaInference: path.join(coreTypesRoot, "schema-inference.ts"),
+  detail: path.join(coreTypesRoot, "detail.ts"),
   workflows: path.join(coreTypesRoot, "workflows.ts"),
 };
 const workflowPath = path.join(
   repositoryRoot,
   "packages/core/src/workflows.ts",
+);
+const detailPath = path.join(
+  repositoryRoot,
+  "packages/core/src/detail.ts",
 );
 const sdkPath = path.join(repositoryRoot, "packages/sdk/src/index.ts");
 const configNames = new Set([
@@ -724,6 +729,14 @@ const references = [
   }),
   ...extractReferences(workflowPath, {
     category: "workflows",
+    sourcePackage: "@dyrected/core",
+  }),
+  ...extractReferences(coreTypePaths.detail, {
+    category: "detail",
+    sourcePackage: "@dyrected/core",
+  }),
+  ...extractReferences(detailPath, {
+    category: "detail",
     sourcePackage: "@dyrected/core",
   }),
   ...extractReferences(sdkPath, {
@@ -980,6 +993,11 @@ const referenceTargets = [
     file: "editor-experience/publishing/overview.mdx",
     region: "REFERENCE-WORKFLOWS",
     select: (entry) => entry.category === "workflows",
+  },
+  {
+    file: "editor-experience/detail-view.mdx",
+    region: "REFERENCE-DETAIL-VIEW",
+    select: (entry) => entry.category === "detail",
   },
 ];
 for (const target of referenceTargets) {

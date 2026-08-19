@@ -74,10 +74,17 @@ export async function DocsPageContent({
   const rawContent = page.absolutePath
     ? await readFile(page.absolutePath, "utf-8").catch(() => "")
     : "";
+  const toc = Array.isArray(page.data?.toc)
+    ? page.data.toc.map((item: any) => ({
+        title: typeof item.title === "string" ? item.title : String(item.title ?? ""),
+        url: typeof item.url === "string" ? item.url : String(item.url ?? ""),
+        depth: typeof item.depth === "number" ? item.depth : 2,
+      }))
+    : page.data?.toc;
 
   return (
     <DocsPage
-      toc={page.data.toc as any}
+      toc={toc as any}
       full={page.data.full}
       lastUpdate={page.data.lastModified}
       tableOfContent={{

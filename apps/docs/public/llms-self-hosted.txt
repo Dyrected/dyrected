@@ -201,6 +201,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [InferSchema](https://docs.dyrected.com/docs/self-hosted/reference/typescript/infer-schema): Derive a typed SDK schema from your exported collection and global constants, and know when this path is better than generating a file.
 - [Overview](https://docs.dyrected.com/docs/self-hosted/reference/typescript/overview): Understand Dyrected's TypeScript story, when inference is enough, and when to generate a shareable types file.
 - [TypeScript Plugin](https://docs.dyrected.com/docs/self-hosted/reference/typescript/typescript-plugin): Understand the current status of IDE-specific TypeScript tooling in Dyrected and what to use today instead of a dedicated language-service plugin.
+- [Changelog](https://docs.dyrected.com/docs/self-hosted/start-here/changelog): Release notes and version history for the Dyrected platform.
 - [Choose a Runtime](https://docs.dyrected.com/docs/self-hosted/start-here/choose-a-runtime): Choose Dyrected Cloud or self-hosted Dyrected based on where the CMS backend should live and what your app already owns.
 - [Cloud vs Self-hosted](https://docs.dyrected.com/docs/self-hosted/start-here/cloud-vs-self-hosted): Compare Dyrected Cloud and self-hosted Dyrected by backend ownership, application boundaries, and runtime control.
 - [Installation](https://docs.dyrected.com/docs/self-hosted/start-here/installation): Install Dyrected into an existing Next.js, Nuxt, React, or Vue app with a single CLI command.
