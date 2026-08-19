@@ -10,6 +10,9 @@ import { AdminNotFound } from "../../components/layout/admin-not-found"
 import { Button } from "../../components/ui/button"
 import { ArrowLeft, RefreshCw } from "lucide-react"
 
+import { useAdjacentDocuments } from "../../hooks/use-adjacent-documents"
+import { DetailFooterNavigation } from "../../components/detail/detail-footer-navigation"
+
 export function DetailEntryPage() {
   const { slug, id } = useParams<{ slug: string; id: string }>()
   const navigate = useNavigate()
@@ -26,11 +29,19 @@ export function DetailEntryPage() {
   } = useQuery({
     queryKey: ["collections", slug, "detail", id],
     queryFn: async () => {
-      if (!slug || !id) throw new Error("Missing slug or ID")
+      if (!slug || !id || !client) throw new Error("Missing slug, ID, or client")
       const result = await client.collection(slug).findOne(id, { depth: 1 })
       return result
     },
     enabled: Boolean(slug && id && client),
+  })
+
+  const { prevDoc, nextDoc, prevTitle, nextTitle } = useAdjacentDocuments({
+    client,
+    collection,
+    doc,
+    schemas,
+    enableKeyboardShortcuts: true,
   })
 
   if (collection && collection.detail === false) {
@@ -82,7 +93,16 @@ export function DetailEntryPage() {
 
   return (
     <div className="dy-space-y-6 dy-max-w-7xl dy-mx-auto">
-      <DetailHeader collection={collection} doc={doc} user={user} schemas={schemas} />
+      <DetailHeader
+        collection={collection}
+        doc={doc}
+        user={user}
+        schemas={schemas}
+        prevDoc={prevDoc}
+        nextDoc={nextDoc}
+        prevTitle={prevTitle}
+        nextTitle={nextTitle}
+      />
       <main className="dy-pt-2">
         <DetailRenderer
           items={detailSchema}
@@ -93,6 +113,13 @@ export function DetailEntryPage() {
           schemas={schemas}
         />
       </main>
+      <DetailFooterNavigation
+        collection={collection}
+        prevDoc={prevDoc}
+        nextDoc={nextDoc}
+        prevTitle={prevTitle}
+        nextTitle={nextTitle}
+      />
     </div>
   )
 }

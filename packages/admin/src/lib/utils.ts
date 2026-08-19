@@ -75,19 +75,26 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
     return `${basePrefix}${cleanPath}`;
   };
 
-  // 2. Resolve object or string
+  // 2. Direct object URL resolution (never reconstruct if url is already provided)
   let targetUrl = "";
   if (typeof val === "object" && val !== null) {
-    targetUrl = val.url || val.filename || "";
+    if (val.url && typeof val.url === "string" && val.url.trim().length > 0) {
+      const directUrl = val.url.trim();
+      if (directUrl.startsWith("http://") || directUrl.startsWith("https://") || directUrl.startsWith("/") || directUrl.startsWith("blob:") || directUrl.startsWith("data:")) {
+        return directUrl;
+      }
+      return prependBase(directUrl);
+    }
+    targetUrl = val.filename || val.src || "";
   } else {
-    targetUrl = String(val);
+    targetUrl = String(val).trim();
   }
 
   if (!targetUrl) {
     return "";
   }
 
-  if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("/")) {
+  if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("/") || targetUrl.startsWith("blob:") || targetUrl.startsWith("data:")) {
     return targetUrl;
   }
 

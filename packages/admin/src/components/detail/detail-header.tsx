@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   ChevronLeft,
+  ChevronRight,
   Pencil,
   Copy,
   Check,
@@ -20,9 +21,22 @@ export interface DetailHeaderProps {
   doc: any
   user?: any
   schemas?: any
+  prevDoc?: any
+  nextDoc?: any
+  prevTitle?: string | null
+  nextTitle?: string | null
 }
 
-export function DetailHeader({ collection, doc, user: _user, schemas }: DetailHeaderProps) {
+export function DetailHeader({
+  collection,
+  doc,
+  user: _user,
+  schemas,
+  prevDoc,
+  nextDoc,
+  prevTitle,
+  nextTitle,
+}: DetailHeaderProps) {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
 
@@ -76,6 +90,31 @@ export function DetailHeader({ collection, doc, user: _user, schemas }: DetailHe
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-2">
+          {(prevDoc || nextDoc) && (
+            <div className="dy-flex dy-items-center dy-gap-0.5 dy-border dy-border-border/60 dy-rounded-lg dy-p-0.5 dy-bg-muted/30">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={!prevDoc}
+                onClick={() => navigate(`/collections/${collection.slug}/${prevDoc.id}/detail`)}
+                className="dy-h-7 dy-w-7 dy-rounded-md dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
+                title={prevTitle ? `Previous: ${prevTitle} (K)` : "No previous record"}
+              >
+                <ChevronLeft className="dy-h-3.5 dy-w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={!nextDoc}
+                onClick={() => navigate(`/collections/${collection.slug}/${nextDoc.id}/detail`)}
+                className="dy-h-7 dy-w-7 dy-rounded-md dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
+                title={nextTitle ? `Next: ${nextTitle} (J)` : "No next record"}
+              >
+                <ChevronRight className="dy-h-3.5 dy-w-3.5" />
+              </Button>
+            </div>
+          )}
+
           {previewUrl && (
             <Button
               variant="outline"
