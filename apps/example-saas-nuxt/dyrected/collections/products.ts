@@ -19,17 +19,17 @@ export const Products = defineCollection({
   },
   detail: [
     displaySection("Product Overview", [
-      displayField("title", { span: 8 }),
+      displayField("title", { span: 8, editable: true }),
       displayField("sku", { span: 4, display: "copyable" }),
-      displayField("description", { span: 12 }),
+      displayField("description", { span: 12, editable: true }),
     ], { span: 8 }),
     displaySection("Pricing & Inventory", [
-      displayField("price", { display: "currency", currency: "USD", span: 6 }),
-      displayField("discount", { display: "percent", span: 6 }),
-      displayField("stock", { display: "progress", span: 6 }),
-      displayField("status", { display: "badge", span: 6 }),
-      displayField("rating", { display: "star", span: 6 }),
-      displayField("featured", { display: "boolean", span: 6 }),
+      displayField("price", { display: "currency", currency: "USD", span: 6, editable: true }),
+      displayField("discount", { display: "percent", span: 6, editable: true }),
+      displayField("stock", { display: "progress", span: 6, editable: true }),
+      displayField("status", { display: "badge", span: 6, editable: true }),
+      displayField("rating", { display: "star", span: 6, editable: true }),
+      displayField("featured", { display: "boolean", span: 6, editable: true }),
     ], { span: 4 }),
     displaySection("Media & Gallery", [
       displayField("image", { span: 12 }),

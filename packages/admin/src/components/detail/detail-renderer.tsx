@@ -18,6 +18,7 @@ export interface DetailRendererProps {
   user?: any
   client?: any
   schemas?: any
+  onUpdate?: (fieldName: string, newValue: any) => Promise<void> | void
 }
 
 const topLevelSpanClasses: Record<number, string> = {
@@ -73,6 +74,7 @@ export function DetailRenderer({
   user,
   client,
   schemas,
+  onUpdate,
 }: DetailRendererProps) {
   let components: any = {}
   try {
@@ -290,6 +292,7 @@ export function DetailRenderer({
           options={item.options}
           client={client}
           schemas={schemas}
+          onUpdate={onUpdate}
         />
       )
     }

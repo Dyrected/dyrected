@@ -25,11 +25,11 @@ export const Blog = defineCollection({
     displaySection(
       "Article Header",
       [
-        displayField("title", { span: 8 }),
-        displayField("status", { span: 2, display: "badge" }),
-        displayField("views", { span: 2 }),
+        displayField("title", { span: 8, editable: true }),
+        displayField("status", { span: 2, display: "badge", editable: true }),
+        displayField("views", { span: 2, editable: true }),
         displayField("slug", { span: 6, display: "copyable" }),
-        displayField("publishedDate", { span: 6, display: "relative" }),
+        displayField("publishedDate", { span: 6, display: "relative", editable: true }),
       ],
       { span: 8 },
     ),

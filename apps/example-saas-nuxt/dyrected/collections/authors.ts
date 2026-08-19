@@ -1,8 +1,4 @@
-import {
-  defineCollection,
-  displaySection,
-  displayField,
-} from "@dyrected/core";
+import { defineCollection, displaySection, displayField } from "@dyrected/core";
 import { Media } from "./media.js";
 import { authorsSeed } from "../seed.js";
 
@@ -16,19 +12,21 @@ export const Authors = defineCollection({
     icon: "Users",
   },
   detail: [
-    displaySection("Profile Information", [
-      displayField("name", { span: 6 }),
-      displayField("avatar", { span: 6, display: "avatar" }),
-      displayField("email", { span: 6, display: "email" }),
-      displayField("website", { span: 6, display: "url" }),
-      displayField("memberId", { span: 6, display: "copyable" }),
-      displayField("country", { span: 3, display: "badge" }),
-      displayField("state", { span: 3, display: "badge" }),
-      displayField("bio", { span: 12 }),
-    ], { span: 12 }),
-    displaySection("Published Articles", [
-      displayField("blogPosts", { span: 12 }),
-    ], { span: 12 }),
+    displaySection(
+      "Profile Information",
+      [
+        displayField("name", { span: 6, editable: true }),
+        displayField("avatar", { span: 6, display: "avatar" }),
+        displayField("email", { span: 6, display: "email", editable: true }),
+        displayField("website", { span: 6, display: "url", editable: true }),
+        displayField("memberId", { span: 6, display: "copyable" }),
+        displayField("country", { span: 3, display: "badge" }),
+        displayField("state", { span: 3, display: "badge" }),
+        displayField("bio", { span: 12, editable: true }),
+      ],
+      { span: 12 },
+    ),
+    displaySection("Published Articles", [displayField("blogPosts", { span: 12, display: "table" })], { span: 12 }),
   ],
   fields: [
     { name: "name", type: "text", required: true },

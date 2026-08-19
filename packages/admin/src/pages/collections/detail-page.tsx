@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useParams, useNavigate, Navigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import { DetailHeader } from "../../components/detail/detail-header"
 import { DetailRenderer } from "../../components/detail/detail-renderer"
@@ -17,6 +17,7 @@ export function DetailEntryPage() {
   const { slug, id } = useParams<{ slug: string; id: string }>()
   const navigate = useNavigate()
   const { client, user, schemas } = useDyrected()
+  const queryClient = useQueryClient()
 
   const collection = schemas?.collections?.find((c: any) => c.slug === slug)
 
@@ -35,6 +36,18 @@ export function DetailEntryPage() {
     },
     enabled: Boolean(slug && id && client),
   })
+
+  const handleUpdate = async (fieldName: string, draftValue: any) => {
+    if (!slug || !id || !client) return
+    const updated = await client.collection(slug).update(id, { [fieldName]: draftValue })
+    queryClient.setQueryData(["collections", slug, "detail", id], (prev: any) => {
+      if (updated && typeof updated === "object") {
+        return { ...prev, ...updated }
+      }
+      return { ...prev, [fieldName]: draftValue }
+    })
+    refetch()
+  }
 
   const { prevDoc, nextDoc, prevTitle, nextTitle } = useAdjacentDocuments({
     client,
@@ -111,6 +124,7 @@ export function DetailEntryPage() {
           user={user}
           client={client}
           schemas={schemas}
+          onUpdate={handleUpdate}
         />
       </main>
       <DetailFooterNavigation

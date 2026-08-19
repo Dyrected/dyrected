@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react"
 import { useParams, useNavigate, Navigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import { DetailRenderer } from "../../components/detail/detail-renderer"
 import { generateDefaultDetailSchema } from "@dyrected/core"
@@ -15,6 +15,7 @@ export function GlobalDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { client, user, schemas } = useDyrected()
+  const queryClient = useQueryClient()
 
   const globalSchema = schemas?.globals?.find((g: any) => g.slug === slug)
   const GlobalIcon = React.useMemo(
@@ -37,6 +38,18 @@ export function GlobalDetailPage() {
     },
     enabled: Boolean(slug && client),
   })
+
+  const handleUpdate = async (fieldName: string, draftValue: any) => {
+    if (!slug || !client) return
+    const updated = await client.updateGlobal(slug, { [fieldName]: draftValue })
+    queryClient.setQueryData(["global", slug, "detail"], (prev: any) => {
+      if (updated && typeof updated === "object") {
+        return { ...prev, ...updated }
+      }
+      return { ...prev, [fieldName]: draftValue }
+    })
+    refetch()
+  }
 
   if (globalSchema && (globalSchema as any).detail === false) {
     return <Navigate to={`/globals/${slug}/edit`} replace />
@@ -128,6 +141,7 @@ export function GlobalDetailPage() {
           user={user}
           client={client}
           schemas={schemas}
+          onUpdate={handleUpdate}
         />
       </main>
     </div>
