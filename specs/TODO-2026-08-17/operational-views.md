@@ -270,18 +270,38 @@ const checkInAction = defineAction({
   type: 'row',
   confirm: 'Check in this guest?',
 
-  // Cloud (declarative mutation)
+  // Cloud & Self-Hosted (100% Cloud-safe declarative mutation)
   mutation: {
     checkedIn: true,
     checkedInAt: 'now()',
   },
 
-  // Self-Hosted (native TypeScript async handler)
+  // Self-Hosted only (native TypeScript async handler for custom side-effects)
   handler: async ({ doc, user }) => {
     return { checkedIn: true, checkedInAt: new Date().toISOString() };
   },
 })
 ```
+
+## Actions vs Hooks: Key Differences
+
+| Dimension | **Lifecycle Hooks** | **Actions (`defineAction`)** |
+| :--- | :--- | :--- |
+| **What they are** | Automatic lifecycle event listeners | Intent-driven UI operations |
+| **How they trigger** | **Passive & Invisible**: Triggered automatically on every database CRUD call (`beforeChange`, `afterChange`, etc.) | **Active & Explicit**: Triggered when an admin user clicks a button (`[Check In]`, `[Mark as Paid]`, `[Assign Table]`) |
+| **UI Surface** | None (runs transparently on the backend) | Buttons on Table Rows, Kanban Cards, Bulk Action Bar, or View Header |
+| **User Interaction** | Cannot prompt the user | Can show a **confirmation modal** (`confirm: "..."`) or a **quick input dialog** (`fields: [...]`) |
+| **Relationship** | Hooks **react** to changes | Actions **initiate** changes (which then run through the standard hooks pipeline!) |
+
+> **Note**: When an Action executes and updates a record, all of your collection's existing `beforeChange` and `afterChange` lifecycle hooks still run normally.
+
+## Cloud-First Architecture & Declarative Mutations
+
+Dyrected Cloud safely executes actions without running arbitrary server code:
+
+- **Declarative Mutations**: The `mutation` property is pure JSON (e.g. `{ checkedIn: true, checkedInAt: 'now()' }` or `{ tableNumber: 'input.tableNumber' }`).
+- **Safety**: Pure JSON mutations sync cleanly through `sync:schema` and run in Dyrected Cloud using the built-in expression resolver.
+- **Self-Hosted Flexibility**: For server-side integrations requiring third-party SDKs (e.g. Stripe charges, Slack notifications), self-hosted deployments can supply an async TypeScript `handler`.
 
 ## Action Scopes / Types
 
@@ -313,32 +333,90 @@ const assignTableAction = defineAction({
 
 ---
 
-# 6. View Summary Metrics
+# 6. View Summary Metrics & Database Aggregations
 
-Operational Views can display high-level KPI cards directly above the dataset:
+Operational Views display high-level KPI stat cards directly above the dataset.
+
+Rather than loading entire collections into memory, metrics leverage Dyrected's high-performance **Collection Aggregation Engine** to run native DB aggregation queries (`count`, `sum`, `avg`, `min`, `max`) coupled with **JEXL expressions** for mathematical operations and formatting.
+
+```text
+Database Collection (Thousands of Records)
+              │
+              ▼  (Runs Native DB Aggregate Query)
+   { totalItems: 85, avgPrice: 25000 }
+              │
+              ▼  (JEXL Expression: totalItems * avgPrice)
+          ₦2,125,000
+```
+
+## Metric Definition Scenarios
+
+### Scenario 1: Simple & Conditional Counts
 
 ```ts
-defineView({
-  slug: 'asoebi-fulfillment',
-  label: 'Asoebi Fulfillment',
-  layout: 'kanban',
-  groupBy: 'asoebiStatus',
+{
+  label: 'Total Orders',
+  aggregate: { count: '*' },
+},
+{
+  label: 'Total Paid',
+  aggregate: {
+    count: '*',
+    where: { asoebiStatus: { in: ['paid', 'collected'] } },
+  },
+}
+```
 
-  metrics: [
-    {
-      label: 'Total Orders',
-      expression: 'count()',
-    },
-    {
-      label: 'Total Paid',
-      expression: 'count(doc.asoebiStatus == "paid" || doc.asoebiStatus == "collected")',
-    },
-    {
-      label: 'Estimated Revenue',
-      expression: '"₦" + math.round(sum(doc.asoebiQuantity * 25000), 2)',
-    },
-  ],
-})
+### Scenario 2: Sum with Fixed Price Multiplier
+
+Multiply a database aggregated sum by a fixed unit price and format as currency:
+
+```ts
+{
+  label: 'Estimated Revenue',
+  aggregate: {
+    sum: 'asoebiQuantity',
+    cast: 'number',
+    where: { asoebiStatus: { in: ['paid', 'collected'] } },
+  },
+  transform: 'value * 25000',
+  format: 'currency',
+  currency: 'NGN', // Outputs: ₦2,125,000
+}
+```
+
+### Scenario 3: Combining Two Different Aggregations & Multiplying
+
+Compute multiple native aggregates in one query and calculate derived metrics using JEXL math:
+
+```ts
+{
+  label: 'Projected Hall Revenue',
+  aggregates: {
+    totalBooked: { count: '*', where: { booked: { equals: true } } },
+    avgRate: { avg: 'nightlyRate', cast: 'number' },
+  },
+  // Multiplies the two aggregate results together
+  expression: 'aggregates.totalBooked * aggregates.avgRate',
+  format: 'currency',
+  currency: 'USD', // Outputs: $12,450.00
+}
+```
+
+### Scenario 4: Ratio / Percentage Metrics
+
+Calculate conversion rates by dividing two aggregate counts:
+
+```ts
+{
+  label: 'Attendance Rate',
+  aggregates: {
+    totalInvited: { count: '*' },
+    totalAttending: { count: '*', where: { attending: { equals: true } } },
+  },
+  expression: 'math.round((aggregates.totalAttending / aggregates.totalInvited) * 100, 1)',
+  format: 'percent', // Outputs: 85.9%
+}
 ```
 
 ```text
@@ -472,8 +550,14 @@ export const GuestResponses = defineCollection({
       columns: ['name', 'guestCount', 'tableNumber', 'checkedIn'],
       actions: [checkInAction],
       metrics: [
-        { label: 'Total Attending', expression: 'count()' },
-        { label: 'Checked In', expression: 'count(doc.checkedIn == true)' },
+        {
+          label: 'Total Attending',
+          aggregate: { count: '*', where: { attending: { equals: true } } },
+        },
+        {
+          label: 'Checked In',
+          aggregate: { count: '*', where: { checkedIn: { equals: true } } },
+        },
       ],
     }),
 
@@ -488,8 +572,28 @@ export const GuestResponses = defineCollection({
       columns: ['name', 'asoebiSize', 'asoebiQuantity'],
       actions: [markPaidAction, markCollectedAction],
       metrics: [
-        { label: 'Total Orders', expression: 'count()' },
-        { label: 'Paid Orders', expression: 'count(doc.asoebiStatus == "paid" || doc.asoebiStatus == "collected")' },
+        {
+          label: 'Total Orders',
+          aggregate: { count: '*', where: { asoebi: { equals: true } } },
+        },
+        {
+          label: 'Paid Orders',
+          aggregate: {
+            count: '*',
+            where: { asoebiStatus: { in: ['paid', 'collected'] } },
+          },
+        },
+        {
+          label: 'Estimated Revenue',
+          aggregate: {
+            sum: 'asoebiQuantity',
+            cast: 'number',
+            where: { asoebiStatus: { in: ['paid', 'collected'] } },
+          },
+          transform: 'value * 25000',
+          format: 'currency',
+          currency: 'NGN',
+        },
       ],
     }),
 
@@ -513,34 +617,44 @@ export const GuestResponses = defineCollection({
 The initial version introduces:
 
 ```ts
-defineView({
-  slug: string,
-  label: string,
-  icon?: string,
-  layout?: 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards',
-  filter?: Record<string, any> | string,
-  groupBy?: string,
-  dateField?: string,
-  startDateField?: string,
-  endDateField?: string,
-  columns?: string[],
-  sort?: { field: string; direction: 'asc' | 'desc' },
-  actions?: Action[],
-  metrics?: Array<{ label: string; expression: string }>,
-  access?: AccessConfig,
-})
+export interface ViewMetric {
+  label: string;
+  aggregate?: AggregateOperation;
+  aggregates?: Record<string, AggregateOperation>;
+  transform?: string;
+  expression?: string;
+  format?: 'currency' | 'number' | 'percent' | string;
+  currency?: string;
+}
 
-defineAction({
-  name: string,
-  label: string,
-  icon?: string,
-  type?: 'row' | 'bulk' | 'header',
-  confirm?: string,
-  fields?: Field[],
-  mutation?: Record<string, any>,
-  handler?: (context: ActionContext) => Promise<any>,
-  access?: AccessConfig,
-})
+export interface ViewConfig {
+  slug: string;
+  label: string;
+  icon?: string;
+  layout?: 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards';
+  filter?: Record<string, any> | string;
+  groupBy?: string;
+  dateField?: string;
+  startDateField?: string;
+  endDateField?: string;
+  columns?: string[];
+  sort?: { field: string; direction: 'asc' | 'desc' };
+  actions?: ActionConfig[];
+  metrics?: ViewMetric[];
+  access?: AccessConfig;
+}
+
+export interface ActionConfig {
+  name: string;
+  label: string;
+  icon?: string;
+  type?: 'row' | 'bulk' | 'header';
+  confirm?: string;
+  fields?: Field[];
+  mutation?: Record<string, any>;
+  handler?: (context: ActionContext) => Promise<any>;
+  access?: AccessConfig;
+}
 ```
 
 ---

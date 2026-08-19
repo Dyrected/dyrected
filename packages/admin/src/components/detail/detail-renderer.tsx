@@ -8,6 +8,7 @@ import { DetailFieldRenderer } from "./detail-field-renderer"
 import { DetailRepeatComponent } from "./detail-repeat"
 import { DetailComputedComponent } from "./detail-computed"
 import { cn } from "../../lib/utils"
+import { useDyrected } from "../../providers/dyrected-context"
 import type { DetailItem, DetailSpan } from "@dyrected/core"
 
 export interface DetailRendererProps {
@@ -73,6 +74,7 @@ export function DetailRenderer({
   client,
   schemas,
 }: DetailRendererProps) {
+  const { components } = useDyrected()
   function getNestedValue(obj: any, path: string): any {
     if (!obj || !path) return undefined
     if (path in obj) return obj[path]
@@ -251,7 +253,12 @@ export function DetailRenderer({
       if (typeof item.options?.render === "function") {
         return item.options.render({ doc: currentDoc, user, props: item.options?.props })
       }
-      const CustomComp = schemas?.customComponents?.[item.name] || collection?.admin?.components?.[item.name]
+      const CustomComp =
+        (components as any)?.[item.name] ||
+        (components as any)?.fields?.[item.name] ||
+        (components as any)?.customComponents?.[item.name] ||
+        schemas?.customComponents?.[item.name] ||
+        collection?.admin?.components?.[item.name]
       if (CustomComp) {
         return <CustomComp doc={currentDoc} user={user} {...(item.options?.props || {})} />
       }
@@ -284,7 +291,7 @@ export function DetailRenderer({
   }
 
   return (
-    <div className="dy-grid dy-grid-cols-12 dy-gap-6">
+    <div className="dy-grid dy-grid-cols-12 dy-gap-4">
       {items
         .filter((rawItem) => isDetailItemVisible(rawItem, doc, user))
         .map((rawItem, idx) => {

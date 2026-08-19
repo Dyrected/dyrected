@@ -52,11 +52,7 @@ export function normalizeDetailItem(item: DetailItem): Exclude<DetailItem, strin
  * ], { span: 8, icon: 'package' })
  * ```
  */
-export function displaySection(
-  title: string,
-  items: DetailItem[],
-  options?: DetailSectionOptions,
-): DetailSection {
+export function displaySection(title: string, items: DetailItem[], options?: DetailSectionOptions): DetailSection {
   return {
     type: "section",
     title,
@@ -68,11 +64,7 @@ export function displaySection(
 /**
  * Creates a single tab entry for use within `displayTabs()`.
  */
-export function displayTab(
-  label: string,
-  items: DetailItem[],
-  options?: DetailTabOptions,
-): DetailTab {
+export function displayTab(label: string, items: DetailItem[], options?: DetailTabOptions): DetailTab {
   return {
     type: "tab",
     label,
@@ -92,10 +84,7 @@ export function displayTab(
  * ])
  * ```
  */
-export function displayTabs(
-  tabs: DetailTab[],
-  options?: DetailTabsOptions,
-): DetailTabs {
+export function displayTabs(tabs: DetailTab[], options?: DetailTabsOptions): DetailTabs {
   return {
     type: "tabs",
     tabs,
@@ -114,11 +103,7 @@ export function displayTabs(
  * ])
  * ```
  */
-export function displayGrid(
-  columns: number,
-  items: DetailItem[],
-  options?: DetailGridOptions,
-): DetailGrid {
+export function displayGrid(columns: number, items: DetailItem[], options?: DetailGridOptions): DetailGrid {
   return {
     type: "grid",
     columns,
@@ -137,10 +122,7 @@ export function displayGrid(
  * displayField('specs', { display: 'key-value', keyLabel: 'Spec', valueLabel: 'Detail' })
  * ```
  */
-export function displayField(
-  fieldName: string,
-  options?: DisplayFieldOptions,
-): DetailField {
+export function displayField(fieldName: string, options?: DisplayFieldOptions): DetailField {
   return {
     type: "field",
     field: fieldName,
@@ -161,11 +143,7 @@ export function displayField(
  * ], { layout: 'table' })
  * ```
  */
-export function displayRepeat(
-  fieldName: string,
-  items: DetailItem[],
-  options?: DetailRepeatOptions,
-): DetailRepeat {
+export function displayRepeat(fieldName: string, items: DetailItem[], options?: DetailRepeatOptions): DetailRepeat {
   return {
     type: "repeat",
     field: fieldName,
@@ -185,10 +163,7 @@ export function displayRepeat(
  */
 export function displayComputed<TDoc = any>(
   label: string,
-  expressionOrOptionsOrHandler:
-    | string
-    | DetailComputedOptions<TDoc>
-    | ComputedHandler<TDoc>,
+  expressionOrOptionsOrHandler: string | DetailComputedOptions<TDoc> | ComputedHandler<TDoc>,
   options?: DetailComputedOptions<TDoc>,
 ): DetailComputed<TDoc> {
   let expression: string | undefined;
@@ -199,10 +174,7 @@ export function displayComputed<TDoc = any>(
     expression = expressionOrOptionsOrHandler;
   } else if (typeof expressionOrOptionsOrHandler === "function") {
     handler = expressionOrOptionsOrHandler;
-  } else if (
-    expressionOrOptionsOrHandler &&
-    typeof expressionOrOptionsOrHandler === "object"
-  ) {
+  } else if (expressionOrOptionsOrHandler && typeof expressionOrOptionsOrHandler === "object") {
     expression = expressionOrOptionsOrHandler.expression;
     handler = expressionOrOptionsOrHandler.handler;
     finalOptions = {
@@ -252,10 +224,7 @@ export function displayDivider(options?: DetailDividerOptions): DetailDivider {
  * displayText('Overview Notes', { variant: 'heading' })
  * ```
  */
-export function displayText(
-  content: string,
-  options?: DetailTextOptions,
-): DetailText {
+export function displayText(content: string, options?: DetailTextOptions): DetailText {
   return {
     type: "text",
     content,
@@ -271,10 +240,7 @@ export function displayText(
  * displayCustom('AnalyticsChart', { props: { timeframe: '30d' } })
  * ```
  */
-export function displayCustom<TDoc = any>(
-  name: string,
-  options?: DetailCustomOptions<TDoc>,
-): DetailCustom<TDoc> {
+export function displayCustom<TDoc = any>(name: string, options?: DetailCustomOptions<TDoc>): DetailCustom<TDoc> {
   return {
     type: "custom",
     name,
@@ -318,9 +284,7 @@ export async function evaluateDetailComputed(
       if (!rawItem) continue;
       const item = normalizeDetailItem(rawItem);
       if (item.type === "computed") {
-        const id =
-          item.id ||
-          item.label?.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        const id = item.id || item.label?.toLowerCase().replace(/[^a-z0-9]+/g, "_");
         if (id) {
           computedItems.push({
             id,
@@ -382,25 +346,16 @@ const SENSITIVE_DETAIL_FIELDS = new Set([
  * Generates an automatic default 12-column Detail View schema for a collection or global
  * when no explicit `detail` configuration is provided.
  */
-export function generateDefaultDetailSchema(
-  schema: {
-    fields?: Field[];
-    labels?: { singular?: string; plural?: string };
-    label?: string;
-    slug?: string;
-  },
-): DetailSchema {
+export function generateDefaultDetailSchema(schema: {
+  fields?: Field[];
+  labels?: { singular?: string; plural?: string };
+  label?: string;
+  slug?: string;
+}): DetailSchema {
   const fields = schema.fields || [];
 
   // Group fields into main content fields vs sidebar metadata fields
-  const sidebarFieldTypes = new Set([
-    "select",
-    "radio",
-    "boolean",
-    "date",
-    "datetime",
-    "relationship",
-  ]);
+  const sidebarFieldTypes = new Set(["select", "radio", "boolean", "date", "datetime", "relationship"]);
 
   const mainFields: DetailItem[] = [];
   const sidebarFields: DetailItem[] = [];
@@ -411,10 +366,7 @@ export function generateDefaultDetailSchema(
     if ((field as any).hidden) continue;
     if (field.admin?.hidden) continue;
 
-    const isSidebar =
-      sidebarFieldTypes.has(field.type) &&
-      field.type !== "relationship" &&
-      !field.hasMany;
+    const isSidebar = sidebarFieldTypes.has(field.type) && field.type !== "relationship" && !field.hasMany;
 
     if (isSidebar && sidebarFields.length < 5) {
       sidebarFields.push(
@@ -444,8 +396,7 @@ export function generateDefaultDetailSchema(
 
   const sections: DetailItem[] = [];
 
-  const mainTitle =
-    schema.labels?.singular || schema.label || "Details";
+  const mainTitle = schema.labels?.singular || schema.label || "Details";
 
   if (sidebarFields.length > 0) {
     sections.push(
@@ -480,11 +431,7 @@ export function generateDefaultDetailSchema(
  * isDetailItemVisible(displayField('publishedAt', { visible: "doc.status == 'published'" }), doc, user)
  * ```
  */
-export function isDetailItemVisible(
-  item: DetailItem,
-  doc: any,
-  user?: any,
-): boolean {
+export function isDetailItemVisible(item: DetailItem, doc: any, user?: any): boolean {
   if (!item) return true;
   const it = normalizeDetailItem(item);
   const visible = (it as any).options?.visible;
@@ -500,4 +447,3 @@ export function isDetailItemVisible(
   }
   return true;
 }
-
