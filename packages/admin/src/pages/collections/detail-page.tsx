@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useParams, useNavigate, Navigate } from "react-router-dom"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import { DetailHeader } from "../../components/detail/detail-header"
 import { DetailRenderer } from "../../components/detail/detail-renderer"
@@ -37,16 +37,21 @@ export function DetailEntryPage() {
     enabled: Boolean(slug && id && client),
   })
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ fieldName, value }: { fieldName: string; value: any }) => {
+      if (!slug || !id || !client) throw new Error("Missing slug, ID, or client")
+      return client.collection(slug).update(id, { [fieldName]: value })
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["collections", slug, "detail", id],
+      })
+      await refetch()
+    },
+  })
+
   const handleUpdate = async (fieldName: string, draftValue: any) => {
-    if (!slug || !id || !client) return
-    const updated = await client.collection(slug).update(id, { [fieldName]: draftValue })
-    queryClient.setQueryData(["collections", slug, "detail", id], (prev: any) => {
-      if (updated && typeof updated === "object") {
-        return { ...prev, ...updated }
-      }
-      return { ...prev, [fieldName]: draftValue }
-    })
-    refetch()
+    await updateMutation.mutateAsync({ fieldName, value: draftValue })
   }
 
   const { prevDoc, nextDoc, prevTitle, nextTitle } = useAdjacentDocuments({

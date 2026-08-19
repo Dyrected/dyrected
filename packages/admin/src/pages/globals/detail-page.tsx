@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react"
 import { useParams, useNavigate, Navigate } from "react-router-dom"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import { DetailRenderer } from "../../components/detail/detail-renderer"
 import { generateDefaultDetailSchema } from "@dyrected/core"
@@ -39,16 +39,21 @@ export function GlobalDetailPage() {
     enabled: Boolean(slug && client),
   })
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ fieldName, value }: { fieldName: string; value: any }) => {
+      if (!slug || !client) throw new Error("Missing slug or client")
+      return client.updateGlobal(slug, { [fieldName]: value })
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["global", slug, "detail"],
+      })
+      await refetch()
+    },
+  })
+
   const handleUpdate = async (fieldName: string, draftValue: any) => {
-    if (!slug || !client) return
-    const updated = await client.updateGlobal(slug, { [fieldName]: draftValue })
-    queryClient.setQueryData(["global", slug, "detail"], (prev: any) => {
-      if (updated && typeof updated === "object") {
-        return { ...prev, ...updated }
-      }
-      return { ...prev, [fieldName]: draftValue }
-    })
-    refetch()
+    await updateMutation.mutateAsync({ fieldName, value: draftValue })
   }
 
   if (globalSchema && (globalSchema as any).detail === false) {
