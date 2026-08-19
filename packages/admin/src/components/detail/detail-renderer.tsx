@@ -172,7 +172,8 @@ export function DetailRenderer({
     if (item.type === "repeat") {
       const parentFieldDef = findNestedFieldDef(scopedFields, item.field)
       const childFields = parentFieldDef?.fields || scopedFields
-      const repeatData = getNestedValue(currentDoc, item.field) || []
+      const rawRepeatData = getNestedValue(currentDoc, item.field)
+      const repeatData = Array.isArray(rawRepeatData) ? rawRepeatData : (rawRepeatData?.docs || [])
       const visibleRepeatItems = item.items.filter((subItem) => isDetailItemVisible(subItem, currentDoc, user))
       return (
         <DetailRepeatComponent

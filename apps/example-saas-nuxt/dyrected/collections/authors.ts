@@ -1,4 +1,4 @@
-import { defineCollection, displaySection, displayField } from "@dyrected/core";
+import { defineCollection, displaySection, displayField, displayCustom, displayRepeat } from "@dyrected/core";
 import { Media } from "./media.js";
 import { authorsSeed } from "../seed.js";
 
@@ -26,9 +26,45 @@ export const Authors = defineCollection({
       ],
       { span: 12 },
     ),
-    displaySection("Published Articles", [displayField("blogPosts", { span: 12, display: "table" })], { span: 12 }),
+    displaySection(
+      "Author Activity & Analytics",
+      [
+        displayCustom("AuthorAnalytics", {
+          span: 12,
+          props: { timeframe: "30d" },
+        }),
+      ],
+      { span: 12 },
+    ),
+    displaySection(
+      "Published Articles",
+      [
+        displayField("blogPosts", { span: 12 }),
+        displayRepeat(
+          "blogPosts",
+          [
+            displayField("title", { span: 6 }),
+            displayField("status", { span: 2, display: "badge" }),
+            displayField("publishedDate", { span: 2, display: "relative" }),
+            displayField("views", { span: 2 }),
+          ],
+          {
+            layout: "table",
+            title: "Articles",
+            emptyText: "No articles published by this author yet.",
+          },
+        ),
+      ],
+      { span: 12 },
+    ),
   ],
   fields: [
+    {
+      name: "blogPosts",
+      type: "join",
+      collection: "blog",
+      on: "author",
+    },
     { name: "name", type: "text", required: true },
     {
       name: "email",

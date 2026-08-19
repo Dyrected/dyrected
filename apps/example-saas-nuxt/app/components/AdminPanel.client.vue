@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import "@dyrected/admin/styles";
 import RsvpLink from "~/components/RsvpLink.vue";
+import AuthorAnalytics from "~/components/AuthorAnalytics.vue";
 
 const { preference, systemTheme, setTheme } = useTheme();
 
@@ -8,6 +9,7 @@ const customComponents = {
   fields: {
     rsvpLink: RsvpLink,
   },
+  AuthorAnalytics,
 };
 
 const runtimeConfig = useRuntimeConfig();
