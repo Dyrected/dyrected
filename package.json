@@ -3,12 +3,13 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "build:packages": "turbo build --filter='./packages/*'",
     "dev": "turbo dev",
     "test": "turbo test",
     "lint": "turbo lint",
     "version:packages": "changeset version && node scripts/sync-changelog.mjs",
     "sync:changelog": "node scripts/sync-changelog.mjs",
-    "release": "turbo build && changeset publish"
+    "release": "pnpm build:packages && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

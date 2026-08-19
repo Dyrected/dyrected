@@ -1,5 +1,22 @@
 # @dyrected/admin
 
+## 2.8.2
+
+### Patch Changes
+
+- Enhance Detail Views with inline editing, custom component resolution, and dynamic presentation options:
+
+  - **Custom Component Resolution**: Resolve custom Detail View components directly from runtime `DyrectedContext` and `<DyrectedAdmin :components="..." />` in Vue/Nuxt and React/Next.js.
+  - **Inline Field Editing**: Support `editable: true` on `displayField()` with interactive inputs, immediate SDK mutations, and save/cancel micro-interactions.
+  - **Dynamic Badge Presentation**: Support `badgeColors` with named palettes, hex codes, Tailwind classes, and wildcards on `displayField` and `displaySection`.
+  - **Media Previews**: Render uploads and media relationships seamlessly in Detail Views using `DyrectedMedia` with aspect ratio, alignment, and object-fit constraints.
+  - **Adjacent Record Stepper**: Add header and footer stepper controls to navigate smoothly between previous and next records in the active collection.
+  - **JEXL Visibility Context**: Pass full document properties to visibility evaluation context for robust conditional rendering.
+
+- Updated dependencies
+  - @dyrected/core@2.8.2
+  - @dyrected/sdk@2.8.2
+
 ## 2.8.1
 
 ### Patch Changes

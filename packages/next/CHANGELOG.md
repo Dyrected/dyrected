@@ -1,5 +1,14 @@
 # @dyrected/next
 
+## 2.8.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@2.8.2
+  - @dyrected/react@2.8.2
+  - @dyrected/sdk@2.8.2
+
 ## 2.8.1
 
 ### Patch Changes
