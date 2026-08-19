@@ -560,26 +560,33 @@ export function Dashboard() {
 
           {recentEdits.length > 0 ? (
             <div className="dy-divide-y dy-divide-border/40">
-              {recentEdits.map((edit) => (
-                <Link
-                  key={`${edit.collectionSlug}-${edit.id}`}
-                  to={`/collections/${edit.collectionSlug}/${edit.id}/edit`}
-                  className="dy-group dy-grid dy-gap-3 dy-px-4 dy-py-3 dy-transition-colors hover:dy-bg-primary/[0.03] sm:dy-grid-cols-[minmax(0,1fr)_auto_auto] sm:dy-items-center"
-                >
-                  <div className="dy-min-w-0">
-                    <p className="dy-truncate dy-text-sm dy-font-semibold dy-text-foreground dy-transition-colors group-hover:dy-text-primary">
-                      {edit.title}
-                    </p>
-                    <p className="dy-text-xs dy-text-muted-foreground">{edit.collectionLabel}</p>
-                  </div>
-                  <Badge variant="outline" className="dy-w-fit dy-border-primary/20 dy-bg-primary/5 dy-text-[10px] dy-text-primary">
-                    {edit.status}
-                  </Badge>
-                  <span className="dy-text-xs dy-text-muted-foreground sm:dy-text-right">
-                    {formatRelativeDate(edit.updatedAt)}
-                  </span>
-                </Link>
-              ))}
+              {recentEdits.map((edit) => {
+                const col = schemas?.collections?.find((c: any) => c.slug === edit.collectionSlug)
+                const targetUrl = col?.detail === false
+                  ? `/collections/${edit.collectionSlug}/${edit.id}/edit`
+                  : `/collections/${edit.collectionSlug}/${edit.id}`
+
+                return (
+                  <Link
+                    key={`${edit.collectionSlug}-${edit.id}`}
+                    to={targetUrl}
+                    className="dy-group dy-grid dy-gap-3 dy-px-4 dy-py-3 dy-transition-colors hover:dy-bg-primary/[0.03] sm:dy-grid-cols-[minmax(0,1fr)_auto_auto] sm:dy-items-center"
+                  >
+                    <div className="dy-min-w-0">
+                      <p className="dy-truncate dy-text-sm dy-font-semibold dy-text-foreground dy-transition-colors group-hover:dy-text-primary">
+                        {edit.title}
+                      </p>
+                      <p className="dy-text-xs dy-text-muted-foreground">{edit.collectionLabel}</p>
+                    </div>
+                    <Badge variant="outline" className="dy-w-fit dy-border-primary/20 dy-bg-primary/5 dy-text-[10px] dy-text-primary">
+                      {edit.status}
+                    </Badge>
+                    <span className="dy-text-xs dy-text-muted-foreground sm:dy-text-right">
+                      {formatRelativeDate(edit.updatedAt)}
+                    </span>
+                  </Link>
+                )
+              })}
             </div>
           ) : (
             <div className="dy-flex dy-min-h-56 dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-p-8 dy-text-center">
