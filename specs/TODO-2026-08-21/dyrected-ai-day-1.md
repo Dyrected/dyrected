@@ -20,7 +20,7 @@ The goal of Day 1 is to build the **persistent conversational foundation** that 
 
 ## 2. Day 1 Request & Streaming Flow
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │                   Dyrected Admin UI                    │
 │                (useChat() React Hook)                  │
@@ -285,77 +285,204 @@ Sends a message to the thread and streams back the assistant's reply.
   }
   ```
 
+* **Error Handling (Missing API Key):**
+  If `process.env.GEMINI_API_KEY` is not configured, the endpoint returns a `412 Precondition Failed`:
+
+  ```json
+  {
+    "error": "AI_NOT_CONFIGURED",
+    "message": "GEMINI_API_KEY is not configured on the server."
+  }
+  ```
+
 * **Response Headers:** `Content-Type: text/event-stream; charset=utf-8`
 * **Response Body:** Real-time Server-Sent Events stream using `streamText().toDataStreamResponse()`.
-* **Server Lifecycle:**
-  1. Save user message to `_dyrected_ai_messages`.
-  2. Load previous messages from `_dyrected_ai_messages` for this `threadId`.
-  3. Call `streamText()` with `@ai-sdk/google` (`gemini-2.5-flash`).
-  4. In `onFinish` callback: persist the full assistant response text to `_dyrected_ai_messages` and update thread `updatedAt`.
+* **Server Lifecycle & Title Auto-Generation:**
+  1. Verify auth and thread ownership (`userId` + `projectId`).
+  2. Persist user message to `_dyrected_ai_messages`.
+  3. **Auto-Generate Thread Title:** If the thread has no title or default title, trigger a fast background completion (`generateText({ model: google('gemini-2.5-flash'), prompt: "Summarize this user request in 3-5 words for a title: " + content })`) and update `_dyrected_ai_threads.title`.
+  4. Load previous messages from `_dyrected_ai_messages` for this `threadId`.
+  5. Call `streamText()` with `@ai-sdk/google` (`gemini-2.5-flash`).
+  6. In `onFinish` callback: persist the full assistant response text to `_dyrected_ai_messages` and update thread `updatedAt`.
 
 ---
 
-## 6. Frontend Integration (Basic `useChat` UI)
+## 6. Frontend UI: Right-Side Lip Dock & Vercel `ai-elements`
 
-A lightweight chat drawer in the Admin UI using `@ai-sdk/react`.
+The UI implements a **PostHog-style floating right-edge lip trigger** and builds the chat panel using **Vercel `ai-elements`** (`Conversation`, `Message`, `PromptInput`, `Suggestion`).
+
+### 6.1 PostHog-Style Right-Side Lip Trigger
+
+A tab hanging from the right viewport margin with smooth slide-over drawer transitions:
+
+```
+Desktop (≥ 768px):                      Mobile (< 768px):
+┌───────────────────────────────┬───┐  ┌───────────────────────────────────┐
+│ Dyrected Admin                │ ✨│  │ Dyrected Admin                    │
+│                               │ A │  │                                   │
+│                               │ I │  │                                   │
+│                               │   │  │                                   │
+│                               │ ⌘ │  │                                   │
+│                               │ J │  │                               [✨]│
+└───────────────────────────────┴───┘  └───────────────────────────────────┘
+   ▲ Right-edge vertical tab              ▲ Bottom-right Floating Action Button
+```
+
+### 6.2 Responsive Drawer & Trigger Component
 
 ```tsx
+import React, { useState, useEffect } from "react";
+import { Sparkles, X, Plus, AlertCircle, History } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
-import { Sparkles, Send } from "lucide-react";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+  PromptInputAction,
+} from "@/components/ai-elements/prompt-input";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
-export function AIChatDrawer({ threadId }: { threadId: string }) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: `/api/ai/threads/${threadId}/messages`,
-    initialMessages: [], // Hydrated from GET /ai/threads/:threadId
+export function DyrectedAILipTrigger() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+
+  // Keyboard shortcut: Cmd + J / Ctrl + J
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  return (
+    <>
+      {/* PostHog-style Right-Side Floating Lip (Desktop) */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-label="Open Dyrected AI Assistant (Cmd+J)"
+        className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 items-center gap-1.5 px-2 py-3.5 bg-primary text-primary-foreground rounded-l-xl shadow-xl hover:pr-3.5 hover:shadow-2xl transition-all duration-200 group cursor-pointer border-y border-l border-primary/20"
+      >
+        <Sparkles className="w-4 h-4 text-primary-foreground group-hover:scale-110 transition-transform" />
+        <span className="[writing-mode:vertical-lr] text-[11px] font-bold tracking-widest uppercase select-none">
+          AI Assistant
+        </span>
+        <kbd className="text-[9px] bg-primary-foreground/20 px-1 py-0.5 rounded font-mono select-none">
+          ⌘J
+        </kbd>
+      </button>
+
+      {/* Mobile Floating Action Button (< 768px) */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-label="Open Dyrected AI Assistant"
+        className="flex md:hidden fixed bottom-5 right-5 z-40 p-3.5 bg-primary text-primary-foreground rounded-full shadow-2xl active:scale-95 transition-transform"
+      >
+        <Sparkles className="w-5 h-5" />
+      </button>
+
+      {/* Slide-over Drawer */}
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col h-full">
+          <DyrectedAIChatPanel
+            threadId={activeThreadId}
+            onSelectThread={setActiveThreadId}
+          />
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+```
+
+### 6.3 Chat Panel using `ai-elements`
+
+```tsx
+export function DyrectedAIChatPanel({
+  threadId,
+  onSelectThread,
+}: {
+  threadId: string | null;
+  onSelectThread: (id: string | null) => void;
+}) {
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+    api: threadId ? `/api/ai/threads/${threadId}/messages` : "/api/ai/chat",
   });
 
   return (
-    <div className="flex flex-col h-full border-l bg-background w-80 sm:w-96">
-      {/* Header */}
-      <div className="p-4 border-b font-medium flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-primary" />
-        <span>Dyrected Assistant</span>
-      </div>
-
-      {/* Message List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
-          >
-            <div
-              className={`p-3 rounded-lg text-sm max-w-[85%] whitespace-pre-wrap ${
-                m.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground"
-              }`}
-            >
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {isLoading && messages[messages.length - 1]?.role === "user" && (
-          <div className="text-xs text-muted-foreground animate-pulse">Thinking...</div>
-        )}
-      </div>
-
-      {/* Input Box */}
-      <form onSubmit={handleSubmit} className="p-3 border-t flex gap-2">
-        <input
-          value={input}
-          onChange={handleInputChange}
-          placeholder="Ask Dyrected..."
-          className="flex-1 border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-        />
+    <div className="flex flex-col h-full bg-background">
+      {/* Top Bar */}
+      <div className="px-4 py-3 border-b flex items-center justify-between">
+        <div className="flex items-center gap-2 font-semibold text-sm">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span>Dyrected Assistant</span>
+        </div>
         <button
-          type="submit"
-          disabled={isLoading || !input.trim()}
-          className="p-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
+          onClick={() => onSelectThread(null)}
+          title="New Conversation"
+          className="p-1.5 hover:bg-muted rounded-md text-xs font-medium flex items-center gap-1 text-muted-foreground"
         >
-          <Send className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
+          <span>New</span>
         </button>
-      </form>
+      </div>
+
+      {/* Missing Key Banner */}
+      {error && (
+        <div className="m-4 p-3 border border-destructive/20 bg-destructive/10 rounded-lg flex items-start gap-2.5 text-xs text-destructive">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold">AI not configured:</span> Please set <code className="font-mono bg-destructive/20 px-1 py-0.5 rounded">GEMINI_API_KEY</code> in your environment.
+          </div>
+        </div>
+      )}
+
+      {/* Conversation Thread using ai-elements */}
+      <Conversation className="flex-1">
+        <ConversationContent className="p-4 space-y-4">
+          {messages.map((message) => (
+            <Message key={message.id} from={message.role}>
+              <MessageContent>
+                <MessageResponse>{message.content}</MessageResponse>
+              </MessageContent>
+            </Message>
+          ))}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      {/* Prompt Input using ai-elements */}
+      <div className="p-4 border-t">
+        <PromptInput onSubmit={handleSubmit}>
+          <PromptInputTextarea
+            value={input}
+            onChange={handleInputChange}
+            placeholder="Ask Dyrected anything..."
+            className="min-h-[44px]"
+          />
+          <PromptInputActions>
+            <PromptInputAction
+              tooltip="Send message"
+              disabled={isLoading || !input.trim()}
+            />
+          </PromptInputActions>
+        </PromptInput>
+      </div>
     </div>
   );
 }
