@@ -1,13 +1,18 @@
 import {
   defineArrayField,
+  defineBooleanField,
   defineCollection,
   defineConfig,
+  defineDateTimeField,
   defineGlobal,
+  defineNumberField,
   defineObjectField,
   defineRelationshipField,
   defineSelectField,
   defineTextField,
   defineTextareaField,
+  defineView,
+  defineAction,
   displaySection,
   displayField,
   displayTabs,
@@ -894,6 +899,262 @@ const AssessmentCategories = defineGlobal({
   },
 });
 
+// ── Operational Views: Guest Responses ──────────────────────────────────────
+// Exercises every view layout, action shape, and metric scenario from
+// specs/TODO-2026-08-17/operational-views.md against real data.
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: {
+    checkedIn: true,
+    checkedInAt: "now()",
+  },
+});
+
+const undoCheckInAction = defineAction({
+  name: "undoCheckIn",
+  label: "Undo Check-In",
+  icon: "UserX",
+  type: "row",
+  mutation: {
+    checkedIn: false,
+    checkedInAt: null,
+  },
+});
+
+const assignTableAction = defineAction({
+  name: "assignTable",
+  label: "Assign Table",
+  icon: "Table2",
+  type: "row",
+  fields: [
+    defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
+    defineTextField({ name: "notes", label: "Seating Notes" }),
+  ],
+  mutation: {
+    tableNumber: "input.tableNumber",
+    seatingNotes: "input.notes",
+  },
+});
+
+const markPaidAction = defineAction({
+  name: "markPaid",
+  label: "Mark Paid",
+  icon: "CreditCard",
+  type: "row",
+  fields: [
+    defineSelectField({ name: "method", label: "Payment Method", options: ["transfer", "cash", "card"] }),
+  ],
+  mutation: {
+    asoebiStatus: "paid",
+    asoebiPaidAt: "now()",
+  },
+});
+
+const markCollectedAction = defineAction({
+  name: "markCollected",
+  label: "Mark Collected",
+  icon: "PackageCheck",
+  type: "row",
+  mutation: {
+    asoebiStatus: "collected",
+    asoebiCollectedAt: "now()",
+  },
+});
+
+const markSelectedPaidAction = defineAction({
+  name: "markSelectedPaid",
+  label: "Mark Paid",
+  icon: "CreditCard",
+  type: "bulk",
+  mutation: {
+    asoebiStatus: "paid",
+    asoebiPaidAt: "now()",
+  },
+});
+
+const sendReminderAction = defineAction({
+  name: "sendReminder",
+  label: "Send Reminders",
+  icon: "BellRing",
+  type: "header",
+  confirm: "Send a payment reminder to everyone still in `requested`?",
+  mutation: {
+    remindedAt: "now()",
+  },
+});
+
+const inDays = (days: number, hour = 15) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(hour, 0, 0, 0);
+  return date.toISOString();
+};
+
+const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  labels: { singular: "Guest response", plural: "Guest Responses" },
+  admin: {
+    useAsTitle: "name",
+    icon: "Users",
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineTextField({ name: "email", label: "Email" }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0 }),
+    defineNumberField({ name: "tableNumber", label: "Table Number" }),
+    defineBooleanField({ name: "checkedIn", label: "Checked In", defaultValue: false }),
+    defineDateTimeField({ name: "checkedInAt", label: "Checked In At" }),
+
+    // Asoebi (outfit) details
+    defineBooleanField({ name: "asoebi", label: "Wants Asoebi" }),
+    defineSelectField({
+      name: "asoebiStatus",
+      label: "Asoebi Status",
+      options: ["requested", "paid", "collected"],
+      defaultValue: "requested",
+    }),
+    defineSelectField({
+      name: "asoebiSize",
+      label: "Asoebi Size",
+      options: ["S", "M", "L", "XL", "XXL"],
+    }),
+    defineNumberField({ name: "asoebiQuantity", label: "Quantity", defaultValue: 1 }),
+
+    // Appointments & notes
+    defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
+    defineTextareaField({ name: "wellWishes", label: "Well Wishes" }),
+  ],
+  views: [
+    // 1. Table layout for door check-in
+    defineView({
+      slug: "attending-guests",
+      label: "Attending Guests",
+      icon: "UserCheck",
+      layout: "table",
+      filter: { attending: { equals: true } },
+      columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
+      sort: { field: "name", direction: "asc" },
+      actions: [checkInAction, undoCheckInAction, assignTableAction, markSelectedPaidAction, sendReminderAction],
+      metrics: [
+        {
+          label: "Total Attending",
+          aggregate: { count: "*", where: { attending: { equals: true } } },
+        },
+        {
+          label: "Checked In",
+          aggregate: { count: "*", where: { checkedIn: { equals: true } } },
+        },
+        {
+          label: "Total Plus-Ones",
+          aggregate: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
+        },
+        {
+          label: "Check-In Rate",
+          aggregates: {
+            totalAttending: { count: "*", where: { attending: { equals: true } } },
+            totalCheckedIn: { count: "*", where: { checkedIn: { equals: true } } },
+          },
+          expression: "math.round((aggregates.totalCheckedIn / aggregates.totalAttending) * 100, 0)",
+          format: "percent",
+        },
+      ],
+    }),
+
+    // 2. Kanban board for outfit fulfillment
+    defineView({
+      slug: "asoebi-pipeline",
+      label: "Asoebi Fulfillment",
+      icon: "Shirt",
+      layout: "kanban",
+      filter: { asoebi: { equals: true } },
+      groupBy: "asoebiStatus",
+      columns: ["name", "asoebiSize", "asoebiQuantity"],
+      actions: [markPaidAction, markCollectedAction],
+      metrics: [
+        {
+          label: "Total Orders",
+          aggregate: { count: "*", where: { asoebi: { equals: true } } },
+        },
+        {
+          label: "Paid Orders",
+          aggregate: {
+            count: "*",
+            where: { asoebiStatus: { in: ["paid", "collected"] } },
+          },
+        },
+        {
+          label: "Estimated Revenue",
+          aggregate: {
+            sum: "asoebiQuantity",
+            cast: "number",
+            where: { asoebiStatus: { in: ["paid", "collected"] } },
+          },
+          transform: "value * 25000",
+          format: "currency",
+          currency: "NGN",
+        },
+      ],
+    }),
+
+    // 3. Calendar layout for tasting appointments
+    defineView({
+      slug: "tasting-schedule",
+      label: "Tasting Schedule",
+      icon: "Calendar",
+      layout: "calendar",
+      dateField: "appointmentDate",
+      columns: ["name", "guestCount", "asoebiSize"],
+      actions: [assignTableAction],
+    }),
+
+    // 4. Cards gallery for the full guest directory
+    defineView({
+      slug: "guest-directory",
+      label: "Guest Directory",
+      icon: "LayoutGrid",
+      layout: "cards",
+      columns: ["name", "email", "attending", "asoebiSize", "tableNumber"],
+      actions: [checkInAction],
+      metrics: [
+        {
+          label: "All Responses",
+          aggregate: { count: "*" },
+        },
+        {
+          label: "Attending",
+          aggregate: { count: "*", where: { attending: { equals: true } } },
+        },
+        {
+          label: "Declined",
+          aggregate: { count: "*", where: { attending: { equals: false } } },
+        },
+      ],
+    }),
+  ],
+  initialData: [
+    { name: "Tunde Bakare", email: "tunde@example.com", attending: true, guestCount: 2, checkedIn: false, asoebi: true, asoebiStatus: "requested", asoebiSize: "L", asoebiQuantity: 1, appointmentDate: null, wellWishes: "Congratulations!" },
+    { name: "Amaka Obi", email: "amaka@example.com", attending: true, guestCount: 1, tableNumber: 3, checkedIn: true, asoebi: true, asoebiStatus: "paid", asoebiSize: "M", asoebiQuantity: 2, appointmentDate: inDays(2), wellWishes: "Wishing you both forever joy." },
+    { name: "Sade Adu", email: "sade@example.com", attending: true, guestCount: 0, tableNumber: 5, checkedIn: false, asoebi: true, asoebiStatus: "paid", asoebiSize: "S", asoebiQuantity: 1, appointmentDate: inDays(4), wellWishes: "" },
+    { name: "Femi Kuti", email: "femi@example.com", attending: true, guestCount: 3, checkedIn: false, asoebi: true, asoebiStatus: "collected", asoebiSize: "XL", asoebiQuantity: 1, appointmentDate: inDays(-1, 11), wellWishes: "Two become one!" },
+    { name: "Bisi Johnson", email: "bisi@example.com", attending: true, guestCount: 1, checkedIn: false, asoebi: false, asoebiStatus: null, asoebiSize: null, asoebiQuantity: 0, appointmentDate: inDays(6, 13), wellWishes: "" },
+    { name: "Kelechi Nwosu", email: "kelechi@example.com", attending: false, guestCount: 0, checkedIn: false, asoebi: true, asoebiStatus: "requested", asoebiSize: "XXL", asoebiQuantity: 1, appointmentDate: null, wellWishes: "Sorry to miss it." },
+    { name: "Ngozi Eze", email: "ngozi@example.com", attending: true, guestCount: 2, tableNumber: 3, checkedIn: true, asoebi: true, asoebiStatus: "requested", asoebiSize: "M", asoebiQuantity: 2, appointmentDate: inDays(9, 16), wellWishes: "" },
+    { name: "Dapo Ogunlesi", email: "dapo@example.com", attending: false, guestCount: 0, checkedIn: false, asoebi: false, asoebiStatus: null, asoebiSize: null, asoebiQuantity: 0, appointmentDate: null, wellWishes: "" },
+  ],
+  access: {
+    read: publicRead,
+    create: staffWrite,
+    update: staffWrite,
+    delete: adminOnly,
+  },
+});
+
 export default defineConfig({
   db: postgresAdapter({
     url: process.env.DATABASE_URL as string,
@@ -911,6 +1172,6 @@ export default defineConfig({
     collectionSlug: "__admins",
     providers: [],
   },
-  collections: [Admins, Media, Pages, Services, BlogArticles],
+  collections: [Admins, Media, Pages, Services, BlogArticles, GuestResponses],
   globals: [SiteSettings, AssessmentCategories],
 });
