@@ -448,6 +448,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * Custom detail view layout configuration for the Admin UI.
    */
   detail?: DetailSchema<TDoc> | false;
+
+  /**
+   * Operational views for this collection.
+   * Each view provides a tailored workspace for a specific job or workflow.
+   */
+  views?: ViewConfig[];
 }
 ```
 
@@ -469,6 +475,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
 | <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>views</code> (optional) | Operational views for this collection. Each view provides a tailored workspace for a specific job or workflow. |
 {/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}
 
 ## `admin` options
