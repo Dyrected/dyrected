@@ -1,0 +1,76 @@
+import * as React from "react"
+
+import { Card, CardContent } from "../../../../components/ui/card"
+import { RenderCell } from "../../../../components/ui/render-cell"
+import { getMediaUrl } from "../../../../lib/utils"
+import { RowActionsCell } from "../row-actions-cell"
+import type { SerializedAction, SerializedView } from "../types"
+
+interface CardGridItemProps {
+  doc: Record<string, any>
+  schema: any
+  client: unknown
+  schemas: unknown
+  view: SerializedView
+  actions: SerializedAction[]
+  onRunAction: (action: SerializedAction, ids: string[]) => void
+}
+
+/** Finds the first image/media field usable as a cover. */
+function coverField(schema: any): any | undefined {
+  return (schema?.fields ?? []).find(
+    (field: any) => field.type === "image" || field.type === "file",
+  )
+}
+
+/**
+ * A single card in the visual gallery layout.
+ * Uses the collection's media field as the cover when available.
+ */
+export function CardGridItem({ doc, schema, client, schemas, view, actions, onRunAction }: CardGridItemProps) {
+  const fieldsByName = React.useMemo(
+    () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
+    [schema],
+  )
+
+  const shownColumns = (view.columns ?? []).filter((name) => {
+    const field = fieldsByName.get(name)
+    return field && field.type !== "image" && doc[name] !== undefined && doc[name] !== null
+  })
+  const rowActions = actions.filter((action) => (action.type ?? "row") === "row")
+  const cover = coverField(schema)
+
+  return (
+    <Card className="dy-overflow-hidden">
+      {cover && doc[cover.name] ? (
+        <MediaCover value={doc[cover.name]} client={client} />
+      ) : null}
+      <CardContent className="dy-space-y-2 dy-p-4">
+        <div className="dy-space-y-1">
+          {(shownColumns.length ? shownColumns : (view.columns ?? [])).slice(0, 4).map((fieldName, index) => {
+            const field = fieldsByName.get(fieldName)
+            if (!field || doc[fieldName] === undefined || doc[fieldName] === null) return null
+            return (
+              <div key={fieldName} className={index === 0 ? "dy-text-sm dy-font-medium" : "dy-text-xs dy-text-muted-foreground"}>
+                <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
+              </div>
+            )
+          })}
+        </div>
+        {rowActions.length > 0 && (
+          <RowActionsCell actions={rowActions} docId={String(doc.id)} onRun={onRunAction} />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function MediaCover({ value, client }: { value: any; client: unknown }) {
+  const url = getMediaUrl(value, (client as any)?.getBaseUrl?.() || "")
+  if (!url) return null
+  return (
+    <div className="dy-aspect-video dy-w-full dy-overflow-hidden dy-border-b dy-bg-muted">
+      <img src={url} alt="" className="dy-h-full dy-w-full dy-object-cover" loading="lazy" />
+    </div>
+  )
+}
