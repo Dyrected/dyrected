@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { CollectionConfig } from "../types/index.js";
+import type { ActionConfig, CollectionConfig } from "../types/index.js";
 import type { DyrectedContext } from "../app.js";
 import type { HookRequestContext } from "../types/request.js";
 import { PopulationService } from "../services/population.service.js";
@@ -21,9 +21,11 @@ import {
   applyFieldReadAccess,
   applyFieldWriteAccess,
   mergeWhereConstraint,
+  resolveBooleanAccess,
   resolveCollectionAccess,
   toHookRequestContext,
 } from "../utils/access-control.js";
+import { resolveActionMutation } from "../utils/action-mutation.js";
 import {
   WORKFLOW_HISTORY_COLLECTION,
   createWorkflowDocument,
@@ -841,15 +843,33 @@ export class CollectionController {
       });
     }
 
-    const readonlyDb = createReadonlyDb(db);
     const id = c.req.param("id");
     if (!id) return c.json({ message: "Missing ID" }, 400);
 
     const body = await c.req.json();
+    return this.performUpdate(c, id, body);
+  }
+
+  /**
+   * Core update pipeline shared by PATCH requests and operational actions:
+   * auth-field stripping, timestamps, access enforcement, field write access,
+   * beforeChange hooks, persistence (or workflow draft), audit logging,
+   * afterChange/afterRead hooks, and field read access on the response.
+   */
+  private async performUpdate(
+    c: Context<DyrectedContext>,
+    id: string,
+    rawData: Record<string, unknown>,
+  ): Promise<Response> {
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const readonlyDb = createReadonlyDb(db);
     const user = c.get("user");
 
     // Strip auth-only fields from general updates — use /change-password for that
-    let data = { ...body };
+    let data = { ...rawData };
     if (this.collection.auth) {
       delete data.password;
       delete data.oldPassword;
@@ -991,6 +1011,139 @@ export class CollectionController {
     );
 
     return c.json(accessibleDoc);
+  }
+
+  /**
+   * Runs an operational view action (`defineAction`) against one or more documents.
+   * Declarative mutations are resolved server-side (`now()`, `input.*`, `doc.*`)
+   * and every write flows through the standard update pipeline so the
+   * collection's lifecycle hooks and audit trail still apply.
+   */
+  async runViewAction(c: Context<DyrectedContext>) {
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+    if (!this.collection.views?.length) {
+      return c.json({ error: true, message: `Collection ${this.collection.slug} has no views` }, 404);
+    }
+
+    const actionName = c.req.param("action");
+    const viewSlugParam = c.req.param("viewSlug");
+    let action: ActionConfig | undefined;
+    for (const view of this.collection.views) {
+      if (viewSlugParam && view.slug !== viewSlugParam) continue;
+      const match = view.actions?.find((candidate) => candidate.name === actionName);
+      if (match) {
+        action = match;
+        break;
+      }
+    }
+    if (!action) {
+      return c.json(
+        { error: true, message: `Action "${actionName}" was not found${viewSlugParam ? ` in view "${viewSlugParam}"` : ""}` },
+        404,
+      );
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const requestedIds: string[] = Array.isArray(body?.ids)
+      ? body.ids.filter((value: unknown): value is string => typeof value === "string")
+      : typeof body?.id === "string"
+        ? [body.id]
+        : [];
+    if (!requestedIds.length) {
+      return c.json(
+        { error: true, message: "Provide an `id` or an `ids` array of documents to act on." },
+        400,
+      );
+    }
+
+    const input = (body?.input ?? {}) as Record<string, unknown>;
+    const user = c.get("user");
+    const accessArgs = { user, req: this.toHookRequestContext(c) };
+
+    // View-level visibility gate.
+    const view = viewSlugParam
+      ? this.collection.views.find((candidate) => candidate.slug === viewSlugParam)
+      : undefined;
+    if (view?.access) {
+      const allowed = await resolveBooleanAccess(config, view.access.update ?? view.access.read ?? true, {
+        ...accessArgs,
+        data: input,
+      } as any);
+      if (!allowed) {
+        return c.json({ error: true, message: `Access denied: view "${view.slug}"` }, 403);
+      }
+    }
+
+    // Action-level gate — actions mutate, so they default to update permission.
+    if (action.access) {
+      const actionAccess = await resolveBooleanAccess(config, action.access.update ?? true, {
+        ...accessArgs,
+        data: input,
+      } as any);
+      if (!actionAccess) {
+        return c.json({ error: true, message: `Access denied: action "${action.name}"` }, 403);
+      }
+    }
+
+    // Bulk runs sequentially so per-document hooks observe a consistent state.
+    const results: Array<{ id: string; ok: boolean; status?: number; doc?: unknown; error?: unknown }> = [];
+    for (const id of requestedIds) {
+      const targetDoc = await db.findOne({ collection: this.collection.slug, id });
+      if (!targetDoc) {
+        results.push({ id, ok: false, status: 404, error: "Not Found" });
+        continue;
+      }
+
+      let resolvedData: Record<string, unknown>;
+      if (typeof action.handler === "function") {
+        try {
+          const handlerResult = await action.handler({
+            doc: targetDoc as Record<string, unknown>,
+            docs: [targetDoc as Record<string, unknown>],
+            user: (user as unknown as Record<string, unknown>) ?? null,
+            input,
+            collection: { slug: this.collection.slug, label: this.collection.labels?.singular ?? this.collection.slug },
+          });
+          resolvedData = (handlerResult ?? {}) as Record<string, unknown>;
+        } catch (error) {
+          results.push({ id, ok: false, status: 500, error: error instanceof Error ? error.message : String(error) });
+          continue;
+        }
+      } else {
+        resolvedData = resolveActionMutation(action.mutation, {
+          doc: targetDoc as Record<string, unknown>,
+          input,
+          user: (user as unknown as Record<string, unknown>) ?? null,
+        });
+      }
+
+      const response = await this.performUpdate(c, id, resolvedData);
+      const ok = response.ok;
+      let payload: unknown;
+      try {
+        payload = await response.clone().json();
+      } catch {
+        payload = undefined;
+      }
+      results.push({ id, ok, status: response.status, ...(ok ? { doc: payload } : { error: payload }) });
+    }
+
+    if (requestedIds.length === 1) {
+      const single = results[0];
+      if (!single.ok) {
+        return c.json(single.error ?? { error: true, message: "Action failed" }, (single.status ?? 500) as any);
+      }
+      return c.json(single.doc);
+    }
+
+    const failed = results.filter((result) => !result.ok).length;
+    return c.json({
+      updated: results.length - failed,
+      failed,
+      results,
+    });
   }
 
   async transition(c: Context<DyrectedContext>) {

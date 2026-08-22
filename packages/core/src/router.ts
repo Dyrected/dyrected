@@ -740,6 +740,11 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     // delete-many and aggregate must be registered before /:id to avoid the wildcard swallowing them
     app.delete(`${path}/delete-many`, (c) => controller.deleteMany(c));
     app.post(`${path}/aggregate`, (c) => controller.aggregate(c));
+    // Operational view actions — only registered when the collection defines views
+    if (collection.views?.length) {
+      app.post(`${path}/views/:viewSlug/actions/:action`, optionalAuth(config), (c) => controller.runViewAction(c));
+      app.post(`${path}/actions/:action`, optionalAuth(config), (c) => controller.runViewAction(c));
+    }
     if (collection.audit) {
       app.get(`${path}/__audit`, (c) => auditController.findForCollection(c, collection));
     }
