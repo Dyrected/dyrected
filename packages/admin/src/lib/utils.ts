@@ -1,16 +1,35 @@
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
-const customTwMerge = extendTailwindMerge({
-  prefix: "dy-",
-});
+/**
+ * tailwind-merge only understands Tailwind v4-style prefixed utilities
+ * ("dy:h-8"), while the Dyrected build emits dash-prefixed classes ("dy-h-8").
+ * Class strings are therefore normalized into colon syntax before conflict
+ * resolution and restored afterwards, so overrides passed via `cn` reliably
+ * win over component base classes.
+ */
+const PREFIX = "dy";
+
+const twMerge = extendTailwindMerge({ prefix: PREFIX });
+
+function toColonSyntax(className: string): string {
+  // Token boundaries: string start, whitespace, or a variant separator ("hover:dy-flex").
+  return className.replace(/(^|\s|:)dy-/g, "$1dy:");
+}
+
+function toDashSyntax(className: string): string {
+  return className.replace(/(^|\s|:)dy:/g, "$1dy-");
+}
 
 /**
- * Merges Tailwind class names, resolving conflicts with the `dy-` prefix.
- * Drop-in replacement for `clsx` that handles Dyrected's scoped Tailwind build.
+ * Merges Tailwind class names, resolving conflicts between the design
+ * system's dash-prefixed utilities. Drop-in replacement for `clsx` — later
+ * arguments win over earlier conflicting classes.
  */
 export function cn(...inputs: ClassValue[]) {
-  return customTwMerge(clsx(inputs));
+  const raw = clsx(inputs);
+  if (!raw.includes(`${PREFIX}-`)) return raw;
+  return toDashSyntax(twMerge(toColonSyntax(raw)));
 }
 
 /**

@@ -8,6 +8,12 @@ import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { cn } from "../../../../lib/utils"
 
+/**
+ * Shared look for toolbar filter controls: dashed border + muted background so
+ * filters read as optional controls rather than required form fields.
+ */
+export const FILTER_INPUT_CLASSES = "dy-border-dashed dy-bg-muted/40 hover:dy-bg-muted/60 focus-visible:dy-bg-background"
+
 interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
   table: Table<TData>
   /** Column id to bind the search input to. */
@@ -51,12 +57,15 @@ export function DataTableToolbar<TData>({
     >
       <div className="dy-flex dy-flex-1 dy-flex-wrap dy-items-center dy-gap-2">
         {searchColumn && (
-          <Input
-            placeholder={searchPlaceholder}
-            value={(searchColumn.getFilterValue() as string) ?? ""}
-            onChange={(event) => searchColumn.setFilterValue(event.target.value)}
-            className="dy-h-8 dy-w-40 lg:dy-w-56"
-          />
+          <div className="dy-w-40 lg:dy-w-56">
+            <Input
+              size="sm"
+              placeholder={searchPlaceholder}
+              value={(searchColumn.getFilterValue() as string) ?? ""}
+              onChange={(event) => searchColumn.setFilterValue(event.target.value)}
+              className={FILTER_INPUT_CLASSES}
+            />
+          </div>
         )}
         {filterableColumns.map((column) => (
           <ToolbarFilter key={column.id} column={column} />
@@ -66,7 +75,7 @@ export function DataTableToolbar<TData>({
             aria-label="Reset filters"
             variant="outline"
             size="sm"
-            className="dy-h-8 dy-border-dashed"
+            className="dy-border-dashed"
             onClick={() => table.resetColumnFilters()}
           >
             <X />
@@ -95,27 +104,33 @@ function ToolbarFilter<TData>({ column }: ToolbarFilterProps<TData>) {
   switch (meta.variant) {
     case "text":
       return (
-        <Input
-          placeholder={label}
-          value={(column.getFilterValue() as string) ?? ""}
-          onChange={(event) => column.setFilterValue(event.target.value)}
-          className="dy-h-8 dy-w-40 lg:dy-w-56"
-        />
+        <div className="dy-w-40 dy-shrink-0 lg:dy-w-56">
+          <Input
+            size="sm"
+            placeholder={`Filter ${String(label).toLowerCase()}…`}
+            value={(column.getFilterValue() as string) ?? ""}
+            onChange={(event) => column.setFilterValue(event.target.value)}
+            className={FILTER_INPUT_CLASSES}
+          />
+        </div>
       )
     case "number":
       return (
-        <Input
-          type="number"
-          inputMode="numeric"
-          placeholder={label}
-          value={(column.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            column.setFilterValue(
-              event.target.value === "" ? undefined : Number(event.target.value),
-            )
-          }
-          className="dy-h-8 dy-w-[120px]"
-        />
+        <div className="dy-w-[120px] dy-shrink-0">
+          <Input
+            size="sm"
+            type="number"
+            inputMode="numeric"
+            placeholder={`Filter ${String(label).toLowerCase()}…`}
+            value={(column.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              column.setFilterValue(
+                event.target.value === "" ? undefined : Number(event.target.value),
+              )
+            }
+            className={cn(FILTER_INPUT_CLASSES, "dy-tabular-nums")}
+          />
+        </div>
       )
     case "multiSelect":
     case "select":

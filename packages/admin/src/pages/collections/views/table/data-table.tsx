@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../../../components/ui/table"
+import { cn } from "../../../../lib/utils"
 import { DataTablePagination } from "./data-table-pagination"
 
 interface DataTableProps<TData> {
@@ -27,13 +28,17 @@ export function DataTable<TData>({ table, actionBar, onRowClick }: DataTableProp
 
   return (
     <div className="dy-flex dy-w-full dy-flex-col dy-gap-2.5">
-      <div className="dy-overflow-hidden dy-rounded-md dy-border">
-        <Table>
-          <TableHeader>
+      <div className="dy-relative dy-overflow-x-auto dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
+        <Table className="dy-min-w-[720px]">
+          <TableHeader className="dy-bg-muted/20">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    className="dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground dy-py-3"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -48,12 +53,16 @@ export function DataTable<TData>({ table, actionBar, onRowClick }: DataTableProp
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={onRowClick ? "dy-cursor-pointer" : undefined}
+                  className={cn(
+                    "hover:dy-bg-muted/30 dy-border-b dy-border-border/30 last:dy-border-b-0 dy-transition-colors dy-duration-200",
+                    onRowClick && "dy-cursor-pointer",
+                  )}
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
+                      className="dy-py-2.5 dy-px-4"
                       onClick={
                         cell.column.id === "select" || (cell.column.columnDef.meta as any)?.__isActions
                           ? (event) => event.stopPropagation()
@@ -66,8 +75,8 @@ export function DataTable<TData>({ table, actionBar, onRowClick }: DataTableProp
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={table.getAllColumns().length} className="dy-h-24 dy-text-center">
+              <TableRow className="hover:dy-bg-transparent">
+                <TableCell colSpan={table.getAllColumns().length} className="dy-h-24 dy-text-center dy-text-muted-foreground">
                   No results.
                 </TableCell>
               </TableRow>
