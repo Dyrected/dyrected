@@ -16,6 +16,7 @@ import { DataTableToolbar } from "./data-table-toolbar"
 import { buildViewColumns } from "../build-view-columns"
 import { RowActionsCell } from "../row-actions-cell"
 import { BulkActionBar } from "../bulk-action-bar"
+import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface TableLayoutProps {
@@ -47,11 +48,27 @@ export function TableLayout({
   actions,
   onRunAction,
 }: TableLayoutProps) {
+  const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}`
+  const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
+
   const [sorting, setSorting] = React.useState<SortingState>(
     view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : [],
   )
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
+  )
   const [rowSelection, setRowSelection] = React.useState({})
+
+  const handleColumnFiltersChange = React.useCallback(
+    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
+      setColumnFilters((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        persistToolbarState(toolbarStateKey, { columnFilters: next })
+        return next
+      })
+    },
+    [toolbarStateKey],
+  )
 
   const rowActions = actions.filter((action) => (action.type ?? "row") === "row")
   const searchColumnId = findTextColumn(view.columns, schema)
@@ -116,7 +133,7 @@ export function TableLayout({
     columns,
     state: { sorting, columnFilters, rowSelection },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onRowSelectionChange: setRowSelection,
     getRowId: (row) => String(row.id),
     enableRowSelection: true,
@@ -126,7 +143,7 @@ export function TableLayout({
     getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    initialState: { pagination: { pageSize: 20 } },
+    initialState: { pagination: { pageSize: storedState?.pageSize ?? 20 } },
   })
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id as keyof typeof rowSelection])

@@ -22,11 +22,12 @@ import {
   Share2,
   LayoutDashboard,
   Users,
+  icons,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-context"
 import { isNewerVersion, useLatestRelease } from "../../hooks/use-latest-release"
 import { cn, getMediaUrl } from "../../lib/utils"
-import { resolveAdminIcon } from "../../lib/admin-icons"
+import { isAdminIconName, resolveAdminIcon } from "../../lib/admin-icons"
 import { BrandingProvider } from "./branding-provider"
 import { SidebarControlProvider } from "./sidebar-control"
 import {
@@ -107,6 +108,38 @@ function NavItem({
 // ---------------------------------------------------------------------------
 // Nav Group (Collapsible)
 // ---------------------------------------------------------------------------
+function NavSubItem({
+  to,
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  to: string
+  icon?: string
+  label: string
+  active: boolean
+  onClick?: () => void
+}) {
+  const Icon = icon && isAdminIconName(icon) ? icons[icon] : null
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={cn(
+        "dy-flex dy-items-center dy-gap-2.5 dy-rounded-md dy-py-1.5 dy-pl-9 dy-pr-3 dy-text-xs dy-font-medium dy-transition-colors",
+        active
+          ? "dy-bg-primary/10 dy-text-primary"
+          : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
+      )}
+    >
+      {Icon && <Icon className="dy-h-3.5 dy-w-3.5 dy-shrink-0" />}
+      {!Icon && <span className="dy-h-1 dy-w-1 dy-shrink-0 dy-rounded-full dy-bg-current" />}
+      <span className="dy-truncate">{label}</span>
+    </Link>
+  )
+}
+
 function NavGroup({
   label,
   children,
@@ -239,6 +272,11 @@ interface AdminSidebarCollection {
     update?: boolean;
     delete?: boolean;
   };
+  views?: Array<{
+    slug: string;
+    label: string;
+    icon?: string;
+  }>;
   shared?: boolean;
 }
 
@@ -303,16 +341,24 @@ function SidebarInner({
       </div>
     )
 
+    const views = col.views ?? []
+
     return (
-      <NavItem
-        key={col.slug}
-        to={`/collections/${col.slug}`}
-        icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
-        label={navLabel}
-        active={location.pathname.startsWith(`/collections/${col.slug}`)}
-        collapsed={collapsed}
-        onClick={onNavigate}
-      />
+      <div key={col.slug} className="dy-space-y-0.5">
+        <NavItem
+          to={`/collections/${col.slug}`}
+          icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
+          label={navLabel}
+          active={location.pathname.startsWith(`/collections/${col.slug}`)}
+          collapsed={collapsed}
+          onClick={onNavigate}
+        />
+        {!collapsed &&
+          views.map((view) => {
+            const viewPath = `/collections/${col.slug}/views/${view.slug}`
+            return <NavSubItem key={viewPath} to={viewPath} icon={view.icon} label={view.label} active={location.pathname === viewPath} onClick={onNavigate} />
+          })}
+      </div>
     )
   }
 
