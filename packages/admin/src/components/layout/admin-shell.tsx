@@ -43,6 +43,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
+import { DyrectedAILipTrigger } from "@/components/ai"
 import logo from "@/assets/dyrected.svg"
 import logoDark from "@/assets/dyrected-dark.svg"
 import type { AdminSchemas } from "../../types/admin-components"
@@ -1034,84 +1035,85 @@ export function AdminShell({
   return (
     <BrandingProvider>
       <SidebarControlProvider value={sidebarControl}>
-        <TooltipProvider delayDuration={300}>
+        <TooltipProvider delayDuration={250}>
           <div
             className={cn(
               "dy-relative dy-flex dy-w-full dy-min-h-0 dy-overflow-hidden",
               isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-h-[100dvh]"
             )}
           >
-          {/* ... existing sidebar and main content ... */}
-          <aside
-            className={cn(
-              "dy-hidden md:dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
-              collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
-            )}
-          >
-            <SidebarInner
-              schemas={schemas}
-              isLoading={isLoading}
-              location={location}
-              logout={logout}
-              isEmbedded={isEmbedded}
-              collapsed={collapsed}
-              onToggleCollapse={() => setCollapsed((v) => !v)}
-              updateInfo={updateInfo}
-            />
-          </aside>
+            {/* ... existing sidebar and main content ... */}
+            <aside
+              className={cn(
+                "dy-hidden md:dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
+                collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
+              )}
+            >
+              <SidebarInner
+                schemas={schemas}
+                isLoading={isLoading}
+                location={location}
+                logout={logout}
+                isEmbedded={isEmbedded}
+                collapsed={collapsed}
+                onToggleCollapse={() => setCollapsed((v) => !v)}
+                updateInfo={updateInfo}
+              />
+            </aside>
 
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetContent side="left" className="dy-w-[220px] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
-              <SheetHeader className="dy-sr-only">
-                <SheetTitle>Navigation menu</SheetTitle>
-                <SheetDescription>Displays the mobile admin navigation.</SheetDescription>
-              </SheetHeader>
-              <div className="dy-relative dy-flex dy-h-full dy-flex-col">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetContent side="left" className="dy-w-[220px] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
+                <SheetHeader className="dy-sr-only">
+                  <SheetTitle>Navigation menu</SheetTitle>
+                  <SheetDescription>Displays the mobile admin navigation.</SheetDescription>
+                </SheetHeader>
+                <div className="dy-relative dy-flex dy-h-full dy-flex-col">
+                  <button
+                    type="button"
+                    onClick={() => setMobileOpen(false)}
+                    className="dy-absolute dy-right-3 dy-top-3.5 dy-z-10 dy-rounded-md dy-p-1.5 dy-text-muted-foreground dy-transition-colors hover:dy-bg-muted"
+                    aria-label="Close menu"
+                  >
+                    <X className="dy-h-4 dy-w-4" />
+                  </button>
+                  <SidebarInner
+                    schemas={schemas}
+                    isLoading={isLoading}
+                    location={location}
+                    logout={logout}
+                    isEmbedded={isEmbedded}
+                    collapsed={false}
+                    onNavigate={() => setMobileOpen(false)}
+                    updateInfo={updateInfo}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <main className="dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-1 dy-flex-col dy-overflow-auto dy-bg-background/95">
+              {/* Mobile top header — hidden on desktop, and hidden entirely when
+                embedded (the host dashboard renders the single mobile bar). */}
+              {!isEmbedded && (
+                /* Mobile header is intentionally minimal: a single hamburger at
+                   the top-right. Brand, theme, and account all live inside the
+                   nav drawer it opens, so nothing is lost. */
+                // <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-justify-end dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
                 <button
                   type="button"
-                  onClick={() => setMobileOpen(false)}
-                  className="dy-absolute dy-right-3 dy-top-3.5 dy-z-10 dy-rounded-md dy-p-1.5 dy-text-muted-foreground dy-transition-colors hover:dy-bg-muted"
-                  aria-label="Close menu"
+                  onClick={() => setMobileOpen(true)}
+                  className="dy-fixed md:dy-hidden dy-z-10 dy-top-2 dy-right-2 dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground dy-bg-background hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+                  aria-label="Open menu"
                 >
-                  <X className="dy-h-4 dy-w-4" />
+                  <Menu className="dy-h-5 dy-w-5" />
                 </button>
-                <SidebarInner
-                  schemas={schemas}
-                  isLoading={isLoading}
-                  location={location}
-                  logout={logout}
-                  isEmbedded={isEmbedded}
-                  collapsed={false}
-                  onNavigate={() => setMobileOpen(false)}
-                  updateInfo={updateInfo}
-                />
+                // </header>
+              )}
+
+              <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
+                {children}
               </div>
-            </SheetContent>
-          </Sheet>
-
-          <main className="dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-1 dy-flex-col dy-overflow-auto dy-bg-background/95">
-            {/* Mobile top header — hidden on desktop, and hidden entirely when
-                embedded (the host dashboard renders the single mobile bar). */}
-            {!isEmbedded && (
-              /* Mobile header is intentionally minimal: a single hamburger at
-                 the top-right. Brand, theme, and account all live inside the
-                 nav drawer it opens, so nothing is lost. */
-              // <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-justify-end dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
-              <button
-                type="button"
-                onClick={() => setMobileOpen(true)}
-                className="dy-fixed md:dy-hidden dy-z-10 dy-top-2 dy-right-2 dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground dy-bg-background hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
-                aria-label="Open menu"
-              >
-                <Menu className="dy-h-5 dy-w-5" />
-              </button>
-              // </header>
-            )}
-
-            <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
-              {children}
-            </div>
-          </main>
+            </main>
+            <DyrectedAILipTrigger />
           </div>
         </TooltipProvider>
       </SidebarControlProvider>

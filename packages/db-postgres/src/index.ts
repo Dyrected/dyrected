@@ -153,6 +153,39 @@ export class PostgresAdapter implements DatabaseAdapter {
         throw error;
       }
     }
+
+    try {
+      await sql`
+        CREATE TABLE _dyrected_ai_threads (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          title TEXT,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+      await sql`
+        CREATE TABLE _dyrected_ai_messages (
+          id TEXT PRIMARY KEY,
+          thread_id TEXT NOT NULL REFERENCES _dyrected_ai_threads(id) ON DELETE CASCADE,
+          role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+          content TEXT NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          metadata JSONB
+        )
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_ai_messages_thread_id ON _dyrected_ai_messages(thread_id)
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_ai_threads_user_project ON _dyrected_ai_threads(user_id, project_id)
+      `;
+    } catch (error: any) {
+      if (error?.code !== "42P07") {
+        throw error;
+      }
+    }
   }
 
   private getTableIdentifier(slug: string) {
@@ -207,6 +240,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   private async ensureTable(slug: string, fields: any[] = []) {
     await this.ensureInitialized();
+    if (slug === '_dyrected_ai_threads' || slug === '_dyrected_ai_messages') {
+      return;
+    }
     const tableNameOnly = this.getPhysicalTableName(slug);
     const knownTables = this.getKnownTables();
 

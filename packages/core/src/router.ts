@@ -8,6 +8,7 @@ import { AuthController } from "./controllers/auth.controller.js";
 import { AdminAuthController } from "./controllers/admin-auth.controller.js";
 import { PreviewController } from "./controllers/preview.controller.js";
 import { AuditController } from "./controllers/audit.controller.js";
+import { AIController } from "./controllers/ai.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
@@ -710,6 +711,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.get("/api/admin/auth/:provider/callback", (c) => adminAuthController.callback(c));
   app.post("/api/admin/auth/:provider/exchange", (c) => adminAuthController.exchange(c));
   app.post("/api/admin/logout", (c) => adminAuthController.logout(c));
+
+  // 2c. AI Routes
+  const aiController = new AIController(config);
+  app.post("/api/ai/threads", requireAuth(config), (c) => aiController.createThread(c));
+  app.get("/api/ai/threads", requireAuth(config), (c) => aiController.listThreads(c));
+  app.get("/api/ai/threads/:threadId", requireAuth(config), (c) => aiController.getThread(c));
+  app.post("/api/ai/threads/:threadId/messages", requireAuth(config), (c) => aiController.postMessage(c));
 
   // 3. Auth Routes — for collections with auth: true
   for (const collection of config.collections) {
