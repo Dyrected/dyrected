@@ -94,6 +94,16 @@ export interface WorkflowHistoryEntry {
   createdAt: string;
 }
 
+/** Arguments accepted by `client.collection(slug).runAction()`. */
+export interface RunActionArgs {
+  /** Target a single document (row action). */
+  id?: string;
+  /** Target multiple documents (bulk action). */
+  ids?: string[];
+  /** Values collected from the action's input form dialog. */
+  input?: Record<string, unknown>;
+}
+
 /** A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`. */
 export interface AuditEntry {
   id: string;
@@ -658,6 +668,35 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           {
             method: "POST",
             body: JSON.stringify(input),
+          },
+        ),
+      /**
+       * Run an operational view action (`defineAction`) against one or more documents.
+       *
+       * Sends `POST /api/collections/:collection/views/:viewSlug/actions/:action`.
+       *
+       * @example
+       * ```ts
+       * // Row action
+       * const doc = await client.collection('guest-responses').runAction(
+       *   'attending-guests', 'checkIn', { id: guest.id },
+       * );
+       * // Bulk action
+       * await client.collection('guest-responses').runAction(
+       *   'asoebi-pipeline', 'markPaid', { ids: selectedIds, input: { method: 'cash' } },
+       * );
+       * ```
+       */
+      runAction: <T = UnknownRecord>(
+        viewSlug: string,
+        actionName: string,
+        args: RunActionArgs = {},
+      ) =>
+        this.request<T>(
+          `/api/collections/${slug}/views/${encodeURIComponent(viewSlug)}/actions/${encodeURIComponent(actionName)}`,
+          {
+            method: "POST",
+            body: JSON.stringify(args),
           },
         ),
     };
