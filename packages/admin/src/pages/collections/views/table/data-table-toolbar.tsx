@@ -3,6 +3,7 @@ import type { Column, Table } from "@tanstack/react-table"
 import { X } from "lucide-react"
 
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
+import { DataTableFilterMenu } from "./data-table-filter-menu"
 import { DataTableViewOptions } from "./data-table-view-options"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
@@ -43,6 +44,24 @@ export function DataTableToolbar<TData>({
     [table, searchColumnId],
   )
 
+  const facetedColumns = React.useMemo(
+    () =>
+      filterableColumns.filter((column) => {
+        const meta = column.columnDef.meta as any
+        return meta?.variant === "multiSelect" || meta?.variant === "select"
+      }),
+    [filterableColumns],
+  )
+
+  const menuColumns = React.useMemo(
+    () =>
+      filterableColumns.filter((column) => {
+        const meta = column.columnDef.meta as any
+        return meta?.variant === "text" || meta?.variant === "number" || meta?.variant === "date"
+      }),
+    [filterableColumns],
+  )
+
   const searchColumn = searchColumnId ? table.getColumn(searchColumnId) : undefined
 
   return (
@@ -67,8 +86,12 @@ export function DataTableToolbar<TData>({
             />
           </div>
         )}
-        {filterableColumns.map((column) => (
-          <ToolbarFilter key={column.id} column={column} />
+        {/* Command-based menu handles text / number / date columns; facets stay as pills. */}
+        {menuColumns.length > 0 && (
+          <DataTableFilterMenu table={table} excludeColumnIds={searchColumnId ? [searchColumnId] : []} />
+        )}
+        {facetedColumns.map((column) => (
+          <ToolbarFacetedFilter key={column.id} column={column} />
         ))}
         {isFiltered && (
           <Button
@@ -91,58 +114,19 @@ export function DataTableToolbar<TData>({
   )
 }
 
-interface ToolbarFilterProps<TData> {
+interface ToolbarFacetedFilterProps<TData> {
   column: Column<TData>
 }
 
-function ToolbarFilter<TData>({ column }: ToolbarFilterProps<TData>) {
+function ToolbarFacetedFilter<TData>({ column }: ToolbarFacetedFilterProps<TData>) {
   const meta = column.columnDef.meta as any
-  const label = meta?.label ?? column.id
-
-  if (!meta?.variant) return null
-
-  switch (meta.variant) {
-    case "text":
-      return (
-        <div className="dy-w-40 dy-shrink-0 lg:dy-w-56">
-          <Input
-            size="sm"
-            placeholder={`Filter ${String(label).toLowerCase()}…`}
-            value={(column.getFilterValue() as string) ?? ""}
-            onChange={(event) => column.setFilterValue(event.target.value)}
-            className={FILTER_INPUT_CLASSES}
-          />
-        </div>
-      )
-    case "number":
-      return (
-        <div className="dy-w-[120px] dy-shrink-0">
-          <Input
-            size="sm"
-            type="number"
-            inputMode="numeric"
-            placeholder={`Filter ${String(label).toLowerCase()}…`}
-            value={(column.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              column.setFilterValue(
-                event.target.value === "" ? undefined : Number(event.target.value),
-              )
-            }
-            className={cn(FILTER_INPUT_CLASSES, "dy-tabular-nums")}
-          />
-        </div>
-      )
-    case "multiSelect":
-    case "select":
-      return (
-        <DataTableFacetedFilter
-          column={column}
-          title={label}
-          options={meta.options ?? []}
-          multiple={meta.variant === "multiSelect"}
-        />
-      )
-    default:
-      return null
-  }
+  if (!meta?.variant || !meta.options?.length) return null
+  return (
+    <DataTableFacetedFilter
+      column={column}
+      title={meta.label ?? column.id}
+      options={meta.options}
+      multiple={meta.variant === "multiSelect"}
+    />
+  )
 }

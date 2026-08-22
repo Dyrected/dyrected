@@ -53,6 +53,6 @@ export interface ViewColumnMeta {
   /** Field name in the collection schema this column renders. */
   fieldName: string
   label: string
-  variant?: "text" | "number" | "multiSelect"
+  variant?: "text" | "number" | "date" | "multiSelect"
   options?: { label: string; value: string }[]
 }
