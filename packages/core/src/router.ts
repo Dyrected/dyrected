@@ -173,6 +173,51 @@ export function serializeDetailForApi(detail?: any): any {
 }
 
 /**
+ * Serializes an operational view config for the Admin API.
+ * Function properties (action handlers) are stripped so the payload stays
+ * JSON-safe; access rules are resolved to static values the admin can evaluate.
+ */
+export async function serializeViewForApi(view: any, serializeAccess: (access: any) => Promise<any>): Promise<any> {
+  if (!view) return view;
+  const serializeAccessConfig = async (access: any): Promise<any> => {
+    if (!access) return undefined;
+    const serialized: Record<string, unknown> = {};
+    for (const key of ["read", "create", "update", "delete"] as const) {
+      if (access[key] !== undefined) serialized[key] = await serializeAccess(access[key]);
+    }
+    return serialized;
+  };
+  return {
+    slug: view.slug,
+    label: view.label,
+    icon: view.icon,
+    layout: view.layout ?? "table",
+    filter: view.filter,
+    groupBy: view.groupBy,
+    dateField: view.dateField,
+    startDateField: view.startDateField,
+    endDateField: view.endDateField,
+    columns: view.columns,
+    sort: view.sort,
+    metrics: view.metrics,
+    actions: await Promise.all(
+      (view.actions || []).map(async (action: any) => ({
+        name: action.name,
+        label: action.label,
+        icon: action.icon,
+        type: action.type ?? "row",
+        confirm: action.confirm,
+        fields: action.fields?.map(serializeFieldForApi),
+        mutation: action.mutation,
+        // Self-hosted handlers are intentionally omitted: they never leave the server.
+        access: action.access ? await serializeAccessConfig(action.access) : undefined,
+      })),
+    ),
+    access: view.access ? await serializeAccessConfig(view.access) : undefined,
+  };
+}
+
+/**
  * Register dynamic routes based on the provided configuration.
  */
 export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfig) {
@@ -248,6 +293,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           auth: !!col.auth,
           audit: !!col.audit,
           drafts: !!col.drafts,
+          views: await Promise.all((col.views || []).map((view: any) => serializeViewForApi(view, serializeAccess))),
           admin: col.admin,
           detail: serializeDetailForApi(col.detail),
           workflow: col.workflow

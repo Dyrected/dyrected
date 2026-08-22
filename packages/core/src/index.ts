@@ -405,7 +405,7 @@ type TypedCollectionForConfig<
   TCollections extends readonly CollectionConfig<any>[],
   TBlocks extends readonly Block[],
   TPolicyNames extends string,
-> = Omit<TCollection, "fields" | "access" | "workflow"> & {
+> = Omit<TCollection, "fields" | "access" | "workflow" | "views"> & {
   fields: TCollection["fields"] extends readonly Field[]
     ? TypedFields<TCollection["fields"], TCollections, TBlocks, TPolicyNames>
     : TCollection["fields"];
@@ -414,6 +414,7 @@ type TypedCollectionForConfig<
     TPolicyNames
   >;
   workflow?: TypedWorkflow<NonNullable<TCollection["workflow"]>>;
+  views?: TCollection["views"];
 };
 
 type TypedCollections<
@@ -840,6 +841,7 @@ export function defineTab<const T extends readonly Field[]>(args: {
 }
 
 export * from "./types/index.js";
+export { defineView, defineAction, type ViewConfig, type ActionConfig, type ViewMetric, type ViewLayout, type ActionType } from "./types/views.js";
 export * from "./utils/config.js";
 export * from "./utils/admin-auth.js";
 export * from "./utils/parse-where.js";

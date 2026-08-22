@@ -15,6 +15,7 @@ import type {
 import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
 import type { DetailSchema } from "./detail.js";
+import type { ViewConfig } from "./views.js";
 
 /**
  * Configures account lockout behavior for an auth-enabled collection.
@@ -406,6 +407,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * Custom detail view layout configuration for the Admin UI.
    */
   detail?: DetailSchema<TDoc> | false;
+
+  /**
+   * Operational views for this collection.
+   * Each view provides a tailored workspace for a specific job or workflow.
+   */
+  views?: ViewConfig[];
 }
 
 /**

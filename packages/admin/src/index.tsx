@@ -17,7 +17,8 @@ import { useDyrected } from "./providers/dyrected-context";
 import { QueryProvider } from "./providers/query-provider";
 import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
-import { CollectionListPage } from "./pages/collections/list-page";
+import { CollectionListPage } from "./pages/collections/list-view-v1";
+import { OperationalViewRoute } from "./pages/collections/operational-view-route";
 import { EditEntryPage } from "./pages/collections/edit-page";
 import { DetailEntryPage } from "./pages/collections/detail-page";
 import { MediaPage } from "./pages/media/media-page";
@@ -214,6 +215,7 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/collections/:slug" element={<CollectionRoute />} />
+            <Route path="/collections/:slug/views/:viewSlug" element={<OperationalViewRoute />} />
             <Route path="/collections/:slug/:id" element={<DetailEntryPage />} />
             <Route path="/collections/:slug/new" element={<EditEntryPage />} />
             <Route path="/collections/:slug/edit/:id" element={<LegacyCollectionEditRedirect />} />
