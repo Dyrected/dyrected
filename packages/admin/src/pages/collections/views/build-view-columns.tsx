@@ -48,8 +48,17 @@ export function buildViewColumns({
         accessorKey: name,
         header: field.label || name,
         meta: meta as any,
-        // Facet columns match coerced string values against the selected set.
-        filterFn: meta.variant === "multiSelect" ? multiSelectFilter : undefined,
+        // TanStack only falls back to auto-matching when filterFn is the
+        // literal string "auto" — an explicit undefined resolves through the
+        // registry and comes back empty, so every filterable column declares
+        // a concrete matcher.
+        ...(meta.variant === "multiSelect"
+          ? { filterFn: multiSelectFilter }
+          : meta.variant === "text"
+            ? { filterFn: "includesString" }
+            : meta.variant === "number"
+              ? { filterFn: numberEqualsFilter }
+              : {}),
         cell: ({ row }: any) => (
           <RenderCell value={row.original[name]} field={field} client={client} schemas={schemas} />
         ),
@@ -69,6 +78,21 @@ export function multiSelectFilter(
   if (value === null || value === undefined || value === "") return false
   return filterValue.includes(String(value))
 }
+
+/** Exact numeric match — the toolbar submits numbers, so built-in string
+ * comparators (which call `.toLowerCase()`) would throw. */
+export function numberEqualsFilter(
+  row: any,
+  columnId: string,
+  filterValue: unknown,
+): boolean {
+  return (
+    typeof filterValue === "number" &&
+    !Number.isNaN(filterValue) &&
+    row.getValue(columnId) === filterValue
+  )
+}
+numberEqualsFilter.autoRemove = (value: unknown) => value === undefined || value === null || value === ""
 
 function defaultColumnOrder(schema: any): string[] {
   return (schema?.fields ?? [])
