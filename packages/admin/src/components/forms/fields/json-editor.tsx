@@ -6,6 +6,7 @@ import { cn } from "../../../lib/utils"
 import { Braces, Code, Eye, ChevronRight, ChevronDown } from "lucide-react"
 
 interface JsonEditorProps {
+  id?: string
   value?: unknown
   onChange: (value: unknown) => void
   label?: string
@@ -128,7 +129,7 @@ function JsonTreeNode({ label, value, isLast }: { label?: string; value: unknown
   return null
 }
 
-export function JsonEditor({ value, onChange, label, disabled }: JsonEditorProps) {
+export function JsonEditor({ id, value, onChange, label, disabled }: JsonEditorProps) {
   const [internalValue, setInternalValue] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
   const [mode, setMode] = React.useState<"code" | "tree">("code")
@@ -191,7 +192,7 @@ export function JsonEditor({ value, onChange, label, disabled }: JsonEditorProps
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
       <div className="dy-flex dy-items-center dy-justify-between">
-        {label && <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none">{label}</label>}
+        {label && <span className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none">{label}</span>}
         <div className="dy-flex dy-items-center dy-gap-1.5 dy-ml-auto">
           {mode === "code" && (
             <Button
@@ -234,6 +235,7 @@ export function JsonEditor({ value, onChange, label, disabled }: JsonEditorProps
 
       {mode === "code" ? (
         <Textarea
+          id={id}
           value={internalValue}
           onChange={handleChange}
           disabled={disabled}

@@ -58,6 +58,7 @@ function InlinePicker({
 // DatePicker (single date, optionally with time)
 // ---------------------------------------------------------------------------
 interface DatePickerProps {
+  id?: string
   value?: string | Date
   onChange: (date?: string) => void
   label?: string
@@ -67,7 +68,7 @@ interface DatePickerProps {
   format?: DateFormat
 }
 
-export function DatePicker({ value, onChange, label, disabled, withTime, fieldType, format: valueFormat }: DatePickerProps) {
+export function DatePicker({ id, value, onChange, label, disabled, withTime, fieldType, format: valueFormat }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const wrapperRef = React.useRef<HTMLDivElement>(null)
   const date = value ? new Date(value) : undefined
@@ -103,12 +104,13 @@ export function DatePicker({ value, onChange, label, disabled, withTime, fieldTy
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
       {label && (
-        <label className="dy-text-sm dy-font-medium dy-leading-none">
+        <span className="dy-text-sm dy-font-medium dy-leading-none">
           {label}
-        </label>
+        </span>
       )}
       <div ref={wrapperRef} className="dy-relative">
         <Button
+          id={id}
           type="button"
           variant="outline"
           disabled={disabled}
@@ -140,50 +142,44 @@ export function DatePicker({ value, onChange, label, disabled, withTime, fieldTy
           <Calendar
             mode="single"
             selected={date}
-            defaultMonth={date}
             onSelect={handleDateSelect}
+            initialFocus
           />
           {withTime && (
-            <div className="dy-border-t dy-border-border/50 dy-p-3">
-              <div className="dy-flex dy-items-center dy-gap-2">
-                <Clock className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-shrink-0" />
-                <Input
-                  type="time"
-                  value={timeString}
-                  onChange={handleTimeChange}
-                  disabled={!date}
-                  className="dy-h-8 dy-text-sm dy-border-border/50"
-                />
+            <div className="dy-p-3 dy-border-t dy-border-border/40 dy-bg-muted/10 dy-flex dy-items-center dy-justify-between dy-gap-2">
+              <div className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-text-muted-foreground">
+                <Clock className="dy-h-3.5 dy-w-3.5 dy-text-primary" />
+                <span>Time:</span>
               </div>
-              {!date && (
-                <p className="dy-text-xs dy-text-muted-foreground dy-mt-1.5 dy-pl-6">
-                  Pick a date first
-                </p>
-              )}
+              <Input
+                type="time"
+                value={timeString}
+                onChange={handleTimeChange}
+                className="dy-h-8 dy-w-28 dy-text-xs dy-bg-background"
+              />
             </div>
           )}
         </InlinePicker>
       </div>
       {helperText && (
-        <p className="dy-text-xs dy-text-muted-foreground">
-          Display: {helperText}
-        </p>
+        <span className="dy-text-xs dy-text-muted-foreground">Display: {helperText}</span>
       )}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// DateRangePicker
+// DateRangePicker (from / to range)
 // ---------------------------------------------------------------------------
 interface DateRangePickerProps {
+  id?: string
   value?: { from?: string; to?: string }
   onChange: (range: { from?: string; to?: string } | undefined) => void
   label?: string
   disabled?: boolean
 }
 
-export function DateRangePicker({ value, onChange, label, disabled }: DateRangePickerProps) {
+export function DateRangePicker({ id, value, onChange, label, disabled }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false)
   const wrapperRef = React.useRef<HTMLDivElement>(null)
 
@@ -216,12 +212,13 @@ export function DateRangePicker({ value, onChange, label, disabled }: DateRangeP
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
       {label && (
-        <label className="dy-text-sm dy-font-medium dy-leading-none">
+        <span className="dy-text-sm dy-font-medium dy-leading-none">
           {label}
-        </label>
+        </span>
       )}
       <div ref={wrapperRef} className="dy-relative">
         <Button
+          id={id}
           type="button"
           variant="outline"
           disabled={disabled}

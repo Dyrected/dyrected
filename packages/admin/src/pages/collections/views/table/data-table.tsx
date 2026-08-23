@@ -17,18 +17,25 @@ interface DataTableProps<TData> {
   /** Rendered under the table while rows are selected (floating bulk bar). */
   actionBar?: React.ReactNode
   onRowClick?: (row: TData) => void
+  /** Whether a background query/refetch is in flight. */
+  isFetching?: boolean
 }
 
 /**
- * TanStack table renderer with client-side filtering, sorting and pagination.
+ * TanStack table renderer with server/client filtering, sorting and pagination.
  * Ported from tablecn's data-table architecture.
  */
-export function DataTable<TData>({ table, actionBar, onRowClick }: DataTableProps<TData>) {
+export function DataTable<TData>({ table, actionBar, onRowClick, isFetching }: DataTableProps<TData>) {
   const rows = table.getRowModel().rows
 
   return (
     <div className="dy-flex dy-w-full dy-flex-col dy-gap-2.5">
       <div className="dy-relative dy-overflow-x-auto dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
+        {isFetching && (
+          <div className="dy-absolute dy-top-0 dy-left-0 dy-right-0 dy-h-[2px] dy-bg-primary/20 dy-overflow-hidden dy-z-20">
+            <div className="dy-h-full dy-w-full dy-bg-primary dy-animate-pulse" />
+          </div>
+        )}
         <Table className="dy-min-w-[720px]">
           <TableHeader className="dy-bg-muted/20">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -47,7 +54,7 @@ export function DataTable<TData>({ table, actionBar, onRowClick }: DataTableProp
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody className={cn(isFetching && "dy-opacity-70 dy-transition-opacity")}>
             {rows.length ? (
               rows.map((row) => (
                 <TableRow

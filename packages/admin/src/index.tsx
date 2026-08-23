@@ -17,8 +17,9 @@ import { useDyrected } from "./providers/dyrected-context";
 import { QueryProvider } from "./providers/query-provider";
 import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
-import { CollectionListPage } from "./pages/collections/list-view-v1";
 import { OperationalViewRoute } from "./pages/collections/operational-view-route";
+import { OperationalViewPage } from "./pages/collections/views/operational-view-page";
+import { mergeFilters } from "./pages/collections/views/resolve-view-filter";
 import { EditEntryPage } from "./pages/collections/edit-page";
 import { DetailEntryPage } from "./pages/collections/detail-page";
 import { MediaPage } from "./pages/media/media-page";
@@ -142,22 +143,28 @@ export { useMediaURL } from "./hooks/use-media-url";
 export { useAddMediaFromUrl } from "./hooks/use-add-media-from-url";
 
 // ─── Route that resolves collection → list or media page ─────────────────────
+// Legacy `list-view-v1` is deprecated — operational views (table layout) are now
+// the canonical list view. `resolveSchemas` ensures every collection has at
+// least a synthesized `list` view, so this route can render directly without
+// redirecting to `/views/:viewSlug`.
 
 function CollectionRoute() {
   const { slug } = useParams();
-  const { client } = useDyrected();
+  const { client, schemas: contextSchemas } = useDyrected();
 
-  const { data: schemas, isLoading } = useQuery({
+  const { data: fetchedSchemas, isLoading } = useQuery({
     queryKey: ["schemas"],
     queryFn: () => client?.getSchemas() || Promise.resolve({ collections: [], globals: [] }),
-    enabled: !!client,
+    enabled: !!client && !contextSchemas,
   });
+
+  const schemas = contextSchemas ?? fetchedSchemas;
 
   if (isLoading || !schemas) {
     return <AdminNotFoundSkeleton />;
   }
 
-  const schema = schemas?.collections.find((c: any) => c.slug === slug);
+  const schema = (schemas as any)?.collections.find((c: any) => c.slug === slug);
 
   if (!schema || schema?.admin?.hidden) {
     return (
@@ -168,11 +175,78 @@ function CollectionRoute() {
     );
   }
 
-  if (schema?.upload) {
+  if ((schema as any)?.upload) {
     return <MediaPage collectionSlug={slug!} schema={schema} />;
   }
 
-  return <CollectionListPage slug={slug!} />;
+  // Operational views are the new list view. `resolveSchemas` guarantees at
+  // least one view (synthesized `list` view for collections without explicit
+  // views), so we can render directly. Legacy `?where` / `?search` URL params
+  // from v1 are merged into the view filter for backwards compatibility.
+  const rawView = (schema as any).views?.[0];
+  if (!rawView) {
+    return (
+      <AdminNotFound
+        title="View not found"
+        description={`No view is configured for collection "${slug}".`}
+      />
+    );
+  }
+
+  // URL compat shim for legacy v1 links (`?where=<json>&search=<term>`)
+  let effectiveView: typeof rawView = rawView;
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.hash.split("?")[1] ?? window.location.search);
+      const whereParam = params.get("where");
+      const searchParam = params.get("search");
+      let mergedFilter: Record<string, any> | string | undefined = rawView.filter;
+
+      if (whereParam) {
+        try {
+          const legacyWhere = JSON.parse(whereParam);
+          if (legacyWhere && typeof legacyWhere === "object" && Object.keys(legacyWhere).length) {
+            const base = (typeof mergedFilter === "string" ? undefined : (mergedFilter as Record<string, any> | undefined));
+            mergedFilter = mergeFilters(base, legacyWhere as Record<string, any>);
+          }
+        } catch {
+          // ignore invalid legacy where param
+        }
+      }
+
+      if (searchParam?.trim()) {
+        // Legacy v1 `search` was a free-text term applied server-side. Map it
+        // to a `contains` filter on the first searchable text field so old
+        // shared links still return relevant results.
+        const searchableField = (schema as any)?.admin?.searchableFields?.[0]
+          ?? (schema as any)?.fields?.find((f: any) => f.type === "text" || f.type === "email")?.name;
+        if (searchableField) {
+          const searchWhere = { [searchableField]: { contains: searchParam.trim() } };
+          const base = (typeof mergedFilter === "string" ? undefined : (mergedFilter as Record<string, any> | undefined));
+          mergedFilter = mergeFilters(base, searchWhere);
+        }
+      }
+
+      if (mergedFilter !== rawView.filter) {
+        effectiveView = { ...rawView, filter: mergedFilter };
+        if (whereParam || searchParam) {
+          console.warn("[dyrected/admin] Legacy `?where` / `?search` URL params are deprecated — filters are now managed inside the operational view toolbar.");
+        }
+      }
+    } catch {
+      // URL parsing is best-effort
+    }
+  }
+
+  return (
+    <OperationalViewPage
+      key={`${slug}:${effectiveView.slug}`}
+      slug={slug!}
+      schema={schema}
+      view={effectiveView}
+      schemas={schemas}
+    />
+  );
 }
 
 // ─── Setup page — reads config from context ───────────────────────────────────

@@ -117,6 +117,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
     <Popover open={disabled ? false : open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
+          id={(field as any).id}
           variant="outline"
           role="combobox"
           aria-expanded={open}

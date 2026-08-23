@@ -389,9 +389,9 @@ export function MediaPicker({
         )}
 
         {label && (
-          <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none">
+          <span className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none">
             {label}
-          </label>
+          </span>
         )}
 
         <div className="dy-grid dy-grid-cols-2 dy-gap-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-4">
@@ -530,9 +530,9 @@ export function MediaPicker({
       )}
 
       {label && !isIcon && (
-        <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
+        <span className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
           {label}
-        </label>
+        </span>
       )}
 
       <div className={isIcon ? "" : "dy-relative"}>

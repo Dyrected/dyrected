@@ -20,6 +20,7 @@ import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
 import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
+import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface TableLayoutProps {
@@ -58,8 +59,12 @@ export function TableLayout({
   onRunAction,
   isRunningAction,
 }: TableLayoutProps) {
-  const toolbarStateKey = `view-toolbar:${slug}:${view.slug}`
-  const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
+  const toolbarStateKey = getToolbarStateKey(slug, view.slug)
+  const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug)
+  const storedState = React.useMemo(
+    () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
+    [toolbarStateKey, legacyToolbarStateKey],
+  )
 
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -185,6 +190,7 @@ export function TableLayout({
     total,
     totalPages,
     isPending,
+    isFetching,
   } = useViewData({
     slug,
     viewSlug: view.slug,
@@ -241,7 +247,12 @@ export function TableLayout({
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-4" data-collection={slug}>
-      <DataTableToolbar table={table} searchColumnId={searchColumnId} searchPlaceholder="Search...">
+      <DataTableToolbar
+        table={table}
+        searchColumnId={searchColumnId}
+        searchPlaceholder="Search..."
+        isFetching={isFetching}
+      >
         <ExportMenu
           slug={slug}
           schema={schema}
@@ -265,6 +276,7 @@ export function TableLayout({
       </DataTableToolbar>
       <DataTable
         table={table}
+        isFetching={isFetching}
         actionBar={
           <BulkActionBar
             actions={actions}

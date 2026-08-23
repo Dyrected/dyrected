@@ -93,10 +93,11 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
               )
             })}
             {rowActions.length > 0 && (
-              <div className="dy-pt-1" onClick={(event) => event.stopPropagation()}>
+              <div className="dy-pt-1 dy-w-full dy-overflow-hidden" onClick={(event) => event.stopPropagation()}>
                 <div
                   role="toolbar"
                   aria-label="Row actions"
+                  className="dy-w-full"
                   onKeyDown={(event) => event.stopPropagation()}
                   onPointerDown={(event) => event.stopPropagation()}
                 >
@@ -105,6 +106,7 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
                     docId={String(doc.id)}
                     onRun={onRunAction}
                     isRunning={isRunning}
+                    maxInline={1}
                   />
                 </div>
               </div>

@@ -861,7 +861,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                 {/* Editable Fields */}
                 <div className="dy-space-y-4">
                   <div className="dy-space-y-2">
-                    <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Filename</label>
+                    <span className="dy-block dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Filename</span>
                     <Input
                       value={getDisplayFilename(item.filename) || ""}
                       readOnly
@@ -869,7 +869,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                     />
                   </div>
                   <div className="dy-space-y-2">
-                    <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Alt Text</label>
+                    <span className="dy-block dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Alt Text</span>
                     <Input
                       value={formData.alt}
                       onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
@@ -878,7 +878,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                     />
                   </div>
                   <div className="dy-space-y-2">
-                    <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Caption</label>
+                    <span className="dy-block dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Caption</span>
                     <textarea
                       value={formData.caption}
                       onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
@@ -980,7 +980,7 @@ function DetailItem({ label, value, copyable }: {
 }) {
   return (
     <div className="dy-space-y-1.5">
-      <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">{label}</label>
+      <span className="dy-block dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">{label}</span>
       <div className="dy-flex dy-items-center dy-gap-2 dy-group">
         <p className="dy-text-sm dy-font-medium dy-text-foreground dy-truncate dy-flex-1">{value}</p>
         {copyable && (

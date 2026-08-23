@@ -2,10 +2,15 @@ import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useDyrected } from "../../../providers/dyrected-context";
+import {
+  getLegacyViewModePrefKey,
+  getViewModePrefKey,
+} from "./view-preference-keys";
 
 export type ViewMode = "table" | "spreadsheet";
 
-const prefKeyOf = (slug: string, viewSlug: string) => `view-mode:${slug}:${viewSlug}`;
+const prefKeyOf = (slug: string, viewSlug: string) => getViewModePrefKey(slug, viewSlug);
+const legacyPrefKeyOf = (slug: string, viewSlug: string) => getLegacyViewModePrefKey(slug, viewSlug);
 
 function isViewMode(value: unknown): value is ViewMode {
   return value === "table" || value === "spreadsheet";
@@ -31,12 +36,16 @@ export function useViewMode({ slug, viewSlug, layout }: UseViewModeOptions): {
   const queryClient = useQueryClient();
   const prefKey = prefKeyOf(slug, viewSlug);
 
+  const legacyPrefKey = legacyPrefKeyOf(slug, viewSlug);
+
   const { data: rawPreference } = useQuery({
     queryKey: ["view-mode", prefKey],
     queryFn: async () => {
       if (!client?.getPreference) return null;
       const response = await client.getPreference<ViewMode>(prefKey);
-      return response.value;
+      if (response.value != null) return response.value;
+      const legacy = await client.getPreference<ViewMode>(legacyPrefKey);
+      return legacy.value;
     },
     enabled: !!client?.getPreference,
     staleTime: 60_000,

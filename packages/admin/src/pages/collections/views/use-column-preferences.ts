@@ -3,6 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useDyrected } from "../../../providers/dyrected-context";
+import {
+  getColumnPrefKey,
+  getColumnSessionKey,
+  getLegacyColumnPrefKey,
+  getLegacyColumnSessionKey,
+} from "./view-preference-keys";
 
 /**
  * Persisted column preferences for an operational table/spreadsheet view.
@@ -75,9 +81,10 @@ export function useColumnPreferences({
   const { client, user } = useDyrected();
   const queryClient = useQueryClient();
 
-  const keyScope = variant ? `${viewSlug}:${variant}` : viewSlug;
-  const prefKey = `view-pref:${slug}:${keyScope}`;
-  const sessionKey = `view-columns:${slug}:${keyScope}`;
+  const prefKey = getColumnPrefKey(slug, viewSlug, variant);
+  const legacyPrefKey = getLegacyColumnPrefKey(slug, viewSlug, variant);
+  const sessionKey = getColumnSessionKey(slug, viewSlug, variant);
+  const legacySessionKey = getLegacyColumnSessionKey(slug, viewSlug, variant);
   const manageKey = [...fixedIds, ...columnIds].join("\u0000");
 
   const defaultPreferences = useMemo<ColumnPreferences>(
@@ -88,14 +95,19 @@ export function useColumnPreferences({
 
   // The route mounts this hook per `slug:viewSlug` (keyed upstream), so the
   // session snapshot is intentionally read exactly once.
-  const [sessionInitial] = useState(() => reconcile(readSession(sessionKey), columnIds));
+  const [sessionInitial] = useState(() =>
+    reconcile(readSession(sessionKey) ?? readSession(legacySessionKey), columnIds),
+  );
 
   const { data: rawServerPreference } = useQuery({
     queryKey: ["view-preferences", prefKey],
     queryFn: async () => {
       if (!client?.getPreference) return null;
       const response = await client.getPreference(prefKey);
-      return response.value;
+      if (response.value != null) return response.value;
+      // Migration: fall back to legacy key once, then persist to new key on next save
+      const legacy = await client.getPreference(legacyPrefKey);
+      return legacy.value;
     },
     enabled: !!client?.getPreference,
     staleTime: 5_000,

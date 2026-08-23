@@ -20,6 +20,7 @@ import { useColumnPreferences } from "../use-column-preferences"
 import { DataTableToolbar } from "../table/data-table-toolbar"
 import { DataTablePagination } from "../table/data-table-pagination"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
+import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
 import { DataTableViewOptions } from "../table/data-table-view-options"
 import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
@@ -106,8 +107,12 @@ export function SpreadsheetLayout({
   )
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  const toolbarStateKey = `view-toolbar:${slug}:${view.slug}:spreadsheet`
-  const storedToolbarState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
+  const toolbarStateKey = getToolbarStateKey(slug, view.slug, "spreadsheet")
+  const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug, "spreadsheet")
+  const storedToolbarState = React.useMemo(
+    () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
+    [toolbarStateKey, legacyToolbarStateKey],
+  )
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     (storedToolbarState?.columnFilters as ColumnFiltersState | undefined) ?? [],
   )

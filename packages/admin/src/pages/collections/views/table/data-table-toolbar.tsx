@@ -1,6 +1,6 @@
 import * as React from "react"
 import type { Column, Table } from "@tanstack/react-table"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { DataTableFilterMenu } from "./data-table-filter-menu"
@@ -19,6 +19,8 @@ interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
   /** Column id to bind the search input to. */
   searchColumnId?: string
   searchPlaceholder?: string
+  /** Whether a background query/refetch is in flight. */
+  isFetching?: boolean
 }
 
 /**
@@ -29,6 +31,7 @@ export function DataTableToolbar<TData>({
   table,
   searchColumnId,
   searchPlaceholder = "Search...",
+  isFetching,
   children,
   className,
   ...props
@@ -103,6 +106,12 @@ export function DataTableToolbar<TData>({
             <X />
             Reset
           </Button>
+        )}
+        {isFetching && (
+          <div className="dy-flex dy-items-center dy-gap-1.5 dy-px-2 dy-py-1 dy-text-xs dy-text-muted-foreground dy-animate-fade-in">
+            <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-text-primary" />
+            <span className="dy-hidden sm:dy-inline">Updating…</span>
+          </div>
         )}
       </div>
       <div className="dy-flex dy-items-center dy-gap-2">

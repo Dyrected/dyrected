@@ -1,6 +1,18 @@
-import { render, screen, cleanup } from "@testing-library/react"
+import { render as rtlRender, screen, cleanup } from "@testing-library/react"
 import { describe, it, expect, afterEach } from "vitest"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { DyrectedMedia, isMediaValue, resolveMediaKind } from "../dyrected-media"
+
+function render(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return rtlRender(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>
+  )
+}
 
 describe("DyrectedMedia & Media Resolution Engine", () => {
   afterEach(() => {
@@ -70,6 +82,7 @@ describe("DyrectedMedia & Media Resolution Engine", () => {
           media={{ url: "https://example.com/avatar.jpg", filename: "avatar.jpg" }}
           fieldDef={{ name: "avatar" }}
           baseUrl="https://example.com"
+          unstyled={false}
         />
       )
       const img = container.querySelector("img")
@@ -83,6 +96,7 @@ describe("DyrectedMedia & Media Resolution Engine", () => {
         <DyrectedMedia
           media={{ url: "https://example.com/cover.png", filename: "cover.png", mimeType: "image/png" }}
           baseUrl="https://example.com"
+          unstyled={false}
         />
       )
       expect(screen.getByText("cover.png")).toBeTruthy()

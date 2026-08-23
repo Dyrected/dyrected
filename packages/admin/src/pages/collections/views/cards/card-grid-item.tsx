@@ -83,12 +83,15 @@ export function CardGridItem({ slug, doc, schema, client, schemas, view, actions
           })}
         </div>
         {rowActions.length > 0 && (
-          <RowActionsCell
-            actions={rowActions}
-            docId={String(doc.id)}
-            onRun={onRunAction}
-            isRunning={isRunningAction}
-          />
+          <div className="dy-w-full dy-overflow-hidden">
+            <RowActionsCell
+              actions={rowActions}
+              docId={String(doc.id)}
+              onRun={onRunAction}
+              isRunning={isRunningAction}
+              maxInline={2}
+            />
+          </div>
         )}
       </CardContent>
     </Card>

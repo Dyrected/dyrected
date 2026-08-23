@@ -1,4 +1,5 @@
-import { MoreHorizontal, Loader2 } from "lucide-react"
+import { MoreHorizontal, Loader2, Table2 } from "lucide-react"
+import { createElement, useMemo, useRef, useState, useLayoutEffect } from "react"
 
 import { Button } from "../../../components/ui/button"
 import {
@@ -9,8 +10,6 @@ import {
 } from "../../../components/ui/dropdown-menu"
 import { resolveAdminIcon } from "../../../lib/admin-icons"
 import type { SerializedAction } from "./types"
-import { Table2 } from "lucide-react"
-import { createElement, useMemo } from "react"
 import { cn } from "../../../lib/utils"
 
 interface RowActionsCellProps {
@@ -19,23 +18,76 @@ interface RowActionsCellProps {
   onRun: (action: SerializedAction, ids: string[]) => void
   /** Returns true while this action × selection is executing. */
   isRunning?: (action: SerializedAction, ids: string[]) => boolean
+  /** Optional manual upper limit on the number of inline action buttons. */
+  maxInline?: number
+  className?: string
 }
 
-const MAX_INLINE_ACTIONS = 3
+const DEFAULT_MAX_INLINE_ACTIONS = 3
+
+function useContainerWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [width, setWidth] = useState<number>(0)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    const update = () => {
+      const next = Math.round(el.getBoundingClientRect().width)
+      setWidth((prev) => (prev === next ? prev : next))
+    }
+
+    update()
+
+    if (typeof ResizeObserver === "undefined") return
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const next = Math.round(entry.contentRect.width)
+        setWidth((prev) => (prev === next ? prev : next))
+      }
+    })
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, width] as const
+}
 
 /**
- * Inline action buttons for a table row or kanban card.
- * The first `MAX_INLINE_ACTIONS` render as buttons; the rest collapse into an
- * overflow menu. Running actions swap their icon for a spinner and disable.
+ * Smart inline action buttons for a table row, card, or kanban card.
+ * Dynamically measures available container width to decide how many buttons fit inline,
+ * cleanly collapsing remaining actions into a dropdown menu to prevent card overflow.
  */
-export function RowActionsCell({ actions, docId, onRun, isRunning }: RowActionsCellProps) {
+export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, className }: RowActionsCellProps) {
+  const [containerRef, width] = useContainerWidth<HTMLDivElement>()
+
   if (!actions.length) return null
 
-  const inline = actions.slice(0, MAX_INLINE_ACTIONS)
-  const overflow = actions.slice(MAX_INLINE_ACTIONS)
+  // Calculate how many action buttons can comfortably fit within the measured width
+  let dynamicMax = DEFAULT_MAX_INLINE_ACTIONS
+  if (width > 0) {
+    if (width < 110) {
+      dynamicMax = 0
+    } else if (width < 220) {
+      dynamicMax = 1
+    } else if (width < 340) {
+      dynamicMax = 2
+    } else {
+      dynamicMax = DEFAULT_MAX_INLINE_ACTIONS
+    }
+  }
+
+  const effectiveMax = maxInline !== undefined ? Math.min(maxInline, dynamicMax) : dynamicMax
+  const inlineCount = actions.length === 1 && (width === 0 || width >= 80) ? 1 : effectiveMax
+
+  const inline = actions.slice(0, inlineCount)
+  const overflow = actions.slice(inlineCount)
 
   return (
-    <div className="dy-flex dy-items-center dy-gap-1">
+    <div ref={containerRef} className={cn("dy-flex dy-items-center dy-gap-1 dy-max-w-full dy-overflow-hidden", className)}>
       {inline.map((action) => {
         const running = isRunning?.(action, [docId]) ?? false
         return (
@@ -44,38 +96,47 @@ export function RowActionsCell({ actions, docId, onRun, isRunning }: RowActionsC
             variant="outline"
             size="sm"
             disabled={running}
+            title={action.label}
             className={cn(
-              "dy-h-7 dy-px-2 dy-text-xs dy-font-normal",
+              "dy-h-7 dy-px-2 dy-text-xs dy-font-normal dy-shrink dy-truncate dy-max-w-full dy-gap-1.5",
               action.destructive &&
                 "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
             )}
             onClick={() => onRun(action, [docId])}
           >
             {running ? (
-              <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
+              <Loader2 className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-animate-spin" />
             ) : (
               <IconFor action={action} />
             )}
-            {action.label}
+            <span className="dy-truncate">{action.label}</span>
           </Button>
         )
       })}
       {overflow.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="dy-h-7 dy-w-7" aria-label="More actions">
-              <MoreHorizontal />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="dy-h-7 dy-w-7 dy-shrink-0 dy-text-muted-foreground hover:dy-text-foreground"
+              aria-label="More actions"
+            >
+              <MoreHorizontal className="dy-h-4 dy-w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="dy-w-48">
             {overflow.map((action) => (
               <DropdownMenuItem
                 key={action.name}
                 onClick={() => onRun(action, [docId])}
-                className={action.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined}
+                className={cn(
+                  "dy-cursor-pointer dy-gap-2",
+                  action.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined
+                )}
               >
                 <IconFor action={action} />
-                {action.label}
+                <span className="dy-truncate">{action.label}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -93,5 +154,5 @@ function IconFor({ action }: { action: SerializedAction }) {
   // resolveAdminIcon returns components from a static module registry, so this
   // is a lookup rather than a render-time creation — createElement keeps it
   // out of JSX scope for the static-components lint rule.
-  return Icon ? createElement(Icon, { className: "dy-h-3.5 dy-w-3.5" }) : null
+  return Icon ? createElement(Icon, { className: "dy-h-3.5 dy-w-3.5 dy-shrink-0" }) : null
 }

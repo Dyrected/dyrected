@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { resolveViewFilter, resolveViewSort } from "./resolve-view-filter"
 
@@ -65,6 +65,7 @@ export function useViewData({
       }
     },
     enabled: !!client && enabled,
+    placeholderData: keepPreviousData,
     staleTime: 15_000,
   })
 
@@ -77,5 +78,7 @@ export function useViewData({
     totalPages: query.data?.totalPages ?? 1,
     hasNextPage: query.data?.hasNextPage ?? false,
     hasPrevPage: query.data?.hasPrevPage ?? false,
+    isFetching: query.isFetching,
+    isRefetching: query.isRefetching,
   }
 }

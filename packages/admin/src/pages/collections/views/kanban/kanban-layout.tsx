@@ -36,6 +36,7 @@ import { ViewOptionsPanel } from "../view-options-panel"
 import { useColumnPreferences } from "../use-column-preferences"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { resolveViewFilter } from "../resolve-view-filter"
+import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
 import { buildServerWhere } from "../build-server-where"
 import type { SerializedAction, SerializedView } from "../types"
 import { SkeletonKanbanBoard } from "../view-skeletons"
@@ -113,8 +114,12 @@ export function KanbanLayout({
 
   /* ------------------------------------------------------ data + filtering */
 
-  const toolbarStateKey = `view-toolbar:${slug}:${view.slug}:kanban`
-  const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
+  const toolbarStateKey = getToolbarStateKey(slug, view.slug, "kanban")
+  const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug, "kanban")
+  const storedState = React.useMemo(
+    () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
+    [toolbarStateKey, legacyToolbarStateKey],
+  )
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],

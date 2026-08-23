@@ -34,6 +34,30 @@ function resolveFieldBlocks(field: Field, registry: Map<string, Block>): Field {
   return next;
 }
 
+function getDefaultViewColumns(collection: any): string[] {
+  const adminDefault = collection.admin?.defaultColumns as string[] | undefined
+  if (Array.isArray(adminDefault) && adminDefault.length > 0) {
+    return adminDefault
+  }
+  const displayFields = (collection.fields as Field[]).filter(
+    (f) => f.name && f.name !== "password" && !(f as any).admin?.hidden && f.type !== "row" && f.type !== "join",
+  )
+  return displayFields.slice(0, 5).map((f) => f.name!)
+}
+
+function ensureDefaultView(collection: any): any {
+  const views = collection.views as unknown[] | undefined
+  if (Array.isArray(views) && views.length > 0) return collection
+  const columns = getDefaultViewColumns(collection)
+  const defaultView = {
+    slug: "list",
+    label: collection.labels?.plural || collection.slug,
+    layout: "table" as const,
+    columns,
+  }
+  return { ...collection, views: [defaultView] }
+}
+
 function resolveSchemas(schema: AdminSchemas): AdminSchemas {
   const registry = new Map(
     (schema.blocks ?? []).map((block) => [block.slug, block] as const),
@@ -41,12 +65,15 @@ function resolveSchemas(schema: AdminSchemas): AdminSchemas {
 
   return {
     ...schema,
-    collections: schema.collections.map((collection) => ({
-      ...collection,
-      fields: collection.fields.map((field) =>
-        resolveFieldBlocks(field, registry),
-      ),
-    })),
+    collections: schema.collections.map((collection) => {
+      const withBlocks: any = {
+        ...collection,
+        fields: (collection.fields as Field[]).map((field) =>
+          resolveFieldBlocks(field, registry),
+        ),
+      }
+      return ensureDefaultView(withBlocks)
+    }),
     globals: schema.globals.map((global) => ({
       ...global,
       fields: global.fields.map((field) => resolveFieldBlocks(field, registry)),

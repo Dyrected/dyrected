@@ -1,6 +1,7 @@
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it, vi } from "vitest"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { DetailRenderer } from "../detail-renderer"
 
 vi.mock("../../providers/dyrected-context", () => ({
@@ -23,6 +24,17 @@ import {
   displayText,
   displayCustom,
 } from "@dyrected/core"
+
+function render(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return rtlRender(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>
+  )
+}
 
 describe("Admin Detail View Components", () => {
   it("renders DetailHeader with title, ID, copy action, and edit button", () => {

@@ -167,17 +167,64 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
       create: `/collections/${slug}/new`,
     },
   }
-  const collectionViewComponents = schema.admin?.components?.collectionView
+  const collectionViewComponents = (schema.admin as any)?.components?.collectionView as
+    | Record<string, string[]>
+    | undefined
+  const legacyListComponents = schema.admin?.components as unknown as
+    | { beforeList?: string[]; beforeListTable?: string[]; afterListTable?: string[]; afterList?: string[] }
+    | undefined
   const slotRegistry = components?.collectionView
+  const legacyRegistry = components?.collectionList
 
-  const renderSlot = (slot: string) => (
-    <AdminComponentSlot
-      slot={`collectionView.${slot}`}
-      componentKeys={collectionViewComponents?.[slot]}
-      registry={slotRegistry}
-      componentProps={slotProps}
-    />
-  )
+  const getLegacyKeysForSlot = (slot: string): string[] | undefined => {
+    if (slot === "beforeViewHeader") return legacyListComponents?.beforeList
+    if (slot === "beforeViewContent") return legacyListComponents?.beforeListTable
+    if (slot === "afterViewContent") {
+      const keys = [...(legacyListComponents?.afterListTable ?? []), ...(legacyListComponents?.afterList ?? [])]
+      return keys.length ? keys : undefined
+    }
+    return undefined
+  }
+
+  // Legacy slot props for backwards compat with collectionList slot consumers.
+  // Operational views don't have paginated response in the header, so we stub
+  // the legacy shape with empty documents.
+  const legacySlotProps = {
+    client: client!,
+    user,
+    collection: schema,
+    collectionSlug: slug,
+    response: undefined,
+    documents: [] as Record<string, unknown>[],
+    isLoading: false,
+    pagination: { page: 1, totalPages: 1, total: 0, hasNextPage: false, hasPrevPage: false },
+    permissions: { canRead: true, canCreate },
+    urls: { collection: `/collections/${slug}`, create: `/collections/${slug}/new` },
+  }
+
+  const renderSlot = (slot: string) => {
+    const viewKeys = (collectionViewComponents as any)?.[slot] as string[] | undefined
+    const legacyKeys = getLegacyKeysForSlot(slot)
+    return (
+      <>
+        {legacyKeys?.length ? (
+          <AdminComponentSlot
+            slot={`collectionView.${slot}__legacy`}
+            componentKeys={legacyKeys}
+            registry={legacyRegistry}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            componentProps={legacySlotProps as any}
+          />
+        ) : null}
+        <AdminComponentSlot
+          slot={`collectionView.${slot}`}
+          componentKeys={viewKeys}
+          registry={slotRegistry}
+          componentProps={slotProps}
+        />
+      </>
+    )
+  }
 
   const layoutProps: KanbanLayoutProps | CalendarLayoutProps | CardsLayoutProps | TableLayoutProps | SpreadsheetLayoutProps = {
     slug,
