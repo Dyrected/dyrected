@@ -11,6 +11,7 @@ import { resolveAdminIcon } from "../../../lib/admin-icons"
 import type { SerializedAction } from "./types"
 import { Table2 } from "lucide-react"
 import { createElement, useMemo } from "react"
+import { cn } from "../../../lib/utils"
 
 interface RowActionsCellProps {
   actions: SerializedAction[]
@@ -38,7 +39,11 @@ export function RowActionsCell({ actions, docId, onRun }: RowActionsCellProps) {
           key={action.name}
           variant="outline"
           size="sm"
-          className="dy-h-7 dy-px-2 dy-text-xs dy-font-normal"
+          className={cn(
+            "dy-h-7 dy-px-2 dy-text-xs dy-font-normal",
+            action.destructive &&
+              "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
+          )}
           onClick={() => onRun(action, [docId])}
         >
           <IconFor action={action} />
@@ -54,7 +59,11 @@ export function RowActionsCell({ actions, docId, onRun }: RowActionsCellProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {overflow.map((action) => (
-              <DropdownMenuItem key={action.name} onClick={() => onRun(action, [docId])}>
+              <DropdownMenuItem
+                key={action.name}
+                onClick={() => onRun(action, [docId])}
+                className={action.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined}
+              >
                 <IconFor action={action} />
                 {action.label}
               </DropdownMenuItem>

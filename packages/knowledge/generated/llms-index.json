@@ -1587,6 +1587,12 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:RunActionArgs",
+      "name": "RunActionArgs",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:SchemaShape",
       "name": "SchemaShape",
       "category": "sdk",

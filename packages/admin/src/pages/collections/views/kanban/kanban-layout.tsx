@@ -157,6 +157,8 @@ export function KanbanLayout({
   const renderCard = React.useCallback(
     (doc: Record<string, any>) => (
       <KanbanCard
+        key={String(doc.id)}
+        slug={slug}
         doc={doc}
         schema={schema}
         client={client}
@@ -166,7 +168,7 @@ export function KanbanLayout({
         onRunAction={onRunAction}
       />
     ),
-    [schema, client, schemas, view, rowActions, onRunAction],
+    [slug, schema, client, schemas, view, rowActions, onRunAction],
   )
 
   if (!groupField) {

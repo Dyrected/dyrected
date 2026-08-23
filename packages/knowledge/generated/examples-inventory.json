@@ -343,6 +343,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deliver-content/sdk-api/overview#example-19",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deliver-content/sdk-api/pagination#example-1",
     "page": "/deliver-content/sdk-api/pagination",
     "language": "ts",

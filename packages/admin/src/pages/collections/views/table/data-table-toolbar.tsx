@@ -4,7 +4,6 @@ import { X } from "lucide-react"
 
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { DataTableFilterMenu } from "./data-table-filter-menu"
-import { DataTableViewOptions } from "./data-table-view-options"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { cn } from "../../../../lib/utils"
@@ -108,7 +107,6 @@ export function DataTableToolbar<TData>({
       </div>
       <div className="dy-flex dy-items-center dy-gap-2">
         {children}
-        <DataTableViewOptions table={table} />
       </div>
     </div>
   )

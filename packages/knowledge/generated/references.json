@@ -3653,6 +3653,32 @@
     "members": []
   },
   {
+    "id": "@dyrected/sdk:RunActionArgs",
+    "name": "RunActionArgs",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "Arguments accepted by `client.collection(slug).runAction()`.",
+    "signature": "export interface RunActionArgs {\n  /** Target a single document (row action). */\n  id?: string;\n  /** Target multiple documents (bulk action). */\n  ids?: string[];\n  /** Values collected from the action's input form dialog. */\n  input?: Record<string, unknown>;\n}",
+    "members": [
+      {
+        "name": "id",
+        "signature": "id?: string",
+        "description": "Target a single document (row action)."
+      },
+      {
+        "name": "ids",
+        "signature": "ids?: string[]",
+        "description": "Target multiple documents (bulk action)."
+      },
+      {
+        "name": "input",
+        "signature": "input?: Record<string, unknown>",
+        "description": "Values collected from the action's input form dialog."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/sdk:SchemaShape",
     "name": "SchemaShape",
     "kind": "interface",

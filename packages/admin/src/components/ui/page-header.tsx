@@ -10,7 +10,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
   return (
-    <div className="dy-mb-6 dy-flex dy-flex-col dy-gap-4 sm:dy-mb-8 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between">
+    <div className="dy-mb-2 dy-flex dy-flex-col dy-flex-wrap dy-gap-4 sm:dy-mb-2 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between">
       <div className="dy-min-w-0">
         <div className="dy-mb-1 dy-flex dy-items-start dy-gap-3">
           {Icon && <Icon className="dy-mt-1 dy-h-4 dy-w-4 dy-flex-shrink-0 dy-text-primary/60" />}
@@ -22,7 +22,7 @@ export function PageHeader({ title, description, icon: Icon, children }: PageHea
           </p>
         )}
       </div>
-      <div className="dy-flex dy-w-full dy-flex-col dy-gap-2 sm:dy-w-auto sm:dy-flex-row sm:dy-items-center sm:dy-gap-3">
+      <div className="dy-flex dy-flex-wrap dy-w-full dy-flex-col dy-gap-2 sm:dy-w-auto sm:dy-flex-row sm:dy-items-center sm:dy-gap-3">
         {children}
       </div>
     </div>

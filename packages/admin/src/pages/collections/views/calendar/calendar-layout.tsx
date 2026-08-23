@@ -1,12 +1,25 @@
-import * as React from "react"
+import { useMemo, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { addMinutes, parseISO } from "date-fns"
+import { toast } from "sonner"
 
-import { CalendarToolbar } from "./calendar-toolbar"
-import { CalendarGrid } from "./calendar-grid"
+import {
+  EventCalendar,
+  type EventCalendarApi,
+} from "../../../../components/reui/event-calendar/event-calendar"
+import type {
+  EventCalendarOccurrence,
+  EventCalendarProposedUpdate,
+  EventCalendarResource,
+} from "../../../../components/reui/event-calendar/event-calendar-types"
+import { EventCalendarContent } from "../../../../components/reui/event-calendar/event-calendar-content"
+import { EventCalendarNav } from "../../../../components/reui/event-calendar/event-calendar-nav"
+import { Card, CardContent } from "../../../../components/ui/card"
+import { useDyrected } from "../../../../providers/dyrected-context"
 import { EventDetailSheet } from "./event-detail-sheet"
-import { moveCursor, periodLabel, useCalendarGroups, visibleDays, type CalendarViewMode } from "./calendar-utils"
 import type { SerializedAction, SerializedView } from "../types"
 
-export interface CalendarLayoutProps {
+interface CalendarLayoutProps {
   slug: string
   schema: any
   view: SerializedView
@@ -18,10 +31,74 @@ export interface CalendarLayoutProps {
   onRunAction: (action: SerializedAction, ids: string[]) => void
 }
 
+export type { CalendarLayoutProps }
+
+function toDate(value: unknown): Date | null {
+  if (!value) return null
+  const date = typeof value === "string" ? parseISO(value) : new Date(value as string)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+/** Normalized resource id for a doc's `resourceField` value; undefined when unset. */
+function resourceValueOf(doc: Record<string, any> | null | undefined, resourceField?: string): string | undefined {
+  if (!resourceField || !doc) return undefined
+  const raw = doc[resourceField]
+  if (raw === null || raw === undefined || raw === "") return undefined
+  return String(raw)
+}
+
 /**
- * Calendar layout — maps documents onto dates using the view's `dateField`
- * and renders month / week / day grids with a click-to-inspect drawer.
- * Ported from the ReUI event-calendar architecture.
+ * Resources come from the field's declared options (mirrors the kanban board);
+ * observed values missing from the declaration get their own column so no
+ * event disappears from the resource view.
+ */
+function deriveResources(
+  resourceField: string,
+  schema: any,
+  docs: Record<string, any>[],
+): EventCalendarResource[] {
+  const field = (schema?.fields ?? []).find((candidate: any) => candidate.name === resourceField)
+
+  const resources: EventCalendarResource[] =
+    field?.type === "boolean"
+      ? [
+          { id: "true", title: field.label || "Yes" },
+          { id: "false", title: "No" },
+        ]
+      : (Array.isArray(field?.options) ? field.options : []).map((option: any) =>
+          typeof option === "string"
+            ? { id: option, title: option }
+            : { id: String(option.value), title: String(option.label ?? option.value) },
+        )
+
+  const known = new Set(resources.map((resource) => resource.id))
+  for (const doc of docs) {
+    const id = resourceValueOf(doc, resourceField)
+    if (!id || known.has(id)) continue
+    known.add(id)
+    resources.push({ id, title: id })
+  }
+  return resources
+}
+
+/** Coerces a normalized resource id back to the field's storage type. */
+function coerceResourceValue(id: string, resourceField: string, schema: any): unknown {
+  const field = (schema?.fields ?? []).find((candidate: any) => candidate.name === resourceField)
+  if (field?.type === "boolean") return id === "true"
+  if (field?.type === "number") {
+    const parsed = Number(id)
+    return Number.isNaN(parsed) ? id : parsed
+  }
+  return id
+}
+
+/**
+ * Calendar layout — the ReUI EventCalendar wired to operational view config:
+ * documents map onto events via `dateField`, drag/resize persists new dates
+ * through the collection update pipeline, and clicking opens the detail sheet.
+ * When the view declares a `resourceField`, its values become booking columns
+ * in the "Resource" view and dragging an event across columns persists that
+ * field.
  */
 export function CalendarLayout({
   slug,
@@ -34,13 +111,73 @@ export function CalendarLayout({
   actions,
   onRunAction,
 }: CalendarLayoutProps) {
-  const [mode, setMode] = React.useState<CalendarViewMode>("month")
-  const [cursor, setCursor] = React.useState<Date>(() => new Date())
-  const [selectedDoc, setSelectedDoc] = React.useState<Record<string, any> | null>(null)
+  const { client: dyrected } = useDyrected()
+  const queryClient = useQueryClient()
+  const apiRef = useRef<EventCalendarApi | null>(null)
+  const [selectedDoc, setSelectedDoc] = useState<Record<string, any> | null>(null)
 
-  const dateField = view.dateField ?? (schema?.fields ?? []).find((field: any) => field.type === "date" || field.type === "datetime")?.name
-  const groups = useCalendarGroups(data ?? [], dateField)
-  const days = visibleDays(mode, cursor)
+  const dateField =
+    view.dateField ??
+    (schema?.fields ?? []).find((field: any) => field.type === "date" || field.type === "datetime")?.name
+
+  const titleField = (view.columns ?? [])[0]
+  const resourceField = view.resourceField
+
+  const resources = useMemo(
+    () => (resourceField ? deriveResources(resourceField, schema, data ?? []) : []),
+    [resourceField, schema, data],
+  )
+
+  const events = useMemo(() => {
+    return (data ?? [])
+      .filter((doc) => doc[dateField])
+      .map((doc) => {
+        const start = toDate(doc[dateField]) ?? new Date()
+        const rawEnd = view.endDateField && doc[view.endDateField] ? toDate(doc[view.endDateField]) : null
+        const end = rawEnd ?? addMinutes(start, 60)
+        const titleValue = titleField ? doc[titleField] : undefined
+        return {
+          id: String(doc.id),
+          title: String(titleValue ?? doc.title ?? doc.name ?? "Untitled"),
+          start,
+          end,
+          resourceId: resourceValueOf(doc, resourceField),
+          data: doc,
+        }
+      })
+  }, [data, dateField, view.endDateField, titleField, resourceField])
+
+  const persistMove = async (update: EventCalendarProposedUpdate) => {
+    const id = String(update.event.id)
+    try {
+      if (!dyrected) throw new Error("Dyrected client unavailable")
+      const patch: Record<string, unknown> = { [dateField!]: update.start.toISOString() }
+      if (view.endDateField) patch[view.endDateField] = update.end.toISOString()
+      if (resourceField && update.resourceId !== undefined) {
+        const current = resourceValueOf(update.event.data as Record<string, any>, resourceField)
+        if (current !== update.resourceId) {
+          patch[resourceField] = coerceResourceValue(update.resourceId, resourceField, schema)
+        }
+      }
+      await dyrected.collection(slug).update(id, patch)
+      toast.success("Rescheduled")
+      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+    } catch (error: any) {
+      toast.error("Reschedule failed", {
+        description: error?.message ?? "The change was reverted.",
+      })
+    }
+  }
+
+  const handleEventUpdate = (update: EventCalendarProposedUpdate) => {
+    // Optimistic accept; failures revert via refetch after the toast.
+    void persistMove(update)
+    return true
+  }
+
+  const handleEventClick = (occurrence: EventCalendarOccurrence<any>) => {
+    if (occurrence.event.data) setSelectedDoc(occurrence.event.data as Record<string, any>)
+  }
 
   if (!dateField) {
     return (
@@ -50,29 +187,33 @@ export function CalendarLayout({
     )
   }
 
+  if (isLoading) {
+    return <div className="dy-h-[640px] dy-animate-pulse dy-rounded-2xl dy-bg-muted" />
+  }
+
   return (
-    <div className="dy-flex dy-flex-col dy-gap-4" data-collection={slug}>
-      <CalendarToolbar
-        mode={mode}
-        label={periodLabel(mode, cursor)}
-        onModeChange={setMode}
-        onMove={(direction) => setCursor((prev) => moveCursor(mode, prev, direction))}
-        onToday={() => setCursor(new Date())}
-      />
-      {isLoading ? (
-        <div className="dy-h-96 dy-animate-pulse dy-rounded-md dy-bg-muted" />
-      ) : (
-        <CalendarGrid
-          days={days}
-          mode={mode}
-          groups={groups}
-          titleField={(view.columns ?? [])[0]}
-          schema={schema}
-          client={client}
-          schemas={schemas}
-          onSelectDoc={setSelectedDoc}
-        />
-      )}
+    <div data-collection={slug}>
+      <Card className="dy-border-border/50 dy-py-0">
+        <CardContent className="dy-p-0">
+          <EventCalendar
+            events={events}
+            resources={resources}
+            defaultView="month"
+            apiRef={apiRef}
+            interactions={{ drag: true, resize: true, selectSlot: false }}
+            eventTooltip
+            onEventClick={handleEventClick}
+            onEventUpdate={handleEventUpdate}
+            className="dy-h-[640px] dy-w-full"
+          >
+            <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2 dy-pe-2">
+              <EventCalendarNav className="dy-min-w-0 dy-flex-1" />
+            </div>
+            <EventCalendarContent />
+          </EventCalendar>
+        </CardContent>
+      </Card>
+
       <EventDetailSheet
         doc={selectedDoc}
         schema={schema}

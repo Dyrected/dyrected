@@ -235,7 +235,7 @@ export function createMediaUploadController({
             }))
           },
         }
-      )) as MediaRecord
+      )) as unknown as MediaRecord
 
       const completedItem: MediaUploadQueueItem = {
         ...item,
@@ -400,11 +400,11 @@ export function createMediaURLController({
         if (isEmbeddableVideoUrl(trimmed)) {
           result = (await sdkClient
             .collection(activeCollection)
-            .create(payload as unknown as Record<string, unknown>)) as MediaRecord
+            .create(payload as unknown as Record<string, unknown>)) as unknown as MediaRecord
         } else if (payload.mimeType.startsWith("video/") || payload.mimeType === "application/external") {
           result = (await sdkClient
             .collection(activeCollection)
-            .create(payload as unknown as Record<string, unknown>)) as MediaRecord
+            .create(payload as unknown as Record<string, unknown>)) as unknown as MediaRecord
         } else if (isDirectImageUrl(trimmed) || payload.mimeType === "image/external") {
           try {
             const response = await fetch(trimmed)
@@ -421,17 +421,17 @@ export function createMediaURLController({
 
             result = (await sdkClient
               .collection(activeCollection)
-              .upload(processedFile, undefined)) as MediaRecord
+              .upload(processedFile, undefined)) as unknown as MediaRecord
           } catch (fetchError) {
             console.warn("Direct image fetch failed (e.g. CORS). Falling back to external CDN reference:", fetchError)
             result = (await sdkClient
               .collection(activeCollection)
-              .create(payload as unknown as Record<string, unknown>)) as MediaRecord
+              .create(payload as unknown as Record<string, unknown>)) as unknown as MediaRecord
           }
         } else {
           result = (await sdkClient
             .collection(activeCollection)
-            .create(payload as unknown as Record<string, unknown>)) as MediaRecord
+            .create(payload as unknown as Record<string, unknown>)) as unknown as MediaRecord
         }
 
         await onAdded?.(result)

@@ -26,25 +26,25 @@ export function MetricCards({ metrics, isLoading = false, className }: MetricCar
     >
       {isLoading
         ? Array.from({ length: Math.max(metrics.length, 1) }, (_, i) => (
-            <Card key={i} className="dy-border-border/50">
-              <CardContent className="dy-space-y-2">
-                <Skeleton className="dy-h-3 dy-w-24" />
-                <Skeleton className="dy-h-6 dy-w-16" />
-              </CardContent>
-            </Card>
-          ))
+          <Card key={i} className="dy-border-border/50">
+            <CardContent className="dy-space-y-2">
+              <Skeleton className="dy-h-3 dy-w-24" />
+              <Skeleton className="dy-h-6 dy-w-16" />
+            </CardContent>
+          </Card>
+        ))
         : metrics.map((metric) => (
-            <Card key={metric.label} className="dy-border-border/50">
-              <CardContent className="dy-space-y-0.5">
-                <p className="dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
-                  {metric.label}
-                </p>
-                <p className="dy-text-xl dy-font-bold dy-tracking-tight dy-tabular-nums">
-                  {metric.formatted}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          <Card key={metric.label} className="dy-border-border/50">
+            <CardContent className="dy-space-y-0.5 !dy-p-4">
+              <p className="dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
+                {metric.label}
+              </p>
+              <p className="dy-text-xl dy-font-bold dy-tracking-tight dy-tabular-nums">
+                {metric.formatted}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
     </div>
   )
 }

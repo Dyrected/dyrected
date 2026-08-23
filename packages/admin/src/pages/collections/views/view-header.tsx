@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { Calendar, LayoutGrid, Table2 } from "lucide-react"
+import { Calendar, LayoutGrid, Sheet, Table2 } from "lucide-react"
 import { PageHeader } from "../../../components/ui/page-header"
 import { resolveAdminIcon } from "../../../lib/admin-icons"
 
@@ -8,6 +8,7 @@ const FALLBACK_ICONS: Record<string, LucideIcon> = {
   kanban: LayoutGrid,
   calendar: Calendar,
   cards: LayoutGrid,
+  spreadsheet: Sheet,
 }
 
 interface ViewHeaderProps {

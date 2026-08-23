@@ -6,6 +6,19 @@ export type ViewLayout = 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gant
 
 export type ActionType = 'row' | 'bulk' | 'header';
 
+/**
+ * Toggles for the built-in document operations an operational view surfaces
+ * (View/Edit/Duplicate/Delete/Export-selected). All default to enabled;
+ * set any to `false` to hide that operation for the view.
+ */
+export interface ViewActionFeatures {
+  view?: boolean;
+  edit?: boolean;
+  duplicate?: boolean;
+  delete?: boolean;
+  exportSelected?: boolean;
+}
+
 export interface ViewMetric {
   label: string;
   aggregate?: AggregateOperation;
@@ -29,6 +42,14 @@ export interface ViewConfig {
   columns?: string[];
   sort?: { field: string; direction: 'asc' | 'desc' };
   actions?: ActionConfig[];
+  /** Toggles built-in operations (view/edit/duplicate/delete/export). */
+  features?: ViewActionFeatures;
+  /**
+   * Explicit display order for actions — built-in names ("view", "edit",
+   * "duplicate", "delete") and/or custom action names. Unlisted actions
+   * append in their default order.
+   */
+  actionOrder?: string[];
   metrics?: ViewMetric[];
   access?: AccessConfig;
 }
@@ -73,6 +94,8 @@ export interface DefineViewOptions {
   columns?: string[];
   sort?: { field: string; direction: 'asc' | 'desc' };
   actions?: ActionConfig[];
+  features?: ViewActionFeatures;
+  actionOrder?: string[];
   metrics?: ViewMetric[];
   access?: AccessConfig;
 }
@@ -103,6 +126,8 @@ export function defineView(config: DefineViewOptions): ViewConfig {
     columns: config.columns,
     sort: config.sort,
     actions: config.actions,
+    features: config.features,
+    actionOrder: config.actionOrder,
     metrics: config.metrics,
     access: config.access,
   };

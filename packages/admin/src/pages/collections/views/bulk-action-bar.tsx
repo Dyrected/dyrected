@@ -5,6 +5,7 @@ import { X } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 import { Separator } from "../../../components/ui/separator"
 import { resolveAdminIcon } from "../../../lib/admin-icons"
+import { cn } from "../../../lib/utils"
 import type { SerializedAction } from "./types"
 
 interface BulkActionBarProps {
@@ -65,7 +66,15 @@ function BulkActionButton({
     [action.icon],
   )
   return (
-    <Button size="sm" variant="outline" onClick={() => onRun(action, selectedIds)}>
+    <Button
+      size="sm"
+      variant="outline"
+      className={cn(
+        action.destructive &&
+          "dy-border-destructive/40 dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
+      )}
+      onClick={() => onRun(action, selectedIds)}
+    >
       {/* Registry lookup, not a render-time creation — see IconFor in row-actions-cell. */}
       {Icon ? React.createElement(Icon, { className: "dy-h-4 dy-w-4" }) : null}
       {action.label}

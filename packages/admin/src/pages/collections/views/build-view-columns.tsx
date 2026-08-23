@@ -1,6 +1,29 @@
 import type { ColumnDef } from "@tanstack/react-table"
+import { Link } from "react-router-dom"
+import { MoreHorizontal, ExternalLink } from "lucide-react"
+
+import { Button } from "../../../components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../components/ui/dropdown-menu"
 import { RenderCell } from "../../../components/ui/render-cell"
+import type { SerializedAction } from "./types"
 import type { ViewColumnMeta } from "./types"
+
+/** Configuration for the auto-linked primary (title) column. */
+export interface PrimaryColumnLink {
+  slug: string
+  /** Detail pages are optional per-collection (`detail: false` falls back to edit). */
+  hasDetail: boolean
+  /** Resolves the external preview URL for a document, when configured. */
+  resolvePreview?: (doc: Record<string, any>) => string | null
+  /** Resolved row actions rendered as compact links under the title. */
+  actions?: SerializedAction[]
+  onRunAction?: (action: SerializedAction, ids: string[]) => void
+}
 
 interface BuildViewColumnsOptions {
   schema: any
@@ -12,6 +35,8 @@ interface BuildViewColumnsOptions {
   trailingColumns?: ColumnDef<any, any>[]
   /** Columns prepended before the field columns (e.g. selection). */
   leadingColumns?: ColumnDef<any, any>[]
+  /** When set, the primary (title) column renders as navigation links. */
+  primaryLink?: PrimaryColumnLink
 }
 
 /**
@@ -29,6 +54,7 @@ export function buildViewColumns({
   columns,
   trailingColumns = [],
   leadingColumns = [],
+  primaryLink,
 }: BuildViewColumnsOptions): ColumnDef<any, any>[] {
   const fieldsByName = new Map<string, any>(
     (schema?.fields ?? []).map((field: any) => [field.name, field]),
@@ -38,36 +64,173 @@ export function buildViewColumns({
     ? columns
     : defaultColumnOrder(schema)
 
-  const fieldColumns = requested
-    .filter((name) => fieldsByName.has(name))
-    .map((name) => {
-      const field = fieldsByName.get(name)
-      const meta = buildColumnMeta(field)
-      return {
-        id: name,
-        accessorKey: name,
-        header: field.label || name,
-        meta: meta as any,
-        // TanStack only falls back to auto-matching when filterFn is the
-        // literal string "auto" — an explicit undefined resolves through the
-        // registry and comes back empty, so every filterable column declares
-        // a concrete matcher.
-        ...(meta.variant === "multiSelect"
-          ? { filterFn: multiSelectFilter }
-          : meta.variant === "text"
-            ? { filterFn: operatorTextFilter }
-            : meta.variant === "number"
-              ? { filterFn: operatorNumberFilter }
-              : meta.variant === "date"
-                ? { filterFn: operatorDateFilter }
-                : {}),
-        cell: ({ row }: any) => (
+  const requestedFields = requested.filter((name) => fieldsByName.has(name))
+  const primaryFieldName = primaryLink ? resolvePrimaryField(requestedFields, schema) : undefined
+
+  const fieldColumns = requestedFields.map((name) => {
+    const field = fieldsByName.get(name)
+    const meta = buildColumnMeta(field)
+    const isPrimary = name === primaryFieldName
+    return {
+      id: name,
+      accessorKey: name,
+      header: field.label || name,
+      meta: { ...meta, __isPrimary: isPrimary } as any,
+      // TanStack only falls back to auto-matching when filterFn is the
+      // literal string "auto" — an explicit undefined resolves through the
+      // registry and comes back empty, so every filterable column declares
+      // a concrete matcher.
+      ...(meta.variant === "multiSelect"
+        ? { filterFn: multiSelectFilter }
+        : meta.variant === "text"
+          ? { filterFn: operatorTextFilter }
+          : meta.variant === "number"
+            ? { filterFn: operatorNumberFilter }
+            : meta.variant === "date"
+              ? { filterFn: operatorDateFilter }
+              : {}),
+      cell: ({ row }: any) => {
+        const rendered = (
           <RenderCell value={row.original[name]} field={field} client={client} schemas={schemas} />
-        ),
-      } satisfies ColumnDef<any, any>
-    })
+        )
+        if (!isPrimary || !primaryLink) return rendered
+        return renderPrimaryCell(row.original, rendered, primaryLink)
+      },
+    } satisfies ColumnDef<any, any>
+  })
 
   return [...leadingColumns, ...fieldColumns, ...trailingColumns]
+}
+
+/**
+ * The primary column is the configured `useAsTitle` field when visible;
+ * otherwise the first visible field acts as the row's entry point.
+ */
+function resolvePrimaryField(fieldNames: string[], schema: any): string | undefined {
+  if (fieldNames.length === 0) return undefined
+  const configured = schema?.admin?.useAsTitle as string | undefined
+  return configured && fieldNames.includes(configured) ? configured : fieldNames[0]
+}
+
+/** Title link into the admin, plus the v1-style action link row beneath it. */
+function renderPrimaryCell(
+  doc: Record<string, any>,
+  rendered: React.ReactNode,
+  link: PrimaryColumnLink,
+): React.ReactNode {
+  const id = String(doc.id ?? "")
+  const targetUrl = link.hasDetail
+    ? `/collections/${link.slug}/${id}`
+    : `/collections/${link.slug}/${id}/edit`
+  const previewUrl = link.resolvePreview?.(doc) ?? null
+  const actions = link.actions ?? []
+
+  return (
+    <div className="dy-flex dy-min-w-[200px] dy-flex-col dy-gap-0.5">
+      <div className="dy-flex dy-items-center dy-gap-1.5">
+        <Link
+          to={targetUrl}
+          className="dy-min-w-0 dy-truncate dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
+        >
+          {rendered}
+        </Link>
+        {previewUrl && (
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open preview"
+            aria-label="Open preview"
+            className="dy-shrink-0 dy-text-muted-foreground/50 hover:dy-text-primary dy-transition-colors dy-duration-150"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <ExternalLink className="dy-h-3.5 dy-w-3.5" />
+          </a>
+        )}
+      </div>
+      {actions.length > 0 && link.onRunAction ? (
+        <PrimaryActionLinks docId={id} actions={actions} onRun={link.onRunAction} />
+      ) : null}
+    </div>
+  )
+}
+
+/** Inline limit for the primary-cell link row: View · Edit · Delete by default. */
+const PRIMARY_INLINE_ACTIONS = 3
+
+/**
+ * Compact text-link actions under the row title — mirrors list-view-v1's
+ * "View | Preview | Edit | Delete" pattern. First three render inline; the
+ * rest (customs, Duplicate) collapse into a ⋯ menu.
+ */
+function PrimaryActionLinks({
+  docId,
+  actions,
+  onRun,
+}: {
+  docId: string
+  actions: SerializedAction[]
+  onRun: (action: SerializedAction, ids: string[]) => void
+}) {
+  const inline = actions.slice(0, PRIMARY_INLINE_ACTIONS)
+  const overflow = actions.slice(PRIMARY_INLINE_ACTIONS)
+
+  return (
+    <div className="dy-flex dy-items-center dy-gap-1 dy-leading-none">
+      {inline.map((action, index) => (
+        <span key={`${action.name}:${index}`} className="dy-flex dy-items-center dy-gap-1">
+          {index > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">·</span>}
+          <button
+            type="button"
+            className={cnLinkClasses(action.destructive)}
+            onClick={(event) => {
+              event.stopPropagation()
+              onRun(action, [docId])
+            }}
+          >
+            {action.label}
+          </button>
+        </span>
+      ))}
+      {overflow.length > 0 ? (
+        <span className="dy-flex dy-items-center dy-gap-1">
+          {inline.length > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">·</span>}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="dy-h-5 dy-w-5 dy-text-muted-foreground hover:dy-text-foreground"
+                aria-label="More actions"
+                title={overflow.map((action) => action.label).join(", ")}
+              >
+                <MoreHorizontal className="dy-h-3.5 dy-w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="dy-min-w-36">
+              {overflow.map((action) => (
+                <DropdownMenuItem
+                  key={action.name}
+                  onClick={() => onRun(action, [docId])}
+                  className={action.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined}
+                >
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+function cnLinkClasses(destructive?: boolean): string {
+  const base =
+    "dy-cursor-pointer dy-text-xs dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+  return destructive
+    ? `${base} dy-text-muted-foreground hover:dy-text-destructive`
+    : `${base} dy-text-muted-foreground hover:dy-text-foreground`
 }
 
 /** Multi-select facet matching coerces raw values to strings. */
