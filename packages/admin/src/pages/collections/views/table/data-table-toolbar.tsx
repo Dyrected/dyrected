@@ -68,7 +68,7 @@ export function DataTableToolbar<TData>({
       role="toolbar"
       aria-orientation="horizontal"
       className={cn(
-        "dy-flex dy-w-full dy-items-start dy-justify-between dy-gap-2",
+        "dy-flex dy-max-w-full dy-items-start dy-justify-between dy-gap-2",
         className,
       )}
       {...props}

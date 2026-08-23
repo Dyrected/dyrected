@@ -40,7 +40,7 @@ export function DataGrid({
   tableMeta,
   readOnly = false,
   rowHeight = 36,
-  height = 520,
+  height = 580,
   onRowAdd,
 }: DataGridProps) {
   const rows = table.getRowModel().rows
@@ -66,83 +66,83 @@ export function DataGrid({
         onKeyDown={grid.handleKeyDown}
         className="dy-outline-none"
       >
-        <div className="dy-overflow-auto" style={{ maxHeight: `${height}px` }}>
-        {/* Header */}
-        <div role="rowgroup">
-          <div
-            role="row"
-            className="dy-sticky dy-top-0 dy-z-10 dy-flex dy-w-max dy-min-w-full dy-border-b dy-border-border/60 dy-bg-muted/40"
-          >
-            {columnIds.map((id) => (
-              <GridHeader key={id} table={table} columnId={id} width={GRID_COLUMN_WIDTH} />
-            ))}
-          </div>
-        </div>
-
-        {/* Body */}
-        <div role="rowgroup">
-          {rows.map((row, rowIndex) => (
+        <div className="dy-overflow-auto dy-relative" style={{ maxHeight: `${height}px` }}>
+          {/* Header */}
+          <div role="rowgroup">
             <div
-              key={row.id}
               role="row"
-              style={{ height: `${rowHeight}px` }}
-              className="dy-flex dy-w-max dy-min-w-full dy-border-b dy-border-border/30 last:dy-border-b-0 hover:dy-bg-muted/20"
+              className="dy-sticky dy-top-0 dy-z-10 dy-flex dy-w-max dy-min-w-full dy-border-b dy-border-border/60 dy-bg-muted/40"
             >
-              {columnIds.map((columnId, colIndex) => {
-                const column = table.getColumn(columnId)
-                if (!column) return null
-                const position: CellPosition = { row: rowIndex, col: colIndex }
-                const meta = (column.columnDef.meta as any)?.cell as CellVariantMeta | undefined
-                const cellProps: CellEditorProps = {
-                  value: row.getValue(columnId),
-                  columnId,
-                  rowIndex,
-                  rowHeight,
-                  isFocused: grid.isFocused(rowIndex, colIndex),
-                  isEditing: !!grid.editingCell &&
-                    grid.editingCell.row === rowIndex &&
-                    grid.editingCell.col === colIndex,
-                  isSelected: grid.isSelected(rowIndex, colIndex),
-                  readOnly: readOnly || !!(column.columnDef.meta as any)?.__readOnly || meta?.variant === "readonly",
-                  variant: meta?.variant ?? "readonly",
-                  options: meta?.options,
-                  tableMeta,
-                  onSelect: () => grid.setFocusedCell(position),
-                  onEdit: () => grid.startEditingAt(position),
-                  onStopEditing: grid.stopEditing,
-                }
-                return (
-                  <div
-                    key={columnId}
-                    className="dy-shrink-0 dy-border-e dy-border-border/20 dy-last:border-e-0"
-                    style={{ width: `${GRID_COLUMN_WIDTH}px` }}
-                  >
-                    {renderEditor(cellProps, String(row.original.id ?? ""))}
-                  </div>
-                )
-              })}
+              {columnIds.map((id) => (
+                <GridHeader key={id} table={table} columnId={id} width={GRID_COLUMN_WIDTH} />
+              ))}
             </div>
-          ))}
-          {!rows.length ? (
-            <div className="dy-flex dy-h-24 dy-items-center dy-justify-center dy-text-sm dy-text-muted-foreground">
-              No results.
+          </div>
+
+          {/* Body */}
+          <div role="rowgroup">
+            {rows.map((row, rowIndex) => (
+              <div
+                key={row.id}
+                role="row"
+                style={{ height: `${rowHeight}px` }}
+                className="dy-flex dy-w-max dy-min-w-full dy-border-b dy-border-border/30 last:dy-border-b-0 hover:dy-bg-muted/20"
+              >
+                {columnIds.map((columnId, colIndex) => {
+                  const column = table.getColumn(columnId)
+                  if (!column) return null
+                  const position: CellPosition = { row: rowIndex, col: colIndex }
+                  const meta = (column.columnDef.meta as any)?.cell as CellVariantMeta | undefined
+                  const cellProps: CellEditorProps = {
+                    value: row.getValue(columnId),
+                    columnId,
+                    rowIndex,
+                    rowHeight,
+                    isFocused: grid.isFocused(rowIndex, colIndex),
+                    isEditing: !!grid.editingCell &&
+                      grid.editingCell.row === rowIndex &&
+                      grid.editingCell.col === colIndex,
+                    isSelected: grid.isSelected(rowIndex, colIndex),
+                    readOnly: readOnly || !!(column.columnDef.meta as any)?.__readOnly || meta?.variant === "readonly",
+                    variant: meta?.variant ?? "readonly",
+                    options: meta?.options,
+                    tableMeta,
+                    onSelect: () => grid.setFocusedCell(position),
+                    onEdit: () => grid.startEditingAt(position),
+                    onStopEditing: grid.stopEditing,
+                  }
+                  return (
+                    <div
+                      key={columnId}
+                      className="dy-shrink-0 dy-border-e dy-border-border/20 dy-last:border-e-0"
+                      style={{ width: `${GRID_COLUMN_WIDTH}px` }}
+                    >
+                      {renderEditor(cellProps, String(row.original.id ?? ""))}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+            {!rows.length ? (
+              <div className="dy-flex dy-h-24 dy-items-center dy-justify-center dy-text-sm dy-text-muted-foreground">
+                No results.
+              </div>
+            ) : null}
+          </div>
+
+          {/* Add-row footer */}
+          {onRowAdd && !readOnly ? (
+            <div role="rowgroup" className="dy-sticky dy-bottom-0">
+              <button
+                type="button"
+                onClick={onRowAdd}
+                className="dy-flex dy-h-9 dy-w-full dy-min-w-full dy-items-center dy-gap-2 dy-border-t dy-border-border/60 dy-bg-background/95 dy-px-3 dy-text-xs dy-text-muted-foreground hover:dy-bg-muted/50"
+              >
+                <Plus className="dy-h-3.5 dy-w-3.5" />
+                Add row
+              </button>
             </div>
           ) : null}
-        </div>
-
-        {/* Add-row footer */}
-        {onRowAdd && !readOnly ? (
-          <div role="rowgroup" className="dy-sticky dy-bottom-0">
-            <button
-              type="button"
-              onClick={onRowAdd}
-              className="dy-flex dy-h-9 dy-w-full dy-min-w-full dy-items-center dy-gap-2 dy-border-t dy-border-border/60 dy-bg-background/95 dy-px-3 dy-text-xs dy-text-muted-foreground hover:dy-bg-muted/50"
-            >
-              <Plus className="dy-h-3.5 dy-w-3.5" />
-              Add row
-            </button>
-          </div>
-        ) : null}
         </div>
       </div>
     </div>

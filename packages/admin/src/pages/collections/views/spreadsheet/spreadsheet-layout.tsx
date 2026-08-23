@@ -24,6 +24,7 @@ import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { DataTableViewOptions } from "../table/data-table-view-options"
 import type { SerializedAction, SerializedView } from "../types"
 import { DataGrid } from "./data-grid"
+import { SkeletonSpreadsheet } from "./../view-skeletons"
 import type { CellVariantMeta, DataGridTableMeta } from "./data-grid-types"
 import { ExportMenu } from "../view-io-actions"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
@@ -105,7 +106,7 @@ export function SpreadsheetLayout({
   )
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}:spreadsheet`
+  const toolbarStateKey = `view-toolbar:${slug}:${view.slug}:spreadsheet`
   const storedToolbarState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     (storedToolbarState?.columnFilters as ColumnFiltersState | undefined) ?? [],
@@ -312,13 +313,7 @@ export function SpreadsheetLayout({
   }, [])
 
   if (isLoading) {
-    return (
-      <div className="dy-space-y-2">
-        {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className="dy-h-9 dy-animate-pulse dy-rounded-md dy-bg-muted" style={{ opacity: 1 - i * 0.1 }} />
-        ))}
-      </div>
-    )
+    return <SkeletonSpreadsheet columns={Math.max(orderedColumnIds.length, 4)} rows={12} aria-busy="true" />
   }
 
   return (

@@ -11,6 +11,7 @@ import { Search } from "lucide-react"
 
 import { Input } from "../../../../components/ui/input"
 import { CardGridItem } from "./card-grid-item"
+import { SkeletonCardGrid } from "../view-skeletons"
 import { buildViewColumns } from "../build-view-columns"
 import { DataTableToolbar, FILTER_INPUT_CLASSES } from "../table/data-table-toolbar"
 import { ViewOptionsPanel } from "../view-options-panel"
@@ -52,7 +53,7 @@ export function CardsLayout({
 }: CardsLayoutProps) {
   const docs = React.useMemo(() => data ?? [], [data])
 
-  const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}:cards`
+  const toolbarStateKey = `view-toolbar:${slug}:${view.slug}:cards`
   const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -120,13 +121,7 @@ export function CardsLayout({
   )
 
   if (isLoading) {
-    return (
-      <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3 xl:dy-grid-cols-4 dy-gap-4">
-        {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className="dy-h-56 dy-animate-pulse dy-rounded-md dy-bg-muted" style={{ opacity: 1 - i * 0.09 }} />
-        ))}
-      </div>
-    )
+    return <SkeletonCardGrid items={8} aria-busy="true" />
   }
 
   if (!docs.length) {

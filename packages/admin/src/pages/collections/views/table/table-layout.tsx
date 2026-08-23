@@ -18,6 +18,7 @@ import { buildViewColumns } from "../build-view-columns"
 import { BulkActionBar } from "../bulk-action-bar"
 import { useColumnPreferences } from "../use-column-preferences"
 import { ExportMenu } from "../view-io-actions"
+import { SkeletonTable } from "../view-skeletons"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
 import type { SerializedAction, SerializedView } from "../types"
@@ -60,7 +61,7 @@ export function TableLayout({
   onRunAction,
   isRunningAction,
 }: TableLayoutProps) {
-  const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}`
+  const toolbarStateKey = `view-toolbar:${slug}:${view.slug}`
   const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
 
   const [sorting, setSorting] = React.useState<SortingState>(
@@ -184,11 +185,7 @@ export function TableLayout({
   )
 
   if (isLoading) {
-    return (
-      <div className="dy-space-y-3">
-        <SkeletonRows />
-      </div>
-    )
+    return <SkeletonTable columns={managedColumnIds.length} rows={8} aria-busy="true" />
   }
 
   return (
@@ -228,19 +225,6 @@ export function TableLayout({
         }
       />
     </div>
-  )
-}
-
-function SkeletonRows() {
-  return (
-    <>
-      <div className="dy-h-9 dy-animate-pulse dy-rounded-md dy-bg-muted" />
-      <div className="dy-space-y-2">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="dy-h-11 dy-animate-pulse dy-rounded-md dy-bg-muted/70" style={{ opacity: 1 - i * 0.12 }} />
-        ))}
-      </div>
-    </>
   )
 }
 

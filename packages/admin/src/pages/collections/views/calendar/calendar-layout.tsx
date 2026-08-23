@@ -17,6 +17,7 @@ import { EventCalendarNav } from "../../../../components/reui/event-calendar/eve
 import { Card, CardContent } from "../../../../components/ui/card"
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { EventDetailSheet } from "./event-detail-sheet"
+import { SkeletonCalendar } from "../view-skeletons"
 import type { SerializedAction, SerializedView } from "../types"
 
 interface CalendarLayoutProps {
@@ -214,7 +215,11 @@ export function CalendarLayout({
   }
 
   if (isLoading) {
-    return <div className="dy-h-[640px] dy-animate-pulse dy-rounded-2xl dy-bg-muted" />
+    return (
+      <div className="dy-h-[640px]" aria-busy="true">
+        <SkeletonCalendar />
+      </div>
+    )
   }
 
   return (

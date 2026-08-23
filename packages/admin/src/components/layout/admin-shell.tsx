@@ -60,14 +60,13 @@ function getUserInitial(user: Record<string, unknown> | null | undefined) {
   return getUserLabel(user).charAt(0).toUpperCase()
 }
 
-// ---------------------------------------------------------------------------
-// Single nav item
-// ---------------------------------------------------------------------------
 function NavItem({
   to,
   icon: Icon,
   label,
   active,
+  isAncestorActive = false,
+  hasChildren = false,
   collapsed,
   onClick,
 }: {
@@ -75,6 +74,8 @@ function NavItem({
   icon: React.ElementType
   label: React.ReactNode
   active: boolean
+  isAncestorActive?: boolean
+  hasChildren?: boolean
   collapsed: boolean
   onClick?: () => void
 }) {
@@ -86,20 +87,36 @@ function NavItem({
         "dy-group dy-flex dy-items-center dy-gap-3 dy-rounded-md dy-px-3 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
         collapsed ? "dy-justify-center dy-px-2" : "",
         active
-          ? "dy-bg-primary dy-text-primary-foreground"
-          : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
+          ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+          : isAncestorActive
+            ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
+            : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
       )}
     >
       <Icon
         className={cn(
           "dy-shrink-0 dy-transition-colors",
           collapsed ? "dy-h-[17px] dy-w-[17px]" : "dy-h-[15px] dy-w-[15px]",
-          active ? "dy-text-background" : "dy-text-foreground dy-group-hover:dy-text-foreground"
+          active
+            ? "dy-text-primary-foreground"
+            : isAncestorActive
+              ? "dy-text-foreground"
+              : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
         )}
       />
       {!collapsed && <span className="dy-truncate">{label}</span>}
-      {!collapsed && active && (
-        <ChevronRight className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-opacity-50 dy-shrink-0" />
+      {!collapsed && (
+        <>
+          {hasChildren && isAncestorActive && (
+            <ChevronDown className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/70 dy-shrink-0" />
+          )}
+          {hasChildren && !isAncestorActive && !active && (
+            <ChevronRight className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/30 dy-group-hover:dy-text-muted-foreground/60 dy-shrink-0" />
+          )}
+          {hasChildren && active && (
+            <ChevronDown className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-text-primary-foreground/70 dy-shrink-0" />
+          )}
+        </>
       )}
     </Link>
   )
@@ -127,14 +144,31 @@ function NavSubItem({
       to={to}
       onClick={onClick}
       className={cn(
-        "dy-flex dy-items-center dy-gap-2.5 dy-rounded-md dy-py-1.5 dy-pl-9 dy-pr-3 dy-text-xs dy-font-medium dy-transition-colors",
+        "dy-group dy-relative dy-flex dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-1.5 dy-text-xs dy-transition-all dy-duration-150",
         active
-          ? "dy-bg-primary/10 dy-text-primary"
+          ? "dy-bg-primary dy-text-primary-foreground dy-font-semibold dy-shadow-xs"
           : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
       )}
     >
-      {Icon && <Icon className="dy-h-3.5 dy-w-3.5 dy-shrink-0" />}
-      {!Icon && <span className="dy-h-1 dy-w-1 dy-shrink-0 dy-rounded-full dy-bg-current" />}
+      {Icon ? (
+        <Icon
+          className={cn(
+            "dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-transition-colors",
+            active
+              ? "dy-text-primary-foreground"
+              : "dy-text-muted-foreground/70 dy-group-hover:dy-text-foreground"
+          )}
+        />
+      ) : (
+        <span
+          className={cn(
+            "dy-h-1.5 dy-w-1.5 dy-shrink-0 dy-rounded-full dy-transition-colors",
+            active
+              ? "dy-bg-primary-foreground"
+              : "dy-bg-muted-foreground/40 dy-group-hover:dy-bg-foreground"
+          )}
+        />
+      )}
       <span className="dy-truncate">{label}</span>
     </Link>
   )
@@ -342,6 +376,9 @@ function SidebarInner({
     )
 
     const views = col.views ?? []
+    const isChildActive = location.pathname.startsWith(`/collections/${col.slug}/views/`)
+    const isExactActive =
+      !isChildActive && location.pathname.startsWith(`/collections/${col.slug}`)
 
     return (
       <div key={col.slug} className="dy-space-y-0.5">
@@ -349,15 +386,29 @@ function SidebarInner({
           to={`/collections/${col.slug}`}
           icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
           label={navLabel}
-          active={location.pathname.startsWith(`/collections/${col.slug}`)}
+          active={isExactActive}
+          isAncestorActive={isChildActive}
+          hasChildren={views.length > 0}
           collapsed={collapsed}
           onClick={onNavigate}
         />
-        {!collapsed &&
-          views.map((view) => {
-            const viewPath = `/collections/${col.slug}/views/${view.slug}`
-            return <NavSubItem key={viewPath} to={viewPath} icon={view.icon} label={view.label} active={location.pathname === viewPath} onClick={onNavigate} />
-          })}
+        {!collapsed && views.length > 0 && (
+          <div className="dy-relative dy-ml-4 dy-border-l dy-border-border/60 dy-pl-2 dy-space-y-0.5 dy-my-1">
+            {views.map((view) => {
+              const viewPath = `/collections/${col.slug}/views/${view.slug}`
+              return (
+                <NavSubItem
+                  key={viewPath}
+                  to={viewPath}
+                  icon={view.icon}
+                  label={view.label}
+                  active={location.pathname === viewPath}
+                  onClick={onNavigate}
+                />
+              )
+            })}
+          </div>
+        )}
       </div>
     )
   }

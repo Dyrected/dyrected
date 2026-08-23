@@ -68,12 +68,13 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
   const customActions = useMemo(() => (view.actions ?? []) as SerializedAction[], [view.actions])
 
-  const { data, isLoading } = useViewData({
+  const { data, isPending } = useViewData({
     slug,
     viewSlug: view.slug,
     filter: view.filter,
     sort: view.sort,
   })
+  const isLoading = !client || isPending
   const metrics = useViewMetrics({ slug, viewSlug: view.slug, metrics: view.metrics })
   const actionRunner = useViewActions({ slug, viewSlug: view.slug })
 
