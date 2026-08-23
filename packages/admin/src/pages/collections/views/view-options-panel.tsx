@@ -79,7 +79,16 @@ export function ViewOptionsPanel({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  if (!managedIds.length) return null
+  if (!managedIds.length) {
+    // No manageable columns — still render a disabled trigger so the user
+    // knows view settings exists, rather than hiding it entirely.
+    return (
+      <Button variant="outline" size="sm" className="dy-flex" disabled>
+        <SlidersHorizontal className="dy-h-4 dy-w-4" />
+        {label}
+      </Button>
+    )
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -95,7 +104,7 @@ export function ViewOptionsPanel({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="dy-hidden lg:dy-flex">
+        <Button variant="outline" size="sm" className="dy-flex">
           <SlidersHorizontal className="dy-h-4 dy-w-4" />
           {label}
           {isDirty ? <span aria-hidden className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-primary" /> : null}

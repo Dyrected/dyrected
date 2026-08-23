@@ -210,10 +210,10 @@ function EventCalendarMonthView({
       <Comp
         data-slot="event-calendar-month-view"
         data-view="month"
-        role="dy-grid"
+        role="grid"
         aria-label={title}
         className={cn(
-          "dy-flex dy-flex-col dy-border-t",
+          "dy-flex dy-flex-col dy-border-t dy-border-border/40",
           contained && "dy-min-h-0 dy-flex-1 dy-overflow-hidden",
           viewConfig.classNames?.monthView,
           className
@@ -221,11 +221,11 @@ function EventCalendarMonthView({
         {...props}
       >
         <div
-          role="dy-row"
+          role="row"
           data-slot="event-calendar-month-header"
           // @container scopes the narrow-label breakpoint to the header row
           className={cn(
-            "@container dy-grid dy-border-b",
+            "@container dy-grid dy-border-b dy-border-border/40 dy-bg-muted/20",
             viewConfig.classNames?.monthHeader
           )}
           style={{ gridTemplateColumns }}
@@ -235,7 +235,7 @@ function EventCalendarMonthView({
               role="columnheader"
               aria-hidden
               className={cn(
-                "dy-border-e dy-px-2 dy-py-1.5",
+                "dy-border-e dy-border-border/30 dy-px-2 dy-py-1.5",
                 viewConfig.classNames?.weekNumber
               )}
             />
@@ -245,7 +245,7 @@ function EventCalendarMonthView({
               key={day.getTime()}
               role="columnheader"
               className={cn(
-                "dy-text-muted-foreground dy-truncate dy-px-2 dy-py-1.5 dy-font-medium",
+                "dy-text-[11px] dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground dy-truncate dy-px-3 dy-py-2",
                 viewConfig.classNames?.monthDayHeader
               )}
             >
@@ -474,10 +474,10 @@ function EventCalendarMonthWeek({
 
   return (
     <div
-      role="dy-row"
+      role="row"
       data-slot="event-calendar-month-row"
       className={cn(
-        "dy-relative dy-grid dy-min-h-0 dy-border-b last:dy-border-b-0",
+        "dy-relative dy-grid dy-min-h-0 dy-border-b dy-border-border/30 last:dy-border-b-0",
         viewConfig.classNames?.monthRow
       )}
       style={{ gridTemplateColumns }}
@@ -487,7 +487,7 @@ function EventCalendarMonthWeek({
           role="rowheader"
           data-slot="event-calendar-week-number"
           className={cn(
-            "dy-text-muted-foreground dy-border-e dy-px-2 dy-pt-1 dy-tabular-nums",
+            "dy-text-muted-foreground dy-border-e dy-border-border/30 dy-px-2 dy-pt-1 dy-tabular-nums",
             viewConfig.classNames?.weekNumber
           )}
         >
