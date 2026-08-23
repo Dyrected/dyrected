@@ -49,7 +49,7 @@ export function DataTablePagination<TData>({
         <p className="dy-whitespace-nowrap dy-text-xs dy-font-medium dy-text-muted-foreground dy-tabular-nums">
           {table.getFilteredSelectedRowModel().rows.length > 0 &&
             `${table.getFilteredSelectedRowModel().rows.length} of `}
-          {table.getFilteredRowModel().rows.length} row(s)
+          {table.getRowCount()} row(s)
         </p>
         <div className="dy-flex dy-items-center dy-gap-1.5">
           <Button

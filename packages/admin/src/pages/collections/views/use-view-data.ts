@@ -1,42 +1,81 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useDyrected } from "../../../providers/dyrected-context";
-import { resolveViewFilter } from "./resolve-view-filter";
+import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useDyrected } from "../../../providers/dyrected-context"
+import { resolveViewFilter, resolveViewSort } from "./resolve-view-filter"
 
-interface UseViewDataOptions {
-  slug: string;
-  viewSlug: string;
-  filter?: Record<string, any> | string;
-  sort?: { field: string; direction: "asc" | "desc" };
-  limit?: number;
+export interface UseViewDataOptions {
+  slug: string
+  viewSlug?: string
+  filter?: Record<string, any> | string
+  sort?: { field: string; direction: "asc" | "desc" } | string
+  page?: number
+  limit?: number
+  enabled?: boolean
+}
+
+export interface PaginatedFindResult {
+  docs: Record<string, any>[]
+  total: number
+  page: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+  limit: number
 }
 
 /**
- * Fetches the documents an operational view operates on.
- *
- * The view's base `filter` and `sort` are applied server-side; layout-level
- * refinements (search, faceted filters, pagination) run client-side on the
- * result set, matching the tablecn data model.
+ * Fetches server-paginated and server-filtered documents for an operational view.
  */
-export function useViewData({ slug, viewSlug, filter, sort, limit = 100 }: UseViewDataOptions) {
-  const { client } = useDyrected();
-  const filterHash = JSON.stringify(filter ?? null);
+export function useViewData({
+  slug,
+  viewSlug = "default",
+  filter,
+  sort,
+  page = 1,
+  limit = 20,
+  enabled = true,
+}: UseViewDataOptions) {
+  const { client } = useDyrected()
+  const filterHash = JSON.stringify(filter ?? null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const where = useMemo(() => resolveViewFilter(filter), [filterHash]);
-  const sortString = sort ? `${sort.direction === "desc" ? "-" : ""}${sort.field}` : undefined;
+  const where = useMemo(() => resolveViewFilter(filter), [filterHash])
+  const sortString = typeof sort === "string" ? sort : resolveViewSort(sort)
 
-  return useQuery({
-    queryKey: ["operational-view", slug, viewSlug, filterHash, sortString ?? null],
-    queryFn: async () => {
-      if (!client) throw new Error("Dyrected client unavailable");
+  const query = useQuery({
+    queryKey: ["operational-view", slug, viewSlug, filterHash, sortString ?? null, page, limit],
+    queryFn: async (): Promise<PaginatedFindResult> => {
+      if (!client) throw new Error("Dyrected client unavailable")
       const result = await (client as any).collection(slug).find({
         where,
         sort: sortString,
+        page,
         limit,
-      });
-      return (result?.docs ?? []) as Record<string, any>[];
+      })
+      const docs = (result?.docs ?? []) as Record<string, any>[]
+      const total = Number(result?.total ?? docs.length)
+      const calculatedTotalPages = Math.ceil(total / (limit || 20)) || 1
+      return {
+        docs,
+        total,
+        page: Number(result?.page ?? page),
+        totalPages: Number(result?.totalPages ?? calculatedTotalPages),
+        hasNextPage: Boolean(result?.hasNextPage ?? (page < calculatedTotalPages)),
+        hasPrevPage: Boolean(result?.hasPrevPage ?? (page > 1)),
+        limit: Number(result?.limit ?? limit),
+      }
     },
-    enabled: !!client,
+    enabled: !!client && enabled,
     staleTime: 15_000,
-  });
+  })
+
+  return {
+    ...query,
+    data: query.data?.docs ?? [],
+    paginatedData: query.data,
+    total: query.data?.total ?? 0,
+    page: query.data?.page ?? page,
+    totalPages: query.data?.totalPages ?? 1,
+    hasNextPage: query.data?.hasNextPage ?? false,
+    hasPrevPage: query.data?.hasPrevPage ?? false,
+  }
 }

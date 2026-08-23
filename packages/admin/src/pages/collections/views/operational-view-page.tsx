@@ -8,7 +8,6 @@ import { getSiteUrl } from "../../../lib/utils"
 import { resolvePreviewUrl } from "../../../lib/preview-url"
 import { AdminComponentSlot } from "../../../components/admin-component-slot"
 import type { CollectionViewSlotProps } from "../../../types/admin-components"
-import { useViewData } from "./use-view-data"
 import { useViewMetrics } from "./use-view-metrics"
 import { useViewActions } from "./use-view-actions"
 import { useSystemOps } from "./use-system-ops"
@@ -68,13 +67,6 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
   const customActions = useMemo(() => (view.actions ?? []) as SerializedAction[], [view.actions])
 
-  const { data, isPending } = useViewData({
-    slug,
-    viewSlug: view.slug,
-    filter: view.filter,
-    sort: view.sort,
-  })
-  const isLoading = !client || isPending
   const metrics = useViewMetrics({ slug, viewSlug: view.slug, metrics: view.metrics })
   const actionRunner = useViewActions({ slug, viewSlug: view.slug })
 
@@ -82,7 +74,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   const canDelete = useMemo(() => evaluateAccess(schema?.access?.delete, user), [schema, user])
   const hasDetail = schema?.detail !== false
 
-  const systemOps = useSystemOps({ slug, schema, schemas, data: data ?? [] })
+  const systemOps = useSystemOps({ slug, schema, schemas, data: [] })
 
   const resolvedActions = useMemo(
     () =>
@@ -125,7 +117,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   )
 
   const headerActions = resolvedActions.headerActions
-  const docIds = useMemo(() => (data ?? []).map((doc) => String(doc.id)), [data])
+  const docIds: string[] = []
   // Table and spreadsheet render their own Export menu with filtered counts;
   // the header-level export covers the non-filtering layouts only.
   const headerHasExport = !isTabular
@@ -153,14 +145,6 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
           icon: FileDown,
           onSelect: () => void exportHandlers.exportAll(),
         },
-        ...(docIds.length
-          ? [{
-            key: "export-current",
-            label: `Export current results (${docIds.length})`,
-            icon: FileDown,
-            onSelect: () => exportHandlers.exportDocs(data ?? []),
-          }]
-          : []),
       ]
       : []),
     ...(canCreate
@@ -175,8 +159,8 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     collectionSlug: slug,
     viewSlug: view.slug,
     view: view as unknown as Record<string, unknown>,
-    documents: data ?? [],
-    isLoading,
+    documents: [],
+    isLoading: false,
     permissions: { canCreate },
     urls: {
       collection: `/collections/${slug}`,
@@ -199,8 +183,6 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     slug,
     schema,
     view,
-    data: data ?? [],
-    isLoading,
     client,
     schemas,
     actions,
@@ -246,7 +228,11 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
           {headerHasExport && (
             <span className="dy-hidden sm:dy-inline-flex">
-              <ExportMenu slug={slug} schema={schema} currentDocs={data ?? []} />
+              <ExportMenu
+                slug={slug}
+                schema={schema}
+                findArgs={{ where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) }}
+              />
             </span>
           )}
 

@@ -3,11 +3,9 @@ import {
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  getFilteredRowModel,
-  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import type { ColumnDef, ColumnFiltersState, SortingState } from "@tanstack/react-table"
+import type { ColumnDef, ColumnFiltersState, PaginationState, SortingState } from "@tanstack/react-table"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
@@ -20,8 +18,11 @@ import { normalizeOptions } from "../build-view-columns"
 import { evaluateAccess } from "../system-actions"
 import { useColumnPreferences } from "../use-column-preferences"
 import { DataTableToolbar } from "../table/data-table-toolbar"
+import { DataTablePagination } from "../table/data-table-pagination"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { DataTableViewOptions } from "../table/data-table-view-options"
+import { buildServerWhere } from "../build-server-where"
+import { useViewData } from "../use-view-data"
 import type { SerializedAction, SerializedView } from "../types"
 import { DataGrid } from "./data-grid"
 import { SkeletonSpreadsheet } from "./../view-skeletons"
@@ -33,7 +34,7 @@ export interface SpreadsheetLayoutProps {
   slug: string
   schema: any
   view: SerializedView
-  data: Record<string, any>[]
+  data?: Record<string, any>[]
   isLoading?: boolean
   client: unknown
   schemas: unknown
@@ -92,8 +93,7 @@ export function SpreadsheetLayout({
   slug,
   schema,
   view,
-  data,
-  isLoading,
+  isLoading: isParentLoading,
 }: SpreadsheetLayoutProps) {
   const { client, user } = useDyrected()
   const navigate = useNavigate()
@@ -122,7 +122,6 @@ export function SpreadsheetLayout({
     },
     [toolbarStateKey],
   )
-
 
   const canUpdate = React.useMemo(() => evaluateAccess(schema?.access?.update, user), [schema, user])
 
@@ -161,9 +160,46 @@ export function SpreadsheetLayout({
       .filter(Boolean) as ColumnDef<any, any>[]
   }, [schema, canUpdate, preferences.preferences.order, preferences.preferences.hidden])
 
+  const serverSort = React.useMemo(() => {
+    if (!sorting.length) {
+      return view.sort ? resolveViewSort(view.sort) : undefined
+    }
+    const [first] = sorting
+    return `${first.desc ? "-" : ""}${first.id}`
+  }, [sorting, view.sort])
+
+  const serverWhere = React.useMemo(() => {
+    return buildServerWhere({
+      baseFilter: resolveViewFilter(view.filter),
+      columnFilters,
+      search: globalFilter,
+      searchableFields: managedColumnIds.length ? managedColumnIds : undefined,
+      schema,
+    })
+  }, [view.filter, columnFilters, globalFilter, managedColumnIds, schema])
+
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: storedToolbarState?.pageSize ?? 50,
+  })
+
+  const {
+    data: serverDocs,
+    total,
+    totalPages,
+    isPending,
+  } = useViewData({
+    slug,
+    viewSlug: view.slug,
+    filter: serverWhere,
+    sort: serverSort,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+  })
+
   /** Server rows merged with pending edits, followed by unsaved new rows. */
   const gridData = React.useMemo(() => {
-    const editedDocs = (data ?? []).map((doc) => {
+    const editedDocs = serverDocs.map((doc) => {
       const docUpdates = updates[String(doc.id)]
       return docUpdates ? { ...doc, ...docUpdates } : doc
     })
@@ -171,26 +207,38 @@ export function SpreadsheetLayout({
       ...editedDocs,
       ...newRows.map(({ __tempId, values }) => ({ ...values, id: __tempId })),
     ]
-  }, [data, updates, newRows])
+  }, [serverDocs, updates, newRows])
 
   const table = useReactTable({
     data: gridData,
     columns,
-    state: { sorting, globalFilter, columnFilters },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: handleColumnFiltersChange,
-    getRowId: (row) => String(row.id),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const needle = String(filterValue ?? "").toLowerCase()
-      if (!needle) return true
-      return Object.values(row.original ?? {}).some(
-        (value) => typeof value === "string" && value.toLowerCase().includes(needle),
-      )
+    state: { sorting, globalFilter, columnFilters, pagination },
+    onSortingChange: (updater) => {
+      setSorting(updater)
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
     },
+    onGlobalFilterChange: (val) => {
+      setGlobalFilter(val)
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    },
+    onColumnFiltersChange: (updater) => {
+      handleColumnFiltersChange(updater)
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    },
+    onPaginationChange: (updater) => {
+      setPagination((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        persistToolbarState(toolbarStateKey, { pageSize: next.pageSize })
+        return next
+      })
+    },
+    getRowId: (row) => String(row.id),
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    pageCount: totalPages,
+    rowCount: total,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
@@ -209,11 +257,8 @@ export function SpreadsheetLayout({
    */
   const exportableDocs = React.useMemo(
     () =>
-      table
-        .getPrePaginationRowModel()
-        .rows.map((row) => row.original)
-        .filter((doc) => !String(doc.id ?? "").startsWith("__new__")),
-    [table],
+      serverDocs.filter((doc) => !String(doc.id ?? "").startsWith("__new__")),
+    [serverDocs],
   )
 
   const invalidate = React.useCallback(async () => {
@@ -273,7 +318,7 @@ export function SpreadsheetLayout({
       }
 
       setUpdates((prev) => {
-        const previousRow = (data ?? []).find((doc) => String(doc.id) === rowId)
+        const previousRow = serverDocs.find((doc) => String(doc.id) === rowId)
         const merged = { ...prev[rowId], [event.columnId]: event.value }
         if (previousRow && previousRow[event.columnId] === event.value) {
           delete merged[event.columnId]
@@ -287,7 +332,7 @@ export function SpreadsheetLayout({
         return { ...prev, [rowId]: merged }
       })
     },
-    [gridData, data],
+    [gridData, serverDocs],
   )
 
   const tableMeta: DataGridTableMeta<any> = React.useMemo(
@@ -312,7 +357,7 @@ export function SpreadsheetLayout({
     setNewRows([])
   }, [])
 
-  if (isLoading) {
+  if (isParentLoading || (isPending && !serverDocs.length)) {
     return <SkeletonSpreadsheet columns={Math.max(orderedColumnIds.length, 4)} rows={12} aria-busy="true" />
   }
 
@@ -324,7 +369,10 @@ export function SpreadsheetLayout({
             size="sm"
             placeholder="Search..."
             value={globalFilter}
-            onChange={(event) => setGlobalFilter(event.target.value)}
+            onChange={(event) => {
+              setGlobalFilter(event.target.value)
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+            }}
             className="dy-border-dashed dy-bg-muted/40 hover:dy-bg-muted/60 focus-visible:dy-bg-background"
           />
         </div>
@@ -333,7 +381,7 @@ export function SpreadsheetLayout({
           <ExportMenu
             slug={slug}
             schema={schema}
-            findArgs={{ where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) }}
+            findArgs={{ where: serverWhere, sort: serverSort }}
             currentDocs={exportableDocs}
           />
           <DataTableViewOptions
@@ -360,6 +408,8 @@ export function SpreadsheetLayout({
         readOnly={!canUpdate}
         onRowAdd={canUpdate ? handleAddRow : undefined}
       />
+
+      <DataTablePagination table={table} pageSizeOptions={[20, 50, 100]} />
 
       {!canUpdate ? (
         <p className="dy-text-xs dy-text-muted-foreground">

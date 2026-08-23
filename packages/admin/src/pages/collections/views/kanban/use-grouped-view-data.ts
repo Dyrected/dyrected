@@ -101,16 +101,18 @@ export function useKanbanGroups({
   view,
   schema,
   groupField,
+  filter,
 }: {
   slug: string
   view: SerializedView
   schema: any
   groupField: string
+  filter?: Record<string, any> | string
 }) {
   const { client } = useDyrected()
-  const filterHash = React.useMemo(() => stableStringify(view.filter ?? null), [view.filter])
+  const filterHash = React.useMemo(() => stableStringify(filter ?? view.filter ?? null), [filter, view.filter])
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const base = React.useMemo(() => resolveViewFilter(view.filter), [filterHash])
+  const base = React.useMemo(() => resolveViewFilter(filter ?? view.filter), [filterHash])
   const sortString = React.useMemo(() => resolveViewSort(view.sort), [view.sort])
   const groups = React.useMemo(() => deriveGroups(groupField, schema), [groupField, schema])
 

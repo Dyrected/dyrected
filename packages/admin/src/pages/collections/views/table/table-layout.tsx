@@ -1,12 +1,9 @@
 import * as React from "react"
-import type { ColumnDef, ColumnFiltersState, SortingState } from "@tanstack/react-table"
+import type { ColumnDef, ColumnFiltersState, PaginationState, SortingState } from "@tanstack/react-table"
 import {
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
 
@@ -21,13 +18,15 @@ import { ExportMenu } from "../view-io-actions"
 import { SkeletonTable } from "../view-skeletons"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
+import { buildServerWhere } from "../build-server-where"
+import { useViewData } from "../use-view-data"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface TableLayoutProps {
   slug: string
   schema: any
   view: SerializedView
-  data: Record<string, any>[]
+  data?: Record<string, any>[]
   isLoading?: boolean
   client: unknown
   schemas: unknown
@@ -43,16 +42,14 @@ export interface TableLayoutProps {
 }
 
 /**
- * Table layout for operational views — the tablecn architecture wired to the
- * Dyrected schema: faceted filter bar, sortable columns, selection with a
- * floating bulk-action bar, and inline row actions.
+ * Table layout for operational views — fully backend-driven with server-side
+ * pagination, server-side sorting, and server-side filtering via Dyrected Where DSL.
  */
 export function TableLayout({
   slug,
   schema,
   view,
-  data,
-  isLoading,
+  isLoading: isParentLoading,
   client,
   schemas,
   resolvePreview,
@@ -64,6 +61,10 @@ export function TableLayout({
   const toolbarStateKey = `view-toolbar:${slug}:${view.slug}`
   const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
 
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: storedState?.pageSize ?? 20,
+  })
   const [sorting, setSorting] = React.useState<SortingState>(
     view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : [],
   )
@@ -83,7 +84,10 @@ export function TableLayout({
     [toolbarStateKey],
   )
 
-  const rowActions = actions.filter((action) => (action.type ?? "row") === "row")
+  const rowActions = React.useMemo(
+    () => actions.filter((action) => (action.type ?? "row") === "row"),
+    [actions],
+  )
   const searchColumnId = findTextColumn(view.columns, schema)
 
   /**
@@ -158,33 +162,80 @@ export function TableLayout({
     return Object.fromEntries(columnPreferences.preferences.hidden.map((id) => [id, false]))
   }, [columnPreferences.preferences.hidden])
 
+  const serverSort = React.useMemo(() => {
+    if (!sorting.length) {
+      return view.sort ? resolveViewSort(view.sort) : undefined
+    }
+    const [first] = sorting
+    return `${first.desc ? "-" : ""}${first.id}`
+  }, [sorting, view.sort])
+
+  const serverWhere = React.useMemo(() => {
+    return buildServerWhere({
+      baseFilter: resolveViewFilter(view.filter),
+      columnFilters,
+      searchColumnId,
+      searchableFields: managedColumnIds,
+      schema,
+    })
+  }, [view.filter, columnFilters, searchColumnId, managedColumnIds, schema])
+
+  const {
+    data: serverDocs,
+    total,
+    totalPages,
+    isPending,
+  } = useViewData({
+    slug,
+    viewSlug: view.slug,
+    filter: serverWhere,
+    sort: serverSort,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+  })
+
   const table = useReactTable({
-    data: data ?? [],
+    data: serverDocs,
     columns,
-    state: { sorting, columnFilters, rowSelection, columnOrder, columnVisibility },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    state: {
+      sorting,
+      columnFilters,
+      rowSelection,
+      columnOrder,
+      columnVisibility,
+      pagination,
+    },
+    onSortingChange: (updater) => {
+      setSorting(updater)
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    },
+    onColumnFiltersChange: (updater) => {
+      handleColumnFiltersChange(updater)
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    },
+    onPaginationChange: (updater) => {
+      setPagination((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        persistToolbarState(toolbarStateKey, { pageSize: next.pageSize })
+        return next
+      })
+    },
     onRowSelectionChange: setRowSelection,
     getRowId: (row) => String(row.id),
     enableRowSelection: true,
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    pageCount: totalPages,
+    rowCount: total,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    initialState: { pagination: { pageSize: storedState?.pageSize ?? 20 } },
   })
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id as keyof typeof rowSelection])
 
-  /** Documents surviving search + all filter pills — the export "current" scope. */
-  const filteredDocs = React.useMemo(
-    () => table.getPrePaginationRowModel().rows.map((row) => row.original),
-    [table],
-  )
-
-  if (isLoading) {
+  if (isParentLoading || (isPending && !serverDocs.length)) {
     return <SkeletonTable columns={managedColumnIds.length} rows={8} aria-busy="true" />
   }
 
@@ -194,8 +245,8 @@ export function TableLayout({
         <ExportMenu
           slug={slug}
           schema={schema}
-          findArgs={{ where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) }}
-          currentDocs={filteredDocs}
+          findArgs={{ where: serverWhere, sort: serverSort }}
+          currentDocs={serverDocs}
         />
         <DataTableViewOptions
           table={table}

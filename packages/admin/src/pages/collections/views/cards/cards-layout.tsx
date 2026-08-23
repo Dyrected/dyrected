@@ -3,12 +3,12 @@ import {
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  getFilteredRowModel,
   useReactTable,
   type ColumnFiltersState,
 } from "@tanstack/react-table"
-import { Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Search } from "lucide-react"
 
+import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { CardGridItem } from "./card-grid-item"
 import { SkeletonCardGrid } from "../view-skeletons"
@@ -17,14 +17,16 @@ import { DataTableToolbar, FILTER_INPUT_CLASSES } from "../table/data-table-tool
 import { ViewOptionsPanel } from "../view-options-panel"
 import { useColumnPreferences } from "../use-column-preferences"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
-import { resolveDocumentTitle } from "@/lib/document-title"
+import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
+import { buildServerWhere } from "../build-server-where"
+import { useViewData } from "../use-view-data"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface CardsLayoutProps {
   slug: string
   schema: any
   view: SerializedView
-  data: Record<string, any>[]
+  data?: Record<string, any>[]
   isLoading?: boolean
   client: unknown
   schemas: unknown
@@ -33,32 +35,27 @@ export interface CardsLayoutProps {
 }
 
 /**
- * Visual gallery layout — media-forward cards in a responsive grid.
- *
- * Reuses the tablecn toolbar architecture headlessly: a TanStack table over
- * the same schema-driven column metadata powers global search plus faceted/
- * operator filters (DataTableToolbar), and per-user field visibility/order
- * preferences drive which fields render on each card.
+ * Cards layout for operational views — responsive grid with server-driven search,
+ * server-side operator filters (DataTableToolbar), and pagination.
  */
 export function CardsLayout({
   slug,
   schema,
   view,
-  data,
-  isLoading,
+  isLoading: isParentLoading,
   client,
   schemas,
   actions,
   onRunAction,
 }: CardsLayoutProps) {
-  const docs = React.useMemo(() => data ?? [], [data])
-
   const toolbarStateKey = `view-toolbar:${slug}:${view.slug}:cards`
   const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
   )
+  const [page, setPage] = React.useState(1)
+  const pageSize = 24
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -67,6 +64,7 @@ export function CardsLayout({
         persistToolbarState(toolbarStateKey, { columnFilters: next })
         return next
       })
+      setPage(1)
     },
     [toolbarStateKey],
   )
@@ -101,35 +99,50 @@ export function CardsLayout({
     [schema, client, schemas],
   )
 
+  const serverWhere = React.useMemo(() => {
+    return buildServerWhere({
+      baseFilter: resolveViewFilter(view.filter),
+      columnFilters,
+      search: globalFilter,
+      searchableFields: managedIds.length ? managedIds : undefined,
+      schema,
+    })
+  }, [view.filter, columnFilters, globalFilter, managedIds, schema])
+
+  const {
+    data: docs,
+    total,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    isPending,
+  } = useViewData({
+    slug,
+    viewSlug: view.slug,
+    filter: serverWhere,
+    sort: resolveViewSort(view.sort),
+    page,
+    limit: pageSize,
+  })
+
   const table = useReactTable({
     data: docs,
     columns,
     state: { globalFilter, columnFilters },
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: (val) => {
+      setGlobalFilter(val)
+      setPage(1)
+    },
     onColumnFiltersChange: handleColumnFiltersChange,
-    globalFilterFn: cardGlobalFilter(schema, view.columns, schemas),
+    manualFiltering: true,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  const visibleDocs = React.useMemo(
-    () => table.getFilteredRowModel().rows.map((row) => row.original),
-    [table],
-  )
-
-  if (isLoading) {
+  if (isParentLoading || (isPending && !docs.length)) {
     return <SkeletonCardGrid items={8} aria-busy="true" />
-  }
-
-  if (!docs.length) {
-    return (
-      <p className="dy-rounded-md dy-border dy-border-dashed dy-p-8 dy-text-center dy-text-sm dy-text-muted-foreground">
-        No items to show yet.
-      </p>
-    )
   }
 
   const collectionLabel = schema?.labels?.plural || schema?.labels?.singular || slug
@@ -145,7 +158,10 @@ export function CardsLayout({
             aria-label={`Search ${collectionLabel}`}
             placeholder={`Search ${collectionLabel}...`}
             value={globalFilter}
-            onChange={(event) => setGlobalFilter(event.target.value)}
+            onChange={(event) => {
+              setGlobalFilter(event.target.value)
+              setPage(1)
+            }}
             className={`dy-pl-10 ${FILTER_INPUT_CLASSES}`}
           />
         </div>
@@ -171,26 +187,58 @@ export function CardsLayout({
         </DataTableToolbar>
       </div>
 
-      {visibleDocs.length ? (
-        <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3 xl:dy-grid-cols-4 dy-gap-4">
-          {visibleDocs.map((doc) => (
-            <CardGridItem
-              key={String(doc.id)}
-              slug={slug}
-              doc={doc}
-              schema={schema}
-              client={client}
-              schemas={schemas}
-              view={view}
-              actions={actions}
-              onRunAction={onRunAction}
-              fields={visibleFieldIds.length ? visibleFieldIds : undefined}
-            />
-          ))}
-        </div>
+      {docs.length ? (
+        <>
+          <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3 xl:dy-grid-cols-4 dy-gap-4">
+            {docs.map((doc) => (
+              <CardGridItem
+                key={String(doc.id)}
+                slug={slug}
+                doc={doc}
+                schema={schema}
+                client={client}
+                schemas={schemas}
+                view={view}
+                actions={actions}
+                onRunAction={onRunAction}
+                fields={visibleFieldIds.length ? visibleFieldIds : undefined}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="dy-flex dy-items-center dy-justify-between dy-border-t dy-border-border/60 dy-pt-4">
+              <p className="dy-text-xs dy-text-muted-foreground dy-tabular-nums">
+                Showing page {page} of {totalPages} ({total} total)
+              </p>
+              <div className="dy-flex dy-items-center dy-gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={!hasPrevPage}
+                >
+                  <ChevronLeft className="dy-h-4 dy-w-4 dy-mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={!hasNextPage}
+                >
+                  Next
+                  <ChevronRight className="dy-h-4 dy-w-4 dy-ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <p className="dy-rounded-md dy-border dy-border-dashed dy-p-8 dy-text-center dy-text-sm dy-text-muted-foreground">
-          No cards match your search or filters.
+          {globalFilter || columnFilters.length
+            ? "No cards match your search or filters."
+            : "No items to show yet."}
         </p>
       )}
     </div>
@@ -205,32 +253,4 @@ function labelByIdFrom(ids: string[], fieldsByName: Map<string, any>): Map<strin
     labels.set(id, field?.label || id)
   }
   return labels
-}
-
-/**
- * Global matcher for card search: case-insensitive substring over the document
- * title plus primitive values of the view's configured columns — what the
- * cards actually display.
- */
-function cardGlobalFilter(schema: any, columns: string[] | undefined, schemas: unknown) {
-  return (row: any, _columnId: string, filterValue: string): boolean => {
-    const needle = String(filterValue ?? "").trim().toLowerCase()
-    if (!needle) return true
-    const doc = row.original
-
-    const parts = [
-      resolveDocumentTitle({
-        entry: doc,
-        collection: schema,
-        collections: (schemas as any)?.collections,
-      }),
-    ]
-    for (const name of columns ?? []) {
-      const value = doc[name]
-      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        parts.push(String(value))
-      }
-    }
-    return parts.join(" ").toLowerCase().includes(needle)
-  }
 }

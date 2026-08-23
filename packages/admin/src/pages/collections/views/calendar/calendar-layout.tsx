@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { addMinutes, parseISO } from "date-fns"
+import { addMinutes, endOfMonth, parseISO, startOfMonth, subMonths, addMonths } from "date-fns"
 import { toast } from "sonner"
 
 import {
@@ -8,6 +8,7 @@ import {
   type EventCalendarApi,
 } from "../../../../components/reui/event-calendar/event-calendar"
 import type {
+  CalendarView,
   EventCalendarOccurrence,
   EventCalendarProposedUpdate,
   EventCalendarResource,
@@ -16,6 +17,8 @@ import { EventCalendarContent } from "../../../../components/reui/event-calendar
 import { EventCalendarNav } from "../../../../components/reui/event-calendar/event-calendar-nav"
 import { Card, CardContent } from "../../../../components/ui/card"
 import { useDyrected } from "../../../../providers/dyrected-context"
+import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
+import { useViewData } from "../use-view-data"
 import { EventDetailSheet } from "./event-detail-sheet"
 import { SkeletonCalendar } from "../view-skeletons"
 import type { SerializedAction, SerializedView } from "../types"
@@ -24,7 +27,7 @@ interface CalendarLayoutProps {
   slug: string
   schema: any
   view: SerializedView
-  data: Record<string, any>[]
+  data?: Record<string, any>[]
   isLoading?: boolean
   client: unknown
   schemas: unknown
@@ -116,19 +119,16 @@ function coerceResourceValue(id: string, resourceField: string, schema: any): un
 }
 
 /**
- * Calendar layout — the ReUI EventCalendar wired to operational view config:
- * documents map onto events via `dateField`, drag/resize persists new dates
- * through the collection update pipeline, and clicking opens the detail sheet.
- * When the view declares a `resourceField`, its values become booking columns
- * in the "Resource" view and dragging an event across columns persists that
- * field.
+ * Calendar layout — server-queried by date window. The ReUI EventCalendar wired
+ * to operational view config: documents are fetched dynamically for the active
+ * date range, mapped onto events via `dateField`, and drag/resize persists new
+ * dates through the collection update pipeline.
  */
 export function CalendarLayout({
   slug,
   schema,
   view,
-  data,
-  isLoading,
+  isLoading: isParentLoading,
   client,
   schemas,
   actions,
@@ -139,6 +139,8 @@ export function CalendarLayout({
   const queryClient = useQueryClient()
   const apiRef = useRef<EventCalendarApi | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<Record<string, any> | null>(null)
+  const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const [currentView, setCurrentView] = useState<CalendarView>("month")
 
   const dateField =
     view.dateField ??
@@ -147,14 +149,51 @@ export function CalendarLayout({
   const titleField = (view.columns ?? [])[0]
   const resourceField = view.resourceField
 
+  const dateRange = useMemo(() => {
+    // 1-month buffer on each side so navigation between neighboring months remains instant
+    const rangeStart = startOfMonth(subMonths(currentDate, 1))
+    const rangeEnd = endOfMonth(addMonths(currentDate, 1))
+    return {
+      startIso: rangeStart.toISOString(),
+      endIso: rangeEnd.toISOString(),
+    }
+  }, [currentDate])
+
+  const serverWhere = useMemo(() => {
+    if (!dateField) return resolveViewFilter(view.filter)
+    const dateCondition = {
+      [dateField]: {
+        gte: dateRange.startIso,
+        lte: dateRange.endIso,
+      },
+    }
+    const base = resolveViewFilter(view.filter)
+    if (!base || Object.keys(base).length === 0) {
+      return dateCondition
+    }
+    return { AND: [base, dateCondition] }
+  }, [view.filter, dateField, dateRange.startIso, dateRange.endIso])
+
+  const {
+    data: docs,
+    isPending,
+  } = useViewData({
+    slug,
+    viewSlug: view.slug,
+    filter: serverWhere,
+    sort: view.sort ? resolveViewSort(view.sort) : dateField,
+    limit: 100,
+    enabled: Boolean(dateField),
+  })
+
   const resources = useMemo(
-    () => (resourceField ? deriveResources(resourceField, schema, data ?? []) : []),
-    [resourceField, schema, data],
+    () => (resourceField ? deriveResources(resourceField, schema, docs ?? []) : []),
+    [resourceField, schema, docs],
   )
 
   const events = useMemo(() => {
     const colorByResource = new Map(resources.map((resource) => [resource.id, resource.color]))
-    return (data ?? [])
+    return (docs ?? [])
       .filter((doc) => doc[dateField])
       .map((doc) => {
         const start = toDate(doc[dateField]) ?? new Date()
@@ -172,7 +211,7 @@ export function CalendarLayout({
           data: doc,
         }
       })
-  }, [data, dateField, view.endDateField, titleField, resourceField, resources])
+  }, [docs, dateField, view.endDateField, titleField, resourceField, resources])
 
   const persistMove = async (update: EventCalendarProposedUpdate) => {
     const id = String(update.event.id)
@@ -214,7 +253,7 @@ export function CalendarLayout({
     )
   }
 
-  if (isLoading) {
+  if (isParentLoading || (isPending && !docs.length)) {
     return (
       <div className="dy-h-[640px]" aria-busy="true">
         <SkeletonCalendar />
@@ -229,7 +268,10 @@ export function CalendarLayout({
           <EventCalendar
             events={events}
             resources={resources}
-            defaultView="month"
+            date={currentDate}
+            onDateChange={setCurrentDate}
+            view={currentView}
+            onViewChange={setCurrentView}
             apiRef={apiRef}
             interactions={{ drag: true, resize: true, selectSlot: false }}
             eventTooltip
@@ -259,3 +301,4 @@ export function CalendarLayout({
     </div>
   )
 }
+

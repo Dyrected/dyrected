@@ -14,7 +14,6 @@ import {
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  getFilteredRowModel,
   useReactTable,
   type ColumnFiltersState,
 } from "@tanstack/react-table"
@@ -36,7 +35,8 @@ import { DataTableToolbar, FILTER_INPUT_CLASSES } from "../table/data-table-tool
 import { ViewOptionsPanel } from "../view-options-panel"
 import { useColumnPreferences } from "../use-column-preferences"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
-import { resolveDocumentTitle } from "@/lib/document-title"
+import { resolveViewFilter } from "../resolve-view-filter"
+import { buildServerWhere } from "../build-server-where"
 import type { SerializedAction, SerializedView } from "../types"
 import { SkeletonKanbanBoard } from "../view-skeletons"
 
@@ -61,7 +61,7 @@ export interface KanbanLayoutProps {
   slug: string
   schema: any
   view: SerializedView
-  data: Record<string, any>[]
+  data?: Record<string, any>[]
   isLoading?: boolean
   client: unknown
   schemas: unknown
@@ -78,9 +78,6 @@ const COLUMN_TONES = [
   "dy-bg-violet-500",
   "dy-bg-rose-500",
 ]
-
-/** Sentinel group for docs whose `groupBy` value is empty. */
-// const UNASSIGNED = "__unassigned__"
 
 /**
  * Kanban board layout — columns generated from the view's `groupBy` field and
@@ -99,7 +96,6 @@ export function KanbanLayout({
   slug,
   schema,
   view,
-  data,
   isLoading,
   client,
   schemas,
@@ -116,24 +112,6 @@ export function KanbanLayout({
   )
 
   /* ------------------------------------------------------ data + filtering */
-
-  /**
-   * Grouped mode fetches each column independently (paginated, parallel);
-   * fallback mode uses the page's flat `data` when the field has too many
-   * options to fan out. Docs are tagged with their source column so the
-   * shared filter table can regroup filtered rows.
-   */
-  const grouped = useKanbanGroups({ slug, view, schema, groupField })
-  const isGrouped = grouped.mode === "grouped"
-
-  const docs = React.useMemo(() => {
-    if (isGrouped) {
-      return grouped.columns.flatMap((column) =>
-        column.docs.map((doc) => ({ ...doc, __kanbanGroup: column.value })),
-      )
-    }
-    return data ?? []
-  }, [isGrouped, grouped.columns, data])
 
   const toolbarStateKey = `view-toolbar:${slug}:${view.slug}:kanban`
   const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
@@ -177,6 +155,38 @@ export function KanbanLayout({
     [fieldPreferences.preferences],
   )
 
+  const serverWhere = React.useMemo(() => {
+    return buildServerWhere({
+      baseFilter: resolveViewFilter(view.filter),
+      columnFilters,
+      search: globalFilter,
+      searchableFields: managedIds.length ? managedIds : undefined,
+      schema,
+    })
+  }, [view.filter, columnFilters, globalFilter, managedIds, schema])
+
+  /**
+   * Grouped mode fetches each column independently (paginated, parallel) with
+   * the serverWhere filters applied to every column request.
+   */
+  const grouped = useKanbanGroups({
+    slug,
+    view,
+    schema,
+    groupField,
+    filter: serverWhere,
+  })
+  const isGrouped = grouped.mode === "grouped"
+
+  const docs = React.useMemo(() => {
+    if (isGrouped) {
+      return grouped.columns.flatMap((column) =>
+        column.docs.map((doc) => ({ ...doc, __kanbanGroup: column.value })),
+      )
+    }
+    return grouped.fallbackDocs
+  }, [isGrouped, grouped.columns, grouped.fallbackDocs])
+
   const columns = React.useMemo(
     () => buildViewColumns({ schema, client, schemas }),
     [schema, client, schemas],
@@ -188,19 +198,12 @@ export function KanbanLayout({
     state: { globalFilter, columnFilters },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: handleColumnFiltersChange,
-    globalFilterFn: cardGlobalFilter(schema, view.columns, schemas),
+    manualFiltering: true,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
-
-  const filteredRows = table.getFilteredRowModel().rows
-  const filteredDocs = React.useMemo(
-    () => filteredRows.map((row) => row.original),
-    [filteredRows],
-  )
 
   /* --------------------------------------------------------- board state */
 
@@ -216,18 +219,11 @@ export function KanbanLayout({
 
   const board = React.useMemo(() => {
     if (isGrouped) {
-      const filteredByGroup = new Map<string, Record<string, any>[]>()
-      for (const row of filteredRows) {
-        const value = row.original.__kanbanGroup ?? UNASSIGNED
-        const bucket = filteredByGroup.get(value)
-        if (bucket) bucket.push(row.original)
-        else filteredByGroup.set(value, [row.original])
-      }
       let columns: KanbanGroup[] = grouped.columns.map((column, index) => ({
         value: column.value,
         label: column.label,
         toneClass: COLUMN_TONES[index % COLUMN_TONES.length],
-        docs: filteredByGroup.get(column.value) ?? [],
+        docs: column.docs,
         total: column.total,
         hasNextPage: column.hasNextPage,
         isPending: column.isPending,
@@ -239,9 +235,9 @@ export function KanbanLayout({
       columns = applyGroupedMoves(columns, moves)
       return applyOrder(columns, order)
     }
-    const groups = buildBoard(declaredGroups, filteredDocs, groupField!, moves)
+    const groups = buildBoard(declaredGroups, docs, groupField!, moves)
     return applyOrder(groups, order)
-  }, [isGrouped, grouped.columns, filteredRows, moves, order, declaredGroups, filteredDocs, groupField])
+  }, [isGrouped, grouped.columns, docs, moves, order, declaredGroups, groupField])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -451,50 +447,6 @@ function labelByIdFrom(ids: string[], fieldsByName: Map<string, any>): Map<strin
  * Global matcher for card search: case-insensitive substring over the document
  * title plus primitive values of the view's configured columns.
  */
-function cardGlobalFilter(schema: any, columns: string[] | undefined, schemas: unknown) {
-  return (row: any, _columnId: string, filterValue: string): boolean => {
-    const needle = String(filterValue ?? "").trim().toLowerCase()
-    if (!needle) return true
-    const doc = row.original
-
-    const parts = [
-      resolveDocumentTitle({
-        entry: doc,
-        collection: schema,
-        collections: (schemas as any)?.collections,
-      }),
-    ]
-    for (const name of columns ?? []) {
-      const value = doc[name]
-      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        parts.push(String(value))
-      }
-    }
-    return parts.join(" ").toLowerCase().includes(needle)
-  }
-}
-
-/** Columns come from the field's declared options; falls back to observed values. */
-// function deriveGroups(groupField: string | undefined, schema: any): Array<{ value: string; label: string }> {
-//   if (!groupField) return []
-//   const field = (schema?.fields ?? []).find((candidate: any) => candidate.name === groupField)
-
-//   if (field?.type === "boolean") {
-//     return [
-//       { value: "true", label: field.label || "Yes" },
-//       { value: "false", label: "No" },
-//     ]
-//   }
-
-//   const options = Array.isArray(field?.options) ? field.options : []
-//   const mapped = options.map((option: any) =>
-//     typeof option === "string"
-//       ? { value: option, label: option }
-//       : { value: String(option.value), label: String(option.label ?? option.value) },
-//   )
-//   return mapped
-// }
-
 /** Builds board columns from declared options, honoring optimistic move overrides. */
 function buildBoard(
   columns: Array<{ value: string; label: string }>,
@@ -598,13 +550,3 @@ function reorderIds(board: KanbanGroup[], columnValue: string, activeId: string,
   next.splice(toIndex, 0, activeId)
   return next
 }
-
-// function coerceGroupValue(value: string, groupField: string, schema: any): unknown {
-//   const field = (schema?.fields ?? []).find((candidate: any) => candidate.name === groupField)
-//   if (field?.type === "boolean") return value === "true"
-//   if (field?.type === "number") {
-//     const parsed = Number(value)
-//     return Number.isNaN(parsed) ? value : parsed
-//   }
-//   return value
-// }
