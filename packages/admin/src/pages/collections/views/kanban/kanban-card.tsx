@@ -18,13 +18,20 @@ interface KanbanCardProps {
   view: SerializedView
   rowActions: SerializedAction[]
   onRunAction: (action: SerializedAction, ids: string[]) => void
+  /** Returns true while an action × selection is executing (drives loading states). */
+  isRunning?: (action: SerializedAction, ids: string[]) => boolean
+  /**
+   * Field names to render on the card body, in order (from the layout's
+   * field preferences). Defaults to the view's configured columns.
+   */
+  fields?: string[]
 }
 
 /**
  * Draggable card on the kanban board. Field values render through the shared
  * `RenderCell`; row-type actions attach directly to the card.
  */
-export function KanbanCard({ slug, doc, schema, client, schemas, view, rowActions, onRunAction }: KanbanCardProps) {
+export function KanbanCard({ slug, doc, schema, client, schemas, view, rowActions, onRunAction, isRunning, fields }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(doc.id),
   })
@@ -34,7 +41,7 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
     [schema],
   )
 
-  const visibleColumns = view.columns ?? []
+  const visibleColumns = fields ?? view.columns ?? []
   const titleField = visibleColumns[0]
 
   return (
@@ -49,7 +56,7 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
       {...listeners}
     >
       <CardContent className="dy-space-y-1.5 dy-p-3">
-        {(view.columns ?? []).map((fieldName) => {
+        {visibleColumns.map((fieldName) => {
           const field = fieldsByName.get(fieldName)
           if (!field || doc[fieldName] === undefined || doc[fieldName] === null) return null
           const isTitle = fieldName === titleField
@@ -78,7 +85,12 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
               onKeyDown={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
             >
-              <RowActionsCell actions={rowActions} docId={String(doc.id)} onRun={onRunAction} />
+              <RowActionsCell
+                actions={rowActions}
+                docId={String(doc.id)}
+                onRun={onRunAction}
+                isRunning={isRunning}
+              />
             </div>
           </div>
         )}

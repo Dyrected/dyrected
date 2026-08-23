@@ -10,10 +10,27 @@ import {
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { toast } from "sonner"
+import {
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  useReactTable,
+  type ColumnFiltersState,
+} from "@tanstack/react-table"
+import { Search } from "lucide-react"
 
 import { useDyrected } from "../../../../providers/dyrected-context"
+import { useQueryClient } from "@tanstack/react-query"
+import { Input } from "../../../../components/ui/input"
 import { KanbanCard } from "./kanban-card"
 import { KanbanColumn } from "./kanban-column"
+import { buildViewColumns } from "../build-view-columns"
+import { DataTableToolbar, FILTER_INPUT_CLASSES } from "../table/data-table-toolbar"
+import { ViewOptionsPanel } from "../view-options-panel"
+import { useColumnPreferences } from "../use-column-preferences"
+import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
+import { resolveDocumentTitle } from "@/lib/document-title"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface KanbanGroup {
@@ -52,8 +69,13 @@ const UNASSIGNED = "__unassigned__"
  * drag-and-drop status transitions built on the ReUI kanban architecture
  * (@dnd-kit DndContext + SortableContext).
  *
- * A drop commits an optimistic group change, then PATCHes the document so the
- * write flows through the standard lifecycle-hook pipeline.
+ * Cross-column drops persist through the view's `moveMode`: a direct PATCH of
+ * the group field (default), or the configured `moveAction` so guarded
+ * transitions reuse the server-side action pipeline.
+ *
+ * Filtering reuses the tablecn toolbar architecture headlessly (global search
+ * plus faceted/operator filters), and per-user field visibility/order
+ * preferences drive what each card renders.
  */
 export function KanbanLayout({
   slug,
@@ -67,13 +89,86 @@ export function KanbanLayout({
   onRunAction,
 }: KanbanLayoutProps) {
   const { client: dyrected } = useDyrected()
+  const queryClient = useQueryClient()
   const groupField = view.groupBy ?? ""
   const rowActions = React.useMemo(
     () => actions.filter((action) => (action.type ?? "row") === "row"),
     [actions],
   )
 
-  const columns = React.useMemo(() => deriveGroups(groupField, schema), [groupField, schema])
+  /* ------------------------------------------------------ filter plumbing */
+
+  const docs = React.useMemo(() => data ?? [], [data])
+
+  const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}:kanban`
+  const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
+  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
+  )
+
+  const handleColumnFiltersChange = React.useCallback(
+    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
+      setColumnFilters((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        persistToolbarState(toolbarStateKey, { columnFilters: next })
+        return next
+      })
+    },
+    [toolbarStateKey],
+  )
+
+  const fieldsByName = React.useMemo(
+    () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
+    [schema],
+  )
+  const managedIds = React.useMemo(
+    () => (view.columns ?? []).filter((name) => fieldsByName.has(name)),
+    [view.columns, fieldsByName],
+  )
+
+  const fieldPreferences = useColumnPreferences({
+    slug,
+    viewSlug: view.slug,
+    columnIds: managedIds,
+    variant: "kanban",
+  })
+
+  const visibleFieldIds = React.useMemo(
+    () =>
+      fieldPreferences.preferences.order.filter(
+        (id) => !fieldPreferences.preferences.hidden.includes(id),
+      ),
+    [fieldPreferences.preferences],
+  )
+
+  const columns = React.useMemo(
+    () => buildViewColumns({ schema, client, schemas }),
+    [schema, client, schemas],
+  )
+
+  const table = useReactTable({
+    data: docs,
+    columns,
+    state: { globalFilter, columnFilters },
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    globalFilterFn: cardGlobalFilter(schema, view.columns, schemas),
+    getRowId: (row) => String(row.id),
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+  })
+
+  const filteredDocs = React.useMemo(
+    () => table.getFilteredRowModel().rows.map((row) => row.original),
+    [table],
+  )
+
+  /* --------------------------------------------------------- board state */
+
+  const columns2 = React.useMemo(() => deriveGroups(groupField, schema), [groupField, schema])
 
   /**
    * Local draft for in-flight drags only — server data stays the source of
@@ -84,9 +179,9 @@ export function KanbanLayout({
   const [order, setOrder] = React.useState<Record<string, string[]>>({})
 
   const board = React.useMemo(() => {
-    const groups = buildBoard(columns, data ?? [], groupField!, moves)
+    const groups = buildBoard(columns2, filteredDocs, groupField!, moves)
     return applyOrder(groups, order)
-  }, [columns, data, groupField, moves, order])
+  }, [columns2, filteredDocs, groupField, moves, order])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -96,6 +191,44 @@ export function KanbanLayout({
   const findGroupOf = React.useCallback(
     (docId: string) => board.find((group) => group.docs.some((doc) => String(doc.id) === docId))?.value,
     [board],
+  )
+
+  const revertMove = React.useCallback((docId: string, previous?: string) => {
+    setMoves((prev) => {
+      if (previous === undefined) {
+        if (!(docId in prev)) return prev
+        const { [docId]: _dropped, ...rest } = prev
+        return rest
+      }
+      if (prev[docId] !== previous) return prev
+      return { ...prev, [docId]: previous }
+    })
+  }, [])
+
+  /** Runs the view's configured move action for one document. */
+  const runMoveAction = React.useCallback(
+    async (docId: string, nextValue: string): Promise<boolean> => {
+      if (!dyrected) throw new Error("Dyrected client unavailable")
+      const actionName = view.moveAction!
+      await (dyrected as any).collection(slug).runAction(view.slug, actionName, {
+        id: docId,
+        input: { [groupField]: coerceGroupValue(nextValue, groupField, schema) },
+      })
+      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+      return true
+    },
+    [dyrected, slug, view.slug, view.moveAction, groupField, schema, queryClient],
+  )
+
+  const persistMove = React.useCallback(
+    async (docId: string, nextValue: string): Promise<void> => {
+      if (!dyrected) throw new Error("Dyrected client unavailable")
+      await (dyrected as any).collection(slug).update(docId, {
+        [groupField!]: coerceGroupValue(nextValue, groupField, schema),
+      })
+      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+    },
+    [dyrected, slug, groupField, schema, queryClient],
   )
 
   const handleDragEnd = React.useCallback(
@@ -132,10 +265,12 @@ export function KanbanLayout({
       if (targetGroup.value === UNASSIGNED) return
 
       try {
-        if (!dyrected) throw new Error("Dyrected client unavailable")
-        await (dyrected as any).collection(slug).update(activeId, {
-          [groupField!]: coerceGroupValue(targetGroup.value, groupField, schema),
-        })
+        if (view.moveMode === "action") {
+          if (!view.moveAction) throw new Error("This view's moveMode is \"action\" but no moveAction is configured.")
+          await runMoveAction(activeId, targetGroup.value)
+        } else {
+          await persistMove(activeId, targetGroup.value)
+        }
         // Drop the now-redundant override once the server has caught up.
         setMoves((prev) => {
           if (prev[activeId] !== targetGroup.value) return prev
@@ -143,15 +278,13 @@ export function KanbanLayout({
           return rest
         })
       } catch (error: any) {
-        toast.error("Move failed", { description: error?.message ?? "Could not save the new status." })
-        setMoves((prev) => {
-          if (prev[activeId] !== targetGroup.value) return prev
-          const { [activeId]: _reverted, ...rest } = prev
-          return rest
+        toast.error("Move failed", {
+          description: error?.message ?? "Could not save the new status.",
         })
+        revertMove(activeId, sourceValue)
       }
     },
-    [board, findGroupOf, dyrected, slug, groupField, schema],
+    [board, findGroupOf, view.moveMode, view.moveAction, runMoveAction, persistMove, revertMove],
   )
 
   const renderCard = React.useCallback(
@@ -166,9 +299,10 @@ export function KanbanLayout({
         view={view}
         rowActions={rowActions}
         onRunAction={onRunAction}
+        fields={visibleFieldIds.length ? visibleFieldIds : undefined}
       />
     ),
-    [slug, schema, client, schemas, view, rowActions, onRunAction],
+    [slug, schema, client, schemas, view, rowActions, onRunAction, visibleFieldIds],
   )
 
   if (!groupField) {
@@ -189,15 +323,91 @@ export function KanbanLayout({
     )
   }
 
+  const collectionLabel = schema?.labels?.plural || schema?.labels?.singular || slug
+
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-      <div className="dy-flex dy-gap-4 dy-overflow-x-auto dy-pb-2">
-        {board.map((group) => (
-          <KanbanColumn key={group.value} group={group} renderCard={renderCard} />
-        ))}
+    <div className="dy-space-y-4" data-collection={slug}>
+      <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
+        <div className="dy-relative dy-w-full sm:dy-max-w-xs">
+          <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
+          <Input
+            size="sm"
+            type="search"
+            aria-label={`Search ${collectionLabel}`}
+            placeholder={`Search ${collectionLabel}...`}
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className={`dy-pl-10 ${FILTER_INPUT_CLASSES}`}
+          />
+        </div>
+        <DataTableToolbar table={table}>
+          <ViewOptionsPanel
+            label="Fields"
+            managedIds={managedIds}
+            labelById={labelByIdFrom(managedIds, fieldsByName)}
+            hiddenIds={fieldPreferences.preferences.hidden}
+            isDirty={fieldPreferences.isDirty}
+            isSaving={fieldPreferences.isSaving}
+            isAdmin={fieldPreferences.isAdmin}
+            onOrderChange={fieldPreferences.setOrder}
+            onToggleVisibility={fieldPreferences.toggleVisibility}
+            onShowAll={fieldPreferences.showAll}
+            onHideAllExcept={fieldPreferences.hideAllExcept}
+            onReset={fieldPreferences.reset}
+            onSaveForMe={fieldPreferences.saveForMe}
+            onSaveForEveryone={
+              fieldPreferences.isAdmin ? fieldPreferences.saveForEveryone : undefined
+            }
+          />
+        </DataTableToolbar>
       </div>
-    </DndContext>
+
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+        <div className="dy-flex dy-gap-4 dy-overflow-x-auto dy-pb-2">
+          {board.map((group) => (
+            <KanbanColumn key={group.value} group={group} renderCard={renderCard} />
+          ))}
+        </div>
+      </DndContext>
+    </div>
   )
+}
+
+/** Field labels for the picker panel: declared label or raw field name. */
+function labelByIdFrom(ids: string[], fieldsByName: Map<string, any>): Map<string, string> {
+  const labels = new Map<string, string>()
+  for (const id of ids) {
+    const field = fieldsByName.get(id)
+    labels.set(id, field?.label || id)
+  }
+  return labels
+}
+
+/**
+ * Global matcher for card search: case-insensitive substring over the document
+ * title plus primitive values of the view's configured columns.
+ */
+function cardGlobalFilter(schema: any, columns: string[] | undefined, schemas: unknown) {
+  return (row: any, _columnId: string, filterValue: string): boolean => {
+    const needle = String(filterValue ?? "").trim().toLowerCase()
+    if (!needle) return true
+    const doc = row.original
+
+    const parts = [
+      resolveDocumentTitle({
+        entry: doc,
+        collection: schema,
+        collections: (schemas as any)?.collections,
+      }),
+    ]
+    for (const name of columns ?? []) {
+      const value = doc[name]
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        parts.push(String(value))
+      }
+    }
+    return parts.join(" ").toLowerCase().includes(needle)
+  }
 }
 
 /** Columns come from the field's declared options; falls back to observed values. */
@@ -303,5 +513,9 @@ function reorderIds(board: KanbanGroup[], columnValue: string, activeId: string,
 function coerceGroupValue(value: string, groupField: string, schema: any): unknown {
   const field = (schema?.fields ?? []).find((candidate: any) => candidate.name === groupField)
   if (field?.type === "boolean") return value === "true"
+  if (field?.type === "number") {
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? value : parsed
+  }
   return value
 }

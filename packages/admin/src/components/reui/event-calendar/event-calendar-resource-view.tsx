@@ -256,14 +256,14 @@ function EventCalendarResourceView({
             viewConfig.classNames?.timeGridHeader
           )}
         >
-          <div className="w-(--ec-gutter-width,4.5rem) shrink-0 border-e" />
+          <div className="dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e" />
           <div className="dy-grid dy-min-w-0 dy-flex-1" style={{ gridTemplateColumns }}>
             {resources.map((resource) => (
               <div
                 key={resource.id}
                 data-slot="event-calendar-resource-header"
                 className={cn(
-                  "min-w-0 truncate border-e px-2 py-1.5 text-center font-medium last:border-e-0",
+                  "dy-min-w-0 dy-truncate dy-border-e dy-px-2 dy-py-1.5 dy-text-center dy-font-medium last:dy-border-e-0",
                   viewConfig.classNames?.resourceHeader
                 )}
               >
@@ -293,11 +293,11 @@ function EventCalendarResourceView({
                     // one bar-row tall and centers the label so it sits on the SAME
                     // baseline as the first all-day chip and stays top-aligned when
                     // the chips wrap onto more lanes (mirrors the time-grid label)
-                    "text-muted-foreground w-(--ec-gutter-width,4.5rem) shrink-0 border-e ps-2 pe-2.5 pt-1.5",
+                    "dy-text-muted-foreground dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e dy-ps-2 dy-pe-2.5 dy-pt-1.5",
                     viewConfig.classNames?.allDayLabel
                   )}
                 >
-                  <span className="flex h-[calc(var(--ec-month-bar-h,1.625rem)-0.125rem)] items-center justify-end">
+                  <span className="dy-flex dy-h-[calc(var(--ec-month-bar-h,1.625rem)-0.125rem)] dy-items-center dy-justify-end">
                     {settings.i18n.labels.allDay}
                   </span>
                 </div>
@@ -400,7 +400,7 @@ function EventCalendarResourceAllDayCell({
         // reserve one bar row so the all-day row keeps the same height with or
         // without events, matching the time-grid all-day row (which reserves
         // the same via its bars-grid minHeight)
-        "relative flex min-h-[calc(var(--ec-month-bar-h,1.625rem)+0.625rem)] min-w-0 flex-col gap-0.5 border-e px-1 py-1.5 last:border-e-0",
+        "dy-relative dy-flex dy-min-h-[calc(var(--ec-month-bar-h,1.625rem)+0.625rem)] dy-min-w-0 dy-flex-col dy-gap-0.5 dy-border-e dy-px-1 dy-py-1.5 last:dy-border-e-0",
         isOff && offClassName,
         viewConfig.dayClassName?.(day),
         inDraft &&
@@ -449,10 +449,10 @@ function EventCalendarResourceAllDayCell({
           data-slot="event-calendar-drop-indicator"
           data-drop-target={isDropTarget}
           className={cn(
-            "pointer-events-none absolute inset-0.5 z-10 rounded-sm border border-dashed",
+            "dy-pointer-events-none dy-absolute dy-inset-0.5 dy-z-10 dy-rounded-sm dy-border dy-border-dashed",
             isDropTarget === "valid"
-              ? "border-primary/50"
-              : "border-destructive/60",
+              ? "dy-border-primary/50"
+              : "dy-border-destructive/60",
             viewConfig.classNames?.dropIndicator
           )}
         />
@@ -636,7 +636,7 @@ function EventCalendarResourceColumn({
       role="group"
       aria-label={resource.title}
       className={cn(
-        "relative min-w-0 border-e last:border-e-0",
+        "dy-relative dy-min-w-0 dy-border-e last:dy-border-e-0",
         isOff && offClassName,
         // the resource view is a single day, so today gets no column tint (the
         // header marks it); only a consumer todayClassName can tint it
@@ -715,7 +715,7 @@ function EventCalendarResourceColumn({
                 // the title never slices mid-glyph
                 endMin - startMin < viewConfig.compactEventMinutes
                   ? "dy-h-full dy-gap-1 dy-py-0 dy-leading-4"
-                  : "h-full flex-col items-start justify-start gap-0 py-1",
+                  : "dy-h-full dy-flex-col dy-items-start dy-justify-start dy-gap-0 dy-py-1",
                 viewConfig.classNames?.timedChip
               )}
             />
@@ -776,9 +776,9 @@ function EventCalendarResourceColumn({
                 dragGhost.window[1] - dragGhost.window[0] <
                   viewConfig.compactEventMinutes
                   ? "dy-h-full dy-gap-1 dy-py-0 dy-leading-4"
-                  : "h-full flex-col items-start justify-start gap-0 py-1",
+                  : "dy-h-full dy-flex-col dy-items-start dy-justify-start dy-gap-0 dy-py-1",
                 viewConfig.classNames?.timedChip,
-                "dy-inset-ring-0",
+                "dy-ring-0 dy-ring-inset",
                 !dragGhost.valid && EVENT_CALENDAR_GHOST.invalidContent
               )}
             />

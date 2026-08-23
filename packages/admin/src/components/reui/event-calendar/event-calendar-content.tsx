@@ -67,7 +67,7 @@ function EventCalendarContent({
       data-loading={loading || undefined}
       className={cn(
         "dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-1 dy-flex-col",
-        "data-loading:dy-pointer-events-none data-loading:dy-opacity-60",
+        "data-[loading]:dy-pointer-events-none data-[loading]:dy-opacity-60",
         viewConfig.classNames?.content,
         className
       )}

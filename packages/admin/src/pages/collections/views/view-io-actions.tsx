@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { FileDown, FileUp, Loader2 } from "lucide-react"
+import { FileDown, Loader2, MoreHorizontal } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "../../../components/ui/button"
@@ -10,7 +10,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../../../components/ui/dialog"
 import {
   DropdownMenu,
@@ -24,15 +23,9 @@ import { CsvImporter } from "../../../components/ui/csv-importer"
 import { buildCsv, csvColumnsForSchema, downloadCsv, fetchAllDocs } from "../../../lib/csv"
 import { useDyrected } from "../../../providers/dyrected-context"
 
-interface ExportMenuProps {
-  slug: string
-  schema: unknown
-  /** The view's resolved server-side filter/sort, applied to full exports. */
-  findArgs?: { where?: Record<string, unknown>; sort?: string }
-  /** Documents currently shown after client-side refinement. */
-  currentDocs?: Record<string, any>[]
-  /** Ids of the active selection (resolved against the loaded documents). */
-  selectedIds?: string[]
+export interface ViewFindArgs {
+  where?: Record<string, unknown>
+  sort?: string
 }
 
 function exportDocsToCsv(
@@ -48,17 +41,22 @@ function exportDocsToCsv(
   toast.success(`Exported ${docs.length} ${docs.length === 1 ? "entry" : "entries"}`)
 }
 
-/**
- * CSV export for any layout: everything (all pages), the current result set,
- * or just the active selection.
- */
-export function ExportMenu({ slug, schema, findArgs, currentDocs, selectedIds }: ExportMenuProps) {
-  const { client } = useDyrected()
-  const [isExporting, setIsExporting] = React.useState(false)
+interface ExportHandlers {
+  exportAll: () => Promise<void>
+  exportDocs: (docs: Record<string, any>[], filenameSuffix?: string) => void
+}
 
-  const handleExportAll = async () => {
+/** Shared export implementations used by the desktop menu and mobile sheet. */
+export function createExportHandlers(args: {
+  client: any
+  slug: string
+  schema: unknown
+  findArgs?: ViewFindArgs
+}): ExportHandlers {
+  const { client, slug, schema, findArgs } = args
+
+  const exportAll = async () => {
     if (!client) return
-    setIsExporting(true)
     try {
       const allDocs = await fetchAllDocs(client, slug, findArgs)
       exportDocsToCsv(client, slug, schema, allDocs)
@@ -66,22 +64,58 @@ export function ExportMenu({ slug, schema, findArgs, currentDocs, selectedIds }:
       toast.error("Export failed", {
         description: error instanceof Error ? error.message : String(error),
       })
-    } finally {
-      setIsExporting(false)
     }
   }
 
-  const handleExportCurrent = () => {
-    if (!client || !currentDocs?.length) return
-    exportDocsToCsv(client, slug, schema, currentDocs)
+  const exportDocs = (docs: Record<string, any>[], filenameSuffix = "") => {
+    if (!client || !docs.length) return
+    exportDocsToCsv(client, slug, schema, docs, filenameSuffix)
   }
 
-  const handleExportSelected = () => {
-    if (!client || !selectedIds?.length) return
-    const idSet = new Set(selectedIds)
-    const selectedDocs = (currentDocs ?? []).filter((doc) => idSet.has(String(doc.id)))
-    if (!selectedDocs.length) return
-    exportDocsToCsv(client, slug, schema, selectedDocs, "-selected")
+  return { exportAll, exportDocs }
+}
+
+export interface ExportMenuItem {
+  key: string
+  label: string
+  onSelect: () => void
+}
+
+/**
+ * CSV export dropdown for any layout: everything (all pages) plus the current
+ * result set when the caller can supply one.
+ */
+export function ExportMenu({
+  slug,
+  schema,
+  findArgs,
+  currentDocs,
+}: {
+  slug: string
+  schema: unknown
+  findArgs?: ViewFindArgs
+  currentDocs?: Record<string, any>[]
+}) {
+  const { client } = useDyrected()
+  const [isExporting, setIsExporting] = React.useState(false)
+  const handlers = createExportHandlers({ client, slug, schema, findArgs })
+
+  const items: ExportMenuItem[] = [
+    {
+      key: "all",
+      label: "All records",
+      onSelect: () => {
+        setIsExporting(true)
+        void handlers.exportAll().finally(() => setIsExporting(false))
+      },
+    },
+  ]
+  if (currentDocs?.length) {
+    items.push({
+      key: "current",
+      label: `Current results (${currentDocs.length})`,
+      onSelect: () => handlers.exportDocs(currentDocs),
+    })
   }
 
   return (
@@ -99,22 +133,12 @@ export function ExportMenu({ slug, schema, findArgs, currentDocs, selectedIds }:
       <DropdownMenuContent align="end" className="dy-w-52">
         <DropdownMenuLabel>Export to CSV</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void handleExportAll()}>
-          <FileDown />
-          All records
-        </DropdownMenuItem>
-        {!!currentDocs?.length && (
-          <DropdownMenuItem onClick={handleExportCurrent}>
+        {items.map((item) => (
+          <DropdownMenuItem key={item.key} onClick={item.onSelect}>
             <FileDown />
-            Current results ({currentDocs.length})
+            {item.label}
           </DropdownMenuItem>
-        )}
-        {!!selectedIds?.length && (
-          <DropdownMenuItem onClick={handleExportSelected}>
-            <FileDown />
-            Selected ({selectedIds.length})
-          </DropdownMenuItem>
-        )}
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -123,18 +147,19 @@ export function ExportMenu({ slug, schema, findArgs, currentDocs, selectedIds }:
 interface ImportCsvDialogProps {
   slug: string
   schema: any
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 /**
- * CSV import flow behind a dialog trigger. Available wherever creating is
- * allowed — importing bulk-creates new documents.
+ * Controlled CSV import flow. The caller owns the trigger button so the same
+ * dialog can be opened from both the desktop toolbar and the mobile menu.
  */
-export function ImportCsvDialog({ slug, schema }: ImportCsvDialogProps) {
-  const [open, setOpen] = React.useState(false)
+export function ImportCsvDialog({ slug, schema, open, onOpenChange }: ImportCsvDialogProps) {
   const queryClient = useQueryClient()
 
   const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen)
+    onOpenChange(nextOpen)
     if (!nextOpen) {
       void queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
       void queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] })
@@ -143,12 +168,6 @@ export function ImportCsvDialog({ slug, schema }: ImportCsvDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="dy-h-8 dy-gap-1.5 dy-px-3 dy-text-xs">
-          <FileUp className="dy-h-3.5 dy-w-3.5" />
-          <span className="dy-hidden sm:dy-inline">Import</span>
-        </Button>
-      </DialogTrigger>
       <DialogContent className="dy-max-h-[85vh] dy-overflow-y-auto sm:dy-max-w-3xl">
         <DialogHeader>
           <DialogTitle>Import CSV</DialogTitle>
@@ -159,5 +178,50 @@ export function ImportCsvDialog({ slug, schema }: ImportCsvDialogProps) {
         {open ? <CsvImporter slug={slug} schema={schema} onClose={() => handleOpenChange(false)} /> : null}
       </DialogContent>
     </Dialog>
+  )
+}
+
+export interface HeaderMenuItem {
+  key: string
+  label: string
+  icon?: React.ComponentType<{ className?: string }>
+  destructive?: boolean
+  disabled?: boolean
+  onSelect: () => void
+}
+
+/**
+ * Compact ⋯ menu holding secondary header actions on small screens, where a
+ * row of full-width buttons would stack awkwardly. Hidden from `sm:` up.
+ */
+export function MobileHeaderMenu({ items }: { items: HeaderMenuItem[] }) {
+  if (!items.length) return null
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="More actions"
+          className="dy-h-8 dy-w-8 sm:dy-hidden"
+        >
+          <MoreHorizontal className="dy-h-4 dy-w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="dy-min-w-48">
+        {items.map((item) => (
+          <DropdownMenuItem
+            key={item.key}
+            disabled={item.disabled}
+            onSelect={item.onSelect}
+            className={item.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined}
+          >
+            {item.icon ? <item.icon /> : null}
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

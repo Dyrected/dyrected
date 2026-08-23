@@ -32,7 +32,11 @@ export function resolveViewActions(
   options: SystemActionOptions,
 ): ResolvedViewActions {
   const customs = view.actions ?? []
-  const builtins = createBuiltinActions(options)
+  // View-level feature toggles win over any defaults the caller supplied.
+  const builtins = createBuiltinActions({
+    ...options,
+    features: { ...options.features, ...view.features },
+  })
 
   const rowActions = applyOrder(
     [

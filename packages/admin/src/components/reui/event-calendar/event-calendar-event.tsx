@@ -65,11 +65,11 @@ const EVENT_CALENDAR_COLORS: Array<{ name: string; value: string }> = [
  * the chip itself at the proposed extent, dashed rather than solid.
  */
 const EVENT_CALENDAR_GHOST = {
-  move: "rounded-sm border border-dashed border-(--ec-event-color)/50 bg-(--ec-event-color)/8",
+  move: "dy-rounded-sm dy-border dy-border-dashed dy-border-[--ec-event-color]/50 dy-bg-[--ec-event-color]/8",
   resize:
-    "rounded-sm border border-dashed border-(--ec-event-color)/70 overflow-hidden",
-  invalid: "border-destructive/70 bg-destructive/10",
-  invalidResize: "border-destructive/70",
+    "dy-rounded-sm dy-border dy-border-dashed dy-border-[--ec-event-color]/70 dy-overflow-hidden",
+  invalid: "dy-border-destructive/70 dy-bg-destructive/10",
+  invalidResize: "dy-border-destructive/70",
   /** Applied to the clone inside an invalid resize ghost. */
   invalidContent: "dy-opacity-60",
 } as const
@@ -83,7 +83,7 @@ const EVENT_CALENDAR_GHOST = {
  * Wide chips keep the plain ellipsis. Exported for consumer renderEvent.
  */
 const EVENT_CALENDAR_FADE_TRUNCATE =
-  "w-full truncate @max-[10rem]:text-clip @max-[10rem]:[mask-image:linear-gradient(to_right,#000_calc(100%-0.75rem),transparent)] @max-[10rem]:rtl:[mask-image:linear-gradient(to_left,#000_calc(100%-0.75rem),transparent)]"
+  "dy-w-full dy-truncate @max-[10rem]:text-clip @max-[10rem]:[mask-image:linear-gradient(to_right,#000_calc(100%-0.75rem),transparent)] @max-[10rem]:rtl:[mask-image:linear-gradient(to_left,#000_calc(100%-0.75rem),transparent)]"
 
 /**
  * The drag-to-create selection, shared by every view: a dashed primary
@@ -93,10 +93,10 @@ const EVENT_CALENDAR_FADE_TRUNCATE =
  * ends so it reads as one dashed box rather than a row of them.
  */
 const EVENT_CALENDAR_SLOT_DRAFT = {
-  box: "rounded-sm border border-dashed border-primary/40 bg-primary/5",
-  segment: "border-y border-dashed border-primary/40",
-  segmentStart: "rounded-s-sm border-s",
-  segmentEnd: "rounded-e-sm border-e",
+  box: "dy-rounded-sm dy-border dy-border-dashed dy-border-primary/40 dy-bg-primary/5",
+  segment: "dy-border-y dy-border-dashed dy-border-primary/40",
+  segmentStart: "dy-rounded-s-sm dy-border-s",
+  segmentEnd: "dy-rounded-e-sm dy-border-e",
   /**
    * The wash for segmented views, on the CELL not the dashed overlay: the
    * overlay stacks above the chips, so tinting it would wash them instead.
@@ -219,7 +219,7 @@ function EventCalendarEvent<TData = unknown>({
           aria-hidden
           data-slot="event-calendar-event-dot"
           // -me-0.5 tightens only the dot-to-title gap; the chip keeps gap-1.5
-          className="-me-0.5 size-1.5 shrink-0 rounded-full bg-(--ec-event-color)"
+          className="dy-me-0.5 dy-size-1.5 dy-shrink-0 dy-rounded-full dy-bg-[--ec-event-color]"
         />
       )}
       {occurrence.isRecurring && (
@@ -238,7 +238,7 @@ function EventCalendarEvent<TData = unknown>({
       {!occurrence.allDay &&
         segment.isStart &&
         (view === "month" ? (
-          <span className="text-muted-foreground shrink-0">
+          <span className="dy-text-muted-foreground dy-shrink-0">
             {format(
               toZoned(occurrence.start, settings.timeZone),
               settings.i18n.formats.eventTime,
@@ -303,13 +303,13 @@ function EventCalendarEvent<TData = unknown>({
   // Agenda default row: time column, color-dot badge, plain title
   const agendaDefaultContent = (
     <>
-      <span className="text-muted-foreground w-40 shrink-0 truncate tabular-nums">
+      <span className="dy-text-muted-foreground dy-w-40 dy-shrink-0 dy-truncate dy-tabular-nums">
         {agendaTimeText}
       </span>
       <span
         aria-hidden
         data-slot="event-calendar-agenda-dot"
-        className="size-2 shrink-0 rounded-full bg-(--ec-event-color)"
+        className="dy-size-2 dy-shrink-0 dy-rounded-full dy-bg-[--ec-event-color]"
       />
       <span className="dy-truncate dy-text-sm">{event.title}</span>
       {occurrence.isRecurring && (
@@ -392,7 +392,7 @@ function EventCalendarEvent<TData = unknown>({
           data-slot="event-calendar-resize-handle"
           data-edge="start"
           className={cn(
-            "absolute inset-x-1 top-0 flex h-1.5 cursor-ns-resize items-center justify-center opacity-0 transition-opacity duration-150 group-hover/ec-event:opacity-100",
+            "dy-absolute dy-inset-x-1 dy-top-0 dy-flex dy-h-1.5 dy-cursor-ns-resize dy-items-center dy-justify-center dy-opacity-0 dy-transition-opacity dy-duration-150 group-hover/ec-event:dy-opacity-100",
             viewConfig.classNames?.resizeHandle
           )}
           onPointerDown={(e) => gestures.beginResize(e, segment, "start")}
@@ -405,7 +405,7 @@ function EventCalendarEvent<TData = unknown>({
           data-slot="event-calendar-resize-handle"
           data-edge="end"
           className={cn(
-            "absolute inset-x-1 bottom-0 flex h-1.5 cursor-ns-resize items-center justify-center opacity-0 transition-opacity duration-150 group-hover/ec-event:opacity-100",
+            "dy-absolute dy-inset-x-1 dy-bottom-0 dy-flex dy-h-1.5 dy-cursor-ns-resize dy-items-center dy-justify-center dy-opacity-0 dy-transition-opacity dy-duration-150 group-hover/ec-event:dy-opacity-100",
             viewConfig.classNames?.resizeHandle
           )}
           onPointerDown={(e) => gestures.beginResize(e, segment, "end")}
@@ -418,7 +418,7 @@ function EventCalendarEvent<TData = unknown>({
           data-slot="event-calendar-resize-handle"
           data-edge="start"
           className={cn(
-            "absolute inset-y-0 start-0 flex w-2 cursor-ew-resize items-center justify-center opacity-0 transition-opacity duration-150 group-hover/ec-event:opacity-100",
+            "dy-absolute dy-inset-y-0 dy-start-0 dy-flex dy-w-2 dy-cursor-ew-resize dy-items-center dy-justify-center dy-opacity-0 dy-transition-opacity dy-duration-150 group-hover/ec-event:dy-opacity-100",
             viewConfig.classNames?.resizeHandle
           )}
           onPointerDown={(e) => gestures.beginResize(e, segment, "start")}
@@ -431,7 +431,7 @@ function EventCalendarEvent<TData = unknown>({
           data-slot="event-calendar-resize-handle"
           data-edge="end"
           className={cn(
-            "absolute inset-y-0 end-0 flex w-2 cursor-ew-resize items-center justify-center opacity-0 transition-opacity duration-150 group-hover/ec-event:opacity-100",
+            "dy-absolute dy-inset-y-0 dy-end-0 dy-flex dy-w-2 dy-cursor-ew-resize dy-items-center dy-justify-center dy-opacity-0 dy-transition-opacity dy-duration-150 group-hover/ec-event:dy-opacity-100",
             viewConfig.classNames?.resizeHandle
           )}
           onPointerDown={(e) => gestures.beginResize(e, segment, "end")}
@@ -505,7 +505,7 @@ function EventCalendarEvent<TData = unknown>({
         settings.onEventDoubleClick?.(occurrence, e)
       }}
       className={cn(
-        "group/ec-event text-foreground relative flex w-full min-w-0 cursor-pointer touch-none items-center overflow-hidden text-start select-none",
+        "group/ec-event dy-text-foreground dy-relative dy-flex dy-w-full dy-min-w-0 dy-cursor-pointer touch-none dy-items-center dy-overflow-hidden dy-text-start dy-select-none",
         "focus-visible:dy-ring-ring/50 dy-outline-none focus-visible:dy-ring-2",
         preview && "dy-pointer-events-none",
         view === "agenda"
@@ -515,15 +515,15 @@ function EventCalendarEvent<TData = unknown>({
           : cn(
             // @container removes intrinsic sizing; only grid chips are containers
             // py-1: room above/below inline badges (attendee pill etc.)
-            "@container gap-1.5 rounded-sm px-1.5 py-1 leading-normal",
+            "@container dy-gap-1.5 dy-rounded-sm dy-px-1.5 dy-py-1 dy-leading-normal",
             // soft tint + inset ring, not an accent border: legible on both themes
             "dy-bg-[--ec-event-color]/15 hover:dy-bg-[--ec-event-color]/25",
             // a flat tint reads darker on a dark surface, so lift it there
             "dark:dy-bg-[--ec-event-color]/20 dark:hover:dy-bg-[--ec-event-color]/30",
-            "dy-inset-ring dy-inset-ring-[--ec-event-color]/15",
-            "transition-[background-color,box-shadow] duration-150",
-            "data-dragging:dy-opacity-40",
-            "data-selected:dy-bg-[--ec-event-color]/30 data-selected:dy-inset-ring-[--ec-event-color]/40",
+            "dy-ring-1 dy-ring-inset dy-ring-[--ec-event-color]/15",
+            "dy-transition-[background-color,box-shadow] dy-duration-150",
+            "data-[dragging]:dy-opacity-40",
+            "data-[selected]:dy-bg-[--ec-event-color]/30 data-[selected]:dy-ring-1 data-[selected]:dy-ring-inset data-[selected]:dy-ring-[--ec-event-color]/40",
             segment.continuesBefore && "dy-rounded-s-none",
             segment.continuesAfter && "dy-rounded-e-none"
           ),

@@ -53,6 +53,8 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
 
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>(IDLE_DELETE_STATE)
   const [confirmationValue, setConfirmationValue] = useState("")
+  const [deletingIds, setDeletingIds] = useState<string[]>([])
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
 
   const invalidate = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
@@ -155,7 +157,11 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
 
   const confirmDelete = useCallback(() => {
     if (deleteDialog.ids.length === 0) return
-    deleteMutation.mutate(deleteDialog.ids, { onSuccess: closeDeleteDialog })
+    setDeletingIds(deleteDialog.ids)
+    deleteMutation.mutate(deleteDialog.ids, {
+      onSuccess: closeDeleteDialog,
+      onSettled: () => setDeletingIds([]),
+    })
   }, [deleteDialog.ids, deleteMutation, closeDeleteDialog])
 
   const exportDocs = useCallback(
@@ -180,9 +186,14 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
         case "edit":
           navigate(`/collections/${slug}/${ids[0]}/edit`)
           break
-        case "duplicate":
-          void duplicateMutation.mutateAsync({ sourceId: ids[0] })
+        case "duplicate": {
+          const sourceId = ids[0]
+          setDuplicatingId(sourceId)
+          void duplicateMutation
+            .mutateAsync({ sourceId })
+            .finally(() => setDuplicatingId(null))
           break
+        }
         case "delete":
           openDeleteDialog(ids, ids.length > 1 ? "bulk" : "single")
           break
@@ -216,6 +227,25 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
 
   const isDeleting = deleteMutation.isPending
 
+  /** Whether a built-in operation × selection is currently executing. */
+  const isOperationRunning = useCallback(
+    (operation: SystemOperation, ids: string[]) => {
+      switch (operation) {
+        case "delete":
+          if (!deletingIds.length) return false
+          return (
+            deletingIds.length === ids.length &&
+            [...deletingIds].sort().join(",") === [...ids].sort().join(",")
+          )
+        case "duplicate":
+          return duplicatingId !== null && ids[0] === duplicatingId
+        default:
+          return false
+      }
+    },
+    [deletingIds, duplicatingId],
+  )
+
   return useMemo(
     () => ({
       runSystemAction,
@@ -226,9 +256,9 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
       closeDeleteDialog,
       confirmDelete,
       isDeleting,
-      isDuplicating: duplicateMutation.isPending,
+      isOperationRunning,
     }),
-    [runSystemAction, exportAll, deleteDialog, confirmationValue, closeDeleteDialog, confirmDelete, isDeleting, duplicateMutation.isPending],
+    [runSystemAction, exportAll, deleteDialog, confirmationValue, closeDeleteDialog, confirmDelete, isDeleting, isOperationRunning],
   )
 }
 

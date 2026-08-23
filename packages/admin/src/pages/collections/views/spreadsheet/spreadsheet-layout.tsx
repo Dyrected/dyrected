@@ -1,11 +1,13 @@
 import * as React from "react"
 import {
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import type { ColumnDef, SortingState } from "@tanstack/react-table"
+import type { ColumnDef, ColumnFiltersState, SortingState } from "@tanstack/react-table"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
@@ -17,10 +19,14 @@ import { useDyrected } from "../../../../providers/dyrected-context"
 import { normalizeOptions } from "../build-view-columns"
 import { evaluateAccess } from "../system-actions"
 import { useColumnPreferences } from "../use-column-preferences"
+import { DataTableToolbar } from "../table/data-table-toolbar"
+import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { DataTableViewOptions } from "../table/data-table-view-options"
 import type { SerializedAction, SerializedView } from "../types"
 import { DataGrid } from "./data-grid"
 import type { CellVariantMeta, DataGridTableMeta } from "./data-grid-types"
+import { ExportMenu } from "../view-io-actions"
+import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
 
 export interface SpreadsheetLayoutProps {
   slug: string
@@ -34,6 +40,8 @@ export interface SpreadsheetLayoutProps {
   hasDetail?: boolean
   actions: SerializedAction[]
   onRunAction: (action: SerializedAction, ids: string[]) => void
+  /** Returns true while an action × selection is executing (drives loading states). */
+  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 /** Maps a Dyrected field to the grid editor variant it can support inline. */
@@ -97,6 +105,24 @@ export function SpreadsheetLayout({
   )
   const [globalFilter, setGlobalFilter] = React.useState("")
 
+  const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}:spreadsheet`
+  const storedToolbarState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    (storedToolbarState?.columnFilters as ColumnFiltersState | undefined) ?? [],
+  )
+
+  const handleColumnFiltersChange = React.useCallback(
+    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
+      setColumnFilters((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        persistToolbarState(toolbarStateKey, { columnFilters: next })
+        return next
+      })
+    },
+    [toolbarStateKey],
+  )
+
+
   const canUpdate = React.useMemo(() => evaluateAccess(schema?.access?.update, user), [schema, user])
 
   const managedColumnIds = React.useMemo(() => {
@@ -149,9 +175,10 @@ export function SpreadsheetLayout({
   const table = useReactTable({
     data: gridData,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, columnFilters },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: handleColumnFiltersChange,
     getRowId: (row) => String(row.id),
     globalFilterFn: (row, _columnId, filterValue) => {
       const needle = String(filterValue ?? "").toLowerCase()
@@ -163,6 +190,8 @@ export function SpreadsheetLayout({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
   const orderedColumnIds = React.useMemo(
@@ -171,6 +200,19 @@ export function SpreadsheetLayout({
         (id) => !preferences.preferences.hidden.includes(id) && !!table.getColumn(id),
       ),
     [preferences.preferences.order, preferences.preferences.hidden, table],
+  )
+
+  /**
+   * Search-surviving saved documents — pending new rows (temp ids) are
+   * excluded since they have nothing to export yet.
+   */
+  const exportableDocs = React.useMemo(
+    () =>
+      table
+        .getPrePaginationRowModel()
+        .rows.map((row) => row.original)
+        .filter((doc) => !String(doc.id ?? "").startsWith("__new__")),
+    [table],
   )
 
   const invalidate = React.useCallback(async () => {
@@ -291,20 +333,29 @@ export function SpreadsheetLayout({
             className="dy-border-dashed dy-bg-muted/40 hover:dy-bg-muted/60 focus-visible:dy-bg-background"
           />
         </div>
-        <DataTableViewOptions
-          table={table}
-          preferences={preferences.preferences}
-          isDirty={preferences.isDirty}
-          isSaving={preferences.isSaving}
-          isAdmin={preferences.isAdmin}
-          onOrderChange={preferences.setOrder}
-          onToggleVisibility={preferences.toggleVisibility}
-          onShowAll={preferences.showAll}
-          onHideAllExcept={preferences.hideAllExcept}
-          onReset={preferences.reset}
-          onSaveForMe={preferences.saveForMe}
-          onSaveForEveryone={preferences.isAdmin ? preferences.saveForEveryone : undefined}
-        />
+        <DataTableToolbar table={table} className="dy-flex-1" />
+        <div className="dy-flex dy-items-center dy-gap-2">
+          <ExportMenu
+            slug={slug}
+            schema={schema}
+            findArgs={{ where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) }}
+            currentDocs={exportableDocs}
+          />
+          <DataTableViewOptions
+            table={table}
+            preferences={preferences.preferences}
+            isDirty={preferences.isDirty}
+            isSaving={preferences.isSaving}
+            isAdmin={preferences.isAdmin}
+            onOrderChange={preferences.setOrder}
+            onToggleVisibility={preferences.toggleVisibility}
+            onShowAll={preferences.showAll}
+            onHideAllExcept={preferences.hideAllExcept}
+            onReset={preferences.reset}
+            onSaveForMe={preferences.saveForMe}
+            onSaveForEveryone={preferences.isAdmin ? preferences.saveForEveryone : undefined}
+          />
+        </div>
       </div>
 
       <DataGrid

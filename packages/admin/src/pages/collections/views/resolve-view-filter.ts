@@ -12,6 +12,12 @@ export function resolveViewFilter(filter: Record<string, any> | string | undefin
   return Object.keys(filter).length ? filter : undefined
 }
 
+/** Serializes a view sort into the SDK's `-field` / `field` form. */
+export function resolveViewSort(sort?: { field: string; direction: "asc" | "desc" }): string | undefined {
+  if (!sort) return undefined
+  return `${sort.direction === "desc" ? "-" : ""}${sort.field}`
+}
+
 /** Merges base view filters with runtime filters — later values win per key. */
 export function mergeFilters(
   base: Record<string, any> | undefined,

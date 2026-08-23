@@ -1,22 +1,33 @@
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { Plus } from "lucide-react"
+import { FileDown, FileUp, Loader2, Plus } from "lucide-react"
 
 import { Button } from "../../../components/ui/button"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { getSiteUrl } from "../../../lib/utils"
 import { resolvePreviewUrl } from "../../../lib/preview-url"
+import { AdminComponentSlot } from "../../../components/admin-component-slot"
+import type { CollectionViewSlotProps } from "../../../types/admin-components"
 import { useViewData } from "./use-view-data"
 import { useViewMetrics } from "./use-view-metrics"
 import { useViewActions } from "./use-view-actions"
 import { useSystemOps } from "./use-system-ops"
+import { useViewMode } from "./use-view-mode"
 import { DeleteEntriesDialog } from "./delete-entries-dialog"
-import { evaluateAccess, isSystemAction, mergeWithSystemActions } from "./system-actions"
-import { resolveViewFilter } from "./resolve-view-filter"
+import { evaluateAccess, isSystemAction } from "./system-actions"
+import { resolveViewActions } from "./resolve-view-actions"
+import { resolveViewFilter, resolveViewSort } from "./resolve-view-filter"
 import { ViewHeader } from "./view-header"
+import { ViewModeSwitcher } from "./view-mode-switcher"
 import { MetricCards } from "./metric-cards"
 import { ActionDialogs } from "./action-dialogs"
-import { ExportMenu, ImportCsvDialog } from "./view-io-actions"
+import {
+  ExportMenu,
+  ImportCsvDialog,
+  MobileHeaderMenu,
+  createExportHandlers,
+  type HeaderMenuItem,
+} from "./view-io-actions"
 import type { SerializedAction, SerializedView } from "./types"
 import { TableLayout, type TableLayoutProps } from "./table/table-layout"
 import { KanbanLayout, type KanbanLayoutProps } from "./kanban/kanban-layout"
@@ -38,12 +49,23 @@ export interface OperationalViewPageProps {
  * Orchestrator for an operational view workspace.
  *
  * Owns the shared data/metrics/action plumbing plus the built-in document
- * operations (view/edit/duplicate/delete/export), then delegates rendering to
- * the layout component selected by `view.layout`.
+ * operations (view/edit/duplicate/delete/export), the table⇄spreadsheet mode
+ * switcher, extension slots, and delegates rendering to the active layout.
  */
 export function OperationalViewPage({ slug, schema, view, schemas }: OperationalViewPageProps) {
-  const { client, user } = useDyrected()
-  const layout = view.layout ?? "table"
+  const { client, components, user } = useDyrected()
+  const authoredLayout = view.layout ?? "table"
+
+  // Only tabular views can switch between table and spreadsheet.
+  const isTabular =
+    !authoredLayout || authoredLayout === "table" || authoredLayout === "spreadsheet"
+  const viewMode = useViewMode({
+    slug,
+    viewSlug: view.slug,
+    layout: isTabular ? authoredLayout : undefined,
+  })
+  const layout = isTabular ? viewMode.mode : authoredLayout
+
   const customActions = useMemo(() => (view.actions ?? []) as SerializedAction[], [view.actions])
 
   const { data, isLoading } = useViewData({
@@ -61,10 +83,28 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
   const systemOps = useSystemOps({ slug, schema, schemas, data: data ?? [] })
 
-  /** All actions for this view: server-defined first, built-ins after. */
-  const actions = useMemo(
-    () => mergeWithSystemActions(customActions, { canCreate, canDelete, hasDetail }),
-    [customActions, canCreate, canDelete, hasDetail],
+  const resolvedActions = useMemo(
+    () =>
+      resolveViewActions(view, {
+        canCreate,
+        canDelete,
+        hasDetail,
+      }),
+    // `view` fields are stable per route; features/order ride along on it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [customActions, canCreate, canDelete, hasDetail, view.features, view.actionOrder],
+  )
+  const actions = resolvedActions.all
+
+  /** Combined loading predicate across server actions and built-in ops. */
+  const isRunningAction = useCallback(
+    (action: SerializedAction, ids: string[]) => {
+      if (isSystemAction(action)) {
+        return systemOps.isOperationRunning(action.operation, ids)
+      }
+      return actionRunner.isActionRunning(action.name, ids)
+    },
+    [systemOps, actionRunner],
   )
 
   const handleRunAction = useCallback(
@@ -79,14 +119,80 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   )
 
   const resolvePreview = useCallback(
-    (doc: Record<string, any>) =>
-      schema?.admin?.previewUrl
-        ? resolvePreviewUrl(schema.admin.previewUrl, doc, getSiteUrl((schemas as any)?.admin?.siteUrl))
-        : null,
+    (doc: Record<string, any>) => resolvePreviewUrl(schema?.admin?.previewUrl, doc, getSiteUrl((schemas as any)?.admin?.siteUrl)),
     [schema, schemas],
   )
 
-  const headerActions = useMemo(() => actions.filter((action) => action.type === "header"), [actions])
+  const headerActions = resolvedActions.headerActions
+  const docIds = useMemo(() => (data ?? []).map((doc) => String(doc.id)), [data])
+  // Table and spreadsheet render their own Export menu with filtered counts;
+  // the header-level export covers the non-filtering layouts only.
+  const headerHasExport = !isTabular
+
+  const exportHandlers = createExportHandlers({
+    client,
+    slug,
+    schema,
+    findArgs: { where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) },
+  })
+
+  const [isImportOpen, setIsImportOpen] = useState(false)
+
+  const mobileMenuItems: HeaderMenuItem[] = [
+    ...headerActions.map((action) => ({
+      key: `header:${action.name}`,
+      label: action.label,
+      onSelect: () => handleRunAction(action, docIds),
+    })),
+    ...(headerHasExport
+      ? [
+        {
+          key: "export-all",
+          label: "Export all records",
+          icon: FileDown,
+          onSelect: () => void exportHandlers.exportAll(),
+        },
+        ...(docIds.length
+          ? [{
+            key: "export-current",
+            label: `Export current results (${docIds.length})`,
+            icon: FileDown,
+            onSelect: () => exportHandlers.exportDocs(data ?? []),
+          }]
+          : []),
+      ]
+      : []),
+    ...(canCreate
+      ? [{ key: "import", label: "Import CSV", icon: FileUp, onSelect: () => setIsImportOpen(true) }]
+      : []),
+  ]
+
+  const slotProps: CollectionViewSlotProps = {
+    client: client!,
+    user,
+    collection: schema,
+    collectionSlug: slug,
+    viewSlug: view.slug,
+    view: view as unknown as Record<string, unknown>,
+    documents: data ?? [],
+    isLoading,
+    permissions: { canCreate },
+    urls: {
+      collection: `/collections/${slug}`,
+      create: `/collections/${slug}/new`,
+    },
+  }
+  const collectionViewComponents = schema.admin?.components?.collectionView
+  const slotRegistry = components?.collectionView
+
+  const renderSlot = (slot: string) => (
+    <AdminComponentSlot
+      slot={`collectionView.${slot}`}
+      componentKeys={collectionViewComponents?.[slot]}
+      registry={slotRegistry}
+      componentProps={slotProps}
+    />
+  )
 
   const layoutProps: KanbanLayoutProps | CalendarLayoutProps | CardsLayoutProps | TableLayoutProps | SpreadsheetLayoutProps = {
     slug,
@@ -98,60 +204,95 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     schemas,
     actions,
     onRunAction: handleRunAction,
+    isRunningAction,
   }
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-6">
+      {renderSlot("beforeViewHeader")}
+
       <ViewHeader
         label={view.label}
         icon={view.icon}
         layout={layout}
         description={schema.labels ? `Collection: ${schema.labels.plural || schema.labels.singular}` : undefined}
       >
-        <div className="dy-flex dy-w-full dy-flex-col dy-gap-2 sm:dy-w-auto sm:dy-flex-row sm:dy-items-center">
-          <HeaderActionSlot actions={headerActions} onRun={handleRunAction} docIds={(data ?? []).map((doc) => String(doc.id))} />
-          <ExportMenu
-            slug={slug}
-            schema={schema}
-            findArgs={{ where: resolveViewFilter(view.filter), sort: sortString(view.sort) }}
-            currentDocs={data ?? []}
-          />
-          {canCreate && <ImportCsvDialog slug={slug} schema={schema} />}
+        <div className="dy-flex dy-w-full dy-items-center dy-gap-2 sm:dy-w-auto sm:dy-justify-end">
+          {isTabular && <ViewModeSwitcher mode={viewMode.mode} onChange={viewMode.setMode} />}
+
+          {headerActions.length > 0 && (
+            <div className="dy-hidden sm:dy-flex sm:dy-items-center sm:dy-gap-2">
+              {headerActions.map((action) => {
+                const running = isRunningAction(action, docIds)
+                return (
+                  <Button
+                    key={action.name}
+                    variant="outline"
+                    size="sm"
+                    disabled={running}
+                    className="dy-h-8 dy-px-3 dy-text-xs"
+                    onClick={() => handleRunAction(action, docIds)}
+                  >
+                    {running ? (
+                      <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
+                    ) : null}
+                    {running ? `${action.label}…` : action.label}
+                  </Button>
+                )
+              })}
+            </div>
+          )}
+
+          {headerHasExport && (
+            <span className="dy-hidden sm:dy-inline-flex">
+              <ExportMenu slug={slug} schema={schema} currentDocs={data ?? []} />
+            </span>
+          )}
+
           {canCreate && (
-            <Button asChild className="dy-h-8 dy-px-3 dy-text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="dy-hidden dy-h-8 dy-gap-1.5 dy-px-3 dy-text-xs sm:dy-inline-flex"
+              onClick={() => setIsImportOpen(true)}
+            >
+              <FileUp className="dy-h-3.5 dy-w-3.5" />
+              Import
+            </Button>
+          )}
+
+          {canCreate && (
+            <Button asChild size="sm" className="dy-h-8 dy-flex-1 dy-px-3 dy-text-xs sm:dy-flex-none">
               <Link to={`/collections/${slug}/new`}>
                 <Plus className="dy-h-3.5 dy-w-3.5" />
                 New {schema.labels?.singular || schema.slug}
               </Link>
             </Button>
           )}
+
+          <MobileHeaderMenu items={mobileMenuItems} />
         </div>
       </ViewHeader>
 
-      <MetricCards
-        metrics={metrics.data ?? []}
-        isLoading={metrics.isLoading}
-      />
+      {renderSlot("afterViewHeader")}
+
+      <MetricCards metrics={metrics.data ?? []} isLoading={metrics.isLoading} />
+
+      {renderSlot("beforeViewContent")}
 
       {layout === "kanban" ? (
-        <KanbanLayout {...layoutProps} />
+        <KanbanLayout {...(layoutProps as KanbanLayoutProps)} />
       ) : layout === "calendar" ? (
-        <CalendarLayout {...layoutProps} />
+        <CalendarLayout {...(layoutProps as CalendarLayoutProps)} />
       ) : layout === "cards" ? (
-        <CardsLayout {...layoutProps} />
+        <CardsLayout {...(layoutProps as CardsLayoutProps)} />
       ) : layout === "spreadsheet" ? (
-        <SpreadsheetLayout
-          {...(layoutProps as SpreadsheetLayoutProps)}
-          resolvePreview={resolvePreview}
-          hasDetail={hasDetail}
-        />
+        <SpreadsheetLayout {...(layoutProps as SpreadsheetLayoutProps)} resolvePreview={resolvePreview} hasDetail={hasDetail} />
       ) : (
-        <TableLayout
-          {...(layoutProps as TableLayoutProps)}
-          resolvePreview={resolvePreview}
-          hasDetail={hasDetail}
-        />
+        <TableLayout {...(layoutProps as TableLayoutProps)} resolvePreview={resolvePreview} hasDetail={hasDetail} />
       )}
+
+      {renderSlot("afterViewContent")}
 
       <ActionDialogs
         pending={actionRunner.pending}
@@ -168,36 +309,13 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         onCancel={systemOps.closeDeleteDialog}
         onConfirm={systemOps.confirmDelete}
       />
+
+      <ImportCsvDialog
+        slug={slug}
+        schema={schema}
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+      />
     </div>
   )
-}
-
-function HeaderActionSlot({
-  actions,
-  onRun,
-  docIds,
-}: {
-  actions: SerializedAction[]
-  onRun: (action: SerializedAction, ids: string[]) => void
-  docIds: string[]
-}) {
-  if (!actions.length) return null
-  return (
-    <>
-      {actions.map((action) => (
-        <button
-          key={action.name}
-          className="dy-inline-flex dy-h-8 dy-items-center dy-gap-1.5 dy-rounded-md dy-border dy-bg-background dy-px-3 dy-text-xs dy-font-medium hover:dy-bg-accent"
-          onClick={() => onRun(action, docIds)}
-        >
-          {action.label}
-        </button>
-      ))}
-    </>
-  )
-}
-
-function sortString(sort?: { field: string; direction: "asc" | "desc" }): string | undefined {
-  if (!sort) return undefined
-  return `${sort.direction === "desc" ? "-" : ""}${sort.field}`
 }

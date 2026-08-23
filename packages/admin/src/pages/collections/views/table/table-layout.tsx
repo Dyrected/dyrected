@@ -15,10 +15,11 @@ import { DataTable } from "./data-table"
 import { DataTableToolbar } from "./data-table-toolbar"
 import { DataTableViewOptions } from "./data-table-view-options"
 import { buildViewColumns } from "../build-view-columns"
-import { RowActionsCell } from "../row-actions-cell"
 import { BulkActionBar } from "../bulk-action-bar"
 import { useColumnPreferences } from "../use-column-preferences"
+import { ExportMenu } from "../view-io-actions"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
+import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface TableLayoutProps {
@@ -33,9 +34,11 @@ export interface TableLayoutProps {
   resolvePreview?: (doc: Record<string, any>) => string | null
   /** Whether the collection exposes a read-only detail page. */
   hasDetail?: boolean
-  /** All serialized actions in the view (custom + synthesized system ops). */
+  /** Resolved + ordered actions (customs and built-ins) for this view. */
   actions: SerializedAction[]
   onRunAction: (action: SerializedAction, ids: string[]) => void
+  /** Returns true while an action × selection is executing (drives loading states). */
+  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 /**
@@ -55,6 +58,7 @@ export function TableLayout({
   hasDetail = true,
   actions,
   onRunAction,
+  isRunningAction,
 }: TableLayoutProps) {
   const toolbarStateKey = `dy-view-toolbar:${slug}:${view.slug}`
   const storedState = React.useMemo(() => loadToolbarState(toolbarStateKey), [toolbarStateKey])
@@ -82,8 +86,8 @@ export function TableLayout({
   const searchColumnId = findTextColumn(view.columns, schema)
 
   /**
-   * Managed columns are the schema-driven field columns; select/actions stay
-   * pinned and are re-attached around the persisted order.
+   * Managed columns are the schema-driven field columns; the select column
+   * stays pinned ahead of the persisted order.
    */
   const managedColumnIds = React.useMemo(() => {
     const fieldsByName = new Map<string, any>((schema?.fields ?? []).map((f: any) => [f.name, f]))
@@ -96,7 +100,7 @@ export function TableLayout({
     slug,
     viewSlug: view.slug,
     columnIds: managedColumnIds,
-    fixedIds: ["select", ...(rowActions.length ? ["__actions"] : [])],
+    fixedIds: ["select"],
   })
 
   const columns = React.useMemo<ColumnDef<any, any>[]>(() => {
@@ -105,7 +109,14 @@ export function TableLayout({
       client,
       schemas,
       columns: view.columns,
-      primaryLink: { slug, hasDetail, resolvePreview },
+      primaryLink: {
+        slug,
+        hasDetail,
+        resolvePreview,
+        actions: rowActions,
+        onRunAction,
+        isRunning: isRunningAction,
+      },
       leadingColumns: [
         {
           id: "select",
@@ -133,35 +144,13 @@ export function TableLayout({
           enableHiding: false,
         },
       ],
-      trailingColumns: rowActions.length
-        ? [
-          {
-            id: "__actions",
-            header: "Actions",
-            enableSorting: false,
-            enableHiding: false,
-            meta: { __isActions: true } as any,
-            cell: ({ row }) => (
-              <RowActionsCell
-                actions={rowActions}
-                docId={row.original.id}
-                onRun={(action, ids) => onRunAction(action, ids)}
-              />
-            ),
-          } as ColumnDef<any, any>,
-        ]
-        : [],
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schema, client, schemas, JSON.stringify(view.columns), JSON.stringify(rowActions.map((a) => a.name)), slug, hasDetail, resolvePreview])
+  }, [schema, client, schemas, JSON.stringify(view.columns), JSON.stringify(rowActions.map((a) => a.name)), slug, hasDetail, resolvePreview, onRunAction])
 
   const columnOrder = React.useMemo(
-    () => [
-      "select",
-      ...columnPreferences.preferences.order.filter((id) => id !== "select" && id !== "__actions"),
-      ...(rowActions.length ? ["__actions"] : []),
-    ],
-    [columnPreferences.preferences.order, rowActions.length],
+    () => ["select", ...columnPreferences.preferences.order.filter((id) => id !== "select")],
+    [columnPreferences.preferences.order],
   )
 
   const columnVisibility = React.useMemo(() => {
@@ -188,6 +177,12 @@ export function TableLayout({
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id as keyof typeof rowSelection])
 
+  /** Documents surviving search + all filter pills — the export "current" scope. */
+  const filteredDocs = React.useMemo(
+    () => table.getPrePaginationRowModel().rows.map((row) => row.original),
+    [table],
+  )
+
   if (isLoading) {
     return (
       <div className="dy-space-y-3">
@@ -199,6 +194,12 @@ export function TableLayout({
   return (
     <div className="dy-flex dy-flex-col dy-gap-4" data-collection={slug}>
       <DataTableToolbar table={table} searchColumnId={searchColumnId} searchPlaceholder="Search...">
+        <ExportMenu
+          slug={slug}
+          schema={schema}
+          findArgs={{ where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) }}
+          currentDocs={filteredDocs}
+        />
         <DataTableViewOptions
           table={table}
           preferences={columnPreferences.preferences}
@@ -221,6 +222,7 @@ export function TableLayout({
             actions={actions}
             selectedIds={selectedIds}
             onRun={onRunAction}
+            isRunning={isRunningAction}
             onClearSelection={() => setRowSelection({})}
           />
         }
@@ -242,7 +244,8 @@ function SkeletonRows() {
   )
 }
 
-function findTextColumn(columns: string[] | undefined, schema: any): string | undefined {
+/** First text/email column usable as a global-search binding across layouts. */
+export function findTextColumn(columns: string[] | undefined, schema: any): string | undefined {
   const fieldsByName = new Map<string, any>((schema?.fields ?? []).map((f: any) => [f.name, f]))
   const candidates = columns ?? [...fieldsByName.keys()]
   return candidates.find((name) => ["text", "email"].includes(fieldsByName.get(name)?.type))

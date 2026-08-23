@@ -17,6 +17,8 @@ interface EventDetailSheetProps {
   columns?: string[]
   actions: SerializedAction[]
   onRunAction: (action: SerializedAction, ids: string[]) => void
+  /** Returns true while an action × selection is executing (drives loading states). */
+  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
   onClose: () => void
 }
 
@@ -32,6 +34,7 @@ export function EventDetailSheet({
   columns,
   actions,
   onRunAction,
+  isRunningAction,
   onClose,
 }: EventDetailSheetProps) {
   if (!doc) return null
@@ -61,7 +64,12 @@ export function EventDetailSheet({
           {rowActions.length > 0 && (
             <div className="dy-space-y-2 dy-border-t dy-pt-4">
               <p className="dy-text-xs dy-font-medium dy-text-muted-foreground">Actions</p>
-              <RowActionsCell actions={rowActions} docId={String(doc.id)} onRun={onRunAction} />
+              <RowActionsCell
+                actions={rowActions}
+                docId={String(doc.id)}
+                onRun={onRunAction}
+                isRunning={isRunningAction}
+              />
             </div>
           )}
         </div>

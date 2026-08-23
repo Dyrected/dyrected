@@ -25,13 +25,19 @@ interface ActionLike {
  * confirmation/input dialogs → `runAction` request → cache invalidation → toasts.
  *
  * Actions that declare `confirm` or input `fields` are staged in `pending`
- * first; everything else runs immediately.
+ * first; everything else runs immediately. The in-flight action is tracked so
+ * triggering buttons can render loading states.
  */
 export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: string }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [pending, setPending] = useState<PendingAction | null>(null)
-  const [isRunning, setIsRunning] = useState(false)
+  const [runningKey, setRunningKey] = useState<string | null>(null)
+
+  const keyOf = useCallback(
+    (actionName: string, ids: string[]) => `${actionName}::${[...ids].sort().join(",")}`,
+    [],
+  )
 
   const execute = useCallback(
     async (action: PendingAction, input?: Record<string, unknown>): Promise<boolean> => {
@@ -39,7 +45,7 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
         toast.error(`${action.label} failed`, { description: "Dyrected client unavailable." })
         return false
       }
-      setIsRunning(true)
+      setRunningKey(keyOf(action.actionName, action.ids))
       try {
         await (client as any).collection(slug).runAction(viewSlug, action.actionName, {
           ...(action.ids.length === 1 ? { id: action.ids[0] } : { ids: action.ids }),
@@ -55,16 +61,17 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
         toast.error(`${action.label} failed`, { description: message })
         return false
       } finally {
-        setIsRunning(false)
+        setRunningKey(null)
       }
     },
-    [client, queryClient, slug, viewSlug],
+    [client, queryClient, slug, viewSlug, keyOf],
   )
 
   /** Entry point for action button clicks. Stages dialogs when required. */
   const initiate = useCallback(
     (action: ActionLike, ids: string[]) => {
       if (!ids.length || !action.name) return
+      if (runningKey === keyOf(action.name, ids)) return
       const staged: PendingAction = {
         actionName: action.name,
         label: action.label,
@@ -78,7 +85,7 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
       }
       void execute(staged)
     },
-    [execute],
+    [execute, keyOf, runningKey],
   )
 
   /** Runs the currently staged action with optional form input. */
@@ -94,5 +101,14 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
 
   const cancel = useCallback(() => setPending(null), [])
 
-  return { pending, isRunning, initiate, resolve, cancel, execute }
+  /** Whether any action is executing (coarse flag for dialogs/overlays). */
+  const isRunning = runningKey !== null
+
+  /** Whether a specific action × selection is currently executing. */
+  const isActionRunning = useCallback(
+    (actionName: string, ids: string[]) => runningKey === keyOf(actionName, ids),
+    [runningKey, keyOf],
+  )
+
+  return { pending, isRunning, initiate, resolve, cancel, execute, isActionRunning }
 }

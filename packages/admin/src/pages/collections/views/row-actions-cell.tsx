@@ -1,4 +1,4 @@
-import { MoreHorizontal } from "lucide-react"
+import { MoreHorizontal, Loader2 } from "lucide-react"
 
 import { Button } from "../../../components/ui/button"
 import {
@@ -17,16 +17,18 @@ interface RowActionsCellProps {
   actions: SerializedAction[]
   docId: string
   onRun: (action: SerializedAction, ids: string[]) => void
+  /** Returns true while this action × selection is executing. */
+  isRunning?: (action: SerializedAction, ids: string[]) => boolean
 }
 
-const MAX_INLINE_ACTIONS = 2
+const MAX_INLINE_ACTIONS = 3
 
 /**
  * Inline action buttons for a table row or kanban card.
  * The first `MAX_INLINE_ACTIONS` render as buttons; the rest collapse into an
- * overflow menu.
+ * overflow menu. Running actions swap their icon for a spinner and disable.
  */
-export function RowActionsCell({ actions, docId, onRun }: RowActionsCellProps) {
+export function RowActionsCell({ actions, docId, onRun, isRunning }: RowActionsCellProps) {
   if (!actions.length) return null
 
   const inline = actions.slice(0, MAX_INLINE_ACTIONS)
@@ -34,22 +36,30 @@ export function RowActionsCell({ actions, docId, onRun }: RowActionsCellProps) {
 
   return (
     <div className="dy-flex dy-items-center dy-gap-1">
-      {inline.map((action) => (
-        <Button
-          key={action.name}
-          variant="outline"
-          size="sm"
-          className={cn(
-            "dy-h-7 dy-px-2 dy-text-xs dy-font-normal",
-            action.destructive &&
-              "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
-          )}
-          onClick={() => onRun(action, [docId])}
-        >
-          <IconFor action={action} />
-          {action.label}
-        </Button>
-      ))}
+      {inline.map((action) => {
+        const running = isRunning?.(action, [docId]) ?? false
+        return (
+          <Button
+            key={action.name}
+            variant="outline"
+            size="sm"
+            disabled={running}
+            className={cn(
+              "dy-h-7 dy-px-2 dy-text-xs dy-font-normal",
+              action.destructive &&
+                "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
+            )}
+            onClick={() => onRun(action, [docId])}
+          >
+            {running ? (
+              <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
+            ) : (
+              <IconFor action={action} />
+            )}
+            {action.label}
+          </Button>
+        )
+      })}
       {overflow.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -401,7 +401,7 @@ function EventCalendarViewShortcut({ children }: { children: ReactNode }) {
     <kbd
       data-slot="event-calendar-view-shortcut"
       className={cn(
-        "text-muted-foreground ms-auto inline-flex size-5 shrink-0 items-center justify-center rounded-sm border font-sans text-xs",
+        "dy-text-muted-foreground dy-ms-auto dy-inline-flex dy-size-5 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-sm dy-border dy-font-sans dy-text-xs",
         viewConfig.classNames?.viewShortcut
       )}
     >
@@ -531,7 +531,7 @@ function EventCalendarToolbar({
     <Comp
       data-slot="event-calendar-toolbar"
       className={cn(
-        "flex items-center gap-2",
+        "dy-flex dy-items-center dy-gap-2",
         viewConfig.classNames?.toolbar,
         className
       )}
@@ -571,7 +571,7 @@ function EventCalendarNav({
     <Comp
       data-slot="event-calendar-nav"
       className={cn(
-        "flex min-w-0 flex-wrap items-center gap-1 px-2 py-2",
+        "dy-flex dy-min-w-0 dy-flex-wrap dy-items-center dy-gap-1 dy-px-2 dy-py-2",
         viewConfig.stickyNav && "dy-bg-background dy-sticky dy-top-0 dy-z-30",
         viewConfig.classNames?.nav,
         className
@@ -586,7 +586,7 @@ function EventCalendarNav({
         >
           <EventCalendarNavToday />
           {showViewSwitcher && <EventCalendarViewSwitcher />}
-          <div className="flex items-center">
+          <div className="dy-flex dy-items-center">
             <EventCalendarNavPrev />
             <EventCalendarNavNext />
           </div>

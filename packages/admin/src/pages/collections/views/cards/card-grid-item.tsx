@@ -17,6 +17,12 @@ interface CardGridItemProps {
   view: SerializedView
   actions: SerializedAction[]
   onRunAction: (action: SerializedAction, ids: string[]) => void
+  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
+  /**
+   * Field names to render on the card body, in order (from the layout's
+   * field preferences). Defaults to the view's configured columns.
+   */
+  fields?: string[]
 }
 
 /** Finds the first image/media field usable as a cover. */
@@ -30,13 +36,14 @@ function coverField(schema: any): any | undefined {
  * A single card in the visual gallery layout.
  * Uses the collection's media field as the cover when available.
  */
-export function CardGridItem({ slug, doc, schema, client, schemas, view, actions, onRunAction }: CardGridItemProps) {
+export function CardGridItem({ slug, doc, schema, client, schemas, view, actions, onRunAction, isRunningAction, fields }: CardGridItemProps) {
   const fieldsByName = React.useMemo(
     () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
     [schema],
   )
 
-  const shownColumns = (view.columns ?? []).filter((name) => {
+  const source = fields ?? view.columns ?? []
+  const shownColumns = source.filter((name) => {
     const field = fieldsByName.get(name)
     return field && field.type !== "image" && doc[name] !== undefined && doc[name] !== null
   })
@@ -76,7 +83,12 @@ export function CardGridItem({ slug, doc, schema, client, schemas, view, actions
           })}
         </div>
         {rowActions.length > 0 && (
-          <RowActionsCell actions={rowActions} docId={String(doc.id)} onRun={onRunAction} />
+          <RowActionsCell
+            actions={rowActions}
+            docId={String(doc.id)}
+            onRun={onRunAction}
+            isRunning={isRunningAction}
+          />
         )}
       </CardContent>
     </Card>

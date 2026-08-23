@@ -225,7 +225,7 @@ function EventCalendarMonthView({
           data-slot="event-calendar-month-header"
           // @container scopes the narrow-label breakpoint to the header row
           className={cn(
-            "@container grid border-b",
+            "@container dy-grid dy-border-b",
             viewConfig.classNames?.monthHeader
           )}
           style={{ gridTemplateColumns }}
@@ -235,7 +235,7 @@ function EventCalendarMonthView({
               role="columnheader"
               aria-hidden
               className={cn(
-                "border-e px-2 py-1.5",
+                "dy-border-e dy-px-2 dy-py-1.5",
                 viewConfig.classNames?.weekNumber
               )}
             />
@@ -487,7 +487,7 @@ function EventCalendarMonthWeek({
           role="rowheader"
           data-slot="event-calendar-week-number"
           className={cn(
-            "text-muted-foreground border-e px-2 pt-1 tabular-nums",
+            "dy-text-muted-foreground dy-border-e dy-px-2 dy-pt-1 dy-tabular-nums",
             viewConfig.classNames?.weekNumber
           )}
         >
@@ -546,7 +546,7 @@ function EventCalendarMonthWeek({
               <div
                 key={bar.occurrence.key}
                 className={cn(
-                  "pointer-events-auto min-w-0 px-1",
+                  "dy-pointer-events-auto dy-min-w-0 dy-px-1",
                   viewConfig.classNames?.monthBar
                 )}
                 style={{
@@ -613,7 +613,7 @@ function EventCalendarMonthWeek({
                       continuesAfter: !dragGhost.isEnd,
                     }}
                     className={cn(
-                      "dy-h-full dy-inset-ring-0",
+                      "dy-h-full dy-ring-0 dy-ring-inset",
                       !dragGhost.valid && EVENT_CALENDAR_GHOST.invalidContent
                     )}
                   />
@@ -858,10 +858,10 @@ function EventCalendarMonthCell({
       data-slot="event-calendar-drop-placeholder"
       data-drop-invalid={!inlineDrop.valid || undefined}
       className={cn(
-        "shrink-0 rounded-sm border border-dashed",
+        "dy-shrink-0 dy-rounded-sm dy-border dy-border-dashed",
         inlineDrop.valid
-          ? "border-(--ec-event-color)/50 bg-(--ec-event-color)/8"
-          : "border-destructive/70 bg-destructive/10",
+          ? "dy-border-[--ec-event-color]/50 dy-bg-[--ec-event-color]/8"
+          : "dy-border-destructive/70 dy-bg-destructive/10",
         viewConfig.classNames?.dragGhost
       )}
       style={
@@ -889,7 +889,7 @@ function EventCalendarMonthCell({
         {reservedLanes > 0 && (
           <div
             aria-hidden
-            className="shrink-0"
+            className="dy-shrink-0"
             style={{
               // lane height already carries the 2px inter-lane gap; subtract
               // it so spacer + the column's own gap-0.5 = the SAME 2px rhythm
@@ -921,7 +921,7 @@ function EventCalendarMonthCell({
               // the chip flex-shrinks to whatever room the cell has left, so
               // cells with a reserved bar lane or a second chip render shorter
               // chips.
-              className="shrink-0"
+              className="dy-shrink-0"
             />
           )
           return i === placeholderIndex ? [dropPlaceholder, chip] : [chip]
@@ -945,7 +945,7 @@ function EventCalendarMonthCell({
       {/* Day number + add affordance, bottom-right (Notion-style) */}
       <div
         className={cn(
-          "flex items-center justify-end gap-1 px-2 pb-1.5",
+          "dy-flex dy-items-center dy-justify-end dy-gap-1 dy-px-2 dy-pb-1.5",
           viewConfig.classNames?.monthCellFooter
         )}
       >
@@ -956,7 +956,7 @@ function EventCalendarMonthCell({
             aria-label={settings.i18n.labels.addEvent}
             // a different icon/markup is a renderMonthCell job
             className={cn(
-              "bg-primary text-primary-foreground flex size-5 cursor-pointer items-center justify-center rounded-sm opacity-0 transition-opacity group-hover/ec-cell:opacity-100 focus-visible:opacity-100",
+              "dy-bg-primary dy-text-primary-foreground dy-flex dy-size-5 dy-cursor-pointer dy-items-center dy-justify-center dy-rounded-sm dy-opacity-0 dy-transition-opacity group-hover/ec-cell:dy-opacity-100 focus-visible:dy-opacity-100",
               viewConfig.classNames?.dayAddButton
             )}
             onClick={(e) => {
@@ -973,7 +973,7 @@ function EventCalendarMonthCell({
         <span
           data-slot="event-calendar-month-day-number"
           className={cn(
-            "flex size-5 items-center justify-center rounded-full",
+            "dy-flex dy-size-5 dy-items-center dy-justify-center dy-rounded-full",
             isOutside && "dy-text-muted-foreground",
             // the filled circle already marks today; keep the number the same
             // weight/size as the other days so it does not read as larger
@@ -1027,7 +1027,7 @@ function EventCalendarMonthCell({
       )}
       className={cn(
         "dy-group/ec-cell dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-col dy-overflow-hidden",
-        !isLast && "border-e",
+        !isLast && "dy-border-e",
         isOutside && !settings.showOutsideDays && "dy-invisible",
         isOff && offClassName,
         isToday &&
@@ -1142,10 +1142,10 @@ function EventCalendarMoreIndicator({
           // chip tall, so the drop target is unmistakable.
           dropInto &&
             cn(
-              "flex shrink-0 items-center border border-dashed",
+              "dy-flex dy-shrink-0 dy-items-center dy-border dy-border-dashed",
               dropInto.valid
-                ? "text-foreground border-(--ec-event-color)/50 bg-(--ec-event-color)/8"
-                : "border-destructive/70 bg-destructive/10 text-destructive"
+                ? "dy-text-foreground dy-border-[--ec-event-color]/50 dy-bg-[--ec-event-color]/8"
+                : "dy-border-destructive/70 dy-bg-destructive/10 dy-text-destructive"
             ),
           viewConfig.classNames?.moreIndicator
         )}
@@ -1247,8 +1247,8 @@ function EventCalendarMoreDefaultContent({
       </div>
       {/* The scroll region breaks out of the popover's right padding (-me-2)
             so the scrollbar sits flush in the gutter; the list then pads itself
-            back (ps-1 aligns with the header, pe-4 clears the ~10px bar with a
-            gap) and adds py-1 so the first/last focus ring is not clipped by
+            back (dy-ps-1 aligns with the header, dy-pe-4 clears the ~10px bar with a
+            gap) and adds dy-py-1 so the first/last focus dy-ring is not clipped by
             the overflow. Layout is identical with or without a scrollbar. */}
       {viewConfig.scrollbars === "native" ? (
         <div

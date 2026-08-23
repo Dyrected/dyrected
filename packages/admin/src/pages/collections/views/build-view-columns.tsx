@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Link } from "react-router-dom"
-import { MoreHorizontal, ExternalLink } from "lucide-react"
+import { Loader2, MoreHorizontal, ExternalLink } from "lucide-react"
 
 import { Button } from "../../../components/ui/button"
 import {
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu"
 import { RenderCell } from "../../../components/ui/render-cell"
+import { cn } from "../../../lib/utils"
 import type { SerializedAction } from "./types"
 import type { ViewColumnMeta } from "./types"
 
@@ -23,6 +24,8 @@ export interface PrimaryColumnLink {
   /** Resolved row actions rendered as compact links under the title. */
   actions?: SerializedAction[]
   onRunAction?: (action: SerializedAction, ids: string[]) => void
+  /** Returns true while this action × selection is executing. */
+  isRunning?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 interface BuildViewColumnsOptions {
@@ -149,7 +152,12 @@ function renderPrimaryCell(
         )}
       </div>
       {actions.length > 0 && link.onRunAction ? (
-        <PrimaryActionLinks docId={id} actions={actions} onRun={link.onRunAction} />
+        <PrimaryActionLinks
+          docId={id}
+          actions={actions}
+          onRun={link.onRunAction}
+          isRunning={link.isRunning}
+        />
       ) : null}
     </div>
   )
@@ -167,31 +175,48 @@ function PrimaryActionLinks({
   docId,
   actions,
   onRun,
+  isRunning,
 }: {
   docId: string
   actions: SerializedAction[]
   onRun: (action: SerializedAction, ids: string[]) => void
+  isRunning?: (action: SerializedAction, ids: string[]) => boolean
 }) {
   const inline = actions.slice(0, PRIMARY_INLINE_ACTIONS)
   const overflow = actions.slice(PRIMARY_INLINE_ACTIONS)
 
   return (
     <div className="dy-flex dy-items-center dy-gap-1 dy-leading-none">
-      {inline.map((action, index) => (
+      {inline.map((action, index) => {
+        const running = isRunning?.(action, [docId]) ?? false
+        return (
         <span key={`${action.name}:${index}`} className="dy-flex dy-items-center dy-gap-1">
           {index > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">·</span>}
           <button
             type="button"
-            className={cnLinkClasses(action.destructive)}
+            disabled={running}
+            aria-busy={running || undefined}
+            className={cn(
+              cnLinkClasses(action.destructive),
+              running && "dy-pointer-events-none",
+            )}
             onClick={(event) => {
               event.stopPropagation()
               onRun(action, [docId])
             }}
           >
-            {action.label}
+            {running ? (
+              <span className="dy-inline-flex dy-items-center dy-gap-1">
+                <Loader2 className="dy-h-3 dy-w-3 dy-animate-spin" />
+                {action.label}…
+              </span>
+            ) : (
+              action.label
+            )}
           </button>
         </span>
-      ))}
+        )
+      })}
       {overflow.length > 0 ? (
         <span className="dy-flex dy-items-center dy-gap-1">
           {inline.length > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">·</span>}

@@ -21,6 +21,11 @@ interface UseColumnPreferencesOptions {
   columnIds: string[]
   /** Columns whose visibility/order is fixed by layout (excluded from prefs). */
   fixedIds?: string[]
+  /**
+   * Layout variant sharing this view (e.g. "cards", "kanban"). Scoped into the
+   * storage keys so each layout keeps independent preferences.
+   */
+  variant?: string
 }
 
 function samePreferences(a: ColumnPreferences, b: ColumnPreferences): boolean {
@@ -58,12 +63,13 @@ function reconcile(raw: unknown, columnIds: string[]): ColumnPreferences {
  * schema defaults. Unsaved edits also persist to sessionStorage so they
  * survive route changes within the session.
  */
-export function useColumnPreferences({ slug, viewSlug, columnIds, fixedIds = [] }: UseColumnPreferencesOptions) {
+export function useColumnPreferences({ slug, viewSlug, columnIds, fixedIds = [], variant }: UseColumnPreferencesOptions) {
   const { client, user } = useDyrected()
   const queryClient = useQueryClient()
 
-  const prefKey = `dy-view-pref:${slug}:${viewSlug}`
-  const sessionKey = `dy-view-columns:${slug}:${viewSlug}`
+  const keyScope = variant ? `${viewSlug}:${variant}` : viewSlug
+  const prefKey = `dy-view-pref:${slug}:${keyScope}`
+  const sessionKey = `dy-view-columns:${slug}:${keyScope}`
   const manageKey = [...fixedIds, ...columnIds].join("\u0000")
 
   const defaultPreferences = useMemo<ColumnPreferences>(

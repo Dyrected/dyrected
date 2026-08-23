@@ -296,7 +296,7 @@ function EventCalendarTimeGrid({
             viewConfig.classNames?.timeGridHeader
           )}
         >
-          <div className="w-(--ec-gutter-width,4.5rem) shrink-0 border-e" />
+          <div className="dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e" />
           <div className="dy-grid dy-min-w-0 dy-flex-1" style={{ gridTemplateColumns }}>
             {days.map((day) => (
               <EventCalendarDayHeader
@@ -327,11 +327,11 @@ function EventCalendarTimeGrid({
                     // is one bar-row tall and centers the label so it sits on
                     // the SAME baseline as the first all-day chip and stays top-
                     // aligned when the chips wrap onto more lanes
-                    "text-muted-foreground w-(--ec-gutter-width,4.5rem) shrink-0 border-e ps-2 pe-2.5 pt-1.5",
+                    "dy-text-muted-foreground dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e dy-ps-2 dy-pe-2.5 dy-pt-1.5",
                     viewConfig.classNames?.allDayLabel
                   )}
                 >
-                  <span className="flex h-[calc(var(--ec-month-bar-h,1.625rem)-0.125rem)] items-center justify-end">
+                  <span className="dy-flex dy-h-[calc(var(--ec-month-bar-h,1.625rem)-0.125rem)] dy-items-center dy-justify-end">
                     {settings.i18n.labels.allDay}
                   </span>
                 </div>
@@ -381,7 +381,7 @@ function EventCalendarDayHeader({
       data-slot="event-calendar-day-header"
       data-today={isToday || undefined}
       className={cn(
-        "data-today:text-primary min-w-0 truncate border-e px-2 py-1.5 font-medium last:border-e-0",
+        "data-[today]:dy-text-primary dy-min-w-0 dy-truncate dy-border-e dy-px-2 dy-py-1.5 dy-font-medium last:dy-border-e-0",
         isToday && viewConfig.todayClassName
       )}
     >
@@ -616,7 +616,7 @@ function EventCalendarAllDayBars({
             <div
               key={segment.occurrence.key}
               className={cn(
-                "pointer-events-auto min-w-0 px-1",
+                "dy-pointer-events-auto dy-min-w-0 dy-px-1",
                 viewConfig.classNames?.monthBar
               )}
               style={{
@@ -679,7 +679,7 @@ function EventCalendarAllDayBars({
                       continuesAfter: !dragGhost.isEnd,
                     }}
                     className={cn(
-                      "dy-h-full dy-inset-ring-0",
+                      "dy-h-full dy-ring-0 dy-ring-inset",
                       !dragGhost.valid && EVENT_CALENDAR_GHOST.invalidContent
                     )}
                   />
@@ -777,7 +777,7 @@ function EventCalendarAllDayCell({ day }: { day: Date }) {
       data-drop-target={isDropTarget ?? undefined}
       data-off={isOff || undefined}
       className={cn(
-        "relative flex min-w-0 flex-col gap-0.5 border-e px-1 py-1.5 last:border-e-0",
+        "dy-relative dy-flex dy-min-w-0 dy-flex-col dy-gap-0.5 dy-border-e dy-px-1 dy-py-1.5 last:dy-border-e-0",
         isOff && offClassName,
         viewConfig.dayClassName?.(day),
         // No drop-target bg fill on move/resize (see month view) - a subtle
@@ -807,7 +807,7 @@ function EventCalendarAllDayCell({ day }: { day: Date }) {
     >
       {/* Only on the first cell of the selection, same rule as the month grid,
           so a three-day all-day drag labels itself once rather than three
-          times. pointer-events-none keeps the cell's own pointerdown guard
+          times. dy-pointer-events-none keeps the cell's own pointerdown guard
           (`e.target === e.currentTarget`) intact. */}
       {inDraft?.isStart && allDayDraftRange && (
         <span
@@ -852,7 +852,7 @@ function EventCalendarTimeGutter({
     <div
       data-slot="event-calendar-time-gutter"
       className={cn(
-        "relative w-(--ec-gutter-width,4.5rem) shrink-0 border-e",
+        "dy-relative dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e",
         viewConfig.classNames?.timeGutter
       )}
     >
@@ -1090,7 +1090,7 @@ function EventCalendarDayColumn({
         { locale: settings.locale }
       )}
       className={cn(
-        "relative min-w-0 border-e last:border-e-0",
+        "dy-relative dy-min-w-0 dy-border-e last:dy-border-e-0",
         isOff && offClassName,
         // time grid keeps today's column on the normal background (the header
         // marks today); only a consumer todayClassName can tint it
@@ -1161,7 +1161,7 @@ function EventCalendarDayColumn({
                 // the title never slices mid-glyph
                 endMin - startMin < viewConfig.compactEventMinutes
                   ? "dy-h-full dy-gap-1 dy-py-0 dy-leading-4"
-                  : "h-full flex-col items-start justify-start gap-0 py-1",
+                  : "dy-h-full dy-flex-col dy-items-start dy-justify-start dy-gap-0 dy-py-1",
                 viewConfig.classNames?.timedChip
               )}
             />
@@ -1223,9 +1223,9 @@ function EventCalendarDayColumn({
                 dragGhost.window[1] - dragGhost.window[0] <
                   viewConfig.compactEventMinutes
                   ? "dy-h-full dy-gap-1 dy-py-0 dy-leading-4"
-                  : "h-full flex-col items-start justify-start gap-0 py-1",
+                  : "dy-h-full dy-flex-col dy-items-start dy-justify-start dy-gap-0 dy-py-1",
                 viewConfig.classNames?.timedChip,
-                "dy-inset-ring-0",
+                "dy-ring-0 dy-ring-inset",
                 !dragGhost.valid && EVENT_CALENDAR_GHOST.invalidContent
               )}
             />
@@ -1252,7 +1252,7 @@ function EventCalendarDayColumn({
               time, so show the time being picked instead of an empty box.
               Reuses `formatEventTime`, the same formatter the chips use, so
               locale, time zone and 12/24-hour all match the rest of the
-              calendar for free. `dy-truncate` plus the wrapper's overflow-hidden
+              calendar for free. `dy-truncate` plus the wrapper's dy-overflow-hidden
               keeps a 15-minute draft from spilling past its own border. */}
           {draftRange && (
             <span className={cn("dy-block", EVENT_CALENDAR_SLOT_DRAFT.label)}>
@@ -1326,7 +1326,7 @@ function EventCalendarNowIndicator({
       >
         <div className="dy-bg-destructive dy-absolute dy-inset-x-0 dy-top-0 dy-h-px" />
         {/* dot leads the line at today's column-start border: pulled 1px left of
-            center (-start-1 = -4px vs the 6px/size-1.5 circle) so it reads as a
+            center (dy-start-1 = -4px vs the 6px/size-1.5 circle) so it reads as a
             distinct bullet instead of merging into the line to its right */}
         <div className="dy-bg-destructive dy-absolute -dy-start-1 dy-top-0 dy-h-1.5 dy-w-1.5 -dy-translate-y-1/2 dy-rounded-full" />
       </div>

@@ -1354,7 +1354,7 @@ const GuestResponses = defineCollection({
   access: {
     read: publicRead,
     create: publicRead,
-    update: staffWrite,
+    update: publicRead, // staffWrite,
     delete: adminOnly,
   },
 });

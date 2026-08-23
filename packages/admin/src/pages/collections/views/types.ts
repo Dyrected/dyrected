@@ -61,6 +61,15 @@ export interface SerializedView {
   layout?: "table" | "spreadsheet" | "kanban" | "calendar" | "gantt" | "cards"
   filter?: Record<string, any> | string
   groupBy?: string
+  /**
+   * How cross-column kanban drags persist. "update" (default) PATCHes the
+   * `groupBy` field directly; "action" runs the `moveAction` instead so
+   * guarded transitions reuse the action pipeline (its mutation reads the
+   * dropped value from `input.<groupBy>`).
+   */
+  moveMode?: "update" | "action"
+  /** Action name used when `moveMode === "action"`. */
+  moveAction?: string
   dateField?: string
   startDateField?: string
   endDateField?: string

@@ -89,7 +89,7 @@ function EventCalendarAgendaView({
         <div
           data-slot="event-calendar-no-events"
           className={cn(
-            "flex min-h-72 flex-col items-center justify-center gap-4 py-16",
+            "dy-flex dy-min-h-72 dy-flex-col dy-items-center dy-justify-center dy-gap-4 dy-py-16",
             viewConfig.classNames?.noEvents
           )}
         >
@@ -134,7 +134,7 @@ function EventCalendarAgendaView({
                   role="heading"
                   aria-level={3}
                   className={cn(
-                    "bg-muted/60 sticky top-0 z-10 flex items-baseline justify-between gap-4 border-b px-4 py-2",
+                    "dy-bg-muted/60 dy-sticky dy-top-0 dy-z-10 dy-flex dy-items-baseline dy-justify-between dy-gap-4 dy-border-b dy-px-4 dy-py-2",
                     // The custom ScrollArea's overlay scrollbar (w-2.5 = 10px)
                     // is painted UNDER this sticky, z-10, opaque header, so the
                     // thumb vanishes behind the day bar at the top of the view.
@@ -225,7 +225,7 @@ function EventCalendarAgendaItem({
       segment={segment}
       className={cn(
         // read-only list: hover only, no selected/focused styling on click
-        "hover:bg-accent/40 gap-3 rounded-none border-b px-4 py-2.5 transition-colors",
+        "hover:dy-bg-accent/40 dy-gap-3 dy-rounded-none dy-border-b dy-px-4 dy-py-2.5 dy-transition-colors",
         viewConfig.classNames?.agendaItem
       )}
     />
