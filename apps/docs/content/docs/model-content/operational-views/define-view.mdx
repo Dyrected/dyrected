@@ -15,12 +15,12 @@ flowchart LR
       F[fields]
     end
     V[defineView]
-    V --> S{slug + label + icon}
-    V --> L{layout: table | kanban | calendar | cards | spreadsheet}
-    V --> Q{filter + groupBy + dateField}
-    V --> C{columns + sort}
-    V --> A{actions + features + actionOrder}
-    V --> M{metrics}
+    V --> S["slug + label + icon"]
+    V --> L["layout: table | kanban | calendar | cards | spreadsheet"]
+    V --> Q["filter + groupBy + dateField"]
+    V --> C["columns + sort"]
+    V --> A["actions + features + actionOrder"]
+    V --> M["metrics"]
     Collection --> V
 ```
 
