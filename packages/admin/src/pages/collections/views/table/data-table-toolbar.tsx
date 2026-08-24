@@ -1,12 +1,18 @@
 import * as React from "react"
 import type { Column, Table } from "@tanstack/react-table"
-import { X, Loader2 } from "lucide-react"
+import { X, Loader2, ChevronDown, Check } from "lucide-react"
 
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { DataTableFilterMenu } from "./data-table-filter-menu"
 import { DataTableSort } from "./data-table-sort"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../../components/ui/dropdown-menu"
 import { cn } from "../../../../lib/utils"
 
 /**
@@ -101,36 +107,47 @@ export function DataTableToolbar<TData>({
           <ToolbarFacetedFilter key={column.id} column={column} />
         ))}
         {table.getState().columnFilters.length >= 2 && onJoinOperatorChange && (
-          <div
-            role="group"
-            aria-label="Filter join operator"
-            className="dy-flex dy-items-center dy-rounded-md dy-border dy-border-dashed dy-border-border/60 dy-bg-muted/30 dy-p-0.5 dy-h-8"
-          >
-            <button
-              type="button"
-              onClick={() => onJoinOperatorChange("and")}
-              className={cn(
-                "dy-h-6 dy-rounded dy-px-2 dy-text-[11px] dy-font-semibold dy-transition-all",
-                joinOperator === "and"
-                  ? "dy-bg-background dy-text-foreground dy-shadow-xs"
-                  : "dy-text-muted-foreground hover:dy-text-foreground",
-              )}
-            >
-              AND
-            </button>
-            <button
-              type="button"
-              onClick={() => onJoinOperatorChange("or")}
-              className={cn(
-                "dy-h-6 dy-rounded dy-px-2 dy-text-[11px] dy-font-semibold dy-transition-all",
-                joinOperator === "or"
-                  ? "dy-bg-background dy-text-foreground dy-shadow-xs"
-                  : "dy-text-muted-foreground hover:dy-text-foreground",
-              )}
-            >
-              OR
-            </button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "dy-h-8 dy-gap-1.5 dy-border-dashed dy-px-2.5 dy-text-xs dy-font-normal",
+                  FILTER_INPUT_CLASSES,
+                )}
+                aria-label="Filter matching logic"
+              >
+                <span className="dy-text-muted-foreground">Match:</span>
+                <span className="dy-font-medium dy-text-foreground">
+                  {joinOperator === "or" ? "Any (OR)" : "All (AND)"}
+                </span>
+                <ChevronDown className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="dy-w-52">
+              <DropdownMenuItem
+                onClick={() => onJoinOperatorChange("and")}
+                className="dy-cursor-pointer dy-flex dy-items-center dy-justify-between"
+              >
+                <div className="dy-flex dy-flex-col">
+                  <span className="dy-font-medium">Match All</span>
+                  <span className="dy-text-[11px] dy-text-muted-foreground">Must satisfy every filter (AND)</span>
+                </div>
+                {joinOperator === "and" && <Check className="dy-h-4 dy-w-4 dy-text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onJoinOperatorChange("or")}
+                className="dy-cursor-pointer dy-flex dy-items-center dy-justify-between"
+              >
+                <div className="dy-flex dy-flex-col">
+                  <span className="dy-font-medium">Match Any</span>
+                  <span className="dy-text-[11px] dy-text-muted-foreground">Satisfies at least one filter (OR)</span>
+                </div>
+                {joinOperator === "or" && <Check className="dy-h-4 dy-w-4 dy-text-primary" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <DataTableSort table={table} />
         {isFiltered && (
