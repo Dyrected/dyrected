@@ -768,12 +768,11 @@ const Services = defineCollection({
     },
     { name: "duration", label: "Duration", type: "text", required: true },
     { name: "price", label: "Price", type: "text", required: true },
-    defineArrayField({
+    defineRelationshipField({
       name: "gallery",
       label: "Service Photos",
-      fields: [
-        defineTextField({ name: "url", label: "Image URL", required: true }),
-      ],
+      relationTo: "media",
+      hasMany: true,
     }),
   ],
   views: [
@@ -788,6 +787,12 @@ const Services = defineCollection({
   initialData: sharedContent.services.map((service) => ({
     ...service,
     benefits: normalizeStringArray(service.benefits, "benefit"),
+    gallery:
+      service.id === "future-alignment"
+        ? ["med-fa-1", "med-fa-2", "med-fa-3"]
+        : service.id === "timeline-upgrade"
+          ? ["med-tu-1", "med-tu-2", "med-tu-3"]
+          : ["med-ap-1", "med-ap-2", "med-ap-3"],
   })),
   access: {
     read: publicRead,
