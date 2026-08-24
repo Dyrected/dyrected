@@ -1172,6 +1172,150 @@ Pagination sits at the end of the query pipeline: [filter](https://docs.dyrected
 
 ---
 
+## Run an action
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/run-action
+
+Actions aren't only buttons in the admin UI. `client.collection(slug).runAction(viewSlug, actionName, args)` lets any backend route, webhook handler, or background script invoke the exact same `defineAction` you configured — running through the same validation, access rules, and hook pipeline as a click in the dashboard.
+
+By the end of this guide you'll know how to run row, bulk, and header actions from code, pass input fields, and handle errors.
+
+## When to reach for it
+
+Use `runAction` whenever an operational action already exists in your config and you want to trigger it programmatically — a door-scanner webhook checking in a guest, a cron job sending payment reminders, or a script batch-marking orders as paid.
+
+If the action does not exist yet, define it first in [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions) and then call it from your code.
+
+## Running actions with the SDK
+
+Pass the view slug, the action name, and any required document IDs or form inputs to `runAction`:
+
+```ts
+
+
+
+const client = createClient<DyrectedSchema>({ baseUrl: "https://example.com" });
+
+const guestId = "rec_abc123";
+const selectedIds = ["rec_1", "rec_2", "rec_3"];
+
+// 1. Row action — updates a single document
+const guest = await client
+  .collection("guest-responses")
+  .runAction("attending-guests", "checkIn", { id: guestId });
+
+console.log(`Checked in: ${guest.name} (${guest.checkedIn})`);
+
+// 2. Row action with input fields
+await client.collection("guest-responses").runAction(
+  "attending-guests",
+  "assignTable",
+  { id: guestId, input: { tableNumber: 12, notes: "Near stage" } },
+);
+
+// 3. Bulk action — runs across multiple document IDs
+const result = await client.collection("guest-responses").runAction(
+  "asoebi-pipeline",
+  "markSelectedPaid",
+  { ids: selectedIds },
+);
+
+console.log(`Marked paid: ${result.modified} guests`);
+
+// 4. Bulk action with input fields
+await client.collection("guest-responses").runAction(
+  "asoebi-pipeline",
+  "markPaid",
+  { ids: selectedIds, input: { method: "cash" } },
+);
+
+// 5. Header action — view-wide trigger, no IDs required
+await client.collection("guest-responses").runAction(
+  "asoebi-pipeline",
+  "sendReminder",
+  {},
+);
+```
+
+For row actions the method returns the updated document. For bulk actions it returns `{ modified: number }`. In both cases the type is `UnknownRecord` until you narrow it with your `DyrectedSchema`.
+
+The action runs through the same `beforeChange` and `afterChange` hooks as a dashboard click — handlers don't bypass access or side effects.
+
+## Arguments and validation
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `viewSlug` | `string` | The slug of the operational view (`defineView({ slug })`). |
+| `actionName` | `string` | The name of the action (`defineAction({ name })`). |
+| `args.id` | `string` | Target document ID for row actions. |
+| `args.ids` | `string[]` | Target document IDs for bulk actions. |
+| `args.input` | `Record<string, unknown>` | Values matching any `fields` declared on the action. Validated before the mutation runs. |
+
+Input values are validated against the action's field schemas before the mutation or handler executes.
+
+## Error handling
+
+When an action cannot run, the SDK throws a `DyrectedError` with a `statusCode` and `message`:
+
+- **`403 Forbidden`** — the caller's credentials do not satisfy the `access` rules on the action or the collection.
+- **`404 Not Found`** — the `viewSlug` or `actionName` does not exist.
+- **`400 Bad Request`** — required `input` fields were missing or invalid, or the `mutation` expression failed.
+- **`409 Conflict`** — an optimistic-locking revision mismatch (workflows with `expectedRevision`).
+
+```ts
+try {
+  await client.collection("guest-responses").runAction(
+    "attending-guests",
+    "checkIn",
+    { id: guestId },
+  );
+  console.log("Check-in succeeded");
+} catch (error) {
+  console.error(`Action failed (${error.statusCode}): ${error.message}`);
+}
+```
+
+Set `client.setToken(jwt)` after `login()` before calling actions that require a user. `depth` is not sent on the action endpoint — if you need populated relations, read the document again with `findOne` after the action succeeds.
+
+## Plain HTTP with fetch
+
+If you are calling Dyrected from an environment without the SDK, send a `POST` to the same endpoint:
+
+```ts
+const token = "your_api_token";
+const guestId = "rec_abc123";
+
+const response = await fetch(
+  "https://example.com/api/collections/guest-responses/views/attending-guests/actions/checkIn",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id: guestId }),
+  },
+);
+
+if (!response.ok) {
+  throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+}
+
+const updatedDoc = await response.json();
+console.log(`Checked in: ${updatedDoc.name}`);
+```
+
+Send `Authorization: Bearer` or `x-api-key` as you would for any Dyrected collection endpoint. `input` goes in the same JSON body as `id` or `ids`.
+
+## Next steps
+
+- Define the action and its input dialog in [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions).
+- Lock actions to the right roles in [Access Control](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/overview).
+- Show live numbers above the view in [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics).
+- See the generated `RunActionArgs` contract in the SDK reference on [Overview](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/overview).
+
+---
+
 ## Sort
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/sort
@@ -3804,7 +3948,9 @@ Before a real client handoff:
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/editor-experience/list-view
 
-Every collection gets a list page: a searchable, sortable table of its records and the starting point for most editing work. This page covers what editors can do there day to day — find records, shape the table, act on a row, and act on many rows at once — and points you to the two faster ways to edit in bulk.
+Every collection gets a list page: a searchable, sortable table of its records and the starting point for most editing work. This list is now the `table` operational view — see [Operational Views](https://docs.dyrected.com/docs/cloud/model-content/operational-views/overview) and [Table layout](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table) for the `defineView` counterpart that generates it. Collections without `views` still synthesize a `list` view so `/collections/:slug` never breaks.
+
+This page covers what editors can do there day to day — find records, shape the table, act on a row, and act on many rows at once — and points you to the two faster ways to edit in bulk.
 
 By the end you should know how editors navigate the list, how to control what it shows, and how bulk selection and deletion work.
 
@@ -3820,9 +3966,16 @@ If a collection has a `status` field, a status column is added automatically so 
 
 ## Shaping the table
 
-The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields. Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person. Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](https://docs.dyrected.com/docs/cloud/editor-experience/preferences) for the full cascade and how to set defaults.
+The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields — or from the view's `columns` when you're in an operational view (`defineView({ columns: [...] })`). Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person via `layout:collections:${slug}:view:${viewSlug}` (see [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences) for legacy `view-columns:` fallback). Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](https://docs.dyrected.com/docs/cloud/editor-experience/preferences) for the full cascade and how to set defaults.
 
 ```ts
+
+  defineCollection,
+  defineTextField,
+  defineSelectField,
+  defineDateTimeField,
+} from "@dyrected/core";
+
 export const Posts = defineCollection({
   slug: "posts",
   admin: {
@@ -3831,7 +3984,12 @@ export const Posts = defineCollection({
     defaultColumns: ["title", "status", "publishedAt"],
     searchableFields: ["title", "slug", "excerpt", "author"],
   },
-  fields: [...],
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", unique: true }),
+    defineSelectField({ name: "status", label: "Status", options: ["draft", "published"], defaultValue: "draft" }),
+    defineDateTimeField({ name: "publishedAt", label: "Published At" }),
+  ],
 });
 ```
 
@@ -3859,7 +4017,7 @@ Bulk delete respects per-record access just like the single-row action: from the
 
 Deleting is one kind of bulk work; editing and moving data are others. Two features on the same list page cover those:
 
-- **[Spreadsheet View](https://docs.dyrected.com/docs/cloud/editor-experience/spreadsheet-view)** — switch the list into a grid and edit many records inline, like a spreadsheet, without opening each edit form.
+- **[Spreadsheet View](https://docs.dyrected.com/docs/cloud/editor-experience/spreadsheet-view)** — inline grid for the same records; now also a first-class `layout: "spreadsheet"` view (`/docs/model-content/operational-views/layouts/spreadsheet`) rather than only a toggle on the legacy list.
 - **[CSV Import & Export](https://docs.dyrected.com/docs/cloud/editor-experience/csv-import-export)** — bulk-import records from a CSV, and export the whole collection to a CSV file.
 
 ## Recommended path
@@ -14250,6 +14408,69 @@ When you define a collection, Dyrected generates the main content surfaces aroun
 
 Collections can also opt into behaviors such as authentication, uploads, workflows, and audit logging.
 
+## Operational views
+
+A collection can have more than one admin workspace. Add a `views` array with `defineView` — Dyrected turns each entry into its own table, board, calendar, gallery, or spreadsheet with a dedicated sidebar item, filter, columns, actions, and metrics.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineSelectField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+} from "@dyrected/core";
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  type: "row",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones" }),
+    defineSelectField({ name: "asoebiStatus", label: "Asoebi Status", options: ["requested", "paid", "collected"] }),
+    defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
+  ],
+  views: [
+    defineView({
+      slug: "attending-guests",
+      label: "Attending Guests",
+      layout: "table",
+      filter: { attending: { equals: true } },
+      columns: ["name", "guestCount"],
+      actions: [checkInAction],
+    }),
+    defineView({
+      slug: "asoebi-pipeline",
+      label: "Asoebi Fulfillment",
+      layout: "kanban",
+      groupBy: "asoebiStatus",
+      columns: ["name", "asoebiStatus"],
+    }),
+    defineView({
+      slug: "tasting-schedule",
+      label: "Tasting Schedule",
+      layout: "calendar",
+      dateField: "appointmentDate",
+      columns: ["name", "guestCount"],
+    }),
+  ],
+});
+```
+
+If you omit `views`, Dyrected synthesizes a `list` table view from `admin.defaultColumns` or the first five display fields — so `/collections/:slug` always has a route. Keep `slug` and view `slug`s stable; they are part of the URL and preference keys.
+
+For layouts, actions, metrics, and UX taste, read [Operational Views](https://docs.dyrected.com/docs/cloud/model-content/operational-views/overview).
+
 ## When to choose a collection
 
 Choose a collection when the answer to "how many of these exist?" is "more than one" or "probably more than one later."
@@ -15427,6 +15648,49 @@ export interface AdminConfig {
 | <code>branding</code> (optional) |  |
 | <code>meta</code> (optional) |  |
 | <code>siteUrl</code> (optional) | The canonical/base URL of the frontend website for links and iframe live previews. |
+
+
+## AggregateArgs
+
+The arguments passed to `DatabaseAdapter.aggregate`.
+
+```ts
+export interface AggregateArgs {
+  /** Collection slug. */
+  collection: string;
+  /** Named aggregate operations to compute. */
+  aggregates: AggregateInput;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>collection</code> (required) | Collection slug. |
+| <code>aggregates</code> (required) | Named aggregate operations to compute. |
+
+
+## AggregateOperation
+
+A single named aggregate request — either a count or a numeric operation.
+
+```ts
+export type AggregateOperation = CountOperation | NumericOperation;
+```
+
+
+## AggregateResult
+
+The result returned by `DatabaseAdapter.aggregate`.
+
+Every named key maps to a `number | null`.
+`null` is returned when no documents matched the aggregate's `where`
+(applicable to `sum`, `avg`, `min`, `max`).
+`count` also returns `null` only if the database errors — it normally
+returns `0` for an empty match set.
+
+```ts
+export type AggregateResult = Record<string, number | null>;
+```
 
 
 ## DyrectedConfig
@@ -21220,6 +21484,1144 @@ The main escape hatches are:
 - a custom `resolve()` implementation when Dyrected, not the provider, must serve the bytes
 
 If you go that route, update the generated contract source instead of hand-maintaining parallel interface docs.
+
+---
+
+## Actions
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions
+
+Views answer "what do I see." Actions answer "what can I do without opening the form." A `defineAction` is a single verb — `Check In`, `Mark Paid`, `Assign Table`, `Send Reminders` — that can surface as a row button, a card button, a bulk-bar button, or a view-header button.
+
+By the end you'll know the 8 keys on `ActionConfig`, how `mutation` vs `handler` decides Cloud-safe vs self-hosted, and how to wire `type`, `confirm`, and `fields` so the button lands in the right place.
+
+## Visual outcome
+
+```mermaid
+flowchart LR
+  subgraph Surfaces
+    R[Row — Check In on each table row]
+    K[Card — Mark Paid on kanban card]
+    B[Bulk bar — 3 selected → Mark Paid]
+    H[Header — Send Reminders for the view]
+  end
+  Click --> Modal{confirm? / fields?}
+  Modal -->|mutation| Pipe[mutation → JEXL → hooks → update]
+  Modal -->|handler| Code[handler → your code → hooks]
+```
+
+All mutations run through the collection's `beforeChange` and `afterChange` hook pipeline, ensuring access checks and validation are never bypassed.
+
+## Action examples
+
+### 1. Cloud-safe row action (declarative mutation)
+
+Define a row action using a JSON mutation object:
+
+```ts
+
+
+export const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+```
+
+The `"now()"` expression is evaluated on the server to an ISO timestamp. Declarative mutations are serializable, making them fully compatible with Dyrected Cloud and syncable across environments.
+
+### 2. Row action with an input dialog
+
+If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+
+```ts
+
+
+export const assignTableAction = defineAction({
+  name: "assignTable",
+  label: "Assign Table",
+  icon: "Table2",
+  type: "row",
+  fields: [
+    defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
+    defineTextField({ name: "notes", label: "Seating Notes" }),
+  ],
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+});
+```
+
+Expressions like `"input.tableNumber"` extract values submitted through the dialog.
+
+### 3. Bulk and header actions
+
+Define actions that operate across multiple selected documents or view-wide:
+
+```ts
+
+
+export const markSelectedPaidAction = defineAction({
+  name: "markSelectedPaid",
+  label: "Mark Paid",
+  type: "bulk",
+  mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
+});
+
+export const sendReminderAction = defineAction({
+  name: "sendReminder",
+  label: "Send Reminders",
+  icon: "BellRing",
+  type: "header",
+  confirm: "Send a payment reminder to all guests with pending requests?",
+  mutation: { remindedAt: "now()" },
+});
+```
+
+## Configuration options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
+| `label` | `string` **required** | Button text displayed to editors. |
+| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
+| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
+| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
+| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
+| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
+| `handler` | `(ctx) => Promise<...>` | **Self-hosted only**: Custom async TypeScript handler for integrating third-party APIs (Stripe, Slack). |
+| `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
+
+## Button placement and ordering
+
+- **Row actions (`type: "row"`)**: Surface on table rows, kanban cards, calendar detail sheets, and gallery card tiles.
+- **Bulk actions (`type: "bulk"`)**: Appear automatically in the floating bulk action bar when one or more items are selected.
+- **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
+
+To customize the order and visibility of built-in vs custom buttons on a view:
+```ts
+defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  actions: [checkInAction],
+  features: { delete: false }, // Hides the built-in delete button
+  actionOrder: ["checkIn", "view", "edit"], // Places custom Check In first
+});
+```
+
+## Cloud vs Self-hosted runtime
+
+- **Dyrected Cloud**: Use declarative `mutation` objects (`mutation: { checkedIn: true, checkedInAt: "now()" }`). They sync cleanly via `sync:schema` and run in managed infrastructure.
+- **Self-hosted**: You can use `handler` functions to execute arbitrary server code (e.g. charging a card with Stripe or sending a Slack alert) inside your application backend.
+
+## Next steps
+
+- Run actions programmatically from code — [Run an action (SDK)](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/run-action)
+- Secure actions with role permissions — [Access Control](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/overview)
+- Configure view layouts — [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view)
+
+---
+
+## Define a view
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view
+
+A view is a typed object that says: for this collection, show this subset of documents, in this shape, with these columns and these verbs. `defineView` is a helper that returns the same object — it exists for types and discoverability, not magic.
+
+By the end you'll know every top-level option on `ViewConfig`, what each one does, and what a minimal table vs. kanban definition looks like.
+
+## The mental model
+
+```mermaid
+flowchart LR
+    subgraph Collection[Collection]
+      F[fields]
+    end
+    V[defineView]
+    V --> S{slug + label + icon}
+    V --> L{layout: table | kanban | calendar | cards | spreadsheet}
+    V --> Q{filter + groupBy + dateField}
+    V --> C{columns + sort}
+    V --> A{actions + features + actionOrder}
+    V --> M{metrics}
+    Collection --> V
+```
+
+One `views` entry becomes one sidebar item, one route (`/collections/:slug/views/:viewSlug`), and one persisted preference key. Dyrected does not copy data — every view reads the same collection.
+
+## Minimal table view
+
+To configure a table view, specify a `slug`, `label`, and the `columns` you want visible:
+
+```ts
+
+
+export const attendingGuests = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  icon: "UserCheck",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "guestCount", "checkedIn"],
+});
+```
+
+Dyrected synthesizes a table with search, sorting, and faceted filters. Layout defaults to `table` if you omit it.
+
+## Kanban board view
+
+Kanban views require a `groupBy` field to determine which field values represent the board's columns:
+
+```ts
+
+
+const markPaidAction = defineAction({
+  name: "markPaid",
+  label: "Mark Paid",
+  type: "row",
+  mutation: { asoebiStatus: "paid" },
+});
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  filter: { asoebi: { equals: true } },
+  groupBy: "asoebiStatus",
+  columns: ["name", "asoebiSize", "asoebiQuantity"],
+  actions: [markPaidAction],
+});
+```
+
+## Calendar schedule view
+
+Calendar views require a `dateField` containing an ISO date string to position documents onto the calendar grid:
+
+```ts
+
+
+export const tastingSchedule = defineView({
+  slug: "tasting-schedule",
+  label: "Tasting Schedule",
+  icon: "Calendar",
+  layout: "calendar",
+  dateField: "appointmentDate",
+  columns: ["name", "guestCount"],
+});
+```
+
+## Configuration options
+
+All options are optional except `slug` and `label`:
+
+| Option | Type | What it does | When to set it |
+| --- | --- | --- | --- |
+| `slug` | `string` **required** | Stable path segment for the view. Used in URLs, sidebar keys, and preference persistence. | Always |
+| `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
+| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
+| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
+| `filter` | `Record<string, unknown> \| string` | Base filter applied before toolbar filters. Object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
+| `groupBy` | `string` | Field name whose distinct values generate columns or swim-lanes. | Required for `"kanban"` and `"gantt"` |
+| `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
+| `startDateField` / `endDateField` | `string` | Start and end dates for timeline bars. | Required for `"gantt"` |
+| `columns` | `string[]` | Field names shown in this view, in order. Falls back to default columns if omitted. | To curate relevant fields per role |
+| `sort` | `{ field: string; direction: "asc"\|"desc" }` | Initial default sort order. | When chronological or priority order matters |
+| `actions` | `ActionConfig[]` | Custom verbs available in this view. See [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions). | When editors should trigger workflows directly |
+| `features` | `ViewActionFeatures` | Toggles for built-in buttons: `view`, `edit`, `duplicate`, `delete`, `exportSelected`. | To hide built-ins (e.g. `delete: false`) |
+| `actionOrder` | `string[]` | Explicit button order mixing custom action names and built-in verbs. | When button order conveys workflow priority |
+| `metrics` | `ViewMetric[]` | KPI summary cards displayed above the view. See [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics). | For high-level aggregations and counts |
+| `access` | `AccessConfig` | Role-based permissions controlling who can see or act on this view. | When a view is role-restricted |
+
+## Defaults and fallbacks
+
+- **Hidden fields**: Metadata fields like `createdAt`, `updatedAt`, `id`, and join fields are automatically excluded when Dyrected infers default columns.
+- **Search**: Every view inherits the collection's `admin.searchableFields` (or `useAsTitle` fallback). Search runs on the backend for fast querying across large datasets.
+
+## Next steps
+
+- Layout details — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+- Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Best practices & anti-patterns — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+
+---
+
+## Calendar layout
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar
+
+A calendar is a table where rows are days. When the job is "when is tasting, who is booked, what's unscheduled," nothing reads faster. A view with `dateField: "appointmentDate"` turns that ISO string into a placed event on month/week/day grids and, optionally, resource lanes.
+
+By the end you'll know which field drives placement, how resources map to lanes, and what the drawer does when an editor clicks an event.
+
+## Visual outcome
+
+```mermaid
+flowchart TB
+  subgraph Chrome[Calendar — ReUI event-calendar — dy- + --color-*]
+    H[Header — Month / Week / Day + Prev / Today / Next]
+    G[[Grid — dateField → slot — resourceField → lane]]
+    E[Event chip — name + guestCount — per-resource color]
+    D[Detail drawer — full record + Reschedule action]
+    H --> G --> E -->|click| D
+  end
+```
+
+## When to use
+
+- **Use when:** Records have a dedicated date/time field (`defineDateTimeField` or `defineDateField`) that drives the schedule (e.g. appointments, tasting schedules, event bookings, content releases).
+- **Don't use when:** Records are undated, dates are optional/unstructured, or when the task is tracking a status pipeline (use `kanban`).
+
+## Complete example
+
+Configure a calendar schedule view mapped to an appointment date field:
+
+```ts
+
+
+const assignTableAction = defineAction({
+  name: "assignTable",
+  label: "Assign Table",
+  icon: "Table2",
+  type: "row",
+  fields: [
+    defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
+    defineTextField({ name: "notes", label: "Seating Notes" }),
+  ],
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+});
+
+export const tastingSchedule = defineView({
+  slug: "tasting-schedule",
+  label: "Tasting Schedule",
+  icon: "Calendar",
+  layout: "calendar",
+  dateField: "appointmentDate",
+  columns: ["name", "guestCount", "asoebiSize"],
+  actions: [assignTableAction],
+});
+```
+
+Setting `dateField: "appointmentDate"` positions each record onto the calendar grid. `columns` controls the fields displayed on event chips and inside the event detail inspection drawer. Clicking any event chip slides open the drawer where editors can view details and run row actions like `Assign Table`.
+
+## Resource lanes (optional)
+
+If your records are assigned to specific team members, rooms, or equipment, specify `resourceField` to break the calendar down into horizontal resource lanes:
+
+```ts
+
+
+export const tastingScheduleByRoom = defineView({
+  slug: "tasting-rooms",
+  label: "Tasting by Room",
+  icon: "Calendar",
+  layout: "calendar",
+  dateField: "appointmentDate",
+  resourceField: "tastingRoom",
+  columns: ["name", "guestCount"],
+});
+```
+
+Dyrected automatically groups appointments into color-coded swim lanes by the distinct values in `tastingRoom`.
+
+## UX guardrails
+
+- **One date field per view**: If your collection tracks multiple dates (e.g. `appointmentDate` and `deliveryDate`), create two separate views rather than overloading one.
+- **Concise chip text**: Keep event chips readable by placing the title and at most 1 secondary chip value on the calendar. Deeper details are shown in the drawer.
+- **Drawer actions**: Row actions run from the event drawer and immediately refresh the calendar grid on completion.
+
+## Next steps
+
+- Define custom action mutations — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add operational metrics — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Explore other layouts — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+
+---
+
+## Cards layout
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards
+
+A gallery is a table with faces. When the record is understood faster from a cover, avatar, or thumbnail than from a row of text — profiles, listings, portfolios — a grid reads where a table scans.
+
+By the end you should know when a gallery wins over a table, which fields become the cover and the rows, and how search and facets persist.
+
+## Visual outcome
+
+```mermaid
+flowchart TB
+  subgraph Chrome[Cards — gallery — cover + rows]
+    T[Toolbar — Search + Faceted pills + View button]
+    G[[Grid — 3–4 columns — dy-font-semibold title]]
+    C[Card — cover + name + 2 row fields + View/Edit]
+    T --> G --> C
+  end
+```
+
+## When to use
+
+- **Use when:** Records have visual assets (`image`, `avatar`, or media thumbnails) where visual scanning is faster than reading text rows (e.g. member directories, real estate listings, catalog portfolios).
+- **Don't use when:** The task requires dense numeric editing (use `spreadsheet`), status pipelines (use `kanban`), or detailed audits/exports (use `table`).
+
+## Complete example
+
+Configure a visual card gallery with cover images, quick row actions, and summary metrics:
+
+```ts
+
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const guestDirectory = defineView({
+  slug: "guest-directory",
+  label: "Guest Directory",
+  icon: "LayoutGrid",
+  layout: "cards",
+  columns: ["name", "email", "attending", "asoebiSize", "tableNumber"],
+  actions: [checkInAction],
+  metrics: [
+    { label: "All Responses", color: "blue", aggregate: { count: "*" } },
+  ],
+});
+```
+
+`columns` controls the card fields. If the collection includes an image, avatar, or media field, Dyrected displays it as the card's visual cover. `actions` places quick one-click buttons directly at the base of each card.
+
+## Chrome features
+
+- **Live Backend Search**: Search queries text and email fields across large datasets instantaneously.
+- **Faceted Category Pills**: Filter by badges and tags directly from the toolbar.
+- **Field & Label Toggles**: Editors can toggle column visibility and label density via the **View** menu.
+
+## UX guardrails
+
+- **Best with images**: Cards shine when records have visual media. If your collection contains only plain text, a `table` layout provides higher information density.
+- **2–3 rows per card**: Keep card content brief (e.g. name, role, tag). Deep multi-line text belongs on the record's detail page.
+- **Quick row actions**: Limit card buttons to 1–2 high-frequency actions (`View` or `Check In`).
+
+## Next steps
+
+- Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Explore other layouts — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+
+---
+
+## Kanban layout
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban
+
+A kanban board is a table tipped on its side. Each column is a distinct value of one field (`groupBy`), each card is a document, and dragging a card writes that field. When the job is "move outfits from requested → paid → collected," a board reads instantly where a filtered table doesn't.
+
+By the end you should know when a board is the right tool, which keys to set, and what the admin will render for `moveMode: "update"` vs `moveMode: "action"`.
+
+## Visual outcome
+
+```mermaid
+flowchart LR
+  subgraph Board[Kanban — groupBy: asoebiStatus — @dnd-kit]
+    C1[Requested 12 — header count]
+    C2[Paid 45]
+    C3[Collected 28]
+    C1 --- R1[Tunde — L ×1 — Mark Paid]
+    C2 --- R2[Sade — M ×2 — Mark Collected]
+    C3 --- R3[Femi — XL ×1 — ✓]
+    UA[Unassigned — only if docs lack value]
+  end
+  Drag[Drag R1 → C2] -->|moveMode: update| Write[PATCH asoebiStatus = paid]
+  Drag -->|moveMode: action| Act[runAction markPaid + hooks]
+```
+
+## When to use
+
+- **Use when:** You are modeling a clear status pipeline with 3–5 distinct phases (e.g. `requested` → `paid` → `collected`, or `applied` → `interviewing` → `offered`).
+- **Don't use when:** The grouping field has more than 6 distinct values, is a free-text field, or when editors are doing bulk data exports rather than moving items between stages.
+
+## Complete example
+
+Configure a Kanban pipeline with dedicated card action buttons and drag-and-drop grouping:
+
+```ts
+
+
+const markPaidAction = defineAction({
+  name: "markPaid",
+  label: "Mark Paid",
+  icon: "CreditCard",
+  type: "row",
+  mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
+});
+
+const markCollectedAction = defineAction({
+  name: "markCollected",
+  label: "Mark Collected",
+  icon: "PackageCheck",
+  type: "row",
+  mutation: { asoebiStatus: "collected", asoebiCollectedAt: "now()" },
+});
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  filter: { asoebi: { equals: true } },
+  groupBy: "asoebiStatus",
+  columns: ["name", "asoebiSize", "asoebiQuantity"],
+  actions: [markPaidAction, markCollectedAction],
+});
+```
+
+Setting `groupBy: "asoebiStatus"` creates board columns corresponding to the options on the field. `columns` specifies the fields displayed as metadata chips on each card, and `actions` surfaces direct execution buttons right on each card.
+
+## Drag-and-drop persistence
+
+You can control how dragging a card to a new column updates the underlying document:
+
+| Mode | What happens on drop | Example Configuration | When to use |
+| --- | --- | --- | --- |
+| `moveMode: "update"` | Directly updates the `groupBy` field to the target column value. | `defineView({ groupBy: "status", moveMode: "update" })` | Simple status progressions without additional side effects. |
+| `moveMode: "action"` | Triggers a `defineAction` mutation, running custom expressions, timestamps, and validation hooks. | `defineView({ groupBy: "status", moveMode: "action", moveAction: "markPaid" })` | Multi-field mutations (e.g. setting `paidAt: "now()"`), confirmations, or custom backend handlers. |
+
+All card moves run through access control and trigger optimistic UI updates with live feedback.
+
+## UX guardrails
+
+- **Columns 3–5**: Focus on the active operational pipeline. Hide archival or dead-end states in a filtered table view.
+- **Card metadata**: Display the primary title prominently, followed by 1–2 key metadata badges (`size`, `quantity`).
+- **Unassigned bucket**: If any documents lack a value for the `groupBy` field, Dyrected displays an **Unassigned** column so no records are lost.
+
+## Next steps
+
+- Define custom action mutations — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add pipeline metrics — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Best practices & anti-patterns — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+- Explore other layouts — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+
+---
+
+## Spreadsheet layout
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet
+
+A spreadsheet is a form that looks like a grid. When the job is "fix 12 prices, flip three featured flags, fill missing sizes," opening 12 forms is the failure. A view with `layout: "spreadsheet"` turns the filtered subset into an editable matrix with type-aware editors and a batch save.
+
+By the end you should know which fields edit inline vs in a popover, how batch save works, and why `blocks` and `richText` stay out of the grid.
+
+## Visual outcome
+
+```mermaid
+flowchart TB
+  subgraph Chrome[Spreadsheet — inline grid — spreadsheet-editor]
+    T[Toolbar — Faceted pills + View button]
+    G[[Grid — number inline / select popover / richText sheet]]
+    B[Bottom bar — 7 modified · 1 new — Save Changes / Discard]
+    T --> G --> B
+  end
+```
+
+## When to use
+
+- **Use when:** You need to rapidly edit simple fields (prices, stock quantities, status flags, dates) across 10+ rows without clicking into individual edit forms.
+- **Don't use when:** Records require heavy nested block editing (`blocks`), or when editors are working on a single record.
+
+## Complete example
+
+Configure a spreadsheet matrix view for fast inline editing:
+
+```ts
+
+
+export const tableSeatingGrid = defineView({
+  slug: "table-seating-grid",
+  label: "Seating & Outfit Matrix",
+  icon: "TableProperties",
+  layout: "spreadsheet",
+  filter: { attending: { equals: true } },
+  columns: ["name", "tableNumber", "asoebiSize", "asoebiQuantity", "wellWishes"],
+});
+```
+
+Setting `layout: "spreadsheet"` renders the data in a full keyboard-accessible spreadsheet grid.
+
+## How fields edit in the grid
+
+| Field Type | Cell Editor Interaction | Commit Timing |
+| --- | --- | --- |
+| `text`, `email`, `url` | Direct inline text editing | On cell blur / Enter |
+| `number` | Direct inline numeric input | On cell blur / Enter |
+| `boolean` | Interactive checkbox toggle | Immediate toggle |
+| `date` / `datetime` / `time` | Inline calendar / time flyout | On date selection |
+| `select`, `radio` | Searchable dropdown popover | On option select |
+| `multiSelect` | Multi-tag dropdown popover | On item check |
+| `relationship`, `image` | Standard media/document picker | On asset select |
+| `textarea`, `json` | Anchored popover editor | On blur (`Esc` discards) |
+| `richText` | Slide-over full rich-text editor | On drawer close |
+| `blocks` | Complex blocks are edited in the form | Open the record form |
+
+## Batch saving & safety
+
+Changes made in the grid are staged locally in the browser so you can modify multiple rows before committing:
+
+- **Save Changes**: Submits all modified cells and newly created rows in a single batch, running validation and backend hooks.
+- **Discard**: Resets all unsaved cell edits back to the current server state.
+
+## Keyboard navigation
+
+The grid supports full spreadsheet navigation shortcuts:
+- **`Tab` / `Shift + Tab`**: Navigate to next/previous cell across columns.
+- **`Enter` / `Down Arrow`**: Commit cell and move to the row below.
+- **`Esc`**: Cancel cell editing.
+- **`Ctrl/Cmd + C` / `Ctrl/Cmd + V`**: Copy and paste cell values.
+
+## Next steps
+
+- Explore all layout options — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+- Configure summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Learn other layouts — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards)
+
+---
+
+## Table layout
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table
+
+The table is the workhorse. When editors need to search, narrow by facets, scan columns, and act on one or many rows, start here. Every other layout optimizes for a narrower job — the table optimizes for completeness.
+
+By the end you should know how the table chrome works, which `defineView` keys drive it, and what a shipping-ready table view looks like.
+
+## Visual outcome
+
+```mermaid
+flowchart TB
+  subgraph Chrome[Table — tablecn + TanStack]
+    T1[Toolbar — Search + Faceted pills + View button]
+    T2[Header — sortable columns — View/Edit per row]
+    T3[Rows — name | guestCount | checkedIn | asoebiStatus]
+    T4[Floating bulk bar — 3 selected → Mark Paid / Export / Delete]
+    T1 --> T2 --> T3 --> T4
+  end
+```
+
+## When to use
+
+- **Use when:** The primary job is searching, filtering, auditing, and executing row or bulk actions (e.g. guest list check-in, order fulfillment, data exports).
+- **Don't use when:** The workflow is inherently a multi-step pipeline (use `kanban`), calendar-based (use `calendar`), or image-heavy (use `cards`).
+
+## Complete example
+
+Configure a table view with custom row actions, initial sorting, and summary metrics:
+
+```ts
+
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const attendingGuests = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  icon: "UserCheck",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
+  sort: { field: "name", direction: "asc" },
+  actions: [checkInAction],
+  features: { exportSelected: true },
+  actionOrder: ["checkIn", "view", "edit", "delete"],
+  metrics: [
+    { label: "Total Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
+  ],
+});
+```
+
+The base `filter` restricts data to confirmed attendees, `columns` sets the initial visible fields, `features` enables CSV export for selected rows, and `actionOrder` places the **Check In** button right at the start of each row.
+
+## Chrome and configuration mapping
+
+| Table Feature | Configuration Key | Description |
+| --- | --- | --- |
+| **Search Bar** | `admin.searchableFields` | Queries text and email fields on the backend. |
+| **Faceted Filter Pills** | `filter` & interactive toolbar | Allows editors to filter by status, boolean flags, numbers, or dates with badge counts. |
+| **Column Visibility & Order** | `columns` & `View` toolbar button | Sets initial visible fields; editors can show/hide, reorder, or adjust table density. |
+| **Floating Bulk Bar** | `type: "bulk"` actions | Appears automatically when one or more rows are selected via checkbox. |
+| **Sorting** | `sort` | Initial sort field and direction; can be toggled by clicking table column headers. |
+
+## UX guardrails
+
+- **Columns 3–5**: Start with the title field plus 2–3 key status or operational fields. Editors can toggle additional fields using the View menu.
+- **Row actions 1–2**: Put the primary workflow verb first with `actionOrder`, keeping `view`/`edit` secondary.
+- **Metrics 2–3 above the fold**: Display summary KPIs at the top to provide quick context at a glance.
+
+## Next steps
+
+- Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Best practices & layout comparison — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+- Explore other layouts — [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+
+---
+
+## Metrics
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics
+
+A metric is a KPI card that sits above the data. Instead of loading thousands of rows to compute `₦2,125,000` of collected outfits, the view runs a native `aggregate` query (`count`, `sum`, `avg`, `min`, `max` + `where` + `cast`), then optionally runs one JEXL `transform` or `expression` to combine, multiply, or round the result.
+
+By the end you'll know the three shapes (`aggregate` vs `aggregates` vs `expression`) and when to reach for `format`, `currency`, `subMetrics`, and `color`.
+
+## Visual outcome
+
+```mermaid
+flowchart LR
+  DB[(Collection)]
+  DB -->|native aggregate| A1[Total Orders — count *]
+  DB -->|filtered| A2[Paid — count * where paid/collected]
+  A1 & A2 --> J{{expression: (paid/collected) vs total}}
+  J --> Card[85.9% — percent — amber]
+  DB -->|sum qty| S1[sum asoebiQuantity]
+  S1 --> T{{transform: value * 25000}}
+  T --> Card2[₦2,125,000 — currency — rose]
+```
+
+All aggregations run directly on the database engine for maximum speed, computing counts, sums, and averages across thousands of documents without in-memory loading.
+
+## Configuration patterns
+
+### 1. Simple count metric
+
+Display a count of matching documents:
+
+```ts
+
+
+export const attendingGuests = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "guestCount"],
+  metrics: [
+    {
+      label: "Total Attending",
+      color: "emerald",
+      aggregate: { count: "*", where: { attending: { equals: true } } },
+    },
+  ],
+});
+```
+
+### 2. Calculated revenue with `transform`
+
+Multiply an aggregated numeric sum by a unit price:
+
+```ts
+export const revenueMetric = {
+  label: "Estimated Revenue",
+  color: "rose",
+  aggregate: {
+    sum: "asoebiQuantity",
+    cast: "number",
+    where: { asoebiStatus: { in: ["paid", "collected"] } },
+  },
+  transform: "value * 25000",
+  format: "currency",
+  currency: "NGN", // Displays as: ₦2,125,000
+};
+```
+
+`value` represents the returned aggregation result.
+
+### 3. Multi-aggregate expressions & ratios
+
+Combine multiple database operations using an `expression`:
+
+```ts
+export const attendanceRate = {
+  label: "Attendance Rate",
+  color: "amber",
+  aggregates: {
+    totalInvited:   { count: "*" },
+    totalAttending: { count: "*", where: { attending: { equals: true } } },
+  },
+  expression: "math.round((aggregates.totalAttending / aggregates.totalInvited) * 100, 1)",
+  format: "percent", // Displays as: 85.9%
+};
+```
+
+### 4. Sub-metrics breakdown
+
+Add secondary footer metrics under the primary hero card:
+
+```ts
+export const checkInMetric = {
+  label: "Door Check-In",
+  color: "emerald",
+  unit: "Guests",
+  aggregates: {
+    checkedIn: { count: "*", where: { checkedIn: { equals: true } } },
+    attending: { count: "*", where: { attending: { equals: true } } },
+  },
+  expression: "aggregates.checkedIn",
+  subMetrics: [
+    {
+      label: "Pending",
+      aggregates: {
+        checkedIn: { count: "*", where: { checkedIn: { equals: true } } },
+        attending: { count: "*", where: { attending: { equals: true } } },
+      },
+      expression: "aggregates.attending - aggregates.checkedIn",
+    },
+  ],
+};
+```
+
+## Options reference
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `label` | `string` **required** | Title displayed on the metric card. |
+| `color` | `MetricColor` | Theme palette accent (`"purple"`, `"emerald"`, `"amber"`, `"rose"`, `"blue"`, `"indigo"`, `"cyan"`, `"orange"`). |
+| `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`). |
+| `aggregate` | `AggregateOperation` | Single operation `{ count/sum/avg/min/max: field, where?, cast?: "number" }`. |
+| `aggregates` | `Record<string, AggregateOperation>` | Named map of operations referenced in `expression` as `aggregates.key`. |
+| `transform` | `string` | JEXL formula evaluated over `value` for single aggregates (e.g. `"value * 100"`). |
+| `expression` | `string` | JEXL formula evaluated over `aggregates` (e.g. `"aggregates.a + aggregates.b"`). |
+| `format` | `"currency"` \| `"number"` \| `"percent"` | Formatter applied to the final number. |
+| `currency` | `string` | 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. |
+| `subMetrics` | `ViewSubMetric[]` | Array of sub-metrics displayed in a compact breakdown footer under the main card. |
+
+## UX guardrails
+
+- **2–4 cards per view**: Keep the metric row focused on primary operational indicators.
+- **Percentages are 0–100**: Formulas formatted with `format: "percent"` should output values in the range `0–100`.
+- **Adaptive mobile layout**: Cards with `subMetrics` automatically expand full-width on mobile viewports for clean horizontal readability.
+
+## Next steps
+
+- Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Configure view layouts — [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view)
+- Layout best practices — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+
+---
+
+## Operational Views
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/overview
+
+In real-world applications, a single collection often serves multiple team members with completely different workflows.
+
+Imagine you are building an event and wedding portal. When guests fill out an RSVP form on your website, all their information is saved into a single `guest-responses` collection:
+- Attendance, plus-ones, and table seating
+- Ceremonial outfit orders (such as traditional *asoebi* attire), sizes, and payment status
+- Tasting appointment bookings and personalized notes
+
+On the day of the event, three different people need to work with these records simultaneously:
+
+1. **The Receptionist at the door**: Needs an alphabetical list of confirmed attendees to verify names and click a one-click **Check In** button. They don't want to see garment sizes or tasting dates.
+2. **The Wardrobe Coordinator**: Needs a visual Kanban board grouped by fulfillment status (*Requested → Paid → Collected*) with revenue totals to hand out packages.
+3. **The Event Planner**: Needs a monthly and weekly calendar to track tasting sessions and manage bookings.
+
+### The modeling dilemma
+
+- **Option A (One giant table)**: Everyone uses the default 15-column table. Staff members spend half their day scrolling horizontally, searching for the two fields they care about.
+- **Option B (Separate collections)**: You create `guests`, `outfits`, and `appointments` collections. Now you have duplicate data, stale records, and complex cross-collection sync logic.
+
+### The Dyrected solution: Operational Views
+
+Operational views give you the best of both worlds: **one database collection as the single source of truth, rendered as multiple focused workspaces**. You configure each workspace in code with its own layout, filtered dataset, visible columns, custom actions, and real-time KPI metrics.
+
+```mermaid
+flowchart TB
+    C[guest-responses collection]
+    C --> V1[Attending Guests — table — filter: attending]
+    C --> V2[Asoebi Fulfillment — kanban — groupBy: asoebiStatus]
+    C --> V3[Tasting Schedule — calendar — dateField: appointmentDate]
+    V1 --> T1[[Check In action]]
+    V2 --> T2[[Mark Paid / Collected]]
+    V3 --> T3[[Reschedule via drawer]]
+```
+
+## What you get
+
+When you add `views` to a collection, Dyrected generates:
+
+- **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
+- **Layout-specific workspaces** — `table` (tablecn + TanStack), `kanban` (@dnd-kit board), `calendar` (ReUI event calendar), `cards` (gallery), `spreadsheet` (inline grid). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
+- **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
+
+```mermaid
+flowchart LR
+    DB[(Collection — thousands of rows)]
+    DB -->|POST /aggregate| Agg{{aggregate: sum asoebiQuantity where paid}}
+    Agg --> J{{JEXL: value * 25000 / math.round}}
+    J --> Card[₦2,125,000 — currency card]
+    Agg --> Sub1[Paid: 45 — subMetric]
+    Agg --> Sub2[Unpaid: 12 — subMetric]
+```
+
+If a view updates a record, your collection's `beforeChange` and `afterChange` hooks still run.
+
+## When to use a view
+
+Reach for a view when the same collection has distinct audiences or workflows:
+
+- different columns matter (door staff doesn't need asoebi size)
+- different subsets matter (only `attending: true`, only `asoebi: true`)
+- different verbs matter (check in vs. mark paid vs. reschedule)
+- different shapes matter (board for status, calendar for dates, gallery for media)
+
+Stay with the default table when every editor needs the same columns and the same actions. You can always add views later — a collection without `views` synthesizes a `list` table from `admin.defaultColumns` or the first five display fields.
+
+## Minimal example
+
+The snippet below is the canonical Guest Responses fixture from `apps/example-creator-next/dyrected.config.ts`. It defines three views on one collection and reuses the same actions in the table and the board.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineSelectField,
+  defineDateTimeField,
+  defineTextareaField,
+  defineView,
+  defineAction,
+} from "@dyrected/core";
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+const markPaidAction = defineAction({
+  name: "markPaid",
+  label: "Mark Paid",
+  icon: "CreditCard",
+  type: "row",
+  mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
+});
+
+const markCollectedAction = defineAction({
+  name: "markCollected",
+  label: "Mark Collected",
+  icon: "PackageCheck",
+  type: "row",
+  mutation: { asoebiStatus: "collected", asoebiCollectedAt: "now()" },
+});
+
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  labels: { singular: "Guest Response", plural: "Guest Responses" },
+  admin: { useAsTitle: "name", icon: "Users", defaultColumns: ["name", "guestCount", "asoebiStatus"] },
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineTextField({ name: "email", label: "Email" }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0 }),
+    defineNumberField({ name: "tableNumber", label: "Table Number" }),
+    defineBooleanField({ name: "checkedIn", label: "Checked In", defaultValue: false }),
+    defineDateTimeField({ name: "checkedInAt", label: "Checked In At" }),
+    defineBooleanField({ name: "asoebi", label: "Wants Asoebi" }),
+    defineSelectField({ name: "asoebiStatus", label: "Asoebi Status", options: ["requested", "paid", "collected"], defaultValue: "requested" }),
+    defineSelectField({ name: "asoebiSize", label: "Asoebi Size", options: ["S", "M", "L", "XL", "XXL"] }),
+    defineNumberField({ name: "asoebiQuantity", label: "Quantity", defaultValue: 1 }),
+    defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
+    defineTextareaField({ name: "wellWishes", label: "Well Wishes" }),
+  ],
+  views: [
+    defineView({
+      slug: "attending-guests",
+      label: "Attending Guests",
+      icon: "UserCheck",
+      layout: "table",
+      filter: { attending: { equals: true } },
+      columns: ["name", "guestCount", "tableNumber", "checkedIn"],
+      actions: [checkInAction],
+      metrics: [
+        { label: "Total Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
+        { label: "Checked In", aggregate: { count: "*", where: { checkedIn: { equals: true } } } },
+      ],
+    }),
+    defineView({
+      slug: "asoebi-pipeline",
+      label: "Asoebi Fulfillment",
+      icon: "Shirt",
+      layout: "kanban",
+      filter: { asoebi: { equals: true } },
+      groupBy: "asoebiStatus",
+      columns: ["name", "asoebiSize", "asoebiQuantity"],
+      actions: [markPaidAction, markCollectedAction],
+    }),
+    defineView({
+      slug: "tasting-schedule",
+      label: "Tasting Schedule",
+      icon: "Calendar",
+      layout: "calendar",
+      dateField: "appointmentDate",
+      columns: ["name", "guestCount"],
+    }),
+  ],
+});
+```
+
+What just happened: three `defineView` entries share one collection. The table filters to attending guests and exposes **Check In**, the board groups by `asoebiStatus` and exposes **Mark Paid** / **Mark Collected**, and the calendar maps `appointmentDate` onto month/week/day. Each view carries its own columns and metrics but writes to the same documents.
+
+## Where to go next
+
+- Configure the shape — [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view)
+- Choose a layout — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+- Add verbs — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add numbers — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+- Behavior in the admin — [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences)
+- Polish the UX — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+
+---
+
+## Routing and preferences
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences
+
+Every `defineView` becomes a URL, a sidebar item, and a set of localStorage keys that remember each editor's column and toolbar choices. Legacy `list-view-v1` links still land because `CollectionRoute` shims their query params.
+
+By the end you'll know the route shape, what the sidebar actually renders, how to name keys so preferences stick, and how the URL compat shim maps `?where` and `?search`.
+
+## URL Routing
+
+| Route Pattern | View Rendered | Behavior |
+| --- | --- | --- |
+| `/collections/:slug` | Master Collection Table | Unfiltered view of all documents in the collection with complete field access. |
+| `/collections/:slug/views/:viewSlug` | Dedicated Operational View | Specialized workspace (table, kanban, calendar, cards, or spreadsheet) configured with its own filter, columns, actions, and metrics. |
+| `/collections/:slug/:id` | Record Detail View | Comprehensive inspection and form view for a single document. |
+| `/collections/:slug/new` | Record Creation Form | Form for creating a new document in the collection. |
+
+If a collection does not author custom `views`, Dyrected automatically synthesizes a default `list` table view from `admin.defaultColumns` or display fields so `/collections/:slug` is always functional immediately.
+
+## Sidebar Navigation
+
+The admin sidebar automatically organizes collections and their operational views:
+- **Expanded Sidebar**: Collections with views display an interactive chevron that expands to reveal each specialized sub-view, complete with icons and labels.
+- **Collapsed Sidebar**: Hovering over a collapsed collection icon opens a quick-jump popover menu displaying the master collection link and all dedicated sub-views.
+- **Permissions**: Views and collections respect `admin.hidden` and role-based access rules.
+
+## Local Preferences & State Persistence
+
+Dyrected automatically remembers each editor's individual preferences across visits using namespaced browser storage:
+
+- **Column Visibility & Ordering**: Remembers toggled fields and column order per view.
+- **Density & View Modes**: Remembers density settings and table/grid switches.
+- **Filters & Sorting**: Remembers interactive toolbar filter pills and header sort selections.
+
+Because preferences are namespaced by collection and view slug, switching between different views on the same collection never overwrites your column preferences.
+
+## Backward Compatibility & URL Shims
+
+Legacy shared URLs containing `?where=<json>` or `?search=<term>` parameters are automatically parsed and merged into the view's query:
+- `?where` JSON filters are deep-merged with the view's base filter.
+- `?search` terms are automatically applied to the collection's searchable fields.
+
+## Custom Component Slots
+
+You can inject custom React components into operational views using slot keys:
+- `beforeViewHeader`: Injected directly above the view title bar.
+- `afterViewHeader`: Injected between the header and metrics.
+- `beforeViewContent`: Injected above the active layout grid/table.
+- `afterViewContent`: Injected below the active layout.
+
+## Next steps
+
+- Explore all layout options — [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines)
+- Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
+- Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
+
+---
+
+## UX guidelines
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines
+
+Every view should feel like it was designed for one person's one job. This page gives you the planning lens before you write `defineView` — which layout to pick, how many columns and actions to ship with, and what the admin will actually render. The layout pages that follow keep the deep details; this one is the shared 30%.
+
+By the end you should be able to sketch any view on paper, decide its layout in under a minute, and know the 3–5 values that make or break the UX.
+
+## Visual outcome first
+
+Plan the shape before the config. Each `layout` maps to a different chrome — knowing the chrome tells you which `groupBy`, `dateField`, and `columns` you actually need.
+
+```mermaid
+flowchart TB
+  subgraph Pick[Pick by job, not data shape]
+    T[table — find / filter / act]
+    K[kanban — status pipeline]
+    C[calendar — dates & bookings]
+    G[cards — visual gallery]
+    S[spreadsheet — bulk edit]
+  end
+  T --> Chrome1[Table + faceted pills + bulk bar]
+  K --> Chrome2[Board + groupBy columns + DnD]
+  C --> Chrome3[Month/Week/Day + drawer]
+  G --> Chrome4[Grid + cover image + badges]
+  S --> Chrome5[Grid + inline editors + Save bar]
+```
+
+Each layout provides a distinct workspace experience, letting team members focus on the fields, actions, and data density relevant to their specific role.
+
+## Defaults to ship with
+
+These are opinionated starting points. Start here, then refine as your team's workflow grows:
+
+- **One collection → 2–3 views max.** Keep the navigation focused and fast to scan. If a collection seems to need five or more views, consider whether the data should be split into distinct collections.
+- **Columns 3–5.** Start with the title field plus 2–4 status, owner, or date fields. Editors can always reveal or reorder additional fields using the **View** button in the toolbar.
+- **Metrics 2–3 above the fold.** A total count, a conditional count, and one primary business metric (such as revenue or conversion rate) is ideal. See [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics).
+- **Actions 1–2 per row or bulk.** Hide built-in actions you don't want with `features: { delete: false, duplicate: false }` and order custom actions cleanly with `actionOrder: ["checkIn", "view", "edit"]`.
+
+## Anti-patterns
+
+- **Too many groups.** `groupBy` with more than 6 distinct values makes horizontal scrolling unwieldy. Split the view or narrow the `filter`.
+- **Kanban without workflow.** If a field isn't representing a true step-by-step status progression, use `table` with a filter pill instead of a board.
+- **Calendar without a date.** A calendar view without `dateField` or with non-standard dates has nowhere to place documents — use a `table` until you have an ISO date field.
+- **Cards without a cover.** A gallery without an image or avatar field is just a spaced-out table. Use `cards` when visual thumbnails exist.
+- **Spreadsheet for complex blocks/richText.** Nested JSON blocks and rich text don't collapse into a single grid cell. Use standard forms for deep nested documents.
+- **Destructive drags without confirm.** Kanban moves configured with `moveMode: "action"` should require confirmation unless the status change is easily reversible. Prefer `moveMode: "update"` for simple status field updates.
+
+## Checklist per layout
+
+Use this checklist as a guide before finalizing your view configurations:
+
+| Layout | When to use | Don't use when | Recommended Columns | Actions | Empty & Loading States | Accessibility |
+| --- | --- | --- | --- | --- | --- | --- |
+| `table` | Dense searching, filtering, audits, and exports. Default layout. | The team's primary task is visual card grouping or calendar scheduling. | `name`, `status`, `owner`, `date` (3–5). | Row `Check In`, header `Export`, bulk `Delete`. | Clear empty state with active filter pills and total counts. | Sticky headers, full keyboard navigation, ARIA roles. |
+| `kanban` | Step-by-step status pipelines (e.g. `requested → paid → collected`). | Flat lists or non-workflow grouping (>6 values). | `name`, `size`, `qty` (2–3 under the card title). | Card actions (`Mark Paid`), board header `Export`. | Unassigned bucket when unassigned items exist; intuitive drop targets. | Visible focus rings, keyboard movement support. |
+| `calendar` | Event booking, scheduling, appointments (`dateField` required). | Undated or unstructured date records. | `name`, `guestCount` in event chips; full details in side drawer. | Drawer actions (e.g. `Reschedule`). | Month/week/day navigation, clean "No events" indicator. | Full date navigation via keyboard, accessible modal traps. |
+| `cards` | Visual galleries, team directories, media libraries. | Dense numeric or high-volume administrative data. | `avatar`, `name`, `tag`. | Quick `View` / preview actions. | Inline search and faceted category pills. | Descriptive alt tags on cover images, high contrast headers. |
+| `spreadsheet` | Fast batch data entry (prices, inventory, toggles). | Long-form articles, rich text, or nested block structures. | 3–6 editable columns (numbers, strings, booleans, dates). | Floating batch `Save Changes` & `Discard` bar. | Inline row creation, unsaved changes exit warning. | Excel-style `Tab`, `Enter`, `Esc`, and arrow navigation. |
+
+## Recommended path
+
+1. **Sketch the view**: Title, 3 key columns, 1 action verb, and 1 metric card.
+2. **Implement `table` first**: Provide a `filter`, 3 `columns`, and a `row` action. Verify the filter and sidebar appearance.
+3. **Add specialized views**: Add `kanban` with `groupBy` or `calendar` with `dateField` for distinct team roles.
+4. **Add metrics**: Add metric cards to give high-level visibility to administrators.
 
 ---
 

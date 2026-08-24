@@ -71,12 +71,24 @@ export function TableLayout({
     pageSize: storedState?.pageSize ?? 20,
   })
   const [sorting, setSorting] = React.useState<SortingState>(
-    view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : [],
+    (storedState?.sorting as SortingState | undefined) ??
+      (view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : []),
   )
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
   )
   const [rowSelection, setRowSelection] = React.useState({})
+
+  const handleSortingChange = React.useCallback(
+    (updater: SortingState | ((prev: SortingState) => SortingState)) => {
+      setSorting((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        persistToolbarState(toolbarStateKey, { sorting: next })
+        return next
+      })
+    },
+    [toolbarStateKey],
+  )
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {

@@ -40,7 +40,7 @@ export function DataGrid({
   tableMeta,
   readOnly = false,
   rowHeight = 36,
-  height = 580,
+  height = 640,
   onRowAdd,
 }: DataGridProps) {
   const rows = table.getRowModel().rows

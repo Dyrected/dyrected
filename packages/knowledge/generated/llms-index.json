@@ -483,8 +483,44 @@
   ],
   "references": [
     {
+      "id": "@dyrected/core:ActionConfig",
+      "name": "ActionConfig",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ActionContext",
+      "name": "ActionContext",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ActionType",
+      "name": "ActionType",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:AdminConfig",
       "name": "AdminConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AggregateArgs",
+      "name": "AggregateArgs",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AggregateOperation",
+      "name": "AggregateOperation",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AggregateResult",
+      "name": "AggregateResult",
       "category": "configuration",
       "sourcePackage": "@dyrected/core"
     },
@@ -687,9 +723,33 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:defineAction",
+      "name": "defineAction",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DefineActionOptions",
+      "name": "DefineActionOptions",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:definePublishingWorkflow",
       "name": "definePublishingWorkflow",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DefineViewOptions",
+      "name": "DefineViewOptions",
+      "category": "operational-views",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -1233,6 +1293,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:MetricColor",
+      "name": "MetricColor",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:MultiSelectField",
       "name": "MultiSelectField",
       "category": "fields",
@@ -1458,6 +1524,36 @@
       "id": "@dyrected/core:UrlLinkValue",
       "name": "UrlLinkValue",
       "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewActionFeatures",
+      "name": "ViewActionFeatures",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewConfig",
+      "name": "ViewConfig",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewLayout",
+      "name": "ViewLayout",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewMetric",
+      "name": "ViewMetric",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewSubMetric",
+      "name": "ViewSubMetric",
+      "category": "operational-views",
       "sourcePackage": "@dyrected/core"
     },
     {

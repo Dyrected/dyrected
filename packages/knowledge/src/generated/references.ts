@@ -3,6 +3,108 @@ import type { EndpointReference, ReferenceEntry } from "../types.js";
 
 export const references: readonly ReferenceEntry[] = [
   {
+    "id": "@dyrected/core:ActionConfig",
+    "name": "ActionConfig",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface ActionConfig {\n  name: string;\n  label: string;\n  icon?: string;\n  type?: ActionType;\n  confirm?: string;\n  fields?: Field[];\n  mutation?: Record<string, any>;\n  handler?: (context: ActionContext) => Promise<any>;\n  access?: AccessConfig;\n}",
+    "members": [
+      {
+        "name": "name",
+        "signature": "name: string",
+        "description": ""
+      },
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": ""
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": ""
+      },
+      {
+        "name": "type",
+        "signature": "type?: ActionType",
+        "description": ""
+      },
+      {
+        "name": "confirm",
+        "signature": "confirm?: string",
+        "description": ""
+      },
+      {
+        "name": "fields",
+        "signature": "fields?: Field[]",
+        "description": ""
+      },
+      {
+        "name": "mutation",
+        "signature": "mutation?: Record<string, any>",
+        "description": ""
+      },
+      {
+        "name": "handler",
+        "signature": "handler?: (context: ActionContext) => Promise<any>",
+        "description": ""
+      },
+      {
+        "name": "access",
+        "signature": "access?: AccessConfig",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:ActionContext",
+    "name": "ActionContext",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface ActionContext {\n  doc: Record<string, unknown>;\n  docs: Record<string, unknown>[];\n  user: Record<string, unknown> | null;\n  input: Record<string, unknown>;\n  collection: Record<string, unknown>;\n}",
+    "members": [
+      {
+        "name": "doc",
+        "signature": "doc: Record<string, unknown>",
+        "description": ""
+      },
+      {
+        "name": "docs",
+        "signature": "docs: Record<string, unknown>[]",
+        "description": ""
+      },
+      {
+        "name": "user",
+        "signature": "user: Record<string, unknown> | null",
+        "description": ""
+      },
+      {
+        "name": "input",
+        "signature": "input: Record<string, unknown>",
+        "description": ""
+      },
+      {
+        "name": "collection",
+        "signature": "collection: Record<string, unknown>",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:ActionType",
+    "name": "ActionType",
+    "kind": "type",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type ActionType = 'row' | 'bulk' | 'header';",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:AdminConfig",
     "name": "AdminConfig",
     "kind": "interface",
@@ -32,6 +134,47 @@ export const references: readonly ReferenceEntry[] = [
         "description": "The canonical/base URL of the frontend website for links and iframe live previews."
       }
     ]
+  },
+  {
+    "id": "@dyrected/core:AggregateArgs",
+    "name": "AggregateArgs",
+    "kind": "interface",
+    "category": "configuration",
+    "sourcePackage": "@dyrected/core",
+    "description": "The arguments passed to `DatabaseAdapter.aggregate`.",
+    "signature": "export interface AggregateArgs {\n  /** Collection slug. */\n  collection: string;\n  /** Named aggregate operations to compute. */\n  aggregates: AggregateInput;\n}",
+    "members": [
+      {
+        "name": "collection",
+        "signature": "collection: string",
+        "description": "Collection slug."
+      },
+      {
+        "name": "aggregates",
+        "signature": "aggregates: AggregateInput",
+        "description": "Named aggregate operations to compute."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:AggregateOperation",
+    "name": "AggregateOperation",
+    "kind": "type",
+    "category": "configuration",
+    "sourcePackage": "@dyrected/core",
+    "description": "A single named aggregate request — either a count or a numeric operation.",
+    "signature": "export type AggregateOperation = CountOperation | NumericOperation;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:AggregateResult",
+    "name": "AggregateResult",
+    "kind": "type",
+    "category": "configuration",
+    "sourcePackage": "@dyrected/core",
+    "description": "The result returned by `DatabaseAdapter.aggregate`.\n\nEvery named key maps to a `number | null`.\n`null` is returned when no documents matched the aggregate's `where`\n(applicable to `sum`, `avg`, `min`, `max`).\n`count` also returns `null` only if the database errors — it normally\nreturns `0` for an empty match set.",
+    "signature": "export type AggregateResult = Record<string, number | null>;",
+    "members": []
   },
   {
     "id": "@dyrected/core:ArrayField",
@@ -646,6 +789,72 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:defineAction",
+    "name": "defineAction",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineAction(config: DefineActionOptions): ActionConfig",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DefineActionOptions",
+    "name": "DefineActionOptions",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface DefineActionOptions {\n  name: string;\n  label: string;\n  icon?: string;\n  type?: ActionType;\n  confirm?: string;\n  fields?: Field[];\n  mutation?: Record<string, any>;\n  handler?: (context: ActionContext) => Promise<any>;\n  access?: AccessConfig;\n}",
+    "members": [
+      {
+        "name": "name",
+        "signature": "name: string",
+        "description": ""
+      },
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": ""
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": ""
+      },
+      {
+        "name": "type",
+        "signature": "type?: ActionType",
+        "description": ""
+      },
+      {
+        "name": "confirm",
+        "signature": "confirm?: string",
+        "description": ""
+      },
+      {
+        "name": "fields",
+        "signature": "fields?: Field[]",
+        "description": ""
+      },
+      {
+        "name": "mutation",
+        "signature": "mutation?: Record<string, any>",
+        "description": ""
+      },
+      {
+        "name": "handler",
+        "signature": "handler?: (context: ActionContext) => Promise<any>",
+        "description": ""
+      },
+      {
+        "name": "access",
+        "signature": "access?: AccessConfig",
+        "description": ""
+      }
+    ]
+  },
+  {
     "id": "@dyrected/core:definePublishingWorkflow",
     "name": "definePublishingWorkflow",
     "kind": "function",
@@ -654,6 +863,107 @@ export const references: readonly ReferenceEntry[] = [
     "description": "",
     "signature": "export function definePublishingWorkflow(options: PublishingWorkflowOptions = {}): WorkflowConfig",
     "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineView(config: DefineViewOptions): ViewConfig",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DefineViewOptions",
+    "name": "DefineViewOptions",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface DefineViewOptions {\n  slug: string;\n  label: string;\n  icon?: string;\n  layout?: ViewLayout;\n  filter?: Record<string, any> | string;\n  groupBy?: string;\n  dateField?: string;\n  startDateField?: string;\n  endDateField?: string;\n  columns?: string[];\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  actions?: ActionConfig[];\n  features?: ViewActionFeatures;\n  actionOrder?: string[];\n  metrics?: ViewMetric[];\n  access?: AccessConfig;\n}",
+    "members": [
+      {
+        "name": "slug",
+        "signature": "slug: string",
+        "description": ""
+      },
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": ""
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": ""
+      },
+      {
+        "name": "layout",
+        "signature": "layout?: ViewLayout",
+        "description": ""
+      },
+      {
+        "name": "filter",
+        "signature": "filter?: Record<string, any> | string",
+        "description": ""
+      },
+      {
+        "name": "groupBy",
+        "signature": "groupBy?: string",
+        "description": ""
+      },
+      {
+        "name": "dateField",
+        "signature": "dateField?: string",
+        "description": ""
+      },
+      {
+        "name": "startDateField",
+        "signature": "startDateField?: string",
+        "description": ""
+      },
+      {
+        "name": "endDateField",
+        "signature": "endDateField?: string",
+        "description": ""
+      },
+      {
+        "name": "columns",
+        "signature": "columns?: string[]",
+        "description": ""
+      },
+      {
+        "name": "sort",
+        "signature": "sort?: { field: string; direction: 'asc' | 'desc' }",
+        "description": ""
+      },
+      {
+        "name": "actions",
+        "signature": "actions?: ActionConfig[]",
+        "description": ""
+      },
+      {
+        "name": "features",
+        "signature": "features?: ViewActionFeatures",
+        "description": ""
+      },
+      {
+        "name": "actionOrder",
+        "signature": "actionOrder?: string[]",
+        "description": ""
+      },
+      {
+        "name": "metrics",
+        "signature": "metrics?: ViewMetric[]",
+        "description": ""
+      },
+      {
+        "name": "access",
+        "signature": "access?: AccessConfig",
+        "description": ""
+      }
+    ]
   },
   {
     "id": "@dyrected/core:DetailComputed",
@@ -2549,6 +2859,16 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:MetricColor",
+    "name": "MetricColor",
+    "kind": "type",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type MetricColor = 'purple' | 'emerald' | 'amber' | 'rose' | 'blue' | 'indigo' | 'cyan' | 'orange' | string;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:MultiSelectField",
     "name": "MultiSelectField",
     "kind": "type",
@@ -3030,6 +3350,250 @@ export const references: readonly ReferenceEntry[] = [
         "name": "label",
         "signature": "label?: string",
         "description": "Optional display label shown for the link."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:ViewActionFeatures",
+    "name": "ViewActionFeatures",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "Toggles for the built-in document operations an operational view surfaces\n(View/Edit/Duplicate/Delete/Export-selected). All default to enabled;\nset any to `false` to hide that operation for the view.",
+    "signature": "export interface ViewActionFeatures {\n  view?: boolean;\n  edit?: boolean;\n  duplicate?: boolean;\n  delete?: boolean;\n  exportSelected?: boolean;\n}",
+    "members": [
+      {
+        "name": "view",
+        "signature": "view?: boolean",
+        "description": ""
+      },
+      {
+        "name": "edit",
+        "signature": "edit?: boolean",
+        "description": ""
+      },
+      {
+        "name": "duplicate",
+        "signature": "duplicate?: boolean",
+        "description": ""
+      },
+      {
+        "name": "delete",
+        "signature": "delete?: boolean",
+        "description": ""
+      },
+      {
+        "name": "exportSelected",
+        "signature": "exportSelected?: boolean",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:ViewConfig",
+    "name": "ViewConfig",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface ViewConfig {\n  slug: string;\n  label: string;\n  icon?: string;\n  layout?: ViewLayout;\n  filter?: Record<string, any> | string;\n  groupBy?: string;\n  dateField?: string;\n  startDateField?: string;\n  endDateField?: string;\n  columns?: string[];\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  actions?: ActionConfig[];\n  /** Toggles built-in operations (view/edit/duplicate/delete/export). */\n  features?: ViewActionFeatures;\n  /**\n   * Explicit display order for actions — built-in names (\"view\", \"edit\",\n   * \"duplicate\", \"delete\") and/or custom action names. Unlisted actions\n   * append in their default order.\n   */\n  actionOrder?: string[];\n  metrics?: ViewMetric[];\n  access?: AccessConfig;\n}",
+    "members": [
+      {
+        "name": "slug",
+        "signature": "slug: string",
+        "description": ""
+      },
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": ""
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: string",
+        "description": ""
+      },
+      {
+        "name": "layout",
+        "signature": "layout?: ViewLayout",
+        "description": ""
+      },
+      {
+        "name": "filter",
+        "signature": "filter?: Record<string, any> | string",
+        "description": ""
+      },
+      {
+        "name": "groupBy",
+        "signature": "groupBy?: string",
+        "description": ""
+      },
+      {
+        "name": "dateField",
+        "signature": "dateField?: string",
+        "description": ""
+      },
+      {
+        "name": "startDateField",
+        "signature": "startDateField?: string",
+        "description": ""
+      },
+      {
+        "name": "endDateField",
+        "signature": "endDateField?: string",
+        "description": ""
+      },
+      {
+        "name": "columns",
+        "signature": "columns?: string[]",
+        "description": ""
+      },
+      {
+        "name": "sort",
+        "signature": "sort?: { field: string; direction: 'asc' | 'desc' }",
+        "description": ""
+      },
+      {
+        "name": "actions",
+        "signature": "actions?: ActionConfig[]",
+        "description": ""
+      },
+      {
+        "name": "features",
+        "signature": "features?: ViewActionFeatures",
+        "description": "Toggles built-in operations (view/edit/duplicate/delete/export)."
+      },
+      {
+        "name": "actionOrder",
+        "signature": "actionOrder?: string[]",
+        "description": "Explicit display order for actions — built-in names (\"view\", \"edit\",\n\"duplicate\", \"delete\") and/or custom action names. Unlisted actions\nappend in their default order."
+      },
+      {
+        "name": "metrics",
+        "signature": "metrics?: ViewMetric[]",
+        "description": ""
+      },
+      {
+        "name": "access",
+        "signature": "access?: AccessConfig",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:ViewLayout",
+    "name": "ViewLayout",
+    "kind": "type",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type ViewLayout = 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards';",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:ViewMetric",
+    "name": "ViewMetric",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface ViewMetric {\n  label: string;\n  color?: MetricColor;\n  unit?: string;\n  aggregate?: AggregateOperation;\n  aggregates?: Record<string, AggregateOperation>;\n  transform?: string;\n  expression?: string;\n  format?: 'currency' | 'number' | 'percent' | string;\n  currency?: string;\n  subMetrics?: ViewSubMetric[];\n}",
+    "members": [
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": ""
+      },
+      {
+        "name": "color",
+        "signature": "color?: MetricColor",
+        "description": ""
+      },
+      {
+        "name": "unit",
+        "signature": "unit?: string",
+        "description": ""
+      },
+      {
+        "name": "aggregate",
+        "signature": "aggregate?: AggregateOperation",
+        "description": ""
+      },
+      {
+        "name": "aggregates",
+        "signature": "aggregates?: Record<string, AggregateOperation>",
+        "description": ""
+      },
+      {
+        "name": "transform",
+        "signature": "transform?: string",
+        "description": ""
+      },
+      {
+        "name": "expression",
+        "signature": "expression?: string",
+        "description": ""
+      },
+      {
+        "name": "format",
+        "signature": "format?: 'currency' | 'number' | 'percent' | string",
+        "description": ""
+      },
+      {
+        "name": "currency",
+        "signature": "currency?: string",
+        "description": ""
+      },
+      {
+        "name": "subMetrics",
+        "signature": "subMetrics?: ViewSubMetric[]",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:ViewSubMetric",
+    "name": "ViewSubMetric",
+    "kind": "interface",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface ViewSubMetric {\n  label: string;\n  aggregate?: AggregateOperation;\n  aggregates?: Record<string, AggregateOperation>;\n  transform?: string;\n  expression?: string;\n  format?: 'currency' | 'number' | 'percent' | string;\n  currency?: string;\n}",
+    "members": [
+      {
+        "name": "label",
+        "signature": "label: string",
+        "description": ""
+      },
+      {
+        "name": "aggregate",
+        "signature": "aggregate?: AggregateOperation",
+        "description": ""
+      },
+      {
+        "name": "aggregates",
+        "signature": "aggregates?: Record<string, AggregateOperation>",
+        "description": ""
+      },
+      {
+        "name": "transform",
+        "signature": "transform?: string",
+        "description": ""
+      },
+      {
+        "name": "expression",
+        "signature": "expression?: string",
+        "description": ""
+      },
+      {
+        "name": "format",
+        "signature": "format?: 'currency' | 'number' | 'percent' | string",
+        "description": ""
+      },
+      {
+        "name": "currency",
+        "signature": "currency?: string",
+        "description": ""
       }
     ]
   },

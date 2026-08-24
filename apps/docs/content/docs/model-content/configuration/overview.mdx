@@ -189,6 +189,49 @@ export interface AdminConfig {
 | <code>siteUrl</code> (optional) | The canonical/base URL of the frontend website for links and iframe live previews. |
 
 
+## AggregateArgs
+
+The arguments passed to `DatabaseAdapter.aggregate`.
+
+```ts
+export interface AggregateArgs {
+  /** Collection slug. */
+  collection: string;
+  /** Named aggregate operations to compute. */
+  aggregates: AggregateInput;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>collection</code> (required) | Collection slug. |
+| <code>aggregates</code> (required) | Named aggregate operations to compute. |
+
+
+## AggregateOperation
+
+A single named aggregate request — either a count or a numeric operation.
+
+```ts
+export type AggregateOperation = CountOperation | NumericOperation;
+```
+
+
+## AggregateResult
+
+The result returned by `DatabaseAdapter.aggregate`.
+
+Every named key maps to a `number | null`.
+`null` is returned when no documents matched the aggregate's `where`
+(applicable to `sum`, `avg`, `min`, `max`).
+`count` also returns `null` only if the database errors — it normally
+returns `0` for an empty match set.
+
+```ts
+export type AggregateResult = Record<string, number | null>;
+```
+
+
 ## DyrectedConfig
 
 The root configuration object passed to `createDyrectedApp`.

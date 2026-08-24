@@ -4,6 +4,7 @@ import { X, Loader2 } from "lucide-react"
 
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { DataTableFilterMenu } from "./data-table-filter-menu"
+import { DataTableSort } from "./data-table-sort"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { cn } from "../../../../lib/utils"
@@ -95,6 +96,7 @@ export function DataTableToolbar<TData>({
         {facetedColumns.map((column) => (
           <ToolbarFacetedFilter key={column.id} column={column} />
         ))}
+        <DataTableSort table={table} />
         {isFiltered && (
           <Button
             aria-label="Reset filters"
@@ -105,6 +107,16 @@ export function DataTableToolbar<TData>({
           >
             <X />
             Reset
+          </Button>
+        )}
+        {table.getState().sorting.length > 0 && !isFiltered && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="dy-h-8 dy-px-2"
+            onClick={() => table.resetSorting()}
+          >
+            Reset sort
           </Button>
         )}
         {isFetching && (

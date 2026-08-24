@@ -7,6 +7,7 @@
 export interface StoredToolbarState {
   columnFilters?: unknown[]
   pageSize?: number
+  sorting?: { id: string; desc?: boolean }[]
 }
 
 export function loadToolbarState(key: string): StoredToolbarState | undefined {

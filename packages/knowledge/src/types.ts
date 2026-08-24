@@ -63,7 +63,8 @@ export interface ReferenceEntry {
     | "adapters"
     | "sdk"
     | "workflows"
-    | "detail";
+    | "detail"
+    | "operational-views";
   sourcePackage: string;
   description: string;
   signature: string;

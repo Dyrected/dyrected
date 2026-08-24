@@ -17,7 +17,7 @@ const TooltipContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "dy-z-50 dy-overflow-hidden dy-rounded-md dy-border dy-bg-popover dy-px-3 dy-py-1.5 dy-text-sm dy-text-popover-foreground dy-shadow-md dy-animate-in dy-fade-in-0 dy-zoom-in-95 data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=closed]:dy-zoom-out-95 data-[side=bottom]:dy-slide-in-from-top-2 data-[side=left]:dy-slide-in-from-right-2 data-[side=right]:dy-slide-in-from-left-2 data-[side=top]:dy-slide-in-from-bottom-2 dy-origin-[--radix-tooltip-content-transform-origin]",
+      "dy-z-50 dy-overflow-hidden dy-rounded-md dy-border dy-border-border/40 dy-bg-popover/95 dy-backdrop-blur-sm dy-px-3 dy-py-1.5 dy-text-sm dy-text-popover-foreground dy-shadow-lg dy-animate-in dy-fade-in-0 dy-zoom-in-95 data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=closed]:dy-zoom-out-95 data-[side=bottom]:dy-slide-in-from-top-2 data-[side=left]:dy-slide-in-from-right-2 data-[side=right]:dy-slide-in-from-left-2 data-[side=top]:dy-slide-in-from-bottom-2 dy-origin-[--radix-tooltip-content-transform-origin]",
       className
     )}
     {...props}

@@ -20,6 +20,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Filter](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/filter): Narrow a find to the documents you want with Dyrected's where clause and its operators.
 - [Overview](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/overview): The typed SDK is the fastest way to read and write Dyrected content from JavaScript and TypeScript.
 - [Pagination](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/pagination): Read documents a page at a time with limit and page, and use the metadata a find returns to move through the results.
+- [Run an action](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/run-action): Call a view action from code — row, bulk, or header — with the typed SDK or plain fetch.
 - [Sort](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/sort): Order the documents a find returns by one field or several, ascending or descending.
 - [Cloud Operations](https://docs.dyrected.com/docs/cloud/deployment-and-operations/cloud/overview): Operate Dyrected Cloud projects with the right boundary for schema sync, credentials, usage, and managed content infrastructure.
 - [Document Locking](https://docs.dyrected.com/docs/cloud/editor-experience/__document-locking): How Dyrected handles two people editing the same document today, and how to avoid overwrites without a locking feature.
@@ -161,6 +162,17 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [URL](https://docs.dyrected.com/docs/cloud/model-content/fields/url): A link field that stores a structured link object for external URLs or internal document references.
 - [Overview](https://docs.dyrected.com/docs/cloud/model-content/media/overview): Understand how upload collections, storage adapters, and file options fit together in Dyrected.
 - [Storage Adapters](https://docs.dyrected.com/docs/cloud/model-content/media/storage-adapters): Storage adapters decide where uploaded files live and how their URLs are resolved.
+- [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions): Verbs for operational views — row, bulk, and header actions with confirm, input forms, and Cloud-safe mutations.
+- [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view): The exact shape of defineView — slug, label, layout, filter, groupBy, dateField, columns, sort, actions, metrics, and access.
+- [Calendar layout](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar): Month, week, and day views for dated records — dateField onto a ReUI event-calendar grid with a detail drawer.
+- [Cards layout](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards): A visual gallery — cover image, compact rows, search and faceted filters, per-view column controls.
+- [Kanban layout](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban): A status pipeline board — groups by one field, drags to move, built on @dnd-kit with explicit persistence.
+- [Spreadsheet layout](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet): An inline-editable grid for bulk fixes — cell editors, copy/paste, and a Save / Discard batch bar.
+- [Table layout](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table): The default workspace for finding, filtering, and acting on records — faceted pills, column controls, and a floating bulk bar.
+- [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics): KPI cards above every view — counts, sums, averages, and JEXL math over native DB aggregates.
+- [Operational Views](https://docs.dyrected.com/docs/cloud/model-content/operational-views/overview): One collection, many workspaces — give each job its own table, board, calendar, or gallery without duplicating data.
+- [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences): How views wire into the sidebar, URLs, and per-editor localStorage — and how to keep old links working.
+- [UX guidelines](https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines): How to make each view look right before you ship it — layout choice, column counts, actions, and the visual outcome to expect.
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/rich-text/blocks)
 - [Converters](https://docs.dyrected.com/docs/cloud/model-content/rich-text/converters)
 - [Converting HTML](https://docs.dyrected.com/docs/cloud/model-content/rich-text/converting-html)

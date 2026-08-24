@@ -168,7 +168,7 @@ function renderPrimaryCell(
   )
 }
 
-/** Inline limit for the primary-cell link row: View · Edit · Delete by default. */
+/** Inline limit for the primary-cell link row: View | Edit | Delete by default. */
 const PRIMARY_INLINE_ACTIONS = 3
 
 /**
@@ -195,36 +195,36 @@ function PrimaryActionLinks({
       {inline.map((action, index) => {
         const running = isRunning?.(action, [docId]) ?? false
         return (
-        <span key={`${action.name}:${index}`} className="dy-flex dy-items-center dy-gap-1">
-          {index > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">·</span>}
-          <button
-            type="button"
-            disabled={running}
-            aria-busy={running || undefined}
-            className={cn(
-              cnLinkClasses(action.destructive),
-              running && "dy-pointer-events-none",
-            )}
-            onClick={(event) => {
-              event.stopPropagation()
-              onRun(action, [docId])
-            }}
-          >
-            {running ? (
-              <span className="dy-inline-flex dy-items-center dy-gap-1">
-                <Loader2 className="dy-h-3 dy-w-3 dy-animate-spin" />
-                {action.label}…
-              </span>
-            ) : (
-              action.label
-            )}
-          </button>
-        </span>
+          <span key={`${action.name}:${index}`} className="dy-flex dy-items-center dy-gap-1">
+            {index > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">|</span>}
+            <button
+              type="button"
+              disabled={running}
+              aria-busy={running || undefined}
+              className={cn(
+                cnLinkClasses(action.destructive),
+                running && "dy-pointer-events-none",
+              )}
+              onClick={(event) => {
+                event.stopPropagation()
+                onRun(action, [docId])
+              }}
+            >
+              {running ? (
+                <span className="dy-inline-flex dy-items-center dy-gap-1">
+                  <Loader2 className="dy-h-3 dy-w-3 dy-animate-spin" />
+                  {action.label}…
+                </span>
+              ) : (
+                action.label
+              )}
+            </button>
+          </span>
         )
       })}
       {overflow.length > 0 ? (
         <span className="dy-flex dy-items-center dy-gap-1">
-          {inline.length > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">·</span>}
+          {inline.length > 0 && <span className="dy-text-muted-foreground/40 dy-text-xs">|</span>}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
