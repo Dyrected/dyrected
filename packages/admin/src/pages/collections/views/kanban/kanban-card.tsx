@@ -116,6 +116,7 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
                   <RowActionsCell
                     actions={rowActions}
                     docId={String(doc.id)}
+                    doc={doc}
                     onRun={onRunAction}
                     isRunning={isRunning}
                     maxInline={1}

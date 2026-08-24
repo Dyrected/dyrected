@@ -101,7 +101,7 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
   const customComponentKey = schema.admin?.component
   if (customComponentKey && components?.fields?.[customComponentKey]) {
     const CustomComponent = components.fields[customComponentKey]
-    const customProps: AdminFieldComponentProps = {
+    const customProps: AdminFieldComponentProps & Record<string, unknown> = {
       value: fieldWithId.value,
       onChange: fieldWithId.onChange,
       field: schema,
@@ -109,6 +109,10 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
       disabled,
       collection,
       context,
+      doc: context?.doc ?? (context?.siblingData as any),
+      data: (context?.data as any) ?? context?.doc ?? (context?.siblingData as any),
+      record: (context?.record as any) ?? context?.doc ?? (context?.siblingData as any),
+      row: (context?.row as any) ?? context?.doc ?? (context?.siblingData as any),
     }
     return (
       <DyrectedFieldPathProvider path={fieldWithId.name}>

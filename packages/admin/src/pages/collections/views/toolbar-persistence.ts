@@ -8,6 +8,7 @@ export interface StoredToolbarState {
   columnFilters?: unknown[]
   pageSize?: number
   sorting?: { id: string; desc?: boolean }[]
+  joinOperator?: "and" | "or"
 }
 
 export function loadToolbarState(key: string): StoredToolbarState | undefined {

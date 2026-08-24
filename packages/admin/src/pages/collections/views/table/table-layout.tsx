@@ -99,10 +99,16 @@ export function TableLayout({
     }
     return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
   }
+  const getInitialJoinOperator = (): "and" | "or" => {
+    const op = searchParams.get("joinOperator")
+    if (op === "or" || op === "and") return op
+    return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
+  }
 
   const [pagination, setPagination] = React.useState<PaginationState>(getInitialPagination)
   const [sorting, setSorting] = React.useState<SortingState>(getInitialSorting)
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
+  const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
   const [rowSelection, setRowSelection] = React.useState({})
 
   const handleSortingChange = React.useCallback(
@@ -123,6 +129,14 @@ export function TableLayout({
         persistToolbarState(toolbarStateKey, { columnFilters: next })
         return next
       })
+    },
+    [toolbarStateKey],
+  )
+
+  const handleJoinOperatorChange = React.useCallback(
+    (op: "and" | "or") => {
+      setJoinOperator(op)
+      persistToolbarState(toolbarStateKey, { joinOperator: op })
     },
     [toolbarStateKey],
   )
@@ -229,8 +243,9 @@ export function TableLayout({
       searchColumnId,
       searchableFields: allColumnIds,
       schema,
+      joinOperator,
     })
-  }, [view.filter, columnFilters, searchColumnId, allColumnIds, schema])
+  }, [view.filter, columnFilters, searchColumnId, allColumnIds, schema, joinOperator])
 
   // Keep URL in sync with filter / sort / pagination (replace, not push).
   React.useEffect(() => {
@@ -240,6 +255,8 @@ export function TableLayout({
     else next.delete("sort")
     if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
     else next.delete("filters")
+    if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
+    else next.delete("joinOperator")
     const pageStr = String(pagination.pageIndex + 1)
     const limitStr = String(pagination.pageSize)
     // Only store page/limit when non-default to keep URLs tidy, but always
@@ -252,8 +269,8 @@ export function TableLayout({
       setSearchParams(next, { replace: true })
     }
     // Mirror to sessionStorage as fallback when URL is shared without params.
-    persistToolbarState(toolbarStateKey, { sorting, columnFilters, pageSize: pagination.pageSize })
-  }, [sorting, columnFilters, pagination.pageIndex, pagination.pageSize, searchParams, setSearchParams, toolbarStateKey])
+    persistToolbarState(toolbarStateKey, { sorting, columnFilters, pageSize: pagination.pageSize, joinOperator })
+  }, [sorting, columnFilters, joinOperator, pagination.pageIndex, pagination.pageSize, searchParams, setSearchParams, toolbarStateKey])
 
   const {
     data: serverDocs,
@@ -322,6 +339,8 @@ export function TableLayout({
         searchColumnId={searchColumnId}
         searchPlaceholder="Search..."
         isFetching={isFetching}
+        joinOperator={joinOperator}
+        onJoinOperatorChange={handleJoinOperatorChange}
       >
         <ExportMenu
           slug={slug}

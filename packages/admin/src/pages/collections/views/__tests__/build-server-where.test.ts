@@ -128,5 +128,48 @@ describe("buildServerWhere", () => {
         ],
       })
     })
+
+    it("combines multiple column filters with OR when joinOperator is 'or'", () => {
+      const columnFilters = [
+        { id: "status", value: ["paid"] },
+        { id: "guestCount", value: { operator: "gt", value: 3 } },
+      ]
+      const result = buildServerWhere({
+        columnFilters,
+        schema,
+        joinOperator: "or",
+      })
+      expect(result).toEqual({
+        OR: [
+          { status: { in: ["paid"] } },
+          { guestCount: { gt: 3 } },
+        ],
+      })
+    })
+
+    it("combines baseFilter with OR-joined column filters", () => {
+      const base = { attending: { equals: true } }
+      const columnFilters = [
+        { id: "status", value: ["paid"] },
+        { id: "status", value: ["collected"] },
+      ]
+      const result = buildServerWhere({
+        baseFilter: base,
+        columnFilters,
+        schema,
+        joinOperator: "or",
+      })
+      expect(result).toEqual({
+        AND: [
+          base,
+          {
+            OR: [
+              { status: { in: ["paid"] } },
+              { status: { in: ["collected"] } },
+            ],
+          },
+        ],
+      })
+    })
   })
 })

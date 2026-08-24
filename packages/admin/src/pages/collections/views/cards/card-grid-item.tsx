@@ -160,6 +160,7 @@ export function CardGridItem({ slug, doc, schema, client, schemas, view, actions
             <RowActionsCell
               actions={rowActions}
               docId={String(doc.id)}
+              doc={doc}
               onRun={onRunAction}
               isRunning={isRunningAction}
               maxInline={2}

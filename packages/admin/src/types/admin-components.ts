@@ -108,6 +108,14 @@ export interface AdminFieldComponentContext {
   user: Record<string, unknown> | null;
   schemas?: AdminSchemas;
   siblingData: Record<string, unknown>;
+  doc?: Record<string, unknown>;
+  docs?: Record<string, unknown>[];
+  data?: Record<string, unknown>;
+  record?: Record<string, unknown>;
+  row?: Record<string, unknown>;
+  document?: Record<string, unknown>;
+  documents?: Record<string, unknown>[];
+  formData?: Record<string, unknown>;
 }
 
 export interface AdminFieldComponentProps {
@@ -118,6 +126,11 @@ export interface AdminFieldComponentProps {
   disabled?: boolean;
   collection: string;
   context?: AdminFieldComponentContext;
+  doc?: Record<string, unknown>;
+  docs?: Record<string, unknown>[];
+  data?: Record<string, unknown>;
+  record?: Record<string, unknown>;
+  row?: Record<string, unknown>;
 }
 
 /**

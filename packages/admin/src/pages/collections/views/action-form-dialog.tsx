@@ -12,6 +12,8 @@ import { Button } from "../../../components/ui/button"
 import { Label } from "../../../components/ui/label"
 import { FieldRenderer } from "../../../components/forms/field-renderer"
 
+import { useDyrected } from "../../../providers/dyrected-context"
+
 interface ActionFormDialogProps {
   open: boolean
   label: string
@@ -19,6 +21,8 @@ interface ActionFormDialogProps {
   fields?: any[]
   collection?: string
   schemas?: unknown
+  doc?: Record<string, any>
+  docs?: Record<string, any>[]
   isRunning: boolean
   onSubmit: (input: Record<string, unknown>) => void
   onCancel: () => void
@@ -36,6 +40,8 @@ export function ActionFormDialog({
   fields,
   collection = "",
   schemas,
+  doc,
+  docs,
   isRunning,
   onSubmit,
   onCancel,
@@ -54,6 +60,8 @@ export function ActionFormDialog({
           fields={fields}
           collection={collection}
           schemas={schemas}
+          doc={doc}
+          docs={docs}
           isRunning={isRunning}
           onSubmit={onSubmit}
           onCancel={onCancel}
@@ -79,10 +87,12 @@ function ActionForm({
   fields,
   collection,
   schemas,
+  doc,
+  docs,
   isRunning,
   onSubmit,
   onCancel,
-}: Pick<ActionFormDialogProps, "fields" | "collection" | "schemas" | "isRunning" | "onSubmit" | "onCancel">) {
+}: Pick<ActionFormDialogProps, "fields" | "collection" | "schemas" | "doc" | "docs" | "isRunning" | "onSubmit" | "onCancel">) {
   const [values, setValues] = React.useState<Record<string, unknown>>(() => buildDefaults(fields))
 
   const setValue = (name: string, value: unknown) => {
@@ -105,6 +115,8 @@ function ActionForm({
           collection={collection ?? ""}
           siblingValues={values}
           schemas={schemas}
+          doc={doc}
+          docs={docs}
         />
       ))}
       <DialogFooter className="dy-gap-2">
@@ -127,6 +139,8 @@ function ActionField({
   collection,
   siblingValues,
   schemas,
+  doc,
+  docs,
 }: {
   field: any
   value: unknown
@@ -134,7 +148,10 @@ function ActionField({
   collection: string
   siblingValues: Record<string, unknown>
   schemas?: unknown
+  doc?: Record<string, any>
+  docs?: Record<string, any>[]
 }) {
+  const { user } = useDyrected()
   const id = `action-field-${field.name}`
   const label = (
     <Label htmlFor={id} className="dy-text-xs dy-font-medium">
@@ -158,11 +175,25 @@ function ActionField({
     id,
   }
 
+  const siblingData = {
+    ...(doc ?? {}),
+    ...siblingValues,
+  }
+
   const context = {
-    siblingData: siblingValues,
+    user,
+    siblingData,
     value,
     path: field.name,
     schemas,
+    doc,
+    docs,
+    document: doc,
+    documents: docs,
+    row: doc,
+    record: doc,
+    data: doc,
+    formData: siblingValues,
   }
 
   return (

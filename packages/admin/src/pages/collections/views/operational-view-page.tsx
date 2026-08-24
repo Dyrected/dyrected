@@ -101,12 +101,12 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   )
 
   const handleRunAction = useCallback(
-    (action: SerializedAction, ids: string[]) => {
+    (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => {
       if (isSystemAction(action)) {
         systemOps.runSystemAction(action.operation, ids)
         return
       }
-      actionRunner.initiate(action, ids)
+      actionRunner.initiate(action, ids, targetContext)
     },
     [actionRunner, systemOps],
   )

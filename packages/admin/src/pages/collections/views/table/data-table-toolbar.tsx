@@ -22,6 +22,8 @@ interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
   searchPlaceholder?: string
   /** Whether a background query/refetch is in flight. */
   isFetching?: boolean
+  joinOperator?: "and" | "or"
+  onJoinOperatorChange?: (op: "and" | "or") => void
 }
 
 /**
@@ -33,6 +35,8 @@ export function DataTableToolbar<TData>({
   searchColumnId,
   searchPlaceholder = "Search...",
   isFetching,
+  joinOperator = "and",
+  onJoinOperatorChange,
   children,
   className,
   ...props
@@ -96,6 +100,38 @@ export function DataTableToolbar<TData>({
         {facetedColumns.map((column) => (
           <ToolbarFacetedFilter key={column.id} column={column} />
         ))}
+        {table.getState().columnFilters.length >= 2 && onJoinOperatorChange && (
+          <div
+            role="group"
+            aria-label="Filter join operator"
+            className="dy-flex dy-items-center dy-rounded-md dy-border dy-border-dashed dy-border-border/60 dy-bg-muted/30 dy-p-0.5 dy-h-8"
+          >
+            <button
+              type="button"
+              onClick={() => onJoinOperatorChange("and")}
+              className={cn(
+                "dy-h-6 dy-rounded dy-px-2 dy-text-[11px] dy-font-semibold dy-transition-all",
+                joinOperator === "and"
+                  ? "dy-bg-background dy-text-foreground dy-shadow-xs"
+                  : "dy-text-muted-foreground hover:dy-text-foreground",
+              )}
+            >
+              AND
+            </button>
+            <button
+              type="button"
+              onClick={() => onJoinOperatorChange("or")}
+              className={cn(
+                "dy-h-6 dy-rounded dy-px-2 dy-text-[11px] dy-font-semibold dy-transition-all",
+                joinOperator === "or"
+                  ? "dy-bg-background dy-text-foreground dy-shadow-xs"
+                  : "dy-text-muted-foreground hover:dy-text-foreground",
+              )}
+            >
+              OR
+            </button>
+          </div>
+        )}
         <DataTableSort table={table} />
         {isFiltered && (
           <Button

@@ -200,6 +200,8 @@ export async function serializeViewForApi(view: any, serializeAccess: (access: a
     columns: view.columns,
     sort: view.sort,
     metrics: view.metrics,
+    features: view.features,
+    actionOrder: view.actionOrder,
     actions: await Promise.all(
       (view.actions || []).map(async (action: any) => ({
         name: action.name,

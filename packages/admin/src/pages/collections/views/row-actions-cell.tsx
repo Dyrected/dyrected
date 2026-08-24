@@ -15,7 +15,8 @@ import { cn } from "../../../lib/utils"
 interface RowActionsCellProps {
   actions: SerializedAction[]
   docId: string
-  onRun: (action: SerializedAction, ids: string[]) => void
+  doc?: Record<string, any>
+  onRun: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   /** Returns true while this action × selection is executing. */
   isRunning?: (action: SerializedAction, ids: string[]) => boolean
   /** Optional manual upper limit on the number of inline action buttons. */
@@ -63,7 +64,7 @@ function useContainerWidth<T extends HTMLElement>() {
  * Dynamically measures available container width to decide how many buttons fit inline,
  * cleanly collapsing remaining actions into a dropdown menu to prevent card overflow.
  */
-export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, wrap = false, className }: RowActionsCellProps) {
+export function RowActionsCell({ actions, docId, doc, onRun, isRunning, maxInline, wrap = false, className }: RowActionsCellProps) {
   const [containerRef, width] = useContainerWidth<HTMLDivElement>()
 
   if (!actions.length) return null
@@ -85,7 +86,7 @@ export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, wr
                 action.destructive &&
                   "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
               )}
-              onClick={() => onRun(action, [docId])}
+              onClick={() => onRun(action, [docId], doc ? { doc, docs: [doc] } : undefined)}
             >
               {running ? (
                 <Loader2 className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-animate-spin" />
@@ -136,7 +137,7 @@ export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, wr
               action.destructive &&
                 "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
             )}
-            onClick={() => onRun(action, [docId])}
+            onClick={() => onRun(action, [docId], doc ? { doc, docs: [doc] } : undefined)}
           >
             {running ? (
               <Loader2 className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-animate-spin" />
@@ -163,7 +164,7 @@ export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, wr
             {overflow.map((action) => (
               <DropdownMenuItem
                 key={action.name}
-                onClick={() => onRun(action, [docId])}
+                onClick={() => onRun(action, [docId], doc ? { doc, docs: [doc] } : undefined)}
                 className={cn(
                   "dy-cursor-pointer dy-gap-2",
                   action.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined

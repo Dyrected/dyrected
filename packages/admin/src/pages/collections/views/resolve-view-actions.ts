@@ -14,8 +14,16 @@ function applyOrder(actions: SerializedAction[], order?: string[]): SerializedAc
   if (!order?.length) return actions
   const rank = new Map(order.map((name, index) => [name, index]))
   return [...actions].sort((a, b) => {
-    const rankA = rank.get(a.name) ?? Number.MAX_SAFE_INTEGER
-    const rankB = rank.get(b.name) ?? Number.MAX_SAFE_INTEGER
+    const rankA =
+      rank.get(a.name) ??
+      (a.operation ? rank.get(a.operation) : undefined) ??
+      rank.get(a.name.replace(/^__/, "")) ??
+      Number.MAX_SAFE_INTEGER
+    const rankB =
+      rank.get(b.name) ??
+      (b.operation ? rank.get(b.operation) : undefined) ??
+      rank.get(b.name.replace(/^__/, "")) ??
+      Number.MAX_SAFE_INTEGER
     return rankA - rankB
   })
 }
@@ -38,11 +46,15 @@ export function resolveViewActions(
     features: { ...options.features, ...view.features },
   })
 
+  const inlineBuiltins = builtins.row.filter((action) => action.operation !== "duplicate")
+  const trailingBuiltins = builtins.row.filter((action) => action.operation === "duplicate")
+  const customRows = customs.filter((action) => (action.type ?? "row") === "row")
+
   const rowActions = applyOrder(
     [
-      ...builtins.row.slice(0, -1),
-      ...customs.filter((action) => (action.type ?? "row") === "row"),
-      ...builtins.row.slice(-1),
+      ...inlineBuiltins,
+      ...customRows,
+      ...trailingBuiltins,
     ],
     view.actionOrder,
   )

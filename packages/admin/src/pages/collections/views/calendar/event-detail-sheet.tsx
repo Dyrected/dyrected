@@ -150,6 +150,7 @@ export function EventDetailSheet({
                 <RowActionsCell
                   actions={rowActions}
                   docId={String(doc.id)}
+                  doc={doc}
                   onRun={onRunAction}
                   isRunning={isRunningAction}
                   wrap

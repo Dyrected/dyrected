@@ -3,6 +3,11 @@ import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../../../providers/dyrected-context"
 
+export interface ActionTargetContext {
+  doc?: Record<string, any>
+  docs?: Record<string, any>[]
+}
+
 export interface PendingAction {
   actionName: string
   label: string
@@ -10,6 +15,10 @@ export interface PendingAction {
   fields?: any[]
   /** Document ids the action targets. */
   ids: string[]
+  /** Target document (for single-record actions). */
+  doc?: Record<string, any>
+  /** Target documents (for bulk actions). */
+  docs?: Record<string, any>[]
 }
 
 /** Minimal shape of a serialized `defineAction` config used at call sites. */
@@ -69,7 +78,7 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
 
   /** Entry point for action button clicks. Stages dialogs when required. */
   const initiate = useCallback(
-    (action: ActionLike, ids: string[]) => {
+    (action: ActionLike, ids: string[], targetContext?: ActionTargetContext) => {
       if (!ids.length || !action.name) return
       if (runningKey === keyOf(action.name, ids)) return
       const staged: PendingAction = {
@@ -78,6 +87,8 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
         confirm: action.confirm,
         fields: action.fields,
         ids,
+        doc: targetContext?.doc,
+        docs: targetContext?.docs,
       }
       if (action.confirm || action.fields?.length) {
         setPending(staged)

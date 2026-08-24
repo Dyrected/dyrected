@@ -7,6 +7,7 @@ import {
   defineCollection,
   defineGlobal,
   defineTextField,
+  defineView,
 } from "../index.js";
 import { MockDatabaseAdapter } from "./mocks.js";
 
@@ -22,6 +23,19 @@ describe("Dynamic Router", async () => {
       defineCollection({
         slug: "posts",
         admin: { icon: "Newspaper" },
+        views: [
+          defineView({
+            slug: "published_posts",
+            label: "Published Posts",
+            layout: "table",
+            features: {
+              edit: false,
+              delete: false,
+              duplicate: false,
+            },
+            actionOrder: ["view"],
+          }),
+        ],
         fields: [
           { name: "title", type: "text" },
           defineBlocksField({
@@ -52,6 +66,18 @@ describe("Dynamic Router", async () => {
     expect(data.collections).toHaveLength(1);
     expect(data.collections[0].slug).toBe("posts");
     expect(data.collections[0].admin.icon).toBe("Newspaper");
+    expect(data.collections[0].views).toHaveLength(1);
+    expect(data.collections[0].views[0]).toMatchObject({
+      slug: "published_posts",
+      label: "Published Posts",
+      layout: "table",
+      features: {
+        edit: false,
+        delete: false,
+        duplicate: false,
+      },
+      actionOrder: ["view"],
+    });
     expect(data.globals[0].slug).toBe("settings");
     expect(data.globals[0].admin.icon).toBe("Settings2");
     expect(data.blocks).toHaveLength(1);

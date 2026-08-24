@@ -83,8 +83,8 @@ describe("resolveViewActions", () => {
     // their default relative order.
     expect(resolved.rowActions.map((action) => action.name)).toEqual([
       "checkIn",
-      "__view",
       "__edit",
+      "__view",
       "__delete",
       "__duplicate",
     ])

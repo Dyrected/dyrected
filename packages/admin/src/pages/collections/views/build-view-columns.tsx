@@ -159,6 +159,7 @@ function renderPrimaryCell(
       {actions.length > 0 && link.onRunAction ? (
         <PrimaryActionLinks
           docId={id}
+          doc={doc}
           actions={actions}
           onRun={link.onRunAction}
           isRunning={link.isRunning}
@@ -178,13 +179,15 @@ const PRIMARY_INLINE_ACTIONS = 3
  */
 function PrimaryActionLinks({
   docId,
+  doc,
   actions,
   onRun,
   isRunning,
 }: {
   docId: string
+  doc?: Record<string, any>
   actions: SerializedAction[]
-  onRun: (action: SerializedAction, ids: string[]) => void
+  onRun: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   isRunning?: (action: SerializedAction, ids: string[]) => boolean
 }) {
   const inline = actions.slice(0, PRIMARY_INLINE_ACTIONS)
@@ -207,7 +210,7 @@ function PrimaryActionLinks({
               )}
               onClick={(event) => {
                 event.stopPropagation()
-                onRun(action, [docId])
+                onRun(action, [docId], doc ? { doc, docs: [doc] } : undefined)
               }}
             >
               {running ? (
@@ -241,7 +244,7 @@ function PrimaryActionLinks({
               {overflow.map((action) => (
                 <DropdownMenuItem
                   key={action.name}
-                  onClick={() => onRun(action, [docId])}
+                  onClick={() => onRun(action, [docId], doc ? { doc, docs: [doc] } : undefined)}
                   className={action.destructive ? "dy-text-destructive focus:dy-text-destructive" : undefined}
                 >
                   {action.label}

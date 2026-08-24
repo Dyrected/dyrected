@@ -28,6 +28,8 @@ export function ActionDialogs({ collection, schemas, pending, isRunning, onResol
         fields={pending.fields}
         collection={collection}
         schemas={schemas}
+        doc={pending.doc}
+        docs={pending.docs}
         isRunning={isRunning}
         onSubmit={(input) => onResolve(input)}
         onCancel={onCancel}

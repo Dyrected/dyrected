@@ -76,8 +76,14 @@ export function CardsLayout({
     }
     return 1
   }
+  const getInitialJoinOperator = (): "and" | "or" => {
+    const op = searchParams.get("joinOperator")
+    if (op === "or" || op === "and") return op
+    return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
+  }
   const [globalFilter, setGlobalFilter] = React.useState(getInitialSearch)
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
+  const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
   const [page, setPage] = React.useState(getInitialPage)
   const pageSize = 24
 
@@ -89,6 +95,14 @@ export function CardsLayout({
         return next
       })
       setPage(1)
+    },
+    [toolbarStateKey],
+  )
+
+  const handleJoinOperatorChange = React.useCallback(
+    (op: "and" | "or") => {
+      setJoinOperator(op)
+      persistToolbarState(toolbarStateKey, { joinOperator: op })
     },
     [toolbarStateKey],
   )
@@ -139,8 +153,9 @@ export function CardsLayout({
       search: globalFilter,
       searchableFields: allFieldIds.length ? allFieldIds : undefined,
       schema,
+      joinOperator,
     })
-  }, [view.filter, columnFilters, globalFilter, allFieldIds, schema])
+  }, [view.filter, columnFilters, globalFilter, allFieldIds, schema, joinOperator])
 
   // URL ↔ sessionStorage sync (replace, not push).
   React.useEffect(() => {
@@ -149,11 +164,13 @@ export function CardsLayout({
     else next.delete("search")
     if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
     else next.delete("filters")
+    if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
+    else next.delete("joinOperator")
     if (page > 1) next.set("page", String(page))
     else next.delete("page")
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
-    persistToolbarState(toolbarStateKey, { columnFilters })
-  }, [globalFilter, columnFilters, page, searchParams, setSearchParams, toolbarStateKey])
+    persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
+  }, [globalFilter, columnFilters, joinOperator, page, searchParams, setSearchParams, toolbarStateKey])
 
   const {
     data: docs,
@@ -211,7 +228,11 @@ export function CardsLayout({
             className={`dy-pl-10 ${FILTER_INPUT_CLASSES}`}
           />
         </div>
-        <DataTableToolbar table={table}>
+        <DataTableToolbar
+          table={table}
+          joinOperator={joinOperator}
+          onJoinOperatorChange={handleJoinOperatorChange}
+        >
           <ViewOptionsPanel
             label="Fields"
             managedIds={allFieldIds}

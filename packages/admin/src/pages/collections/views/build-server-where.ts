@@ -7,6 +7,7 @@ interface BuildServerWhereOptions {
   searchColumnId?: string
   searchableFields?: string[]
   schema?: any
+  joinOperator?: "and" | "or"
 }
 
 function coerceFieldValue(value: unknown, fieldName: string, schema?: any): unknown {
@@ -121,36 +122,49 @@ export function buildServerWhere({
   searchColumnId,
   searchableFields = [],
   schema,
+  joinOperator = "and",
 }: BuildServerWhereOptions): Record<string, any> | undefined {
-  const conditions: Record<string, any>[] = []
+  const toolbarConditions: Record<string, any>[] = []
+
+  for (const entry of columnFilters) {
+    if (searchColumnId && entry.id === searchColumnId) {
+      // Handled below via search input
+      continue
+    }
+    const condition = translateColumnFilter(entry.id, entry.value, schema)
+    if (condition) {
+      toolbarConditions.push(condition)
+    }
+  }
+
+  const topLevelConditions: Record<string, any>[] = []
 
   if (baseFilter && Object.keys(baseFilter).length > 0) {
-    conditions.push(baseFilter)
+    topLevelConditions.push(baseFilter)
   }
 
   const trimmedSearch = search?.trim()
   if (trimmedSearch) {
     if (searchColumnId) {
-      conditions.push({ [searchColumnId]: { contains: trimmedSearch } })
+      topLevelConditions.push({ [searchColumnId]: { contains: trimmedSearch } })
     } else if (searchableFields.length > 0) {
-      conditions.push({
+      topLevelConditions.push({
         OR: searchableFields.map((field) => ({ [field]: { contains: trimmedSearch } })),
       })
     }
   }
 
-  for (const entry of columnFilters) {
-    if (searchColumnId && entry.id === searchColumnId) {
-      // Handled above via search input
-      continue
-    }
-    const condition = translateColumnFilter(entry.id, entry.value, schema)
-    if (condition) {
-      conditions.push(condition)
+  if (toolbarConditions.length > 0) {
+    if (toolbarConditions.length === 1) {
+      topLevelConditions.push(toolbarConditions[0])
+    } else if (joinOperator === "or") {
+      topLevelConditions.push({ OR: toolbarConditions })
+    } else {
+      topLevelConditions.push(...toolbarConditions)
     }
   }
 
-  if (conditions.length === 0) return undefined
-  if (conditions.length === 1) return conditions[0]
-  return { AND: conditions }
+  if (topLevelConditions.length === 0) return undefined
+  if (topLevelConditions.length === 1) return topLevelConditions[0]
+  return { AND: topLevelConditions }
 }
