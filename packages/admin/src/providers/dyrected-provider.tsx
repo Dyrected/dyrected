@@ -185,7 +185,7 @@ export function DyrectedProvider({
     }
   }, [schemasError]);
 
-  const activeUser = initialTokenUser ?? user;
+  const activeUser = user ?? initialTokenUser;
 
   // Apply the cloud-issued token to the SDK client.
   useEffect(() => {
@@ -325,7 +325,12 @@ export function DyrectedProvider({
       .then(
         (nextUser) => {
           if (cancelled) return;
-          setUser(nextUser as AdminUser);
+          setUser((prev) => {
+            if (prev && JSON.stringify(prev) === JSON.stringify(nextUser)) {
+              return prev;
+            }
+            return nextUser as AdminUser;
+          });
         },
         (error) => {
           if (cancelled) return;
@@ -333,9 +338,7 @@ export function DyrectedProvider({
             clearPersistedAuthState(client);
             return;
           }
-          if (!activeUser) {
-            setUser(null);
-          }
+          setUser(null);
         },
       )
       .finally(() => {
@@ -347,7 +350,6 @@ export function DyrectedProvider({
       cancelled = true;
     };
   }, [
-    activeUser,
     authCollectionSlug,
     clearPersistedAuthState,
     client,

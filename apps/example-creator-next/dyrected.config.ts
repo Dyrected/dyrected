@@ -37,8 +37,8 @@ import sharedContent from "./src/lib/shared-content.json";
 import siteContent from "./src/lib/site-content.json";
 
 const publicRead = "true";
-const staffWrite = "user.roles != null && ('owner' in user.roles || 'admin' in user.roles || 'editor' in user.roles)";
-const adminOnly = "user.roles != null && ('owner' in user.roles || 'admin' in user.roles)";
+const staffWrite = "user.roles != null && ('admin' in user.roles || 'editor' in user.roles)";
+const adminOnly = "user.roles != null && ('admin' in user.roles)";
 
 const linkFields = [
   defineTextField({ name: "label", label: "Label", required: true }),
@@ -768,6 +768,22 @@ const Services = defineCollection({
     },
     { name: "duration", label: "Duration", type: "text", required: true },
     { name: "price", label: "Price", type: "text", required: true },
+    defineArrayField({
+      name: "gallery",
+      label: "Service Photos",
+      fields: [
+        defineTextField({ name: "url", label: "Image URL", required: true }),
+      ],
+    }),
+  ],
+  views: [
+    defineView({
+      slug: "service-catalog",
+      label: "Service Catalog",
+      icon: "LayoutGrid",
+      layout: "cards",
+      columns: ["name", "duration", "price"],
+    }),
   ],
   initialData: sharedContent.services.map((service) => ({
     ...service,
@@ -1004,6 +1020,7 @@ const GuestResponses = defineCollection({
   fields: [
     defineTextField({ name: "name", label: "Full Name", required: true }),
     defineTextField({ name: "email", label: "Email" }),
+    defineTextField({ name: "avatar", label: "Photo / Avatar URL" }),
     defineBooleanField({ name: "attending", label: "Attending" }),
     defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0 }),
     defineNumberField({ name: "tableNumber", label: "Table Number" }),
