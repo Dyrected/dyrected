@@ -91,6 +91,34 @@ export const sendReminderAction = defineAction({
 });
 ```
 
+<SelfHostedOnly>
+
+### 4. Custom TypeScript handler
+
+In self-hosted projects where Dyrected runs inside your Node.js server, you can supply an async `handler` function to run arbitrary server logic or communicate with external APIs (like Stripe or Slack):
+
+```ts
+import { defineAction } from "@dyrected/core";
+
+export const chargeGuestAction = defineAction({
+  name: "chargeGuest",
+  label: "Charge Outfit",
+  icon: "CreditCard",
+  type: "row",
+  handler: async ({ doc, input }) => {
+    // Run custom server code or call third-party payment APIs
+    return {
+      asoebiStatus: "paid",
+      paidAt: new Date().toISOString(),
+    };
+  },
+});
+```
+
+The data returned from `handler` automatically merges into the document through the collection's validation and hook pipeline.
+
+</SelfHostedOnly>
+
 ## Configuration options
 
 | Option | Type | Description |
@@ -102,8 +130,15 @@ export const sendReminderAction = defineAction({
 | `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
 | `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
 | `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `handler` | `(ctx) => Promise<...>` | **Self-hosted only**: Custom async TypeScript handler for integrating third-party APIs (Stripe, Slack). |
 | `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
+
+<SelfHostedOnly>
+
+| Self-Hosted Option | Type | Description |
+| --- | --- | --- |
+| `handler` | `(ctx) => Promise<Partial<Doc>>` | Custom async TypeScript handler for server-side workflows and third-party API integration. |
+
+</SelfHostedOnly>
 
 ## Button placement and ordering
 
@@ -122,10 +157,13 @@ defineView({
 });
 ```
 
-## Cloud vs Self-hosted runtime
+<SelfHostedOnly>
 
-- **Dyrected Cloud**: Use declarative `mutation` objects (`mutation: { checkedIn: true, checkedInAt: "now()" }`). They sync cleanly via `sync:schema` and run in managed infrastructure.
-- **Self-hosted**: You can use `handler` functions to execute arbitrary server code (e.g. charging a card with Stripe or sending a Slack alert) inside your application backend.
+## Self-hosted runtime ownership
+
+Because self-hosted projects run directly inside your application backend, `handler` functions let you orchestrate complex multi-step transactions, call email gateways, or trigger background job queues while still routing the update through Dyrected's security and hook boundaries.
+
+</SelfHostedOnly>
 
 ## Next steps
 

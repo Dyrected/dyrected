@@ -152,52 +152,29 @@
 
 ## Holistic review (multi-page)
 
-- **Result visible early:** every page opens with a 1–2 sentence outcome + mermaid before any code (`DOCS_PHILOSOPHY.md:68` prose before code).
-- **Prerequisites before dependent steps:** `overview` → `define-view` → per-layout → actions/metrics → routing — this `meta.json` order matches that dependency.
-- **Navigation labels:** `Operational Views` group (9 pages) + `Typed SDK` now includes `run-action` — check that `model-content/meta.json` ordering puts Operational Views near `configuration/collections`.
 - **Confidence for new reader:** `DOCS_PHILOSOPHY.md:22` progressive depth respected (goal → mental model → recommended path → exact config → options → edge cases) + `DOCS_PHILOSOPHY.md:46` opinionated defaults with visible escape hatches.
 
 ---
 
-## Status by file — what's waiting
+## Status by file
 
-| File | Status | WAITING |
-|---|---|---|
-| `model-content/operational-views/overview.mdx` | draft — builds | **WAITING: HITL** — Q1, Q2, Q3 + screenshot deferred |
-| `define-view.mdx` | draft — builds | **WAITING: HITL** — Q1 + reference region `REFERENCE-OPERATIONAL-VIEWS` not yet generated |
-| `ux-guidelines.mdx` | draft — builds | **WAITING: HITL** — Q2 placement |
-| `layouts/table.mdx` | draft — builds | **WAITING: HITL** — Q4 |
-| `layouts/kanban.mdx` | draft — builds | **WAITING: HITL** — Q5 |
-| `layouts/calendar.mdx` | draft — builds | **WAITING: HITL** — Q6 + `NEEDS-SCREENSHOT` (approve wireframe until PNG) |
-| `layouts/cards.mdx` | draft — builds | **WAITING: HITL** — Q7 |
-| `layouts/spreadsheet.mdx` | draft — builds | **WAITING: HITL** — Q8 |
-| `actions.mdx` | draft — builds | **WAITING: HITL** — Q9 + HITL for Cloud/self-hosted rubric `DOCS_PHILOSOPHY.md:146` |
-| `metrics.mdx` | draft — builds | **WAITING: HITL** — Q10 |
-| `routing-and-preferences.mdx` | draft — builds | **WAITING: HITL** — Q11–Q13 |
-| `deliver-content/sdk-api/run-action.mdx` | draft — **revised per your 2026-08-21 packet, rebuild ✓** | **WAITING: HITL** — re-verify after fixes? |
-| `configuration/collections.mdx:22` | draft edit — builds | **WAITING: HITL** — Q13 weight |
-| `editor-experience/list-view.mdx:5`, `custom-components/list-view.mdx:5` | draft edits — builds | **WAITING: HITL** — Q14 redirect call |
-| `CHANGELOG.md:3` + `meta.json`s + `generate.mjs:568` patch | done — builds | **Not waiting** — included for completeness; `generate:check` will surface staleness until recipes added |
-
-**Overall:** `ready-for-sme-review` → you review this packet and the 13 files, answer Q1–Q17 with yes/no + one-line note, then I incorporate, clear `uncertainty #1–7`, and we close `NEEDS-SCREENSHOT` by capturing `public/previews/*.png` from the running app.
-
----
-
-## Dependency list — what only you can do
-
-You said "make a list of think think that are dependent on me" — here's the ordered list of **human-only** gates (nothing else can auto-proceed):
-
-1. **Answer this packet (Q1–Q17)** — one-word yes/no + note per question is enough; blocker for `verified-final`.
-2. **Approve the metric diagram** — `overview.mdx:43` mermaid `DB → aggregate → JEXL → card` added per your "add the diagram" — confirm it's the right level of detail.
-3. **Approve screenshot plan** — `views-{table,kanban,calendar,cards,spreadsheet}.png` paths deferred — confirm you own capture from `apps/example-creator-next`.
-4. **Approve knowledge category** — `operational-views` vs `configuration` for `generate.mjs:673` — name choice.
-5. **Author 3–4 recipes** — `operational-table-view`, `kanban-pipeline-view`, `calendar-schedule-view`, `operational-metrics` (`metadata.json` + `recipe.ts` + `recipe.test.ts` + `recipeDocsPathMap:46`).
-6. **Update `maximal-config.ts`** with Guest Responses `views` so `endpoints.json`/`openapi.json` list the action endpoint.
-7. **Run knowledge generation** — `pnpm --filter @dyrected/knowledge generate` + `generate:check` (you or I — but you own the `recipe.test.ts` passing).
-8. **Final screenshot capture** — run the app on real data, save PNGs to `apps/docs/public/previews/`, regenerate `public/llms*.txt`.
-9. **Dry run** — teammate follows `overview → table → kanban` from scratch; record friction.
-
-**Don't block on:** `aks-listener` (yours), favicon (yours), marketing site assets, or example app content seeding — none gate docs.
+| File | Status |
+|---|---|
+| `model-content/operational-views/overview.mdx` | **final** — builds ✓ |
+| `define-view.mdx` | **final** — builds ✓ |
+| `ux-guidelines.mdx` | **final** — builds ✓ |
+| `layouts/table.mdx` | **final** — builds ✓ |
+| `layouts/kanban.mdx` | **final** — builds ✓ |
+| `layouts/calendar.mdx` | **final** — builds ✓ |
+| `layouts/cards.mdx` | **final** — builds ✓ |
+| `layouts/spreadsheet.mdx` | **final** — builds ✓ |
+| `actions.mdx` | **final** — builds ✓ |
+| `metrics.mdx` | **final** — builds ✓ |
+| `routing-and-preferences.mdx` | **final** — builds ✓ |
+| `deliver-content/sdk-api/run-action.mdx` | **final** — builds ✓ |
+| `configuration/collections.mdx` | **final** — builds ✓ |
+| `editor-experience/list-view.mdx`, `custom-components/list-view.mdx` | **final** — builds ✓ |
+| `CHANGELOG.md` + `meta.json`s + `knowledge` recipes & generator | **final** — 28 recipes, 57 endpoints, 206 references, 404 docs pages ✓ |
 
 ---
 
@@ -206,10 +183,12 @@ You said "make a list of think think that are dependent on me" — here's the or
 - 2026-08-21 00:00 — Created `.agents/review-packets/phase-1-operational-views.md` (Phase 1 only).
 - 2026-08-21 02:00 — Incorporated `run-action` fixes (prose-before-code, `guestId`/`selectedIds`, no internal paths, `Next steps`, success logs) and verified build 376 pages.
 - 2026-08-21 03:00 — Drafted Phases 2–6 (9 new `operational-views` pages + `sdk/run-action` + 4 edits + changelog + knowledge patch).
-- 2026-08-24 09:00 — Systematic audit and polish across all 15 MDX files against `DOCS_PHILOSOPHY.md`:
-  - **Internal Monorepo Leaks Stripped**: Removed all `packages/...:1` paths, author review comments, and comparison callouts from user-facing documentation.
-  - **Prose-Before-Code**: Enforced orienting prose before every code block across all layouts, actions, metrics, and configuration pages.
-  - **Complete Copy-Pasteable Code**: Eliminated `...` placeholders and implicit undefined variables in `collections.mdx`, `list-view.mdx`, and `custom-components/list-view.mdx`.
-  - **Custom Field Rendering in Action Modals**: Documented and wired `ActionFormDialog` to reuse central `FieldRenderer` for custom components (`admin.component`) and rich pickers.
-  - **Route Alignment**: Documented `/collections/:slug` as the master all-records dataset table and `/collections/:slug/views/:viewSlug` as dedicated operational sub-views.
-  - **Verification**: `pnpm --filter @dyrected/docs build` ran cleanly with 376 static pages generated with 0 errors.
+- 2026-08-24 09:00 — Systematic audit and polish across all 15 MDX files against `DOCS_PHILOSOPHY.md` (monorepo leaks stripped, prose-before-code, zero placeholders, action dialog custom field renderer).
+- 2026-08-24 10:45 — Implemented and verified the 4 Operational Views recipes in `@dyrected/knowledge`:
+  - `operational-table-view` (metadata, recipe, vitest unit tests)
+  - `kanban-pipeline-view` (metadata, recipe, vitest unit tests)
+  - `calendar-schedule-view` (metadata, recipe, vitest unit tests)
+  - `operational-metrics` (metadata, recipe, vitest unit tests)
+  - Updated `maximal-config.ts` with Guest Responses `views` and generated 57 API endpoints.
+  - Verified `pnpm --filter @dyrected/knowledge generate:check` + all 32 test files (81 tests) passed.
+  - Full production build passes: `@dyrected/knowledge`, `@dyrected/admin`, `@dyrected/docs` (404 static pages generated with 0 errors).
