@@ -345,6 +345,14 @@ function SidebarInner({
   updateInfo: UpdateInfo | null
 }) {
   const { client, user } = useDyrected()
+  const [collapsedCollections, setCollapsedCollections] = useState<Set<string>>(() => new Set())
+  const toggleCollection = (slug: string) =>
+    setCollapsedCollections((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
   const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCollections = collections.filter((c) => c.upload)
@@ -376,23 +384,99 @@ function SidebarInner({
     )
 
     const views = col.views ?? []
+    const hasMeaningfulViews = views.length > 1 || (views.length === 1 && views[0].slug !== "list")
     const isChildActive = location.pathname.startsWith(`/collections/${col.slug}/views/`)
     const isExactActive =
       !isChildActive && location.pathname.startsWith(`/collections/${col.slug}`)
+    const isExpanded = !collapsedCollections.has(col.slug)
+
+    // Collapsed sidebar: show views in a click dropdown (portal, no clipping).
+    // The icon button opens the menu; the first item links to the collection itself.
+    if (collapsed && hasMeaningfulViews) {
+      const ParentIcon = resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)
+      return (
+        <div key={col.slug} className="dy-space-y-0.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "dy-group dy-flex dy-w-full dy-items-center dy-justify-center dy-rounded-md dy-px-2 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
+                  isExactActive
+                    ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+                    : isChildActive
+                      ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
+                      : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
+                )}
+                aria-label={`Open ${col.labels?.plural ?? col.slug} views`}
+              >
+                <ParentIcon
+                  className={cn(
+                    "dy-h-[17px] dy-w-[17px] dy-shrink-0 dy-transition-colors",
+                    isExactActive
+                      ? "dy-text-primary-foreground"
+                      : isChildActive
+                        ? "dy-text-foreground"
+                        : "dy-text-muted-foreground dy-group-hover:dy-text-foreground",
+                  )}
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" sideOffset={8} className="dy-w-56 dy-p-1">
+              <DropdownMenuLabel className="dy-text-xs">{col.labels?.plural ?? col.slug}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to={`/collections/${col.slug}`} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
+                  <LayoutDashboard className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+                  All {col.labels?.plural ?? col.slug}
+                </Link>
+              </DropdownMenuItem>
+              {views.map((view) => {
+                const viewPath = `/collections/${col.slug}/views/${view.slug}`
+                const active = location.pathname === viewPath
+                const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
+                return (
+                  <DropdownMenuItem key={viewPath} asChild className={active ? "dy-bg-accent" : ""}>
+                    <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
+                      {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
+                      {view.label}
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    }
 
     return (
       <div key={col.slug} className="dy-space-y-0.5">
-        <NavItem
-          to={`/collections/${col.slug}`}
-          icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
-          label={navLabel}
-          active={isExactActive}
-          isAncestorActive={isChildActive}
-          hasChildren={views.length > 0}
-          collapsed={collapsed}
-          onClick={onNavigate}
-        />
-        {!collapsed && views.length > 0 && (
+        <div className="dy-flex dy-items-center dy-gap-1">
+          <div className="dy-flex-1 dy-min-w-0">
+            <NavItem
+              to={`/collections/${col.slug}`}
+              icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
+              label={navLabel}
+              active={isExactActive}
+              isAncestorActive={isChildActive}
+              hasChildren={hasMeaningfulViews}
+              collapsed={collapsed}
+              onClick={onNavigate}
+            />
+          </div>
+          {!collapsed && hasMeaningfulViews && (
+            <button
+              type="button"
+              onClick={() => toggleCollection(col.slug)}
+              aria-label={isExpanded ? `Collapse ${col.slug}` : `Expand ${col.slug}`}
+              className="dy-flex dy-h-6 dy-w-6 dy-shrink-0 dy-items-center dy-justify-center dy-rounded dy-text-muted-foreground/50 hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+            >
+              {isExpanded ? <ChevronDown className="dy-h-3.5 dy-w-3.5" /> : <ChevronRight className="dy-h-3.5 dy-w-3.5" />}
+            </button>
+          )}
+        </div>
+        {!collapsed && hasMeaningfulViews && isExpanded && (
           <div className="dy-relative dy-ml-4 dy-border-l dy-border-border/60 dy-pl-2 dy-space-y-0.5 dy-my-1">
             {views.map((view) => {
               const viewPath = `/collections/${col.slug}/views/${view.slug}`
