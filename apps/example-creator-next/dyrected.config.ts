@@ -24,6 +24,7 @@ import {
 } from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
 import { postgresAdapter } from "@dyrected/db-postgres";
+import { CloudinaryStorageAdapter } from "@dyrected/storage-cloudinary";
 
 import aboutContent from "./src/app/about/about-content.json";
 import blogContent from "./src/app/blog/blog-content.json";
@@ -1474,6 +1475,11 @@ export default defineConfig({
       titleSuffix: "- Future You Coaching",
     },
   },
+  storage: new CloudinaryStorageAdapter({
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || "mock_name",
+    apiKey: process.env.CLOUDINARY_API_KEY || "mock_key",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "mock_secret",
+  }),
   adminAuth: {
     mode: "local",
     collectionSlug: "__admins",

@@ -5467,6 +5467,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/model-content/operational-views/actions#example-6",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/model-content/operational-views/define-view#example-1",
     "page": "/model-content/operational-views/define-view",
     "language": "mermaid",

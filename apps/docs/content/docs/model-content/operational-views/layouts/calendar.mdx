@@ -20,6 +20,8 @@ flowchart TB
   end
 ```
 
+![Calendar Schedule View](/previews/views-calendar.png)
+
 ## When to use
 
 - **Use when:** Records have a dedicated date/time field (`defineDateTimeField` or `defineDateField`) that drives the schedule (e.g. appointments, tasting schedules, event bookings, content releases).
@@ -56,6 +58,8 @@ export const tastingSchedule = defineView({
 ```
 
 Setting `dateField: "appointmentDate"` positions each record onto the calendar grid. `columns` controls the fields displayed on event chips and inside the event detail inspection drawer. Clicking any event chip slides open the drawer where editors can view details and run row actions like `Assign Table`.
+
+![Calendar Event Detail Drawer](/previews/views-calendar-sheet.png)
 
 ## Resource lanes (optional)
 

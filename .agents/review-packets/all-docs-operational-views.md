@@ -192,3 +192,6 @@
   - Updated `maximal-config.ts` with Guest Responses `views` and generated 57 API endpoints.
   - Verified `pnpm --filter @dyrected/knowledge generate:check` + all 32 test files (81 tests) passed.
   - Full production build passes: `@dyrected/knowledge`, `@dyrected/admin`, `@dyrected/docs` (404 static pages generated with 0 errors).
+- 2026-08-24 11:30 — Resolved `DataTableSort` nested `<button>` hydration error in `@dyrected/admin` and fixed `DocsPageContent` TOC ReactNode title string coercion.
+- 2026-08-24 11:58 — Integrated all 6 production UI screenshots into `apps/docs/public/previews/` and embedded them across `overview.mdx` and all 5 layout pages (`table.mdx`, `kanban.mdx`, `calendar.mdx`, `cards.mdx`, `spreadsheet.mdx`).
+- 2026-08-24 12:00 — Final verification: `@dyrected/docs` compiled all 404 static pages with 0 errors. All operational views documentation milestones are complete.

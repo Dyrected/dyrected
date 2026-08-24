@@ -21923,6 +21923,7 @@ export const sendReminderAction = defineAction({
 });
 ```
 
+
 ## Configuration options
 
 | Option | Type | Description |
@@ -21934,8 +21935,8 @@ export const sendReminderAction = defineAction({
 | `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
 | `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
 | `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `handler` | `(ctx) => Promise<...>` | **Self-hosted only**: Custom async TypeScript handler for integrating third-party APIs (Stripe, Slack). |
 | `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
+
 
 ## Button placement and ordering
 
@@ -21954,10 +21955,6 @@ defineView({
 });
 ```
 
-## Cloud vs Self-hosted runtime
-
-- **Dyrected Cloud**: Use declarative `mutation` objects (`mutation: { checkedIn: true, checkedInAt: "now()" }`). They sync cleanly via `sync:schema` and run in managed infrastructure.
-- **Self-hosted**: You can use `handler` functions to execute arbitrary server code (e.g. charging a card with Stripe or sending a Slack alert) inside your application backend.
 
 ## Next steps
 
@@ -22113,6 +22110,8 @@ flowchart TB
   end
 ```
 
+![Calendar Schedule View](/previews/views-calendar.png)
+
 ## When to use
 
 - **Use when:** Records have a dedicated date/time field (`defineDateTimeField` or `defineDateField`) that drives the schedule (e.g. appointments, tasting schedules, event bookings, content releases).
@@ -22149,6 +22148,8 @@ export const tastingSchedule = defineView({
 ```
 
 Setting `dateField: "appointmentDate"` positions each record onto the calendar grid. `columns` controls the fields displayed on event chips and inside the event detail inspection drawer. Clicking any event chip slides open the drawer where editors can view details and run row actions like `Assign Table`.
+
+![Calendar Event Detail Drawer](/previews/views-calendar-sheet.png)
 
 ## Resource lanes (optional)
 
@@ -22203,6 +22204,8 @@ flowchart TB
     T --> G --> C
   end
 ```
+
+![Cards Gallery Grid](/previews/views-cards.png)
 
 ## When to use
 
@@ -22283,6 +22286,8 @@ flowchart LR
   Drag[Drag R1 → C2] -->|moveMode: update| Write[PATCH asoebiStatus = paid]
   Drag -->|moveMode: action| Act[runAction markPaid + hooks]
 ```
+
+![Kanban Pipeline Board](/previews/views-kanban.png)
 
 ## When to use
 
@@ -22372,6 +22377,8 @@ flowchart TB
   end
 ```
 
+![Spreadsheet DataGrid Layout](/previews/views-spreadsheet.png)
+
 ## When to use
 
 - **Use when:** You need to rapidly edit simple fields (prices, stock quantities, status flags, dates) across 10+ rows without clicking into individual edit forms.
@@ -22454,6 +22461,8 @@ flowchart TB
     T1 --> T2 --> T3 --> T4
   end
 ```
+
+![Operational Table Layout](/previews/views-table.png)
 
 ## When to use
 
@@ -22700,12 +22709,14 @@ flowchart TB
     V3 --> T3[[Reschedule via drawer]]
 ```
 
+![Operational Views Workspace](/previews/views-table.png)
+
 ## What you get
 
 When you add `views` to a collection, Dyrected generates:
 
 - **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
-- **Layout-specific workspaces** — `table` (tablecn + TanStack), `kanban` (@dnd-kit board), `calendar` (ReUI event calendar), `cards` (gallery), `spreadsheet` (inline grid). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
 - **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
 - **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
 
@@ -46755,8 +46766,29 @@ export const sendReminderAction = defineAction({
   confirm: "Send a payment reminder to all guests with pending requests?",
   mutation: { remindedAt: "now()" },
 });
+```### 4. Custom TypeScript handler
+
+In self-hosted projects where Dyrected runs inside your Node.js server, you can supply an async `handler` function to run arbitrary server logic or communicate with external APIs (like Stripe or Slack):
+
+```ts
+
+
+export const chargeGuestAction = defineAction({
+  name: "chargeGuest",
+  label: "Charge Outfit",
+  icon: "CreditCard",
+  type: "row",
+  handler: async ({ doc, input }) => {
+    // Run custom server code or call third-party payment APIs
+    return {
+      asoebiStatus: "paid",
+      paidAt: new Date().toISOString(),
+    };
+  },
+});
 ```
 
+The data returned from `handler` automatically merges into the document through the collection's validation and hook pipeline.
 ## Configuration options
 
 | Option | Type | Description |
@@ -46768,9 +46800,9 @@ export const sendReminderAction = defineAction({
 | `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
 | `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
 | `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `handler` | `(ctx) => Promise<...>` | **Self-hosted only**: Custom async TypeScript handler for integrating third-party APIs (Stripe, Slack). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
-
+| `access` | `AccessConfig` | Permissions controlling who can see or run the action. || Self-Hosted Option | Type | Description |
+| --- | --- | --- |
+| `handler` | `(ctx) => Promise<Partial<Doc>>` | Custom async TypeScript handler for server-side workflows and third-party API integration. |
 ## Button placement and ordering
 
 - **Row actions (`type: "row"`)**: Surface on table rows, kanban cards, calendar detail sheets, and gallery card tiles.
@@ -46786,13 +46818,9 @@ defineView({
   features: { delete: false }, // Hides the built-in delete button
   actionOrder: ["checkIn", "view", "edit"], // Places custom Check In first
 });
-```
+```## Self-hosted runtime ownership
 
-## Cloud vs Self-hosted runtime
-
-- **Dyrected Cloud**: Use declarative `mutation` objects (`mutation: { checkedIn: true, checkedInAt: "now()" }`). They sync cleanly via `sync:schema` and run in managed infrastructure.
-- **Self-hosted**: You can use `handler` functions to execute arbitrary server code (e.g. charging a card with Stripe or sending a Slack alert) inside your application backend.
-
+Because self-hosted projects run directly inside your application backend, `handler` functions let you orchestrate complex multi-step transactions, call email gateways, or trigger background job queues while still routing the update through Dyrected's security and hook boundaries.
 ## Next steps
 
 - Run actions programmatically from code — [Run an action (SDK)](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/run-action)
@@ -46947,6 +46975,8 @@ flowchart TB
   end
 ```
 
+![Calendar Schedule View](/previews/views-calendar.png)
+
 ## When to use
 
 - **Use when:** Records have a dedicated date/time field (`defineDateTimeField` or `defineDateField`) that drives the schedule (e.g. appointments, tasting schedules, event bookings, content releases).
@@ -46983,6 +47013,8 @@ export const tastingSchedule = defineView({
 ```
 
 Setting `dateField: "appointmentDate"` positions each record onto the calendar grid. `columns` controls the fields displayed on event chips and inside the event detail inspection drawer. Clicking any event chip slides open the drawer where editors can view details and run row actions like `Assign Table`.
+
+![Calendar Event Detail Drawer](/previews/views-calendar-sheet.png)
 
 ## Resource lanes (optional)
 
@@ -47037,6 +47069,8 @@ flowchart TB
     T --> G --> C
   end
 ```
+
+![Cards Gallery Grid](/previews/views-cards.png)
 
 ## When to use
 
@@ -47117,6 +47151,8 @@ flowchart LR
   Drag[Drag R1 → C2] -->|moveMode: update| Write[PATCH asoebiStatus = paid]
   Drag -->|moveMode: action| Act[runAction markPaid + hooks]
 ```
+
+![Kanban Pipeline Board](/previews/views-kanban.png)
 
 ## When to use
 
@@ -47206,6 +47242,8 @@ flowchart TB
   end
 ```
 
+![Spreadsheet DataGrid Layout](/previews/views-spreadsheet.png)
+
 ## When to use
 
 - **Use when:** You need to rapidly edit simple fields (prices, stock quantities, status flags, dates) across 10+ rows without clicking into individual edit forms.
@@ -47288,6 +47326,8 @@ flowchart TB
     T1 --> T2 --> T3 --> T4
   end
 ```
+
+![Operational Table Layout](/previews/views-table.png)
 
 ## When to use
 
@@ -47534,12 +47574,14 @@ flowchart TB
     V3 --> T3[[Reschedule via drawer]]
 ```
 
+![Operational Views Workspace](/previews/views-table.png)
+
 ## What you get
 
 When you add `views` to a collection, Dyrected generates:
 
 - **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
-- **Layout-specific workspaces** — `table` (tablecn + TanStack), `kanban` (@dnd-kit board), `calendar` (ReUI event calendar), `cards` (gallery), `spreadsheet` (inline grid). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
 - **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
 - **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
 

@@ -84,15 +84,21 @@ export function DataTableSort<TData>({ table }: { table: Table<TData> }) {
         >
           {active ? (
             <>
-              <div
+              <span
                 role="button"
                 aria-label="Clear sort"
                 tabIndex={0}
                 onClick={onClear}
-                className="dy-rounded-sm dy-opacity-70 dy-transition-opacity hover:dy-opacity-100 focus-visible:dy-outline-none focus-visible:dy-ring-1 focus-visible:dy-ring-ring"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    onClear(e as any)
+                  }
+                }}
+                className="dy-rounded-sm dy-opacity-70 dy-transition-opacity hover:dy-opacity-100 focus-visible:dy-outline-none focus-visible:dy-ring-1 focus-visible:dy-ring-ring dy-cursor-pointer"
               >
                 <X className="dy-h-3.5 dy-w-3.5" />
-              </div>
+              </span>
               <span className="dy-hidden sm:dy-inline-flex">Sort:</span>
               <span className="dy-truncate dy-font-medium">{activeEntry?.label ?? active.id}</span>
               <Separator orientation="vertical" className="dy-mx-0.5 data-[orientation=vertical]:dy-h-4" />
@@ -110,18 +116,25 @@ export function DataTableSort<TData>({ table }: { table: Table<TData> }) {
                   </span>
                 )}
               </Badge>
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 aria-label="Toggle sort direction"
                 onClick={onToggleDirection}
-                className="dy-ml-0.5 dy-rounded-sm dy-p-0.5 hover:dy-bg-muted"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    onToggleDirection(e as any)
+                  }
+                }}
+                className="dy-ml-0.5 dy-rounded-sm dy-p-0.5 hover:dy-bg-muted dy-cursor-pointer"
               >
                 {active.desc ? (
                   <ArrowDown className="dy-h-3.5 dy-w-3.5" />
                 ) : (
                   <ArrowUp className="dy-h-3.5 dy-w-3.5" />
                 )}
-              </button>
+              </span>
             </>
           ) : (
             <>

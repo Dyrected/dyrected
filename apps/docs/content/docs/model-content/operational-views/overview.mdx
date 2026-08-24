@@ -36,12 +36,14 @@ flowchart TB
     V3 --> T3[[Reschedule via drawer]]
 ```
 
+![Operational Views Workspace](/previews/views-table.png)
+
 ## What you get
 
 When you add `views` to a collection, Dyrected generates:
 
 - **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
-- **Layout-specific workspaces** — `table` (tablecn + TanStack), `kanban` (@dnd-kit board), `calendar` (ReUI event calendar), `cards` (gallery), `spreadsheet` (inline grid). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
 - **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
 - **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
 
