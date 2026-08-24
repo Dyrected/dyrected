@@ -329,6 +329,8 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
       {renderSlot("afterViewContent")}
 
       <ActionDialogs
+        collection={slug}
+        schemas={schemas}
         pending={actionRunner.pending}
         isRunning={actionRunner.isRunning}
         onResolve={(input) => void actionRunner.resolve(input)}

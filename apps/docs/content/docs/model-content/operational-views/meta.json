@@ -1,0 +1,17 @@
+{
+  "title": "Operational Views",
+  "description": "Turn one collection into focused workspaces for each job — table, kanban, calendar, cards, and spreadsheet.",
+  "pages": [
+    "overview",
+    "define-view",
+    "ux-guidelines",
+    "layouts/table",
+    "layouts/kanban",
+    "layouts/calendar",
+    "layouts/cards",
+    "layouts/spreadsheet",
+    "actions",
+    "metrics",
+    "routing-and-preferences"
+  ]
+}

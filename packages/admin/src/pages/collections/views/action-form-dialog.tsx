@@ -9,23 +9,16 @@ import {
   DialogTitle,
 } from "../../../components/ui/dialog"
 import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
-import { Textarea } from "../../../components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/ui/select"
-import { Switch } from "../../../components/ui/switch"
+import { FieldRenderer } from "../../../components/forms/field-renderer"
 
 interface ActionFormDialogProps {
   open: boolean
   label: string
   confirm?: string
   fields?: any[]
+  collection?: string
+  schemas?: unknown
   isRunning: boolean
   onSubmit: (input: Record<string, unknown>) => void
   onCancel: () => void
@@ -33,10 +26,20 @@ interface ActionFormDialogProps {
 
 /**
  * Input form dialog for actions that declare `fields`.
- * Renders type-aware controls (text, number, select, boolean, date, textarea)
- * and submits the collected values as the action's `input` payload.
+ * Reuses Dyrected's central `FieldRenderer` to support all standard field types,
+ * media/relationship pickers, date pickers, and custom field components.
  */
-export function ActionFormDialog({ open, label, confirm, fields, isRunning, onSubmit, onCancel }: ActionFormDialogProps) {
+export function ActionFormDialog({
+  open,
+  label,
+  confirm,
+  fields,
+  collection = "",
+  schemas,
+  isRunning,
+  onSubmit,
+  onCancel,
+}: ActionFormDialogProps) {
   if (!open) return null
   return (
     <Dialog open onOpenChange={(next) => (!next ? onCancel() : undefined)}>
@@ -46,7 +49,15 @@ export function ActionFormDialog({ open, label, confirm, fields, isRunning, onSu
           {confirm && <DialogDescription>{confirm}</DialogDescription>}
         </DialogHeader>
         {/* Keyed by the field set so each staged action starts a fresh draft. */}
-        <ActionForm key={formKey(fields)} fields={fields} isRunning={isRunning} onSubmit={onSubmit} onCancel={onCancel} />
+        <ActionForm
+          key={formKey(fields)}
+          fields={fields}
+          collection={collection}
+          schemas={schemas}
+          isRunning={isRunning}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -66,10 +77,12 @@ function buildDefaults(fields?: any[]): Record<string, unknown> {
 
 function ActionForm({
   fields,
+  collection,
+  schemas,
   isRunning,
   onSubmit,
   onCancel,
-}: Pick<ActionFormDialogProps, "fields" | "isRunning" | "onSubmit" | "onCancel">) {
+}: Pick<ActionFormDialogProps, "fields" | "collection" | "schemas" | "isRunning" | "onSubmit" | "onCancel">) {
   const [values, setValues] = React.useState<Record<string, unknown>>(() => buildDefaults(fields))
 
   const setValue = (name: string, value: unknown) => {
@@ -89,6 +102,9 @@ function ActionForm({
           field={field}
           value={values[field.name]}
           onChange={(value) => setValue(field.name, value)}
+          collection={collection ?? ""}
+          siblingValues={values}
+          schemas={schemas}
         />
       ))}
       <DialogFooter className="dy-gap-2">
@@ -108,10 +124,16 @@ function ActionField({
   field,
   value,
   onChange,
+  collection,
+  siblingValues,
+  schemas,
 }: {
   field: any
   value: unknown
   onChange: (value: unknown) => void
+  collection: string
+  siblingValues: Record<string, unknown>
+  schemas?: unknown
 }) {
   const id = `action-field-${field.name}`
   const label = (
@@ -121,91 +143,38 @@ function ActionField({
     </Label>
   )
 
-  switch (field.type) {
-    case "number": {
-      return (
-        <div className="dy-space-y-1.5">
-          {label}
-          <Input
-            id={id}
-            type="number"
-            required={field.required}
-            value={value === "" || value === null || value === undefined ? "" : String(value)}
-            onChange={(event) => onChange(event.target.value === "" ? undefined : Number(event.target.value))}
-          />
-        </div>
-      )
-    }
-    case "boolean": {
-      return (
-        <div className="dy-flex dy-items-center dy-justify-between dy-gap-4">
-          {label}
-          <Switch id={id} checked={!!value} onCheckedChange={onChange} />
-        </div>
-      )
-    }
-    case "select":
-    case "radio": {
-      const options = Array.isArray(field.options)
-        ? field.options.map((option: any) => (typeof option === "string" ? { label: option, value: option } : option))
-        : []
-      return (
-        <div className="dy-space-y-1.5">
-          {label}
-          <Select value={String(value ?? "")} onValueChange={onChange} required={field.required}>
-            <SelectTrigger id={id} className="dy-w-full">
-              <SelectValue placeholder={`Select ${field.label || field.name}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((option: { label: string; value: string }) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )
-    }
-    case "date":
-    case "datetime": {
-      return (
-        <div className="dy-space-y-1.5">
-          {label}
-          <Input
-            id={id}
-            type={field.type === "datetime" ? "datetime-local" : "date"}
-            value={typeof value === "string" ? value.slice(0, field.type === "datetime" ? 16 : 10) : ""}
-            onChange={(event) => onChange(event.target.value)}
-          />
-        </div>
-      )
-    }
-    case "textarea": {
-      return (
-        <div className="dy-space-y-1.5">
-          {label}
-          <Textarea
-            id={id}
-            rows={3}
-            value={typeof value === "string" ? value : ""}
-            onChange={(event) => onChange(event.target.value)}
-          />
-        </div>
-      )
-    }
-    default: {
-      return (
-        <div className="dy-space-y-1.5">
-          {label}
-          <Input
-            id={id}
-            required={field.required}
-            value={typeof value === "string" ? value : ""}
-            onChange={(event) => onChange(event.target.value)}
-          />
-        </div>
-      )
-    }
+  const fieldBinding = {
+    name: field.name,
+    value,
+    onChange: (eventOrVal: any) => {
+      if (eventOrVal && typeof eventOrVal === "object" && "target" in eventOrVal) {
+        onChange(eventOrVal.target.type === "checkbox" ? eventOrVal.target.checked : eventOrVal.target.value)
+      } else {
+        onChange(eventOrVal)
+      }
+    },
+    onBlur: () => {},
+    ref: null,
+    id,
   }
+
+  const context = {
+    siblingData: siblingValues,
+    value,
+    path: field.name,
+    schemas,
+  }
+
+  return (
+    <div className="dy-space-y-1.5">
+      {label}
+      <FieldRenderer
+        schema={field}
+        field={fieldBinding}
+        id={id}
+        collection={collection}
+        context={context as any}
+      />
+    </div>
+  )
 }

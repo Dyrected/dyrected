@@ -1,0 +1,56 @@
+---
+title: Routing and preferences
+description: How views wire into the sidebar, URLs, and per-editor localStorage — and how to keep old links working.
+---
+
+Every `defineView` becomes a URL, a sidebar item, and a set of localStorage keys that remember each editor's column and toolbar choices. Legacy `list-view-v1` links still land because `CollectionRoute` shims their query params.
+
+By the end you'll know the route shape, what the sidebar actually renders, how to name keys so preferences stick, and how the URL compat shim maps `?where` and `?search`.
+
+## URL Routing
+
+| Route Pattern | View Rendered | Behavior |
+| --- | --- | --- |
+| `/collections/:slug` | Master Collection Table | Unfiltered view of all documents in the collection with complete field access. |
+| `/collections/:slug/views/:viewSlug` | Dedicated Operational View | Specialized workspace (table, kanban, calendar, cards, or spreadsheet) configured with its own filter, columns, actions, and metrics. |
+| `/collections/:slug/:id` | Record Detail View | Comprehensive inspection and form view for a single document. |
+| `/collections/:slug/new` | Record Creation Form | Form for creating a new document in the collection. |
+
+If a collection does not author custom `views`, Dyrected automatically synthesizes a default `list` table view from `admin.defaultColumns` or display fields so `/collections/:slug` is always functional immediately.
+
+## Sidebar Navigation
+
+The admin sidebar automatically organizes collections and their operational views:
+- **Expanded Sidebar**: Collections with views display an interactive chevron that expands to reveal each specialized sub-view, complete with icons and labels.
+- **Collapsed Sidebar**: Hovering over a collapsed collection icon opens a quick-jump popover menu displaying the master collection link and all dedicated sub-views.
+- **Permissions**: Views and collections respect `admin.hidden` and role-based access rules.
+
+## Local Preferences & State Persistence
+
+Dyrected automatically remembers each editor's individual preferences across visits using namespaced browser storage:
+
+- **Column Visibility & Ordering**: Remembers toggled fields and column order per view.
+- **Density & View Modes**: Remembers density settings and table/grid switches.
+- **Filters & Sorting**: Remembers interactive toolbar filter pills and header sort selections.
+
+Because preferences are namespaced by collection and view slug, switching between different views on the same collection never overwrites your column preferences.
+
+## Backward Compatibility & URL Shims
+
+Legacy shared URLs containing `?where=<json>` or `?search=<term>` parameters are automatically parsed and merged into the view's query:
+- `?where` JSON filters are deep-merged with the view's base filter.
+- `?search` terms are automatically applied to the collection's searchable fields.
+
+## Custom Component Slots
+
+You can inject custom React components into operational views using slot keys:
+- `beforeViewHeader`: Injected directly above the view title bar.
+- `afterViewHeader`: Injected between the header and metrics.
+- `beforeViewContent`: Injected above the active layout grid/table.
+- `afterViewContent`: Injected below the active layout.
+
+## Next steps
+
+- Explore all layout options — [UX guidelines](/docs/model-content/operational-views/ux-guidelines)
+- Add workflow buttons — [Actions](/docs/model-content/operational-views/actions)
+- Add KPI summary cards — [Metrics](/docs/model-content/operational-views/metrics)

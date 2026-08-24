@@ -1,0 +1,141 @@
+---
+title: Metrics
+description: KPI cards above every view — counts, sums, averages, and JEXL math over native DB aggregates.
+---
+
+A metric is a KPI card that sits above the data. Instead of loading thousands of rows to compute `₦2,125,000` of collected outfits, the view runs a native `aggregate` query (`count`, `sum`, `avg`, `min`, `max` + `where` + `cast`), then optionally runs one JEXL `transform` or `expression` to combine, multiply, or round the result.
+
+By the end you'll know the three shapes (`aggregate` vs `aggregates` vs `expression`) and when to reach for `format`, `currency`, `subMetrics`, and `color`.
+
+## Visual outcome
+
+```mermaid
+flowchart LR
+  DB[(Collection)]
+  DB -->|native aggregate| A1[Total Orders — count *]
+  DB -->|filtered| A2[Paid — count * where paid/collected]
+  A1 & A2 --> J{{expression: (paid/collected) vs total}}
+  J --> Card[85.9% — percent — amber]
+  DB -->|sum qty| S1[sum asoebiQuantity]
+  S1 --> T{{transform: value * 25000}}
+  T --> Card2[₦2,125,000 — currency — rose]
+```
+
+All aggregations run directly on the database engine for maximum speed, computing counts, sums, and averages across thousands of documents without in-memory loading.
+
+## Configuration patterns
+
+### 1. Simple count metric
+
+Display a count of matching documents:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const attendingGuests = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "guestCount"],
+  metrics: [
+    {
+      label: "Total Attending",
+      color: "emerald",
+      aggregate: { count: "*", where: { attending: { equals: true } } },
+    },
+  ],
+});
+```
+
+### 2. Calculated revenue with `transform`
+
+Multiply an aggregated numeric sum by a unit price:
+
+```ts
+export const revenueMetric = {
+  label: "Estimated Revenue",
+  color: "rose",
+  aggregate: {
+    sum: "asoebiQuantity",
+    cast: "number",
+    where: { asoebiStatus: { in: ["paid", "collected"] } },
+  },
+  transform: "value * 25000",
+  format: "currency",
+  currency: "NGN", // Displays as: ₦2,125,000
+};
+```
+
+`value` represents the returned aggregation result.
+
+### 3. Multi-aggregate expressions & ratios
+
+Combine multiple database operations using an `expression`:
+
+```ts
+export const attendanceRate = {
+  label: "Attendance Rate",
+  color: "amber",
+  aggregates: {
+    totalInvited:   { count: "*" },
+    totalAttending: { count: "*", where: { attending: { equals: true } } },
+  },
+  expression: "math.round((aggregates.totalAttending / aggregates.totalInvited) * 100, 1)",
+  format: "percent", // Displays as: 85.9%
+};
+```
+
+### 4. Sub-metrics breakdown
+
+Add secondary footer metrics under the primary hero card:
+
+```ts
+export const checkInMetric = {
+  label: "Door Check-In",
+  color: "emerald",
+  unit: "Guests",
+  aggregates: {
+    checkedIn: { count: "*", where: { checkedIn: { equals: true } } },
+    attending: { count: "*", where: { attending: { equals: true } } },
+  },
+  expression: "aggregates.checkedIn",
+  subMetrics: [
+    {
+      label: "Pending",
+      aggregates: {
+        checkedIn: { count: "*", where: { checkedIn: { equals: true } } },
+        attending: { count: "*", where: { attending: { equals: true } } },
+      },
+      expression: "aggregates.attending - aggregates.checkedIn",
+    },
+  ],
+};
+```
+
+## Options reference
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `label` | `string` **required** | Title displayed on the metric card. |
+| `color` | `MetricColor` | Theme palette accent (`"purple"`, `"emerald"`, `"amber"`, `"rose"`, `"blue"`, `"indigo"`, `"cyan"`, `"orange"`). |
+| `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`). |
+| `aggregate` | `AggregateOperation` | Single operation `{ count/sum/avg/min/max: field, where?, cast?: "number" }`. |
+| `aggregates` | `Record<string, AggregateOperation>` | Named map of operations referenced in `expression` as `aggregates.key`. |
+| `transform` | `string` | JEXL formula evaluated over `value` for single aggregates (e.g. `"value * 100"`). |
+| `expression` | `string` | JEXL formula evaluated over `aggregates` (e.g. `"aggregates.a + aggregates.b"`). |
+| `format` | `"currency"` \| `"number"` \| `"percent"` | Formatter applied to the final number. |
+| `currency` | `string` | 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. |
+| `subMetrics` | `ViewSubMetric[]` | Array of sub-metrics displayed in a compact breakdown footer under the main card. |
+
+## UX guardrails
+
+- **2–4 cards per view**: Keep the metric row focused on primary operational indicators.
+- **Percentages are 0–100**: Formulas formatted with `format: "percent"` should output values in the range `0–100`.
+- **Adaptive mobile layout**: Cards with `subMetrics` automatically expand full-width on mobile viewports for clean horizontal readability.
+
+## Next steps
+
+- Add workflow buttons — [Actions](/docs/model-content/operational-views/actions)
+- Configure view layouts — [Define a view](/docs/model-content/operational-views/define-view)
+- Layout best practices — [UX guidelines](/docs/model-content/operational-views/ux-guidelines)

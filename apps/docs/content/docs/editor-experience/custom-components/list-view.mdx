@@ -3,22 +3,28 @@ title: List View
 description: Inject your own components around a collection's list — a header, a banner above the table, a summary below it — using the four list slots.
 ---
 
-The collection list is where editors browse, filter, and act on records. You can't rebuild it, but you can add your own components around it: a header with a custom action, a banner above the table, a summary row or custom pagination below. Dyrected gives you four slots on every collection list for this.
+The collection list is where editors browse, filter, and act on records. You can't rebuild it, but you can add your own components around it: a header with a custom action, a banner above the table, a summary row or custom pagination below. Dyrected gives you four slots on every collection list for this — now aliased as **operational view slots** so the same content mounts inside `table`/`kanban`/`calendar`/`cards`/`spreadsheet` workspaces. See [Routing and preferences](/docs/model-content/operational-views/routing-and-preferences) for the mapping.
 
-By the end of this page you should know the four list slots, the rich set of props your slot components receive, and how to register them per collection. This page assumes the declare-then-provide pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview).
+By the end of this page you should know the four list slots (and their view aliases), the rich set of props your slot components receive, and how to register them per collection. This page assumes the declare-then-provide pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview).
 
-## The four slots
+## The four slots (and their view aliases)
 
-A collection list has four injection points, top to bottom:
+A collection list has four injection points, top to bottom. The names below are the legacy `beforeList` keys — they still work inside operational views via an alias, with new `beforeView*` names preferred:
 
-- **`beforeList`** — above everything, including the toolbar.
-- **`beforeListTable`** — between the toolbar and the table.
-- **`afterListTable`** — directly below the table.
-- **`afterList`** — at the very bottom.
+| Legacy | View alias (preferred) | Where it renders |
+| --- | --- | --- |
+| `beforeList` | `beforeViewHeader` | Above everything, including the toolbar |
+| `beforeListTable` | `beforeViewContent` | Between the toolbar and the table/grid |
+| `afterListTable` | `afterViewContent` | Directly below the table/grid |
+| `afterList` | `afterViewContent` | At the very bottom |
 
-Each is a list, so you can stack components. Unlike dashboard slots, these are declared **per collection**, under that collection's `admin.components`:
+Dyrected seamlessly bridges `beforeList` to `beforeViewHeader` and other slot keys, ensuring existing custom component registrations continue functioning across all operational layouts.
+
+Each slot accepts an array of component keys so you can stack multiple extensions. Declare slot components per collection under `admin.components`:
 
 ```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
 export const Posts = defineCollection({
   slug: "posts",
   admin: {
@@ -27,7 +33,10 @@ export const Posts = defineCollection({
       afterListTable: ["posts-summary"],
     },
   },
-  fields: [...],
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", unique: true }),
+  ],
 });
 ```
 
