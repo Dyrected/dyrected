@@ -64,6 +64,38 @@ export const recipes: readonly Recipe[] = [
     "snippetStatus": "validated"
   },
   {
+    "id": "calendar-schedule-view",
+    "title": "Set up a Calendar schedule view",
+    "description": "Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.",
+    "problem": "Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates.",
+    "summary": "Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.",
+    "category": "admin-experience",
+    "runtime": "cloud",
+    "runtimeNotes": "Standard calendar view rendering ISO datetime fields in ReUI calendar components.",
+    "intents": [
+      "create a calendar view",
+      "display bookings on a calendar",
+      "schedule appointments on monthly/weekly view",
+      "map dateField to an event calendar"
+    ],
+    "concepts": [
+      "defineView",
+      "layout: calendar",
+      "dateField",
+      "columns",
+      "actions"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/overview",
+      "/docs/model-content/operational-views/define-view",
+      "/docs/model-content/operational-views/layouts/calendar"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineNumberField,\n  defineDateTimeField,\n  defineTextareaField,\n  defineView,\n} from \"@dyrected/core\";\n\nexport const tastingScheduleView = defineView({\n  slug: \"tasting-schedule\",\n  label: \"Tasting Schedule\",\n  icon: \"Calendar\",\n  layout: \"calendar\",\n  dateField: \"appointmentDate\",\n  columns: [\"guestName\", \"partySize\", \"specialRequests\"],\n});\n\nexport const Appointments = defineCollection({\n  slug: \"appointments\",\n  fields: [\n    defineTextField({ name: \"guestName\", label: \"Guest Name\", required: true }),\n    defineDateTimeField({ name: \"appointmentDate\", label: \"Appointment Date\", required: true }),\n    defineNumberField({ name: \"partySize\", label: \"Party Size\", defaultValue: 2 }),\n    defineTextareaField({ name: \"specialRequests\", label: \"Special Requests\" }),\n  ],\n  views: [tastingScheduleView],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/calendar-schedule-view",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "category-taxonomy",
     "title": "Create a category taxonomy for content",
     "description": "Use a reusable categories collection and a has-many relationship from content entries that need tagging.",
@@ -343,6 +375,38 @@ export const recipes: readonly Recipe[] = [
     "snippetStatus": "validated"
   },
   {
+    "id": "kanban-pipeline-view",
+    "title": "Build a Kanban pipeline board",
+    "description": "Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.",
+    "problem": "Fulfillment teams need to see orders progress across stages (Requested → Paid → Collected) and drag cards between columns to update status.",
+    "summary": "Configure a Kanban operational view using defineView with layout: 'kanban', groupBy: 'statusField', and quick status actions.",
+    "category": "admin-experience",
+    "runtime": "cloud",
+    "runtimeNotes": "Cloud-safe drag-and-drop Kanban board with declarative field updates.",
+    "intents": [
+      "create a kanban board view",
+      "group records into status columns",
+      "build an order fulfillment pipeline",
+      "drag cards to change document status"
+    ],
+    "concepts": [
+      "defineView",
+      "layout: kanban",
+      "groupBy",
+      "columns",
+      "actions"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/overview",
+      "/docs/model-content/operational-views/define-view",
+      "/docs/model-content/operational-views/layouts/kanban"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineBooleanField,\n  defineNumberField,\n  defineSelectField,\n  defineView,\n  defineAction,\n} from \"@dyrected/core\";\n\nexport const markPaidAction = defineAction({\n  name: \"markPaid\",\n  label: \"Mark Paid\",\n  icon: \"CheckCircle2\",\n  type: \"row\",\n  mutation: { status: \"paid\", paidAt: \"now()\" },\n});\n\nexport const markCollectedAction = defineAction({\n  name: \"markCollected\",\n  label: \"Mark Collected\",\n  icon: \"PackageCheck\",\n  type: \"row\",\n  mutation: { status: \"collected\", collectedAt: \"now()\" },\n});\n\nexport const fulfillmentPipelineView = defineView({\n  slug: \"fulfillment-pipeline\",\n  label: \"Order Fulfillment\",\n  icon: \"Shirt\",\n  layout: \"kanban\",\n  groupBy: \"status\",\n  columns: [\"customerName\", \"itemSize\", \"quantity\"],\n  actions: [markPaidAction, markCollectedAction],\n});\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"customerName\", label: \"Customer Name\", required: true }),\n    defineSelectField({\n      name: \"status\",\n      label: \"Order Status\",\n      options: [\"requested\", \"paid\", \"collected\"],\n      defaultValue: \"requested\",\n    }),\n    defineSelectField({\n      name: \"itemSize\",\n      label: \"Size\",\n      options: [\"S\", \"M\", \"L\", \"XL\", \"XXL\"],\n    }),\n    defineNumberField({ name: \"quantity\", label: \"Quantity\", defaultValue: 1 }),\n  ],\n  views: [fulfillmentPipelineView],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/kanban-pipeline-view",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "navigation-global-links",
     "title": "Create a navigation global with nested links",
     "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
@@ -371,6 +435,74 @@ export const recipes: readonly Recipe[] = [
     "requires": [],
     "source": "import { defineArrayField, defineGlobal, defineTextField, defineUrlField } from \"@dyrected/core\";\n\nexport const Navigation = defineGlobal({\n  slug: \"navigation\",\n  label: \"Navigation\",\n  fields: [\n    defineArrayField({\n      name: \"items\",\n      label: \"Navigation items\",\n      fields: [\n        defineTextField({ name: \"label\", label: \"Label\", required: true }),\n        defineUrlField({ name: \"link\", label: \"Link\", required: true }),\n        defineArrayField({\n          name: \"children\",\n          label: \"Child links\",\n          fields: [\n            defineTextField({ name: \"label\", label: \"Label\", required: true }),\n            defineUrlField({ name: \"link\", label: \"Link\", required: true }),\n          ],\n        }),\n      ],\n    }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/navigation-global-links",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "operational-metrics",
+    "title": "Add KPI metric cards above a view",
+    "description": "Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.",
+    "problem": "Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning.",
+    "summary": "Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.",
+    "category": "admin-experience",
+    "runtime": "cloud",
+    "runtimeNotes": "Cloud-safe database aggregations and browser JEXL evaluation for real-time KPI metrics.",
+    "intents": [
+      "add summary cards above a table view",
+      "calculate total revenue from quantity and unit price",
+      "display door check-in attendance percentage",
+      "configure aggregate and subMetrics on a view"
+    ],
+    "concepts": [
+      "defineView",
+      "metrics",
+      "aggregate",
+      "aggregates",
+      "transform",
+      "expression",
+      "subMetrics"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/overview",
+      "/docs/model-content/operational-views/metrics",
+      "/docs/model-content/operational-views/define-view"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineBooleanField,\n  defineNumberField,\n  defineSelectField,\n  defineView,\n} from \"@dyrected/core\";\n\nexport const rsvpMetricsView = defineView({\n  slug: \"rsvp-overview\",\n  label: \"RSVP Overview\",\n  layout: \"table\",\n  columns: [\"guestName\", \"attending\", \"outfitCount\"],\n  metrics: [\n    {\n      label: \"Total Attending\",\n      color: \"emerald\",\n      aggregate: { count: \"*\", where: { attending: { equals: true } } },\n    },\n    {\n      label: \"Outfit Revenue\",\n      color: \"rose\",\n      format: \"currency\",\n      currency: \"USD\",\n      aggregate: {\n        sum: \"outfitCount\",\n        cast: \"number\",\n        where: { outfitStatus: { in: [\"paid\", \"collected\"] } },\n      },\n      transform: \"value * 150\",\n      subMetrics: [\n        {\n          label: \"Paid Units\",\n          aggregate: { sum: \"outfitCount\", cast: \"number\", where: { outfitStatus: { equals: \"paid\" } } },\n        },\n      ],\n    },\n    {\n      label: \"Attendance Rate\",\n      color: \"purple\",\n      aggregates: {\n        totalGuests: { count: \"*\" },\n        confirmed: { count: \"*\", where: { attending: { equals: true } } },\n      },\n      expression: \"math.round((aggregates.confirmed / aggregates.totalGuests) * 100, 1)\",\n      format: \"percent\",\n    },\n  ],\n});\n\nexport const EventRsvps = defineCollection({\n  slug: \"event-rsvps\",\n  fields: [\n    defineTextField({ name: \"guestName\", label: \"Guest Name\", required: true }),\n    defineBooleanField({ name: \"attending\", label: \"Attending\" }),\n    defineSelectField({\n      name: \"outfitStatus\",\n      label: \"Outfit Status\",\n      options: [\"requested\", \"paid\", \"collected\"],\n    }),\n    defineNumberField({ name: \"outfitCount\", label: \"Outfits\", defaultValue: 1 }),\n  ],\n  views: [rsvpMetricsView],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/operational-metrics",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "operational-table-view",
+    "title": "Configure an operational table view",
+    "description": "Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.",
+    "problem": "Front-of-house staff need a fast list of confirmed attendees with a single-click check-in button, without wading through full collection fields.",
+    "summary": "Define a dedicated table view using defineView, filtering confirmed records and attaching a declarative checkIn row action.",
+    "category": "admin-experience",
+    "runtime": "cloud",
+    "runtimeNotes": "Fully declarative view and mutation action compatible with Dyrected Cloud and self-hosted runtimes.",
+    "intents": [
+      "create a filtered table view",
+      "add a check-in button to table rows",
+      "customize visible columns on an operational table",
+      "define an operational view for staff"
+    ],
+    "concepts": [
+      "defineView",
+      "defineAction",
+      "layout: table",
+      "filter",
+      "columns",
+      "actions"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/overview",
+      "/docs/model-content/operational-views/define-view",
+      "/docs/model-content/operational-views/layouts/table",
+      "/docs/model-content/operational-views/actions"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineBooleanField,\n  defineNumberField,\n  defineDateTimeField,\n  defineView,\n  defineAction,\n} from \"@dyrected/core\";\n\nexport const checkInAction = defineAction({\n  name: \"checkIn\",\n  label: \"Check In\",\n  icon: \"UserCheck\",\n  type: \"row\",\n  confirm: \"Confirm guest check-in at the door?\",\n  mutation: { checkedIn: true, checkedInAt: \"now()\" },\n});\n\nexport const attendingGuestsView = defineView({\n  slug: \"attending-guests\",\n  label: \"Attending Guests\",\n  icon: \"UserCheck\",\n  layout: \"table\",\n  filter: { attending: { equals: true } },\n  columns: [\"name\", \"guestCount\", \"tableNumber\", \"checkedIn\"],\n  sort: { field: \"name\", direction: \"asc\" },\n  actions: [checkInAction],\n});\n\nexport const GuestResponses = defineCollection({\n  slug: \"guest-responses\",\n  fields: [\n    defineTextField({ name: \"name\", label: \"Full Name\", required: true }),\n    defineTextField({ name: \"email\", label: \"Email\" }),\n    defineBooleanField({ name: \"attending\", label: \"Attending\" }),\n    defineNumberField({ name: \"guestCount\", label: \"Plus-Ones\", defaultValue: 0 }),\n    defineNumberField({ name: \"tableNumber\", label: \"Table Number\" }),\n    defineBooleanField({ name: \"checkedIn\", label: \"Checked In\", defaultValue: false }),\n    defineDateTimeField({ name: \"checkedInAt\", label: \"Checked In At\" }),\n  ],\n  views: [attendingGuestsView],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/operational-table-view",
     "snippetStatus": "validated"
   },
   {

@@ -4430,6 +4430,153 @@ export const endpoints: readonly EndpointReference[] = [
     ]
   },
   {
+    "id": "GET /api/collections/guest-responses",
+    "method": "GET",
+    "path": "/api/collections/guest-responses",
+    "summary": "Find Guest Responses",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "where",
+        "in": "query",
+        "required": false,
+        "description": "JSON filter"
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "description": "Free-text search across configured searchable fields"
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "description": "Sort field (e.g. -createdAt)"
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/guest-responses",
+    "method": "POST",
+    "path": "/api/collections/guest-responses",
+    "summary": "Create Guest response",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/guest-responses/{id}",
+    "method": "DELETE",
+    "path": "/api/collections/guest-responses/{id}",
+    "summary": "Delete Guest response",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "204"
+    ]
+  },
+  {
+    "id": "GET /api/collections/guest-responses/{id}",
+    "method": "GET",
+    "path": "/api/collections/guest-responses/{id}",
+    "summary": "Get a single Guest response",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "PATCH /api/collections/guest-responses/{id}",
+    "method": "PATCH",
+    "path": "/api/collections/guest-responses/{id}",
+    "summary": "Update Guest response",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/guest-responses/aggregate",
+    "method": "POST",
+    "path": "/api/collections/guest-responses/aggregate",
+    "summary": "Aggregate Guest Responses",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400",
+      "403"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/guest-responses/delete-many",
+    "method": "DELETE",
+    "path": "/api/collections/guest-responses/delete-many",
+    "summary": "Delete multiple Guest Responses",
+    "tags": [
+      "Collection: Guest Responses"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
     "id": "GET /api/collections/media",
     "method": "GET",
     "path": "/api/collections/media",

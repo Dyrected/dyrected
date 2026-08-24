@@ -1,0 +1,23 @@
+{
+  "id": "kanban-pipeline-view",
+  "title": "Build a Kanban pipeline board",
+  "description": "Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.",
+  "problem": "Fulfillment teams need to see orders progress across stages (Requested → Paid → Collected) and drag cards between columns to update status.",
+  "summary": "Configure a Kanban operational view using defineView with layout: 'kanban', groupBy: 'statusField', and quick status actions.",
+  "category": "admin-experience",
+  "runtime": "cloud",
+  "runtimeNotes": "Cloud-safe drag-and-drop Kanban board with declarative field updates.",
+  "intents": [
+    "create a kanban board view",
+    "group records into status columns",
+    "build an order fulfillment pipeline",
+    "drag cards to change document status"
+  ],
+  "concepts": ["defineView", "layout: kanban", "groupBy", "columns", "actions"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/overview",
+    "/docs/model-content/operational-views/define-view",
+    "/docs/model-content/operational-views/layouts/kanban"
+  ],
+  "requires": []
+}

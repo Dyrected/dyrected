@@ -7,6 +7,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 
+import { useSearchParams } from "react-router-dom"
 import { Checkbox } from "../../../../components/ui/checkbox"
 import { DataTable } from "./data-table"
 import { DataTableToolbar } from "./data-table-toolbar"
@@ -65,18 +66,43 @@ export function TableLayout({
     () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
     [toolbarStateKey, legacyToolbarStateKey],
   )
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [pagination, setPagination] = React.useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: storedState?.pageSize ?? 20,
-  })
-  const [sorting, setSorting] = React.useState<SortingState>(
-    (storedState?.sorting as SortingState | undefined) ??
-      (view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : []),
-  )
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
-  )
+  // URL is source of truth on first render — fallback to storage → view defaults.
+  const getInitialPagination = (): PaginationState => {
+    const pageParam = searchParams.get("page")
+    const limitParam = searchParams.get("limit")
+    if (pageParam || limitParam) {
+      const pageIndex = pageParam ? Math.max(0, (Number(pageParam) || 1) - 1) : 0
+      const pageSize = limitParam ? Math.max(1, Number(limitParam) || 20) : (storedState?.pageSize ?? 20)
+      return { pageIndex, pageSize }
+    }
+    return { pageIndex: 0, pageSize: storedState?.pageSize ?? 20 }
+  }
+  const getInitialSorting = (): SortingState => {
+    const sortParam = searchParams.get("sort")
+    if (sortParam) {
+      const parts = sortParam.split(",").filter(Boolean)
+      const parsed = parts.map((p) => (p.startsWith("-") ? { id: p.slice(1), desc: true } : { id: p, desc: false }))
+      if (parsed.length) return parsed as SortingState
+    }
+    if (storedState?.sorting) return storedState.sorting as SortingState
+    return view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : []
+  }
+  const getInitialFilters = (): ColumnFiltersState => {
+    const f = searchParams.get("filters")
+    if (f) {
+      try {
+        const parsed = JSON.parse(f)
+        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
+      } catch {}
+    }
+    return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
+  }
+
+  const [pagination, setPagination] = React.useState<PaginationState>(getInitialPagination)
+  const [sorting, setSorting] = React.useState<SortingState>(getInitialSorting)
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
   const [rowSelection, setRowSelection] = React.useState({})
 
   const handleSortingChange = React.useCallback(
@@ -206,6 +232,29 @@ export function TableLayout({
     })
   }, [view.filter, columnFilters, searchColumnId, allColumnIds, schema])
 
+  // Keep URL in sync with filter / sort / pagination (replace, not push).
+  React.useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    const sortStr = sorting.map((s) => `${s.desc ? "-" : ""}${s.id}`).join(",")
+    if (sortStr) next.set("sort", sortStr)
+    else next.delete("sort")
+    if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
+    else next.delete("filters")
+    const pageStr = String(pagination.pageIndex + 1)
+    const limitStr = String(pagination.pageSize)
+    // Only store page/limit when non-default to keep URLs tidy, but always
+    // store page when >1 so deep links work.
+    if (pagination.pageIndex > 0) next.set("page", pageStr)
+    else next.delete("page")
+    if (pagination.pageSize !== 20) next.set("limit", limitStr)
+    else next.delete("limit")
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true })
+    }
+    // Mirror to sessionStorage as fallback when URL is shared without params.
+    persistToolbarState(toolbarStateKey, { sorting, columnFilters, pageSize: pagination.pageSize })
+  }, [sorting, columnFilters, pagination.pageIndex, pagination.pageSize, searchParams, setSearchParams, toolbarStateKey])
+
   const {
     data: serverDocs,
     total,
@@ -233,7 +282,7 @@ export function TableLayout({
       pagination,
     },
     onSortingChange: (updater) => {
-      setSorting(updater)
+      handleSortingChange(updater as any)
       setPagination((prev) => ({ ...prev, pageIndex: 0 }))
     },
     onColumnFiltersChange: (updater) => {

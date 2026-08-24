@@ -1,0 +1,65 @@
+---
+title: Set up a Calendar schedule view
+description: Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
+runtime: cloud
+runtimeGroup: recipe-calendar-schedule-view
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
+
+## Use this when
+
+- create a calendar view
+- display bookings on a calendar
+- schedule appointments on monthly/weekly view
+- map dateField to an event calendar
+
+## Dyrected concepts
+
+`defineView`, `layout: calendar`, `dateField`, `columns`, `actions`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineDateTimeField,
+  defineTextareaField,
+  defineView,
+} from "@dyrected/core";
+
+export const tastingScheduleView = defineView({
+  slug: "tasting-schedule",
+  label: "Tasting Schedule",
+  icon: "Calendar",
+  layout: "calendar",
+  dateField: "appointmentDate",
+  columns: ["guestName", "partySize", "specialRequests"],
+});
+
+export const Appointments = defineCollection({
+  slug: "appointments",
+  fields: [
+    defineTextField({ name: "guestName", label: "Guest Name", required: true }),
+    defineDateTimeField({ name: "appointmentDate", label: "Appointment Date", required: true }),
+    defineNumberField({ name: "partySize", label: "Party Size", defaultValue: 2 }),
+    defineTextareaField({ name: "specialRequests", label: "Special Requests" }),
+  ],
+  views: [tastingScheduleView],
+});
+```
+{/* GENERATED:RECIPE:END */}

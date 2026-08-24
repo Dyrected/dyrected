@@ -21,6 +21,7 @@ import { Search } from "lucide-react"
 
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { useQueryClient } from "@tanstack/react-query"
+import { useSearchParams } from "react-router-dom"
 import { Input } from "../../../../components/ui/input"
 import { KanbanCard } from "./kanban-card"
 import { KanbanColumn } from "./kanban-column"
@@ -120,10 +121,19 @@ export function KanbanLayout({
     () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
     [toolbarStateKey, legacyToolbarStateKey],
   )
-  const [globalFilter, setGlobalFilter] = React.useState("")
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
-  )
+  const [searchParams, setSearchParams] = useSearchParams()
+  const getInitialKanbanFilters = (): ColumnFiltersState => {
+    const f = searchParams.get("filters")
+    if (f) {
+      try {
+        const parsed = JSON.parse(f)
+        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
+      } catch {}
+    }
+    return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
+  }
+  const [globalFilter, setGlobalFilter] = React.useState(() => searchParams.get("search") ?? "")
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialKanbanFilters)
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -177,6 +187,16 @@ export function KanbanLayout({
       schema,
     })
   }, [view.filter, columnFilters, globalFilter, allFieldIds, schema])
+
+  React.useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    if (globalFilter) next.set("search", globalFilter)
+    else next.delete("search")
+    if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
+    else next.delete("filters")
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
+    persistToolbarState(toolbarStateKey, { columnFilters })
+  }, [globalFilter, columnFilters, searchParams, setSearchParams, toolbarStateKey])
 
   /**
    * Grouped mode fetches each column independently (paginated, parallel) with

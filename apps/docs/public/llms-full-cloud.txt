@@ -304,6 +304,13 @@ The table below is generated from a representative maximal configuration so it c
 | Method | Path | Summary | Authentication |
 | --- | --- | --- | --- |
 | GET | `/api/audit` | Get audit entries across all readable audited collections | Required |
+| GET | `/api/collections/guest-responses` | Find Guest Responses | Required |
+| POST | `/api/collections/guest-responses` | Create Guest response | Required |
+| DELETE | `/api/collections/guest-responses/{id}` | Delete Guest response | Required |
+| GET | `/api/collections/guest-responses/{id}` | Get a single Guest response | Required |
+| PATCH | `/api/collections/guest-responses/{id}` | Update Guest response | Required |
+| POST | `/api/collections/guest-responses/aggregate` | Aggregate Guest Responses | Required |
+| DELETE | `/api/collections/guest-responses/delete-many` | Delete multiple Guest Responses | Required |
 | GET | `/api/collections/media` | Find Media | Required |
 | POST | `/api/collections/media` | Create Media item | Required |
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
@@ -7410,6 +7417,7 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 
 - [Archive records instead of deleting them](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Content should disappear from normal views without being permanently deleted from the database. Summary: Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.
 - [Generate a slug from a title](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
+- [Set up a Calendar schedule view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
@@ -7419,7 +7427,10 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
 - [Create a document download library](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
+- [Build a Kanban pipeline board](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kanban-pipeline-view) — Problem: Fulfillment teams need to see orders progress across stages (Requested → Paid → Collected) and drag cards between columns to update status. Summary: Configure a Kanban operational view using defineView with layout: 'kanban', groupBy: 'statusField', and quick status actions.
 - [Create a navigation global with nested links](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links) — Problem: Editors need to manage shared site navigation without hardcoding links into the frontend. Summary: Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.
+- [Add KPI metric cards above a view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-metrics) — Problem: Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning. Summary: Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.
+- [Configure an operational table view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view) — Problem: Front-of-house staff need a fast list of confirmed attendees with a single-click check-in button, without wading through full collection fields. Summary: Define a dedicated table view using defineView, filtering confirmed records and attaching a declarative checkIn row action.
 - [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Records should belong to one user, but administrators still need a way to review or fix any entry. Summary: Scope writes to the owner by default and return `true` for admin users when they need broader access.
 - [Limit documents to their owner](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Signed-in users should only see or manage the records they own. Summary: Scope reads and writes to the current user in access control, then stamp ownership when records are created.
 - [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/page-builder-blocks) — Problem: Editors need to build or rearrange page sections without turning every page into one giant content object. Summary: Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.
@@ -7432,6 +7443,69 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Create a site settings global](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/site-settings-global) — Problem: You need one shared place for site name, support details, and other site-wide settings. Summary: Use a global for singleton content that should be edited once and reused across the site or app.
 - [Scope content to the current workspace](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Users should only see or manage records that belong to their current workspace or organization. Summary: Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.
 - [Create a media upload collection](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/upload-collection) — Problem: Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents. Summary: Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.
+
+---
+
+## Set up a Calendar schedule view
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+
+Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
+
+## Use this when
+
+- create a calendar view
+- display bookings on a calendar
+- schedule appointments on monthly/weekly view
+- map dateField to an event calendar
+
+## Dyrected concepts
+
+`defineView`, `layout: calendar`, `dateField`, `columns`, `actions`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineDateTimeField,
+  defineTextareaField,
+  defineView,
+} from "@dyrected/core";
+
+export const tastingScheduleView = defineView({
+  slug: "tasting-schedule",
+  label: "Tasting Schedule",
+  icon: "Calendar",
+  layout: "calendar",
+  dateField: "appointmentDate",
+  columns: ["guestName", "partySize", "specialRequests"],
+});
+
+export const Appointments = defineCollection({
+  slug: "appointments",
+  fields: [
+    defineTextField({ name: "guestName", label: "Guest Name", required: true }),
+    defineDateTimeField({ name: "appointmentDate", label: "Appointment Date", required: true }),
+    defineNumberField({ name: "partySize", label: "Party Size", defaultValue: 2 }),
+    defineTextareaField({ name: "specialRequests", label: "Special Requests" }),
+  ],
+  views: [tastingScheduleView],
+});
+```
 
 ---
 
@@ -8023,6 +8097,96 @@ export const Posts = defineCollection({
 
 ---
 
+## Build a Kanban pipeline board
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kanban-pipeline-view
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+
+Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.
+
+## Use this when
+
+- create a kanban board view
+- group records into status columns
+- build an order fulfillment pipeline
+- drag cards to change document status
+
+## Dyrected concepts
+
+`defineView`, `layout: kanban`, `groupBy`, `columns`, `actions`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineSelectField,
+  defineView,
+  defineAction,
+} from "@dyrected/core";
+
+export const markPaidAction = defineAction({
+  name: "markPaid",
+  label: "Mark Paid",
+  icon: "CheckCircle2",
+  type: "row",
+  mutation: { status: "paid", paidAt: "now()" },
+});
+
+export const markCollectedAction = defineAction({
+  name: "markCollected",
+  label: "Mark Collected",
+  icon: "PackageCheck",
+  type: "row",
+  mutation: { status: "collected", collectedAt: "now()" },
+});
+
+export const fulfillmentPipelineView = defineView({
+  slug: "fulfillment-pipeline",
+  label: "Order Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  groupBy: "status",
+  columns: ["customerName", "itemSize", "quantity"],
+  actions: [markPaidAction, markCollectedAction],
+});
+
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: ["requested", "paid", "collected"],
+      defaultValue: "requested",
+    }),
+    defineSelectField({
+      name: "itemSize",
+      label: "Size",
+      options: ["S", "M", "L", "XL", "XXL"],
+    }),
+    defineNumberField({ name: "quantity", label: "Quantity", defaultValue: 1 }),
+  ],
+  views: [fulfillmentPipelineView],
+});
+```
+
+---
+
 ## Create a navigation global with nested links
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links
@@ -8077,6 +8241,184 @@ export const Navigation = defineGlobal({
       ],
     }),
   ],
+});
+```
+
+---
+
+## Add KPI metric cards above a view
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-metrics
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+
+Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
+
+## Use this when
+
+- add summary cards above a table view
+- calculate total revenue from quantity and unit price
+- display door check-in attendance percentage
+- configure aggregate and subMetrics on a view
+
+## Dyrected concepts
+
+`defineView`, `metrics`, `aggregate`, `aggregates`, `transform`, `expression`, `subMetrics`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineSelectField,
+  defineView,
+} from "@dyrected/core";
+
+export const rsvpMetricsView = defineView({
+  slug: "rsvp-overview",
+  label: "RSVP Overview",
+  layout: "table",
+  columns: ["guestName", "attending", "outfitCount"],
+  metrics: [
+    {
+      label: "Total Attending",
+      color: "emerald",
+      aggregate: { count: "*", where: { attending: { equals: true } } },
+    },
+    {
+      label: "Outfit Revenue",
+      color: "rose",
+      format: "currency",
+      currency: "USD",
+      aggregate: {
+        sum: "outfitCount",
+        cast: "number",
+        where: { outfitStatus: { in: ["paid", "collected"] } },
+      },
+      transform: "value * 150",
+      subMetrics: [
+        {
+          label: "Paid Units",
+          aggregate: { sum: "outfitCount", cast: "number", where: { outfitStatus: { equals: "paid" } } },
+        },
+      ],
+    },
+    {
+      label: "Attendance Rate",
+      color: "purple",
+      aggregates: {
+        totalGuests: { count: "*" },
+        confirmed: { count: "*", where: { attending: { equals: true } } },
+      },
+      expression: "math.round((aggregates.confirmed / aggregates.totalGuests) * 100, 1)",
+      format: "percent",
+    },
+  ],
+});
+
+export const EventRsvps = defineCollection({
+  slug: "event-rsvps",
+  fields: [
+    defineTextField({ name: "guestName", label: "Guest Name", required: true }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineSelectField({
+      name: "outfitStatus",
+      label: "Outfit Status",
+      options: ["requested", "paid", "collected"],
+    }),
+    defineNumberField({ name: "outfitCount", label: "Outfits", defaultValue: 1 }),
+  ],
+  views: [rsvpMetricsView],
+});
+```
+
+---
+
+## Configure an operational table view
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+
+Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.
+
+## Use this when
+
+- create a filtered table view
+- add a check-in button to table rows
+- customize visible columns on an operational table
+- define an operational view for staff
+
+## Dyrected concepts
+
+`defineView`, `defineAction`, `layout: table`, `filter`, `columns`, `actions`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+} from "@dyrected/core";
+
+export const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const attendingGuestsView = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  icon: "UserCheck",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "guestCount", "tableNumber", "checkedIn"],
+  sort: { field: "name", direction: "asc" },
+  actions: [checkInAction],
+});
+
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineTextField({ name: "email", label: "Email" }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0 }),
+    defineNumberField({ name: "tableNumber", label: "Table Number" }),
+    defineBooleanField({ name: "checkedIn", label: "Checked In", defaultValue: false }),
+    defineDateTimeField({ name: "checkedInAt", label: "Checked In At" }),
+  ],
+  views: [attendingGuestsView],
 });
 ```
 

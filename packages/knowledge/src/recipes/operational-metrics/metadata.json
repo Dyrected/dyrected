@@ -1,0 +1,23 @@
+{
+  "id": "operational-metrics",
+  "title": "Add KPI metric cards above a view",
+  "description": "Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.",
+  "problem": "Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning.",
+  "summary": "Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.",
+  "category": "admin-experience",
+  "runtime": "cloud",
+  "runtimeNotes": "Cloud-safe database aggregations and browser JEXL evaluation for real-time KPI metrics.",
+  "intents": [
+    "add summary cards above a table view",
+    "calculate total revenue from quantity and unit price",
+    "display door check-in attendance percentage",
+    "configure aggregate and subMetrics on a view"
+  ],
+  "concepts": ["defineView", "metrics", "aggregate", "aggregates", "transform", "expression", "subMetrics"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/overview",
+    "/docs/model-content/operational-views/metrics",
+    "/docs/model-content/operational-views/define-view"
+  ],
+  "requires": []
+}

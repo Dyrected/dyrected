@@ -2695,6 +2695,13 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/calendar-schedule-view#example-1",
+    "page": "/examples-and-recipes/library/calendar-schedule-view",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/category-taxonomy#example-1",
     "page": "/examples-and-recipes/library/category-taxonomy",
     "language": "ts",
@@ -2758,8 +2765,29 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/kanban-pipeline-view#example-1",
+    "page": "/examples-and-recipes/library/kanban-pipeline-view",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/navigation-global-links#example-1",
     "page": "/examples-and-recipes/library/navigation-global-links",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/operational-metrics#example-1",
+    "page": "/examples-and-recipes/library/operational-metrics",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/operational-table-view#example-1",
+    "page": "/examples-and-recipes/library/operational-table-view",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"

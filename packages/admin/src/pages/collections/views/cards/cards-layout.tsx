@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-table"
 import { ChevronLeft, ChevronRight, Search } from "lucide-react"
 
+import { useSearchParams } from "react-router-dom"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { CardGridItem } from "./card-grid-item"
@@ -55,11 +56,29 @@ export function CardsLayout({
     () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
     [toolbarStateKey, legacyToolbarStateKey],
   )
-  const [globalFilter, setGlobalFilter] = React.useState("")
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    (storedState?.columnFilters as ColumnFiltersState | undefined) ?? [],
-  )
-  const [page, setPage] = React.useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const getInitialFilters = (): ColumnFiltersState => {
+    const f = searchParams.get("filters")
+    if (f) {
+      try {
+        const parsed = JSON.parse(f)
+        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
+      } catch {}
+    }
+    return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
+  }
+  const getInitialSearch = (): string => searchParams.get("search") ?? ""
+  const getInitialPage = (): number => {
+    const p = searchParams.get("page")
+    if (p) {
+      const n = Number(p)
+      if (!Number.isNaN(n) && n > 0) return n
+    }
+    return 1
+  }
+  const [globalFilter, setGlobalFilter] = React.useState(getInitialSearch)
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
+  const [page, setPage] = React.useState(getInitialPage)
   const pageSize = 24
 
   const handleColumnFiltersChange = React.useCallback(
@@ -122,6 +141,19 @@ export function CardsLayout({
       schema,
     })
   }, [view.filter, columnFilters, globalFilter, allFieldIds, schema])
+
+  // URL ↔ sessionStorage sync (replace, not push).
+  React.useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    if (globalFilter) next.set("search", globalFilter)
+    else next.delete("search")
+    if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
+    else next.delete("filters")
+    if (page > 1) next.set("page", String(page))
+    else next.delete("page")
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
+    persistToolbarState(toolbarStateKey, { columnFilters })
+  }, [globalFilter, columnFilters, page, searchParams, setSearchParams, toolbarStateKey])
 
   const {
     data: docs,

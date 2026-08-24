@@ -1,0 +1,24 @@
+{
+  "id": "operational-table-view",
+  "title": "Configure an operational table view",
+  "description": "Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.",
+  "problem": "Front-of-house staff need a fast list of confirmed attendees with a single-click check-in button, without wading through full collection fields.",
+  "summary": "Define a dedicated table view using defineView, filtering confirmed records and attaching a declarative checkIn row action.",
+  "category": "admin-experience",
+  "runtime": "cloud",
+  "runtimeNotes": "Fully declarative view and mutation action compatible with Dyrected Cloud and self-hosted runtimes.",
+  "intents": [
+    "create a filtered table view",
+    "add a check-in button to table rows",
+    "customize visible columns on an operational table",
+    "define an operational view for staff"
+  ],
+  "concepts": ["defineView", "defineAction", "layout: table", "filter", "columns", "actions"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/overview",
+    "/docs/model-content/operational-views/define-view",
+    "/docs/model-content/operational-views/layouts/table",
+    "/docs/model-content/operational-views/actions"
+  ],
+  "requires": []
+}

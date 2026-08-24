@@ -1,0 +1,102 @@
+---
+title: Add KPI metric cards above a view
+description: Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
+runtime: cloud
+runtimeGroup: recipe-operational-metrics
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
+
+## Use this when
+
+- add summary cards above a table view
+- calculate total revenue from quantity and unit price
+- display door check-in attendance percentage
+- configure aggregate and subMetrics on a view
+
+## Dyrected concepts
+
+`defineView`, `metrics`, `aggregate`, `aggregates`, `transform`, `expression`, `subMetrics`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineSelectField,
+  defineView,
+} from "@dyrected/core";
+
+export const rsvpMetricsView = defineView({
+  slug: "rsvp-overview",
+  label: "RSVP Overview",
+  layout: "table",
+  columns: ["guestName", "attending", "outfitCount"],
+  metrics: [
+    {
+      label: "Total Attending",
+      color: "emerald",
+      aggregate: { count: "*", where: { attending: { equals: true } } },
+    },
+    {
+      label: "Outfit Revenue",
+      color: "rose",
+      format: "currency",
+      currency: "USD",
+      aggregate: {
+        sum: "outfitCount",
+        cast: "number",
+        where: { outfitStatus: { in: ["paid", "collected"] } },
+      },
+      transform: "value * 150",
+      subMetrics: [
+        {
+          label: "Paid Units",
+          aggregate: { sum: "outfitCount", cast: "number", where: { outfitStatus: { equals: "paid" } } },
+        },
+      ],
+    },
+    {
+      label: "Attendance Rate",
+      color: "purple",
+      aggregates: {
+        totalGuests: { count: "*" },
+        confirmed: { count: "*", where: { attending: { equals: true } } },
+      },
+      expression: "math.round((aggregates.confirmed / aggregates.totalGuests) * 100, 1)",
+      format: "percent",
+    },
+  ],
+});
+
+export const EventRsvps = defineCollection({
+  slug: "event-rsvps",
+  fields: [
+    defineTextField({ name: "guestName", label: "Guest Name", required: true }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineSelectField({
+      name: "outfitStatus",
+      label: "Outfit Status",
+      options: ["requested", "paid", "collected"],
+    }),
+    defineNumberField({ name: "outfitCount", label: "Outfits", defaultValue: 1 }),
+  ],
+  views: [rsvpMetricsView],
+});
+```
+{/* GENERATED:RECIPE:END */}

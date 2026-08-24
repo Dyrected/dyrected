@@ -1,0 +1,23 @@
+{
+  "id": "calendar-schedule-view",
+  "title": "Set up a Calendar schedule view",
+  "description": "Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.",
+  "problem": "Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates.",
+  "summary": "Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.",
+  "category": "admin-experience",
+  "runtime": "cloud",
+  "runtimeNotes": "Standard calendar view rendering ISO datetime fields in ReUI calendar components.",
+  "intents": [
+    "create a calendar view",
+    "display bookings on a calendar",
+    "schedule appointments on monthly/weekly view",
+    "map dateField to an event calendar"
+  ],
+  "concepts": ["defineView", "layout: calendar", "dateField", "columns", "actions"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/overview",
+    "/docs/model-content/operational-views/define-view",
+    "/docs/model-content/operational-views/layouts/calendar"
+  ],
+  "requires": []
+}

@@ -106,6 +106,13 @@ The table below is generated from a representative maximal configuration so it c
 | Method | Path | Summary | Authentication |
 | --- | --- | --- | --- |
 | GET | `/api/audit` | Get audit entries across all readable audited collections | Required |
+| GET | `/api/collections/guest-responses` | Find Guest Responses | Required |
+| POST | `/api/collections/guest-responses` | Create Guest response | Required |
+| DELETE | `/api/collections/guest-responses/{id}` | Delete Guest response | Required |
+| GET | `/api/collections/guest-responses/{id}` | Get a single Guest response | Required |
+| PATCH | `/api/collections/guest-responses/{id}` | Update Guest response | Required |
+| POST | `/api/collections/guest-responses/aggregate` | Aggregate Guest Responses | Required |
+| DELETE | `/api/collections/guest-responses/delete-many` | Delete multiple Guest Responses | Required |
 | GET | `/api/collections/media` | Find Media | Required |
 | POST | `/api/collections/media` | Create Media item | Required |
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |

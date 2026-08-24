@@ -1,0 +1,80 @@
+---
+title: Configure an operational table view
+description: Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.
+runtime: cloud
+runtimeGroup: recipe-operational-table-view
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.
+
+## Use this when
+
+- create a filtered table view
+- add a check-in button to table rows
+- customize visible columns on an operational table
+- define an operational view for staff
+
+## Dyrected concepts
+
+`defineView`, `defineAction`, `layout: table`, `filter`, `columns`, `actions`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+} from "@dyrected/core";
+
+export const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const attendingGuestsView = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  icon: "UserCheck",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "guestCount", "tableNumber", "checkedIn"],
+  sort: { field: "name", direction: "asc" },
+  actions: [checkInAction],
+});
+
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineTextField({ name: "email", label: "Email" }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0 }),
+    defineNumberField({ name: "tableNumber", label: "Table Number" }),
+    defineBooleanField({ name: "checkedIn", label: "Checked In", defaultValue: false }),
+    defineDateTimeField({ name: "checkedInAt", label: "Checked In At" }),
+  ],
+  views: [attendingGuestsView],
+});
+```
+{/* GENERATED:RECIPE:END */}
