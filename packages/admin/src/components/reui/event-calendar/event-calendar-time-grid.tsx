@@ -276,7 +276,7 @@ function EventCalendarTimeGrid({
         data-slot="event-calendar-time-grid"
         data-view={view}
         className={cn(
-          "dy-flex dy-flex-col dy-border-t",
+          "dy-flex dy-flex-col dy-border-t dy-border-border/40",
           contained && "dy-min-h-0 dy-flex-1 dy-overflow-hidden",
           viewConfig.classNames?.timeGrid,
           className
@@ -290,13 +290,13 @@ function EventCalendarTimeGrid({
         {/* Day-header row (sticky below the nav in page scroll mode) */}
         <div
           className={cn(
-            "dy-flex dy-border-b dy-pe-[var(--ec-scrollbar-w,0px)]",
+            "dy-flex dy-border-b dy-border-border/40 dy-bg-muted/20 dy-pe-[var(--ec-scrollbar-w,0px)]",
             !contained &&
               "dy-bg-background dy-sticky dy-top-[var(--ec-sticky-offset,0px)] dy-z-20",
             viewConfig.classNames?.timeGridHeader
           )}
         >
-          <div className="dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e" />
+          <div className="dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e dy-border-border/30" />
           <div className="dy-grid dy-min-w-0 dy-flex-1" style={{ gridTemplateColumns }}>
             {days.map((day) => (
               <EventCalendarDayHeader
@@ -312,7 +312,7 @@ function EventCalendarTimeGrid({
           <div
             data-slot="event-calendar-all-day-section"
             className={cn(
-              "dy-flex dy-border-b dy-pe-[var(--ec-scrollbar-w,0px)]",
+              "dy-flex dy-border-b dy-border-border/30 dy-pe-[var(--ec-scrollbar-w,0px)]",
               viewConfig.classNames?.allDaySection
             )}
           >
@@ -327,7 +327,7 @@ function EventCalendarTimeGrid({
                     // is one bar-row tall and centers the label so it sits on
                     // the SAME baseline as the first all-day chip and stays top-
                     // aligned when the chips wrap onto more lanes
-                    "dy-text-muted-foreground dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e dy-ps-2 dy-pe-2.5 dy-pt-1.5",
+                    "dy-text-muted-foreground dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e dy-border-border/30 dy-ps-2 dy-pe-2.5 dy-pt-1.5",
                     viewConfig.classNames?.allDayLabel
                   )}
                 >
@@ -381,7 +381,7 @@ function EventCalendarDayHeader({
       data-slot="event-calendar-day-header"
       data-today={isToday || undefined}
       className={cn(
-        "data-[today]:dy-text-primary dy-min-w-0 dy-truncate dy-border-e dy-px-2 dy-py-1.5 dy-font-medium last:dy-border-e-0",
+        "data-[today]:dy-text-primary dy-min-w-0 dy-truncate dy-border-e dy-border-border/30 dy-px-3 dy-py-2 dy-text-[11px] dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground last:dy-border-e-0",
         isToday && viewConfig.todayClassName
       )}
     >
@@ -777,7 +777,7 @@ function EventCalendarAllDayCell({ day }: { day: Date }) {
       data-drop-target={isDropTarget ?? undefined}
       data-off={isOff || undefined}
       className={cn(
-        "dy-relative dy-flex dy-min-w-0 dy-flex-col dy-gap-0.5 dy-border-e dy-px-1 dy-py-1.5 last:dy-border-e-0",
+        "dy-relative dy-flex dy-min-w-0 dy-flex-col dy-gap-0.5 dy-border-e dy-border-border/30 dy-px-1 dy-py-1.5 last:dy-border-e-0",
         isOff && offClassName,
         viewConfig.dayClassName?.(day),
         // No drop-target bg fill on move/resize (see month view) - a subtle
@@ -852,7 +852,7 @@ function EventCalendarTimeGutter({
     <div
       data-slot="event-calendar-time-gutter"
       className={cn(
-        "dy-relative dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e",
+        "dy-relative dy-w-[length:var(--ec-gutter-width,4.5rem)] dy-shrink-0 dy-border-e dy-border-border/30",
         viewConfig.classNames?.timeGutter
       )}
     >
@@ -863,15 +863,18 @@ function EventCalendarTimeGutter({
         )
         // Always consult renderTimeGutterSlot (a consumer may label the first
         // slot); only the DEFAULT label is suppressed at the day-start edge.
+        const defaultLabel =
+          minutes === startHour * 60
+            ? null
+            : format(toZoned(time, settings.timeZone), labelFormat, {
+              locale: settings.locale,
+            })
         const label =
           viewConfig.renderTimeGutterSlot?.({
             time,
             hour: Math.floor(minutes / 60),
             minute: minutes % 60,
-          }) ??
-          (minutes > startHour * 60
-            ? format(time, labelFormat, { locale: settings.locale })
-            : null)
+          }) ?? defaultLabel
         return (
           <div
             key={minutes}
@@ -1090,7 +1093,7 @@ function EventCalendarDayColumn({
         { locale: settings.locale }
       )}
       className={cn(
-        "dy-relative dy-min-w-0 dy-border-e last:dy-border-e-0",
+        "dy-relative dy-min-w-0 dy-border-e dy-border-border/30 last:dy-border-e-0",
         isOff && offClassName,
         // time grid keeps today's column on the normal background (the header
         // marks today); only a consumer todayClassName can tint it

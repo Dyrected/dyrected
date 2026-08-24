@@ -134,7 +134,7 @@ function EventCalendarAgendaView({
                   role="heading"
                   aria-level={3}
                   className={cn(
-                    "dy-bg-muted/60 dy-sticky dy-top-0 dy-z-10 dy-flex dy-items-baseline dy-justify-between dy-gap-4 dy-border-b dy-px-4 dy-py-2",
+                    "dy-bg-muted/30 dy-sticky dy-top-0 dy-z-10 dy-flex dy-items-baseline dy-justify-between dy-gap-4 dy-border-b dy-border-border/40 dy-px-4 dy-py-2",
                     // The custom ScrollArea's overlay scrollbar (w-2.5 = 10px)
                     // is painted UNDER this sticky, z-10, opaque header, so the
                     // thumb vanishes behind the day bar at the top of the view.
@@ -187,7 +187,7 @@ function EventCalendarAgendaView({
           locale: settings.locale,
         })}
         className={cn(
-          "dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-overflow-hidden dy-border-t",
+          "dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-overflow-hidden dy-border-t dy-border-border/40",
           viewConfig.classNames?.agendaView,
           className
         )}
@@ -225,7 +225,7 @@ function EventCalendarAgendaItem({
       segment={segment}
       className={cn(
         // read-only list: hover only, no selected/focused styling on click
-        "hover:dy-bg-accent/40 dy-gap-3 dy-rounded-none dy-border-b dy-px-4 dy-py-2.5 dy-transition-colors",
+        "hover:dy-bg-accent/40 dy-gap-3 dy-rounded-none dy-border-b dy-border-border/30 dy-px-4 dy-py-2.5 dy-transition-colors",
         viewConfig.classNames?.agendaItem
       )}
     />

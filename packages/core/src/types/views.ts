@@ -19,7 +19,9 @@ export interface ViewActionFeatures {
   exportSelected?: boolean;
 }
 
-export interface ViewMetric {
+export type MetricColor = 'purple' | 'emerald' | 'amber' | 'rose' | 'blue' | 'indigo' | 'cyan' | 'orange' | string;
+
+export interface ViewSubMetric {
   label: string;
   aggregate?: AggregateOperation;
   aggregates?: Record<string, AggregateOperation>;
@@ -27,6 +29,19 @@ export interface ViewMetric {
   expression?: string;
   format?: 'currency' | 'number' | 'percent' | string;
   currency?: string;
+}
+
+export interface ViewMetric {
+  label: string;
+  color?: MetricColor;
+  unit?: string;
+  aggregate?: AggregateOperation;
+  aggregates?: Record<string, AggregateOperation>;
+  transform?: string;
+  expression?: string;
+  format?: 'currency' | 'number' | 'percent' | string;
+  currency?: string;
+  subMetrics?: ViewSubMetric[];
 }
 
 export interface ViewConfig {

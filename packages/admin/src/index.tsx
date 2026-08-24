@@ -179,19 +179,22 @@ function CollectionRoute() {
     return <MediaPage collectionSlug={slug!} schema={schema} />;
   }
 
-  // Operational views are the new list view. `resolveSchemas` guarantees at
-  // least one view (synthesized `list` view for collections without explicit
-  // views), so we can render directly. Legacy `?where` / `?search` URL params
-  // from v1 are merged into the view filter for backwards compatibility.
-  const rawView = (schema as any).views?.[0];
-  if (!rawView) {
-    return (
-      <AdminNotFound
-        title="View not found"
-        description={`No view is configured for collection "${slug}".`}
-      />
-    );
-  }
+  // Operational views are specialized sub-views at `/collections/:slug/views/:viewSlug`.
+  // When a user navigates to `/collections/:slug`, it serves the unfiltered master
+  // all-records table view with all collection fields accessible.
+  const hasCustomViews = Boolean((schema as any).views?.length);
+  const defaultMasterView = {
+    slug: "default",
+    label: (schema as any).labels?.plural ?? slug,
+    layout: "table" as const,
+    filter: undefined,
+    columns: undefined,
+    sort: undefined,
+    metrics: undefined,
+    actions: [],
+  };
+
+  const rawView = hasCustomViews ? defaultMasterView : ((schema as any).views?.[0] ?? defaultMasterView);
 
   // URL compat shim for legacy v1 links (`?where=<json>&search=<term>`)
   let effectiveView: typeof rawView = rawView;

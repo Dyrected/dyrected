@@ -87,6 +87,40 @@
     height: auto;
   }
 
+  /* Sexy scrollbars — thin, rounded, muted */
+  .dy-admin-ui * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   /* Dyrected defaults: Lime Paper, Signal Lime, and Violet. */
   .dy-admin-ui {
     /* Fonts */

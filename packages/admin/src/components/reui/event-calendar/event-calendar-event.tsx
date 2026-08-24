@@ -515,15 +515,15 @@ function EventCalendarEvent<TData = unknown>({
           : cn(
             // @container removes intrinsic sizing; only grid chips are containers
             // py-1: room above/below inline badges (attendee pill etc.)
-            "@container dy-gap-1.5 dy-rounded-sm dy-px-1.5 dy-py-1 dy-leading-normal",
+            "@container dy-gap-1.5 dy-rounded-md dy-px-2 dy-py-1 dy-text-xs dy-leading-tight",
             // soft tint + inset ring, not an accent border: legible on both themes
-            "dy-bg-[--ec-event-color]/15 hover:dy-bg-[--ec-event-color]/25",
+            "dy-bg-[--ec-event-color]/12 hover:dy-bg-[--ec-event-color]/22",
             // a flat tint reads darker on a dark surface, so lift it there
-            "dark:dy-bg-[--ec-event-color]/20 dark:hover:dy-bg-[--ec-event-color]/30",
-            "dy-ring-1 dy-ring-inset dy-ring-[--ec-event-color]/15",
+            "dark:dy-bg-[--ec-event-color]/18 dark:hover:dy-bg-[--ec-event-color]/28",
+            "dy-ring-1 dy-ring-inset dy-ring-[--ec-event-color]/25",
             "dy-transition-[background-color,box-shadow] dy-duration-150",
             "data-[dragging]:dy-opacity-40",
-            "data-[selected]:dy-bg-[--ec-event-color]/30 data-[selected]:dy-ring-1 data-[selected]:dy-ring-inset data-[selected]:dy-ring-[--ec-event-color]/40",
+            "data-[selected]:dy-bg-[--ec-event-color]/25 data-[selected]:dy-ring-1 data-[selected]:dy-ring-inset data-[selected]:dy-ring-[--ec-event-color]/40",
             segment.continuesBefore && "dy-rounded-s-none",
             segment.continuesAfter && "dy-rounded-e-none"
           ),

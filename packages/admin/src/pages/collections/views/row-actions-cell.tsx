@@ -20,6 +20,8 @@ interface RowActionsCellProps {
   isRunning?: (action: SerializedAction, ids: string[]) => boolean
   /** Optional manual upper limit on the number of inline action buttons. */
   maxInline?: number
+  /** If true, renders action buttons in a flex-wrap container without collapsing into a dropdown menu. */
+  wrap?: boolean
   className?: string
 }
 
@@ -61,10 +63,42 @@ function useContainerWidth<T extends HTMLElement>() {
  * Dynamically measures available container width to decide how many buttons fit inline,
  * cleanly collapsing remaining actions into a dropdown menu to prevent card overflow.
  */
-export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, className }: RowActionsCellProps) {
+export function RowActionsCell({ actions, docId, onRun, isRunning, maxInline, wrap = false, className }: RowActionsCellProps) {
   const [containerRef, width] = useContainerWidth<HTMLDivElement>()
 
   if (!actions.length) return null
+
+  if (wrap) {
+    return (
+      <div className={cn("dy-flex dy-flex-wrap dy-items-center dy-gap-2", className)}>
+        {actions.map((action) => {
+          const running = isRunning?.(action, [docId]) ?? false
+          return (
+            <Button
+              key={action.name}
+              variant="outline"
+              size="sm"
+              disabled={running}
+              title={action.label}
+              className={cn(
+                "dy-h-8 dy-px-3 dy-text-xs dy-font-medium dy-rounded-lg dy-border-border/50 dy-gap-1.5",
+                action.destructive &&
+                  "dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive",
+              )}
+              onClick={() => onRun(action, [docId])}
+            >
+              {running ? (
+                <Loader2 className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-animate-spin" />
+              ) : (
+                <IconFor action={action} />
+              )}
+              <span>{action.label}</span>
+            </Button>
+          )
+        })}
+      </div>
+    )
+  }
 
   // Calculate how many action buttons can comfortably fit within the measured width
   let dynamicMax = DEFAULT_MAX_INLINE_ACTIONS

@@ -1,14 +1,23 @@
 import { useQuery } from "@tanstack/react-query"
-import jexl from "jexl"
+import { evaluateJexlSync } from "@dyrected/core"
 import { useDyrected } from "../../../providers/dyrected-context"
-import type { SerializedViewMetric } from "./types"
+import type { SerializedViewMetric, SerializedViewSubMetric } from "./types"
 import { resolveViewFilter } from "./resolve-view-filter"
 import { formatMetricValue } from "./format-metric"
+
+export interface ResolvedSubMetric {
+  label: string
+  value: number | null
+  formatted: string
+}
 
 export interface ResolvedMetric {
   label: string
   value: number | null
   formatted: string
+  color?: string
+  unit?: string
+  subMetrics?: ResolvedSubMetric[]
 }
 
 interface UseViewMetricsOptions {
@@ -18,12 +27,20 @@ interface UseViewMetricsOptions {
   filter?: Record<string, any> | string
 }
 
+interface SubMetricPlanEntry {
+  subIndex: number
+  subMetric: SerializedViewSubMetric
+  single?: string
+  named?: Record<string, string>
+}
+
 interface MetricPlanEntry {
   index: number
   metric: SerializedViewMetric
   /** Aggregate keys for single-aggregate metrics, or named entries for multi-aggregate metrics. */
   single?: string
   named?: Record<string, string>
+  subPlans?: SubMetricPlanEntry[]
 }
 
 /**
@@ -47,19 +64,44 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
       const input: Record<string, Record<string, unknown>> = {}
       const plan: MetricPlanEntry[] = []
       metrics.forEach((metric, index) => {
+        let single: string | undefined
+        let named: Record<string, string> | undefined
+
         if (metric.aggregate) {
-          const key = `m${index}`
-          input[key] = sanitizeAggregate(metric.aggregate)
-          plan.push({ index, metric, single: key })
+          single = `m${index}`
+          input[single] = sanitizeAggregate(metric.aggregate)
         } else if (metric.aggregates) {
-          const named: Record<string, string> = {}
+          named = {}
           for (const [name, operation] of Object.entries(metric.aggregates)) {
             const key = `m${index}_${name}`
             input[key] = sanitizeAggregate(operation)
             named[name] = key
           }
-          plan.push({ index, metric, named })
         }
+
+        const subPlans: SubMetricPlanEntry[] = []
+        if (metric.subMetrics?.length) {
+          metric.subMetrics.forEach((sub, subIndex) => {
+            let subSingle: string | undefined
+            let subNamed: Record<string, string> | undefined
+
+            if (sub.aggregate) {
+              subSingle = `m${index}_s${subIndex}`
+              input[subSingle] = sanitizeAggregate(sub.aggregate)
+            } else if (sub.aggregates) {
+              subNamed = {}
+              for (const [name, operation] of Object.entries(sub.aggregates)) {
+                const key = `m${index}_s${subIndex}_${name}`
+                input[key] = sanitizeAggregate(operation)
+                subNamed[name] = key
+              }
+            }
+
+            subPlans.push({ subIndex, subMetric: sub, single: subSingle, named: subNamed })
+          })
+        }
+
+        plan.push({ index, metric, single, named, subPlans })
       })
       if (!Object.keys(input).length) return metrics.map(emptyMetric)
 
@@ -70,7 +112,7 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
         return metrics.map(emptyMetric)
       }
 
-      return plan.map(({ metric, single, named }) => {
+      return plan.map(({ metric, single, named, subPlans }) => {
         let value: number | null = null
 
         if (metric.expression && named) {
@@ -87,10 +129,35 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
           }
         }
 
+        const resolvedSubMetrics: ResolvedSubMetric[] = (subPlans ?? []).map(({ subMetric, single: subSingle, named: subNamed }) => {
+          let subValue: number | null = null
+          if (subMetric.expression && subNamed) {
+            const context: Record<string, number | null> = {}
+            for (const name of Object.keys(subMetric.aggregates ?? {})) {
+              context[name] = raw[subNamed[name]] ?? null
+            }
+            subValue = evalJexl(subMetric.expression, { aggregates: context })
+          } else if (!subMetric.expression) {
+            const base = subSingle !== undefined ? raw[subSingle] : null
+            if (base !== null && base !== undefined) {
+              subValue = subMetric.transform ? evalJexl(subMetric.transform, { value: base }) : base
+            }
+          }
+
+          return {
+            label: subMetric.label,
+            value: subValue,
+            formatted: formatMetricValue(subValue, subMetric.format, subMetric.currency),
+          }
+        })
+
         return {
           label: metric.label,
           value,
           formatted: formatMetricValue(value, metric.format, metric.currency),
+          color: metric.color,
+          unit: metric.unit,
+          subMetrics: resolvedSubMetrics.length > 0 ? resolvedSubMetrics : undefined,
         }
       })
     },
@@ -99,23 +166,10 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
   })
 }
 
-/** Evaluates a metric expression with a `math` helper object available. */
+/** Evaluates a metric expression via core's shared Jexl helpers. */
 function evalJexl(expression: string, context: Record<string, unknown>): number | null {
   try {
-    const result = jexl.evalSync(expression, {
-      ...context,
-      math: {
-        round: (value: number, decimals = 0) => {
-          const factor = 10 ** decimals
-          return Math.round(value * factor) / factor
-        },
-        floor: Math.floor,
-        ceil: Math.ceil,
-        abs: Math.abs,
-        min: (...values: number[]) => Math.min(...values),
-        max: (...values: number[]) => Math.max(...values),
-      },
-    })
+    const result = evaluateJexlSync(expression, context)
     return typeof result === "number" && Number.isFinite(result) ? result : null
   } catch {
     return null
@@ -123,7 +177,18 @@ function evalJexl(expression: string, context: Record<string, unknown>): number 
 }
 
 function emptyMetric(metric: SerializedViewMetric): ResolvedMetric {
-  return { label: metric.label, value: null, formatted: "—" }
+  return {
+    label: metric.label,
+    value: null,
+    formatted: "—",
+    color: metric.color,
+    unit: metric.unit,
+    subMetrics: metric.subMetrics?.map((sub) => ({
+      label: sub.label,
+      value: null,
+      formatted: "—",
+    })),
+  }
 }
 
 /** Keeps only valid aggregate keys so malformed configs can't leak into queries. */

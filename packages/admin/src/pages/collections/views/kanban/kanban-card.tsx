@@ -26,6 +26,8 @@ interface KanbanCardProps {
    * field preferences). Defaults to the view's configured columns.
    */
   fields?: string[]
+  /** Field ids whose label should be shown alongside the value. */
+  showLabels?: string[]
   /** Renders content-shaped skeletons instead of values; drag is disabled. */
   loading?: boolean
 }
@@ -34,7 +36,7 @@ interface KanbanCardProps {
  * Draggable card on the kanban board. Field values render through the shared
  * `RenderCell`; row-type actions attach directly to the card.
  */
-export function KanbanCard({ slug, doc, schema, client, schemas, view, rowActions, onRunAction, isRunning, fields, loading }: KanbanCardProps) {
+export function KanbanCard({ slug, doc, schema, client, schemas, view, rowActions, onRunAction, isRunning, fields, showLabels, loading }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(doc.id),
     disabled: loading,
@@ -75,8 +77,9 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
               const field = fieldsByName.get(fieldName)
               if (!field || doc[fieldName] === undefined || doc[fieldName] === null) return null
               const isTitle = fieldName === titleField
+              const showLabel = !!showLabels?.includes(fieldName) && !isTitle
               return (
-                <div key={fieldName} className={isTitle ? "dy-text-sm dy-font-medium" : "dy-text-xs"}>
+                <div key={fieldName} className={isTitle ? "dy-text-base !dy-font-bold dy-tracking-tight" : "dy-text-xs"}>
                   {isTitle ? (
                     <Link
                       to={`/collections/${slug}/${String(doc.id)}`}
@@ -86,6 +89,15 @@ export function KanbanCard({ slug, doc, schema, client, schemas, view, rowAction
                     >
                       <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
                     </Link>
+                  ) : showLabel ? (
+                    <span className="dy-inline-flex dy-items-baseline dy-gap-1.5 dy-text-xs">
+                      <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground dy-shrink-0">
+                        {field.label || fieldName}:
+                      </span>
+                      <span className="dy-min-w-0 dy-flex-1">
+                        <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
+                      </span>
+                    </span>
                   ) : (
                     <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
                   )}

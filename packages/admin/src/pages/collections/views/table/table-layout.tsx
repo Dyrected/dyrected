@@ -99,17 +99,26 @@ export function TableLayout({
    * Managed columns are the schema-driven field columns; the select column
    * stays pinned ahead of the persisted order.
    */
-  const managedColumnIds = React.useMemo(() => {
+  const { allColumnIds, defaultHiddenIds } = React.useMemo(() => {
     const fieldsByName = new Map<string, any>((schema?.fields ?? []).map((f: any) => [f.name, f]))
-    return (view.columns?.length ? view.columns : defaultManagedOrder(schema)).filter((name) =>
+    const specified = (view.columns?.length ? view.columns : defaultManagedOrder(schema)).filter((name) =>
       fieldsByName.has(name),
     )
+    const remaining = (schema?.fields ?? [])
+      .map((f: any) => f.name)
+      .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
+
+    return {
+      allColumnIds: [...specified, ...remaining],
+      defaultHiddenIds: remaining,
+    }
   }, [schema, view.columns])
 
   const columnPreferences = useColumnPreferences({
     slug,
     viewSlug: view.slug,
-    columnIds: managedColumnIds,
+    columnIds: allColumnIds,
+    defaultHidden: defaultHiddenIds,
     fixedIds: ["select"],
   })
 
@@ -180,10 +189,10 @@ export function TableLayout({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
       searchColumnId,
-      searchableFields: managedColumnIds,
+      searchableFields: allColumnIds,
       schema,
     })
-  }, [view.filter, columnFilters, searchColumnId, managedColumnIds, schema])
+  }, [view.filter, columnFilters, searchColumnId, allColumnIds, schema])
 
   const {
     data: serverDocs,
@@ -242,7 +251,7 @@ export function TableLayout({
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id as keyof typeof rowSelection])
 
   if (isParentLoading || (isPending && !serverDocs.length)) {
-    return <SkeletonTable columns={managedColumnIds.length} rows={8} aria-busy="true" />
+    return <SkeletonTable columns={allColumnIds.length} rows={8} aria-busy="true" />
   }
 
   return (

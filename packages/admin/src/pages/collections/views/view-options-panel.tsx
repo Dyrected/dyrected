@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, ListChecks, RotateCcw, SlidersHorizontal } from "lucide-react"
+import { GripVertical, ListChecks, RotateCcw, SlidersHorizontal, Tag } from "lucide-react"
 
 import { Button } from "../../../components/ui/button"
 import { Checkbox } from "../../../components/ui/checkbox"
@@ -38,11 +38,16 @@ export interface ViewOptionsPanelProps {
   managedIds: string[]
   labelById: Map<string, string>
   hiddenIds: string[]
+  /** Ids whose label is shown on card-ish layouts (kanban/cards). */
+  showLabelIds?: string[]
+  /** Whether to show the per-field label toggle (card/kanban only). */
+  withLabelToggle?: boolean
   isDirty: boolean
   isSaving: boolean
   isAdmin: boolean
   onOrderChange: (order: string[]) => void
   onToggleVisibility: (id: string, visible: boolean) => void
+  onToggleLabel?: (id: string, show: boolean) => void
   onShowAll: () => void
   onHideAllExcept: (keepId?: string) => void
   onReset: () => void
@@ -62,11 +67,14 @@ export function ViewOptionsPanel({
   managedIds,
   labelById,
   hiddenIds,
+  showLabelIds,
+  withLabelToggle,
   isDirty,
   isSaving,
   isAdmin,
   onOrderChange,
   onToggleVisibility,
+  onToggleLabel,
   onShowAll,
   onHideAllExcept,
   onReset,
@@ -139,6 +147,9 @@ export function ViewOptionsPanel({
                     label={labelById.get(id) ?? id}
                     visible={!hiddenIds.includes(id)}
                     onToggle={(visible) => onToggleVisibility(id, visible)}
+                    showLabel={!!showLabelIds?.includes(id)}
+                    withLabelToggle={!!withLabelToggle}
+                    onToggleLabel={onToggleLabel}
                   />
                 ))}
               </div>
@@ -194,11 +205,17 @@ function SortableColumnRow({
   label,
   visible,
   onToggle,
+  showLabel,
+  withLabelToggle,
+  onToggleLabel,
 }: {
   id: string
   label: string
   visible: boolean
   onToggle: (visible: boolean) => void
+  showLabel?: boolean
+  withLabelToggle?: boolean
+  onToggleLabel?: (id: string, show: boolean) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
@@ -228,6 +245,25 @@ function SortableColumnRow({
       </button>
       <Checkbox checked={visible} onCheckedChange={(value) => onToggle(!!value)} />
       <span className="dy-min-w-0 dy-flex-1 dy-truncate dy-text-xs dy-font-medium">{label}</span>
+      {withLabelToggle ? (
+        <button
+          type="button"
+          aria-label={`${showLabel ? "Hide" : "Show"} label for ${label}`}
+          title={showLabel ? "Label shown — click to hide" : "Label hidden — click to show"}
+          onClick={() => onToggleLabel?.(id, !showLabel)}
+          disabled={!visible}
+          className={cn(
+            "dy-inline-flex dy-h-6 dy-w-6 dy-items-center dy-justify-center dy-rounded dy-border dy-text-[10px] dy-transition-colors",
+            visible
+              ? showLabel
+                ? "dy-border-primary/30 dy-bg-primary/10 dy-text-primary hover:dy-bg-primary/15"
+                : "dy-border-border/60 dy-bg-background dy-text-muted-foreground hover:dy-bg-muted"
+              : "dy-border-transparent dy-bg-transparent dy-text-muted-foreground/30",
+          )}
+        >
+          <Tag className="dy-h-3 dy-w-3" />
+        </button>
+      ) : null}
     </div>
   )
 }

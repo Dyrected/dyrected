@@ -263,7 +263,7 @@ export function CalendarLayout({
 
   return (
     <div data-collection={slug}>
-      <Card className="dy-border-border/50 dy-py-0">
+      <Card className="dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm dy-py-0">
         <CardContent className="dy-p-0">
           <EventCalendar
             events={events}
@@ -277,11 +277,9 @@ export function CalendarLayout({
             eventTooltip
             onEventClick={handleEventClick}
             onEventUpdate={handleEventUpdate}
-            className="dy-h-[640px] dy-w-full"
+            className="dy-h-[660px] dy-w-full"
           >
-            <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2 dy-pe-2">
-              <EventCalendarNav className="dy-min-w-0 dy-flex-1" />
-            </div>
+            <EventCalendarNav className="dy-w-full" />
             <EventCalendarContent />
           </EventCalendar>
         </CardContent>
@@ -293,6 +291,8 @@ export function CalendarLayout({
         client={client}
         schemas={schemas}
         columns={view.columns}
+        dateField={dateField}
+        endDateField={view.endDateField}
         actions={actions}
         onRunAction={onRunAction}
         isRunningAction={isRunningAction}

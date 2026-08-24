@@ -54,10 +54,10 @@ function useNavButtonProps(): {
 } {
   const viewConfig = useEventCalendarViewConfig()
   return {
-    variant: viewConfig.navButtonVariant,
-    size: viewConfig.navButtonSize,
+    variant: viewConfig.navButtonVariant ?? "outline",
+    size: viewConfig.navButtonSize ?? "sm",
     iconSize: viewConfig.navButtonSize === "sm" ? "sm" : "icon",
-    className: viewConfig.classNames?.navButton,
+    className: cn("dy-border-border/50 dy-rounded-lg dy-text-xs", viewConfig.classNames?.navButton),
   }
 }
 
@@ -247,7 +247,7 @@ function EventCalendarTitle({
       data-slot="event-calendar-title"
       aria-live="polite"
       className={cn(
-        "dy-min-w-0 dy-truncate dy-text-sm dy-font-semibold",
+        "dy-min-w-0 dy-truncate dy-text-sm dy-font-semibold dy-text-foreground dy-tracking-tight",
         viewConfig.classNames?.title,
         className
       )}
@@ -571,7 +571,7 @@ function EventCalendarNav({
     <Comp
       data-slot="event-calendar-nav"
       className={cn(
-        "dy-flex dy-min-w-0 dy-flex-wrap dy-items-center dy-gap-1 dy-px-2 dy-py-2",
+        "dy-flex dy-min-w-0 dy-flex-wrap dy-items-center dy-gap-2 dy-px-4 dy-py-3 dy-border-b dy-border-border/40 dy-bg-muted/10",
         viewConfig.stickyNav && "dy-bg-background dy-sticky dy-top-0 dy-z-30",
         viewConfig.classNames?.nav,
         className
@@ -586,9 +586,9 @@ function EventCalendarNav({
         >
           <EventCalendarNavToday />
           {showViewSwitcher && <EventCalendarViewSwitcher />}
-          <div className="dy-flex dy-items-center">
-            <EventCalendarNavPrev />
-            <EventCalendarNavNext />
+          <div className="dy-flex dy-items-center dy-gap-0.5 dy-rounded-lg dy-border dy-border-border/50 dy-bg-card dy-p-0.5">
+            <EventCalendarNavPrev className="dy-h-7 dy-w-7 dy-rounded-md dy-border-0" />
+            <EventCalendarNavNext className="dy-h-7 dy-w-7 dy-rounded-md dy-border-0" />
           </div>
           {/* ms-3 sets the title apart from the tight control cluster so the
               period reads as its own group, not another button */}

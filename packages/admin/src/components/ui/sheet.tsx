@@ -36,12 +36,12 @@ const sheetVariants = cva(
   {
     variants: {
       side: {
-        top: "dy-inset-x-0 dy-top-0 dy-border-b data-[state=closed]:dy-slide-out-to-top data-[state=open]:dy-slide-in-from-top",
+        top: "dy-inset-x-0 dy-top-0 dy-border-b dy-border-border/50 data-[state=closed]:dy-slide-out-to-top data-[state=open]:dy-slide-in-from-top",
         bottom:
-          "dy-inset-x-0 dy-bottom-0 dy-border-t data-[state=closed]:dy-slide-out-to-bottom data-[state=open]:dy-slide-in-from-bottom",
-        left: "dy-inset-y-0 dy-left-0 dy-h-full dy-w-3/4 dy-border-r data-[state=closed]:dy-slide-out-to-left data-[state=open]:dy-slide-in-from-left sm:dy-max-w-sm",
+          "dy-inset-x-0 dy-bottom-0 dy-border-t dy-border-border/50 data-[state=closed]:dy-slide-out-to-bottom data-[state=open]:dy-slide-in-from-bottom",
+        left: "dy-inset-y-0 dy-left-0 dy-h-full dy-w-3/4 dy-border-r dy-border-border/50 data-[state=closed]:dy-slide-out-to-left data-[state=open]:dy-slide-in-from-left sm:dy-max-w-sm",
         right:
-          "dy-inset-y-0 dy-right-0 dy-h-full dy-w-3/4 dy-border-l data-[state=closed]:dy-slide-out-to-right data-[state=open]:dy-slide-in-from-right sm:dy-max-w-sm",
+          "dy-inset-y-0 dy-right-0 dy-h-full dy-w-3/4 dy-border-l dy-border-border/50 data-[state=closed]:dy-slide-out-to-right data-[state=open]:dy-slide-in-from-right sm:dy-max-w-sm",
       },
     },
     defaultVariants: {

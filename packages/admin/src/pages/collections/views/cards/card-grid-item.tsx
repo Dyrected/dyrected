@@ -23,6 +23,8 @@ interface CardGridItemProps {
    * field preferences). Defaults to the view's configured columns.
    */
   fields?: string[]
+  /** Field ids whose label should be shown alongside the value. */
+  showLabels?: string[]
 }
 
 /** Finds the first image/media field usable as a cover. */
@@ -36,7 +38,7 @@ function coverField(schema: any): any | undefined {
  * A single card in the visual gallery layout.
  * Uses the collection's media field as the cover when available.
  */
-export function CardGridItem({ slug, doc, schema, client, schemas, view, actions, onRunAction, isRunningAction, fields }: CardGridItemProps) {
+export function CardGridItem({ slug, doc, schema, client, schemas, view, actions, onRunAction, isRunningAction, fields, showLabels }: CardGridItemProps) {
   const fieldsByName = React.useMemo(
     () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
     [schema],
@@ -75,9 +77,23 @@ export function CardGridItem({ slug, doc, schema, client, schemas, view, actions
           {(shownColumns.length ? shownColumns : (view.columns ?? [])).slice(0, 4).map((fieldName, index) => {
             const field = fieldsByName.get(fieldName)
             if (!field || doc[fieldName] === undefined || doc[fieldName] === null || doc[fieldName] === docTitle) return null
+            const showLabel = !!showLabels?.includes(fieldName)
             return (
-              <div key={fieldName} className={index === 0 ? "dy-text-sm dy-font-medium" : "dy-text-xs dy-text-muted-foreground"}>
-                <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
+              <div key={fieldName} className={index === 0 ? "dy-text-sm dy-font-medium" : "dy-text-xs"}>
+                {showLabel ? (
+                  <span className="dy-inline-flex dy-items-baseline dy-gap-1.5">
+                    <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground dy-shrink-0">
+                      {field.label || fieldName}:
+                    </span>
+                    <span className={index === 0 ? "dy-text-sm dy-text-foreground" : "dy-text-xs dy-text-muted-foreground"}>
+                      <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
+                    </span>
+                  </span>
+                ) : (
+                  <span className={index === 0 ? "dy-text-sm dy-text-foreground" : "dy-text-xs dy-text-muted-foreground"}>
+                    <RenderCell value={doc[fieldName]} field={field} client={client} schemas={schemas} />
+                  </span>
+                )}
               </div>
             )
           })}

@@ -1041,25 +1041,84 @@ const GuestResponses = defineCollection({
       actions: [checkInAction, undoCheckInAction, assignTableAction, markSelectedPaidAction, sendReminderAction],
       metrics: [
         {
-          label: "Total Attending",
-          aggregate: { count: "*", where: { attending: { equals: true } } },
-        },
-        {
-          label: "Checked In",
-          aggregate: { count: "*", where: { checkedIn: { equals: true } } },
-        },
-        {
-          label: "Total Plus-Ones",
-          aggregate: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
-        },
-        {
-          label: "Check-In Rate",
+          label: "Attending Guests",
+          color: "purple",
+          unit: "Headcount",
           aggregates: {
-            totalAttending: { count: "*", where: { attending: { equals: true } } },
-            totalCheckedIn: { count: "*", where: { checkedIn: { equals: true } } },
+            leads: { count: "*", where: { attending: { equals: true } } },
+            plusOnes: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
           },
-          expression: "math.round((aggregates.totalCheckedIn / aggregates.totalAttending) * 100, 0)",
-          format: "percent",
+          expression: "aggregates.leads + aggregates.plusOnes",
+          subMetrics: [
+            { label: "Leads", aggregate: { count: "*", where: { attending: { equals: true } } } },
+            {
+              label: "Plus-Ones",
+              aggregate: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
+            },
+          ],
+        },
+        {
+          label: "Door Check-In",
+          color: "emerald",
+          unit: "Checked In",
+          aggregate: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+          subMetrics: [
+            {
+              label: "Pending",
+              aggregates: {
+                totalAttending: { count: "*", where: { attending: { equals: true } } },
+                totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+              },
+              expression: "aggregates.totalAttending - aggregates.totalCheckedIn",
+            },
+            {
+              label: "Rate",
+              aggregates: {
+                totalAttending: { count: "*", where: { attending: { equals: true } } },
+                totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+              },
+              expression: "math.round((aggregates.totalCheckedIn / aggregates.totalAttending) * 100, 0)",
+              format: "percent",
+            },
+          ],
+        },
+        {
+          label: "Asoebi Orders",
+          color: "amber",
+          unit: "Requests",
+          aggregate: { count: "*", where: { asoebi: { equals: true } } },
+          subMetrics: [
+            { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
+            { label: "Unpaid", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+          ],
+        },
+        {
+          label: "Total Asoebi Revenue",
+          color: "rose",
+          format: "currency",
+          currency: "NGN",
+          aggregate: {
+            sum: "asoebiQuantity",
+            cast: "number",
+            where: { asoebiStatus: { in: ["paid", "collected"] } },
+          },
+          transform: "value * 25000",
+          subMetrics: [
+            {
+              label: "Collected",
+              format: "currency",
+              currency: "NGN",
+              aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "collected" } } },
+              transform: "value * 25000",
+            },
+            {
+              label: "Pending",
+              format: "currency",
+              currency: "NGN",
+              aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "paid" } } },
+              transform: "value * 25000",
+            },
+          ],
         },
       ],
     }),
@@ -1077,25 +1136,51 @@ const GuestResponses = defineCollection({
       metrics: [
         {
           label: "Total Orders",
+          color: "purple",
+          unit: "Outfits",
           aggregate: { count: "*", where: { asoebi: { equals: true } } },
+          subMetrics: [
+            { label: "Requested", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+            { label: "Ready", aggregate: { count: "*", where: { asoebiStatus: { equals: "ready" } } } },
+          ],
         },
         {
-          label: "Paid Orders",
+          label: "Paid & Collected",
+          color: "emerald",
+          unit: "Completed",
           aggregate: {
             count: "*",
             where: { asoebiStatus: { in: ["paid", "collected"] } },
           },
+          subMetrics: [
+            { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { equals: "paid" } } } },
+            { label: "Collected", aggregate: { count: "*", where: { asoebiStatus: { equals: "collected" } } } },
+          ],
         },
         {
-          label: "Estimated Revenue",
+          label: "Asoebi Revenue",
+          color: "rose",
+          format: "currency",
+          currency: "NGN",
           aggregate: {
             sum: "asoebiQuantity",
             cast: "number",
             where: { asoebiStatus: { in: ["paid", "collected"] } },
           },
           transform: "value * 25000",
-          format: "currency",
-          currency: "NGN",
+          subMetrics: [
+            {
+              label: "Total Units",
+              aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebi: { equals: true } } },
+            },
+            {
+              label: "Price / Unit",
+              format: "currency",
+              currency: "NGN",
+              aggregate: { count: "*" },
+              transform: "25000",
+            },
+          ],
         },
       ],
     }),
@@ -1122,15 +1207,33 @@ const GuestResponses = defineCollection({
       metrics: [
         {
           label: "All Responses",
+          color: "blue",
+          unit: "Submissions",
           aggregate: { count: "*" },
+          subMetrics: [
+            { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
+            { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
+          ],
         },
         {
-          label: "Attending",
+          label: "Confirmed Guests",
+          color: "emerald",
+          unit: "Attending",
           aggregate: { count: "*", where: { attending: { equals: true } } },
+          subMetrics: [
+            { label: "Checked In", aggregate: { count: "*", where: { checkedIn: { equals: true } } } },
+            { label: "With Plus-Ones", aggregate: { count: "*", where: { guestCount: { greater_than: 0 } } } },
+          ],
         },
         {
-          label: "Declined",
-          aggregate: { count: "*", where: { attending: { equals: false } } },
+          label: "Asoebi Supporters",
+          color: "amber",
+          unit: "Orders",
+          aggregate: { count: "*", where: { asoebi: { equals: true } } },
+          subMetrics: [
+            { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
+            { label: "Pending", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+          ],
         },
       ],
     }),

@@ -36,7 +36,7 @@ export interface SerializedAction {
   destructive?: boolean
 }
 
-export interface SerializedViewMetric {
+export interface SerializedViewSubMetric {
   label: string
   aggregate?: {
     count?: "*"
@@ -52,6 +52,27 @@ export interface SerializedViewMetric {
   expression?: string
   format?: string
   currency?: string
+}
+
+export interface SerializedViewMetric {
+  label: string
+  color?: string
+  unit?: string
+  aggregate?: {
+    count?: "*"
+    sum?: string
+    avg?: string
+    min?: string
+    max?: string
+    cast?: string
+    where?: Record<string, unknown>
+  }
+  aggregates?: Record<string, NonNullable<SerializedViewMetric["aggregate"]>>
+  transform?: string
+  expression?: string
+  format?: string
+  currency?: string
+  subMetrics?: SerializedViewSubMetric[]
 }
 
 export interface SerializedView {

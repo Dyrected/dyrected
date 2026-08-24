@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -218,6 +218,102 @@ function NavGroup({
   )
 }
 
+function CollapsedCollectionMenu({
+  col,
+  views,
+  isExactActive,
+  isChildActive,
+  onNavigate,
+  location,
+}: {
+  col: AdminSidebarCollection
+  views: NonNullable<AdminSidebarCollection["views"]>
+  isExactActive: boolean
+  isChildActive: boolean
+  onNavigate?: () => void
+  location: ReturnType<typeof useLocation>
+}) {
+  const [open, setOpen] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
+  const ParentIcon = resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)
+
+  const handleEnter = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    setOpen(true)
+  }
+  const handleLeave = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = window.setTimeout(() => setOpen(false), 140) as unknown as number
+  }
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+          onClick={() => setOpen((v) => !v)}
+          className={cn(
+            "dy-group dy-flex dy-w-full dy-items-center dy-justify-center dy-rounded-md dy-px-2 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
+            isExactActive
+              ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+              : isChildActive
+                ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
+                : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
+          )}
+          aria-label={`Open ${col.labels?.plural ?? col.slug} views`}
+        >
+          <ParentIcon
+            className={cn(
+              "dy-h-[17px] dy-w-[17px] dy-shrink-0 dy-transition-colors",
+              isExactActive
+                ? "dy-text-primary-foreground"
+                : isChildActive
+                  ? "dy-text-foreground"
+                  : "dy-text-muted-foreground dy-group-hover:dy-text-foreground",
+            )}
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="right"
+        align="start"
+        sideOffset={10}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        className="dy-w-56 dy-p-1.5 dy-border-border/40 dy-bg-popover/95 dy-backdrop-blur-sm dy-shadow-xl dy-rounded-xl"
+      >
+        <DropdownMenuLabel className="dy-text-xs dy-font-semibold">{col.labels?.plural ?? col.slug}</DropdownMenuLabel>
+        <DropdownMenuSeparator className="dy-bg-border/40" />
+        <DropdownMenuItem asChild>
+          <Link to={`/collections/${col.slug}`} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-rounded-md">
+            <LayoutDashboard className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+            All {col.labels?.plural ?? col.slug}
+          </Link>
+        </DropdownMenuItem>
+        {views.map((view) => {
+          const viewPath = `/collections/${col.slug}/views/${view.slug}`
+          const active = location.pathname === viewPath
+          const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
+          return (
+            <DropdownMenuItem
+              key={viewPath}
+              asChild
+              className={cn("dy-rounded-md", active && "dy-bg-accent dy-text-accent-foreground")}
+            >
+              <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
+                {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
+                {view.label}
+              </Link>
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function ThemeSelector({
   collapsed = false,
   mobile = false,
@@ -390,62 +486,17 @@ function SidebarInner({
       !isChildActive && location.pathname.startsWith(`/collections/${col.slug}`)
     const isExpanded = !collapsedCollections.has(col.slug)
 
-    // Collapsed sidebar: show views in a click dropdown (portal, no clipping).
-    // The icon button opens the menu; the first item links to the collection itself.
     if (collapsed && hasMeaningfulViews) {
-      const ParentIcon = resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)
       return (
         <div key={col.slug} className="dy-space-y-0.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  "dy-group dy-flex dy-w-full dy-items-center dy-justify-center dy-rounded-md dy-px-2 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
-                  isExactActive
-                    ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
-                    : isChildActive
-                      ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
-                      : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
-                )}
-                aria-label={`Open ${col.labels?.plural ?? col.slug} views`}
-              >
-                <ParentIcon
-                  className={cn(
-                    "dy-h-[17px] dy-w-[17px] dy-shrink-0 dy-transition-colors",
-                    isExactActive
-                      ? "dy-text-primary-foreground"
-                      : isChildActive
-                        ? "dy-text-foreground"
-                        : "dy-text-muted-foreground dy-group-hover:dy-text-foreground",
-                  )}
-                />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" sideOffset={8} className="dy-w-56 dy-p-1">
-              <DropdownMenuLabel className="dy-text-xs">{col.labels?.plural ?? col.slug}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to={`/collections/${col.slug}`} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
-                  <LayoutDashboard className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-                  All {col.labels?.plural ?? col.slug}
-                </Link>
-              </DropdownMenuItem>
-              {views.map((view) => {
-                const viewPath = `/collections/${col.slug}/views/${view.slug}`
-                const active = location.pathname === viewPath
-                const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
-                return (
-                  <DropdownMenuItem key={viewPath} asChild className={active ? "dy-bg-accent" : ""}>
-                    <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
-                      {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
-                      {view.label}
-                    </Link>
-                  </DropdownMenuItem>
-                )
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <CollapsedCollectionMenu
+            col={col}
+            views={views}
+            isExactActive={isExactActive}
+            isChildActive={isChildActive}
+            onNavigate={onNavigate}
+            location={location}
+          />
         </div>
       )
     }
@@ -460,7 +511,7 @@ function SidebarInner({
               label={navLabel}
               active={isExactActive}
               isAncestorActive={isChildActive}
-              hasChildren={hasMeaningfulViews}
+              hasChildren={false}
               collapsed={collapsed}
               onClick={onNavigate}
             />

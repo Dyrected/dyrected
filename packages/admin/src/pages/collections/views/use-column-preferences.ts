@@ -13,11 +13,14 @@ import {
 /**
  * Persisted column preferences for an operational table/spreadsheet view.
  * `order` lists every managed column id in display order; `hidden` lists ids
- * currently not rendered.
+ * currently not rendered. `showLabel` marks field ids whose label should be
+ * rendered on card-ish layouts (kanban / cards) alongside the value.
  */
 export interface ColumnPreferences {
   order: string[];
   hidden: string[];
+  /** @internal per-field label visibility for card/kanban; ids in this list show `Label: Value`. */
+  showLabel?: string[];
 }
 
 interface UseColumnPreferencesOptions {
@@ -25,6 +28,8 @@ interface UseColumnPreferencesOptions {
   viewSlug: string;
   /** All manageable column ids, in schema-declared default order. */
   columnIds: string[];
+  /** Default hidden column ids (e.g. fields not included in view.columns). */
+  defaultHidden?: string[];
   /** Columns whose visibility/order is fixed by layout (excluded from prefs). */
   fixedIds?: string[];
   /**
@@ -35,21 +40,29 @@ interface UseColumnPreferencesOptions {
 }
 
 function samePreferences(a: ColumnPreferences, b: ColumnPreferences): boolean {
+  const aLabels = a.showLabel ?? []
+  const bLabels = b.showLabel ?? []
   return (
     a.order.length === b.order.length &&
     a.order.every((id, index) => id === b.order[index]) &&
     a.hidden.length === b.hidden.length &&
-    a.hidden.every((id) => b.hidden.includes(id))
+    a.hidden.every((id) => b.hidden.includes(id)) &&
+    aLabels.length === bLabels.length &&
+    aLabels.every((id) => bLabels.includes(id))
   );
 }
 
 /** Drops unknown ids, appends newly-added ids, keeps declared order otherwise. */
-function reconcile(raw: unknown, columnIds: string[]): ColumnPreferences {
+function reconcile(raw: unknown, columnIds: string[], defaultHidden: string[] = []): ColumnPreferences {
   const valid = new Set(columnIds);
+  const defaultHiddenSet = new Set(defaultHidden);
   const rawObj = (raw && typeof raw === "object" ? raw : {}) as Partial<ColumnPreferences>;
   const rawOrder = Array.isArray(rawObj.order) ? rawObj.order.filter((id): id is string => typeof id === "string") : [];
   const rawHidden = Array.isArray(rawObj.hidden)
     ? rawObj.hidden.filter((id): id is string => typeof id === "string")
+    : [];
+  const rawShowLabel = Array.isArray((rawObj as any).showLabel)
+    ? (rawObj as any).showLabel.filter((id: unknown): id is string => typeof id === "string")
     : [];
 
   const knownOrder = rawOrder.filter((id) => valid.has(id));
@@ -61,8 +74,14 @@ function reconcile(raw: unknown, columnIds: string[]): ColumnPreferences {
     return true;
   });
 
-  const hiddenSet = new Set(rawHidden.filter((id) => valid.has(id)));
-  return { order, hidden: order.filter((id) => hiddenSet.has(id)) };
+  const rawHiddenSet = new Set(rawHidden.filter((id) => valid.has(id)));
+  const isRawEmpty = !Array.isArray(rawObj.order) && !Array.isArray(rawObj.hidden);
+  const hiddenSet = isRawEmpty
+    ? defaultHiddenSet
+    : new Set([...rawHiddenSet, ...missing.filter((id) => defaultHiddenSet.has(id))]);
+
+  const showLabel = rawShowLabel.filter((id: string) => valid.has(id) && !hiddenSet.has(id));
+  return { order, hidden: order.filter((id) => hiddenSet.has(id)), showLabel };
 }
 
 /**
@@ -75,6 +94,7 @@ export function useColumnPreferences({
   slug,
   viewSlug,
   columnIds,
+  defaultHidden = [],
   fixedIds = [],
   variant,
 }: UseColumnPreferencesOptions) {
@@ -86,17 +106,22 @@ export function useColumnPreferences({
   const sessionKey = getColumnSessionKey(slug, viewSlug, variant);
   const legacySessionKey = getLegacyColumnSessionKey(slug, viewSlug, variant);
   const manageKey = [...fixedIds, ...columnIds].join("\u0000");
+  const defaultHiddenKey = defaultHidden.join("\u0000");
 
   const defaultPreferences = useMemo<ColumnPreferences>(
-    () => ({ order: [...columnIds], hidden: [] }),
+    () => ({
+      order: [...columnIds],
+      hidden: columnIds.filter((id) => defaultHidden.includes(id)),
+      showLabel: [],
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [manageKey],
+    [manageKey, defaultHiddenKey],
   );
 
   // The route mounts this hook per `slug:viewSlug` (keyed upstream), so the
   // session snapshot is intentionally read exactly once.
   const [sessionInitial] = useState(() =>
-    reconcile(readSession(sessionKey) ?? readSession(legacySessionKey), columnIds),
+    reconcile(readSession(sessionKey) ?? readSession(legacySessionKey), columnIds, defaultHidden),
   );
 
   const { data: rawServerPreference } = useQuery({
@@ -114,9 +139,9 @@ export function useColumnPreferences({
   });
 
   const serverPreference = useMemo(
-    () => (rawServerPreference ? reconcile(rawServerPreference, columnIds) : null),
+    () => (rawServerPreference ? reconcile(rawServerPreference, columnIds, defaultHidden) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rawServerPreference, manageKey],
+    [rawServerPreference, manageKey, defaultHiddenKey],
   );
 
   /** Explicit unsaved edits win over everything. */
@@ -133,13 +158,15 @@ export function useColumnPreferences({
   );
 
   const setOrder = useCallback(
-    (order: string[]) => applyEdit(reconcile({ order, hidden: effective.hidden }, columnIds)),
-    [applyEdit, columnIds, effective.hidden],
+    (order: string[]) =>
+      applyEdit(reconcile({ order, hidden: effective.hidden, showLabel: effective.showLabel }, columnIds)),
+    [applyEdit, columnIds, effective.hidden, effective.showLabel],
   );
 
   const setHidden = useCallback(
-    (hidden: string[]) => applyEdit(reconcile({ order: effective.order, hidden }, columnIds)),
-    [applyEdit, columnIds, effective.order],
+    (hidden: string[]) =>
+      applyEdit(reconcile({ order: effective.order, hidden, showLabel: effective.showLabel }, columnIds)),
+    [applyEdit, columnIds, effective.order, effective.showLabel],
   );
 
   const toggleVisibility = useCallback(
@@ -158,6 +185,18 @@ export function useColumnPreferences({
   const hideAllExcept = useCallback(
     (keepId?: string) => setHidden(effective.order.filter((id) => id !== keepId)),
     [effective.order, setHidden],
+  );
+
+  const toggleLabel = useCallback(
+    (id: string, show: boolean) => {
+      const next = show
+        ? effective.showLabel?.includes(id)
+          ? effective.showLabel
+          : [...(effective.showLabel ?? []), id]
+        : (effective.showLabel ?? []).filter((v) => v !== id)
+      applyEdit(reconcile({ order: effective.order, hidden: effective.hidden, showLabel: next }, columnIds))
+    },
+    [applyEdit, columnIds, effective],
   );
 
   const saveMutation = useMutation({
@@ -194,6 +233,7 @@ export function useColumnPreferences({
       isDirty: !!edits,
       setOrder,
       toggleVisibility,
+      toggleLabel,
       showAll,
       hideAllExcept,
       saveForMe: () => saveMutation.mutateAsync({ scope: "personal", value: effective }).then(() => setEdits(null)),
@@ -202,7 +242,7 @@ export function useColumnPreferences({
       isSaving: saveMutation.isPending || resetMutation.isPending,
       isAdmin: !!isAdmin,
     }),
-    [effective, edits, setOrder, toggleVisibility, showAll, hideAllExcept, saveMutation, resetMutation, isAdmin],
+    [effective, edits, setOrder, toggleVisibility, toggleLabel, showAll, hideAllExcept, saveMutation, resetMutation, isAdmin],
   );
 }
 

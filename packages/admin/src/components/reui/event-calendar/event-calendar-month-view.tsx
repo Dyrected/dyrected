@@ -973,14 +973,10 @@ function EventCalendarMonthCell({
         <span
           data-slot="event-calendar-month-day-number"
           className={cn(
-            "dy-flex dy-size-5 dy-items-center dy-justify-center dy-rounded-full",
-            isOutside && "dy-text-muted-foreground",
-            // the filled circle already marks today; keep the number the same
-            // weight/size as the other days so it does not read as larger
-            // Same font-size as every other day; a lighter weight cancels the
-            // way white digits on the filled circle read bolder/larger than the
-            // dark-on-light numbers around them.
-            isToday && "dy-bg-primary dy-text-primary-foreground dy-font-light",
+            "dy-flex dy-size-6 dy-items-center dy-justify-center dy-rounded-full dy-text-xs",
+            isOutside && "dy-text-muted-foreground/45",
+            isToday && "dy-bg-primary dy-text-primary-foreground dy-font-semibold dy-shadow-xs",
+            !isToday && !isOutside && "dy-text-foreground/80 dy-font-medium",
             viewConfig.classNames?.monthDayNumber
           )}
         >
@@ -1026,13 +1022,14 @@ function EventCalendarMonthCell({
         { locale: settings.locale }
       )}
       className={cn(
-        "dy-group/ec-cell dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-col dy-overflow-hidden",
-        !isLast && "dy-border-e",
+        "dy-group/ec-cell dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-col dy-overflow-hidden dy-transition-colors",
+        !isLast && "dy-border-e dy-border-border/30",
+        isOutside && "dy-bg-muted/10",
         isOutside && !settings.showOutsideDays && "dy-invisible",
         isOff && offClassName,
         isToday &&
           cn(
-            "dy-bg-primary/3 dy-border-b-primary/40 dy-relative dy-border-b-2",
+            "dy-bg-primary/5",
             viewConfig.todayClassName
           ),
         viewConfig.dayClassName?.(day),

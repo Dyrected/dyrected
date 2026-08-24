@@ -140,15 +140,23 @@ export function KanbanLayout({
     () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
     [schema],
   )
-  const managedIds = React.useMemo(
-    () => (view.columns ?? []).filter((name) => fieldsByName.has(name)),
-    [view.columns, fieldsByName],
-  )
+  const { allFieldIds, defaultHiddenIds } = React.useMemo(() => {
+    const specified = (view.columns ?? []).filter((name) => fieldsByName.has(name))
+    const remaining = (schema?.fields ?? [])
+      .map((f: any) => f.name)
+      .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
+
+    return {
+      allFieldIds: [...specified, ...remaining],
+      defaultHiddenIds: remaining,
+    }
+  }, [view.columns, fieldsByName, schema])
 
   const fieldPreferences = useColumnPreferences({
     slug,
     viewSlug: view.slug,
-    columnIds: managedIds,
+    columnIds: allFieldIds,
+    defaultHidden: defaultHiddenIds,
     variant: "kanban",
   })
 
@@ -165,10 +173,10 @@ export function KanbanLayout({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
       search: globalFilter,
-      searchableFields: managedIds.length ? managedIds : undefined,
+      searchableFields: allFieldIds.length ? allFieldIds : undefined,
       schema,
     })
-  }, [view.filter, columnFilters, globalFilter, managedIds, schema])
+  }, [view.filter, columnFilters, globalFilter, allFieldIds, schema])
 
   /**
    * Grouped mode fetches each column independently (paginated, parallel) with
@@ -362,9 +370,10 @@ export function KanbanLayout({
         onRunAction={onRunAction}
         isRunning={isRunningAction}
         fields={visibleFieldIds.length ? visibleFieldIds : undefined}
+        showLabels={fieldPreferences.preferences.showLabel}
       />
     ),
-    [slug, schema, client, schemas, view, rowActions, onRunAction, isRunningAction, visibleFieldIds],
+    [slug, schema, client, schemas, view, rowActions, onRunAction, isRunningAction, visibleFieldIds, fieldPreferences.preferences.showLabel],
   )
 
   if (!groupField) {
@@ -408,14 +417,17 @@ export function KanbanLayout({
         <DataTableToolbar table={table}>
           <ViewOptionsPanel
             label="Fields"
-            managedIds={managedIds}
-            labelById={labelByIdFrom(managedIds, fieldsByName)}
+            managedIds={allFieldIds}
+            labelById={labelByIdFrom(allFieldIds, fieldsByName)}
             hiddenIds={fieldPreferences.preferences.hidden}
+            showLabelIds={fieldPreferences.preferences.showLabel ?? []}
+            withLabelToggle
             isDirty={fieldPreferences.isDirty}
             isSaving={fieldPreferences.isSaving}
             isAdmin={fieldPreferences.isAdmin}
             onOrderChange={fieldPreferences.setOrder}
             onToggleVisibility={fieldPreferences.toggleVisibility}
+            onToggleLabel={fieldPreferences.toggleLabel}
             onShowAll={fieldPreferences.showAll}
             onHideAllExcept={fieldPreferences.hideAllExcept}
             onReset={fieldPreferences.reset}
@@ -522,12 +534,23 @@ function applyGroupedMoves(columns: KanbanGroup[], moves: Record<string, string>
     for (const col of byValue.values()) {
       col.docs = col.docs.filter((d) => String(d.id) !== docId)
     }
-    const targetCol = byValue.get(targetValue)
+    let targetCol = byValue.get(targetValue)
+    if (!targetCol && targetValue === UNASSIGNED) {
+      targetCol = {
+        value: UNASSIGNED,
+        label: "Unassigned",
+        toneClass: "dy-bg-muted-foreground/40",
+        docs: [],
+      }
+      byValue.set(UNASSIGNED, targetCol)
+    }
     if (targetCol) {
       targetCol.docs.push(doc)
     }
   }
-  return Array.from(byValue.values())
+  return Array.from(byValue.values()).filter(
+    (col) => col.value !== UNASSIGNED || col.docs.length > 0,
+  )
 }
 
 /** Applies cosmetic within-column ordering on top of the derived board. */

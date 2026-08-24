@@ -63,12 +63,17 @@ export function buildViewColumns({
     (schema?.fields ?? []).map((field: any) => [field.name, field]),
   )
 
-  const requested = columns?.length
+  const specified = (columns?.length
     ? columns
     : defaultColumnOrder(schema)
+  ).filter((name) => fieldsByName.has(name))
 
-  const requestedFields = requested.filter((name) => fieldsByName.has(name))
-  const primaryFieldName = primaryLink ? resolvePrimaryField(requestedFields, schema) : undefined
+  const remaining = (schema?.fields ?? [])
+    .map((f: any) => f.name)
+    .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
+
+  const requestedFields = [...specified, ...remaining]
+  const primaryFieldName = primaryLink ? resolvePrimaryField(specified.length ? specified : requestedFields, schema) : undefined
 
   const fieldColumns = requestedFields.map((name) => {
     const field = fieldsByName.get(name)

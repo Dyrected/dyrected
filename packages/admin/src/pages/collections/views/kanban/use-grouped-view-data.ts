@@ -1,5 +1,5 @@
 import * as React from "react"
-import { infiniteQueryOptions, useQueries, useQuery } from "@tanstack/react-query"
+import { queryOptions, useQueries, useQuery } from "@tanstack/react-query"
 
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
@@ -125,8 +125,9 @@ export function useKanbanGroups({
         value === UNASSIGNED
           ? unassignedWhere(groupField)
           : { [groupField]: coerceGroupValue(value, groupField, schema) }
+      const where = groupWhere(base, condition)
       const result = await (client as any).collection(slug).find({
-        where: groupWhere(base, condition),
+        where,
         sort: sortString,
         limit: PAGE_SIZE,
         page,
@@ -144,12 +145,9 @@ export function useKanbanGroups({
   const queries = React.useMemo(() => {
     const groupValues = [...groups.map((group) => group.value), UNASSIGNED]
     return groupValues.map((value) =>
-      infiniteQueryOptions({
+      queryOptions({
         queryKey: ["operational-view", slug, view.slug, "group", value, filterHash, sortString ?? null] as const,
-        queryFn: ({ pageParam = 1 }: { pageParam?: unknown }) =>
-          fetchGroup(value, typeof pageParam === "number" ? pageParam : 1),
-        initialPageParam: 1,
-        getNextPageParam: (last: FindResult) => (last.hasNextPage ? (last.page ?? 1) + 1 : undefined),
+        queryFn: () => fetchGroup(value, 1),
         enabled,
         staleTime: 15_000,
       }),
@@ -163,31 +161,31 @@ export function useKanbanGroups({
   const toColumn = React.useCallback(
     (value: string, label: string, index: number): GroupColumnState => {
       const query = grouped[index] as any
-      const pages = (query?.data?.pages as FindResult[] | undefined) ?? []
-      const lastPage = pages[pages.length - 1]
+      const data = query?.data as FindResult | undefined
       return {
         value,
         label,
-        docs: pages.flatMap((page: FindResult) => page.docs ?? []),
-        total: Number(lastPage?.total ?? 0),
-        hasNextPage: Boolean(query?.hasNextPage),
+        docs: data?.docs ?? [],
+        total: Number(data?.total ?? data?.docs?.length ?? 0),
+        hasNextPage: Boolean(data?.hasNextPage),
         isPending: Boolean(query?.isPending),
         isError: Boolean(query?.isError),
-        isFetchingMore: Boolean(query?.isFetchingNextPage),
+        isFetchingMore: Boolean(query?.isFetching),
         retry: () => void query?.refetch?.(),
-        loadMore: () => void query?.fetchNextPage?.(),
+        loadMore: () => void query?.refetch?.(),
       }
     },
     [grouped],
   )
 
-  const columns: GroupColumnState[] = React.useMemo(
-    () => [
+  const columns: GroupColumnState[] = React.useMemo(() => {
+    const unassigned = toColumn(UNASSIGNED, "Unassigned", groups.length)
+    const hasUnassignedValues = unassigned.docs.length > 0 || unassigned.total > 0 || unassigned.isPending
+    return [
       ...groups.map((group, i) => toColumn(group.value, group.label, i)),
-      toColumn(UNASSIGNED, "Unassigned", groups.length),
-    ],
-    [groups, toColumn],
-  )
+      ...(hasUnassignedValues ? [unassigned] : []),
+    ]
+  }, [groups, toColumn])
 
   /** Single flat fetch when the field has too many options to fan out. */
   const fallback = useQuery({
@@ -211,7 +209,7 @@ export function useKanbanGroups({
     fallbackDocs: fallback.data ?? [],
     fallbackIsPending: fallback.isPending,
     refetchAll: () => {
-      for (const query of grouped) void query.refetch()
+      for (const query of grouped) void (query as any)?.refetch?.()
       if (!enabled) void fallback.refetch()
     },
   }

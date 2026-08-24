@@ -130,17 +130,27 @@ export function SpreadsheetLayout({
 
   const canUpdate = React.useMemo(() => evaluateAccess(schema?.access?.update, user), [schema, user])
 
-  const managedColumnIds = React.useMemo(() => {
+  const { allColumnIds, defaultHiddenIds } = React.useMemo(() => {
     const fieldsByName = new Map<string, any>((schema?.fields ?? []).map((f: any) => [f.name, f]))
-    const requested = view.columns?.length ? view.columns : defaultSpreadsheetOrder(schema)
-    const validIds = requested.filter((name: string) => fieldsByName.has(name))
-    return validIds.length ? validIds : requested
+    const specified = (view.columns?.length ? view.columns : defaultSpreadsheetOrder(schema)).filter((name: string) =>
+      fieldsByName.has(name),
+    )
+    const remaining = (schema?.fields ?? [])
+      .map((f: any) => f.name)
+      .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
+
+    return {
+      allColumnIds: [...specified, ...remaining],
+      defaultHiddenIds: remaining,
+    }
   }, [schema, view.columns])
 
   const preferences = useColumnPreferences({
     slug,
     viewSlug: view.slug,
-    columnIds: managedColumnIds,
+    columnIds: allColumnIds,
+    defaultHidden: defaultHiddenIds,
+    variant: "spreadsheet",
   })
 
   const columns = React.useMemo<ColumnDef<any, any>[]>(() => {
@@ -178,10 +188,10 @@ export function SpreadsheetLayout({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
       search: globalFilter,
-      searchableFields: managedColumnIds.length ? managedColumnIds : undefined,
+      searchableFields: allColumnIds.length ? allColumnIds : undefined,
       schema,
     })
-  }, [view.filter, columnFilters, globalFilter, managedColumnIds, schema])
+  }, [view.filter, columnFilters, globalFilter, allColumnIds, schema])
 
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,

@@ -79,15 +79,24 @@ export function CardsLayout({
     () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
     [schema],
   )
-  const managedIds = React.useMemo(
-    () => (view.columns ?? []).filter((name) => fieldsByName.has(name)),
-    [view.columns, fieldsByName],
-  )
+
+  const { allFieldIds, defaultHiddenIds } = React.useMemo(() => {
+    const specified = (view.columns ?? []).filter((name) => fieldsByName.has(name))
+    const remaining = (schema?.fields ?? [])
+      .map((f: any) => f.name)
+      .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
+
+    return {
+      allFieldIds: [...specified, ...remaining],
+      defaultHiddenIds: remaining,
+    }
+  }, [view.columns, fieldsByName, schema])
 
   const fieldPreferences = useColumnPreferences({
     slug,
     viewSlug: view.slug,
-    columnIds: managedIds,
+    columnIds: allFieldIds,
+    defaultHidden: defaultHiddenIds,
     variant: "cards",
   })
 
@@ -109,10 +118,10 @@ export function CardsLayout({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
       search: globalFilter,
-      searchableFields: managedIds.length ? managedIds : undefined,
+      searchableFields: allFieldIds.length ? allFieldIds : undefined,
       schema,
     })
-  }, [view.filter, columnFilters, globalFilter, managedIds, schema])
+  }, [view.filter, columnFilters, globalFilter, allFieldIds, schema])
 
   const {
     data: docs,
@@ -124,10 +133,10 @@ export function CardsLayout({
   } = useViewData({
     slug,
     viewSlug: view.slug,
-    filter: serverWhere,
-    sort: resolveViewSort(view.sort),
     page,
     limit: pageSize,
+    filter: serverWhere,
+    sort: resolveViewSort(view.sort),
   })
 
   const table = useReactTable({
@@ -173,14 +182,17 @@ export function CardsLayout({
         <DataTableToolbar table={table}>
           <ViewOptionsPanel
             label="Fields"
-            managedIds={managedIds}
-            labelById={labelByIdFrom(managedIds, fieldsByName)}
+            managedIds={allFieldIds}
+            labelById={labelByIdFrom(allFieldIds, fieldsByName)}
             hiddenIds={fieldPreferences.preferences.hidden}
+            showLabelIds={fieldPreferences.preferences.showLabel ?? []}
+            withLabelToggle
             isDirty={fieldPreferences.isDirty}
             isSaving={fieldPreferences.isSaving}
             isAdmin={fieldPreferences.isAdmin}
             onOrderChange={fieldPreferences.setOrder}
             onToggleVisibility={fieldPreferences.toggleVisibility}
+            onToggleLabel={fieldPreferences.toggleLabel}
             onShowAll={fieldPreferences.showAll}
             onHideAllExcept={fieldPreferences.hideAllExcept}
             onReset={fieldPreferences.reset}
@@ -207,6 +219,7 @@ export function CardsLayout({
                 actions={actions}
                 onRunAction={onRunAction}
                 fields={visibleFieldIds.length ? visibleFieldIds : undefined}
+                showLabels={fieldPreferences.preferences.showLabel}
               />
             ))}
           </div>
