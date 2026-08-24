@@ -23928,6 +23928,27 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.9.0
+
+- Promote operational table to canonical list view:
+
+  - **Default view synthesis in `getSchemas`**: `resolveSchemas` (`DyrectedProvider`) now synthesizes a `list` view (`layout: table`, columns from `admin.defaultColumns` or first 5 display fields) for collections without explicit `views`, so every collection has a table workspace and `CollectionRoute` can render without redirect.
+  - **Standardized preference keys**: Column, view-mode, and toolbar keys now use `layout:collections:${slug}:list` for the default view and `layout:collections:${slug}:view:${viewSlug}[:variant|:mode|:toolbar]` for named views (variant suffix for `cards`/`kanban`). Reads fall back to legacy keys (`view-pref:`, `view-mode:`, `view-columns:`, `view-toolbar:`) and migrate on next save.
+  - **CollectionRoute (Option B)**: `/collections/:slug` now renders `OperationalViewPage` directly with the first (synthesized) view instead of `CollectionListPage` (`list-view-v1`). `list-view-v1.tsx` is deprecated (kept for reference). Media collections still render `MediaPage`.
+  - **URL compat shim**: Legacy `?where=<json>` (FilterBuilder) and `?search=<term>` params are merged into the view's `filter` (`mergeFilters` / `contains` on first searchable field) so old shared links keep working.
+  - **Slot aliasing**: `admin.components.beforeList` → `beforeViewHeader`, `beforeListTable` → `beforeViewContent`, `afterListTable`/`afterList` → `afterViewContent` are now rendered via `AdminComponentSlot` with a stubbed `CollectionListSlotProps` so existing `collectionList` slot consumers continue to mount inside operational views. `collectionView` slots remain primary.
+
+  `list-view-v1.tsx` is marked `@deprecated` and will be removed in a future minor. (`@dyrected/admin`)
+
+- Operational Views: `defineView` / `defineAction` configuration helpers, view-aware admin sidebar and routing, table, kanban, calendar, cards (with multi-image carousels and edge-to-edge covers), and spreadsheet layouts, summary metric stat cards backed by the aggregation engine, an actions runner that resolves declarative mutations (`now()`, `input.*`, `doc.*`) or self-hosted handlers through the lifecycle-hook pipeline, and 4 new recipes in `@dyrected/knowledge`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
+
+- - **Where Operator Aliases (`greater_than`, `less_than`, etc.)**: Added support for verbose operator names in `parseSqlWhere` and `parseMongoWhere` (`greater_than`, `less_than`, `greater_than_equal`, `greater_than_or_equal`, `less_than_equal`, `less_than_or_equal`, `like`), resolving HTTP 500 errors on Detail View adjacent record navigation queries (Previous / Next document buttons).
+  - **Core Jexl Pre-bundling**: Pre-bundled `jexl` into `@dyrected/core` to prevent Vite and browser runtime CJS default export errors across consumer applications.
+  - **Public/Default Preferences Read**: Allowed `GET /api/preferences/:key` to use `optionalAuth`, enabling unauthenticated clients (e.g. login screen, theme initialization) to retrieve global preferences and default fallback values without throwing 401 Unauthorized errors. Mutations (`PUT`, `DELETE`) remain protected.
+  - **Media Library Clipboard Paste & Progress Indication**: Added global clipboard paste support (`⌘V` / `Ctrl+V`) to `MediaLibraryDialog` with auto-switch to the Upload tab, live upload progress display, toast feedback notifications, and discoverability shortcut badges. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.8.3
 
 - - **Lazy Database Connections**: Removed eager initialization in constructors for `@dyrected/db-postgres`, `@dyrected/db-mysql`, and `@dyrected/db-mongodb`. Network sockets, connection pools, and database creation queries are now deferred until the first actual query or explicit lifecycle call, preventing hanging sockets and timers when loading `dyrected.config.ts` during static builds (`nuxt build`, `next build`, type-generation, or CI pipelines).
@@ -24670,18 +24691,6 @@ Release notes and version history across all Dyrected packages.
 ## v2.5.43
 
 - feat: add support for external authentication provider exchange and update Node.js requirement to 22+ (`@dyrected/admin`, `@dyrected/core`)
-
----
-
-## v2.5.42
-
-- feat: enable dynamic site admin authentication by supporting schema-derived config in the auth controller
-
-  refactor: modularize type definitions by extracting schemas, access, adapters, and configuration interfaces into separate files (`@dyrected/core`)
-
-- @dyrected/sdk@2.5.42 (`@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/admin@2.5.42 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 

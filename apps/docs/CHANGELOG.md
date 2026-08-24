@@ -1,5 +1,12 @@
 # @dyrected/docs
 
+## 0.1.19
+
+### Patch Changes
+
+- Updated dependencies [a484857]
+  - @dyrected/knowledge@0.4.0
+
 ## 0.1.19 — Operational Views (unreleased)
 
 ### Minor Changes

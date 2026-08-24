@@ -1,5 +1,11 @@
 # @dyrected/sdk
 
+## 2.9.0
+
+### Minor Changes
+
+- a484857: Operational Views: `defineView` / `defineAction` configuration helpers, view-aware admin sidebar and routing, table, kanban, calendar, cards (with multi-image carousels and edge-to-edge covers), and spreadsheet layouts, summary metric stat cards backed by the aggregation engine, an actions runner that resolves declarative mutations (`now()`, `input.*`, `doc.*`) or self-hosted handlers through the lifecycle-hook pipeline, and 4 new recipes in `@dyrected/knowledge`.
+
 ## 2.8.3
 
 ## 2.8.2
