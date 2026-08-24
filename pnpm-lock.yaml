@@ -110,6 +110,9 @@ importers:
       '@dyrected/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@dyrected/storage-cloudinary':
+        specifier: workspace:^
+        version: link:../../packages/storage-cloudinary
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
