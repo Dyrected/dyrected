@@ -30,6 +30,7 @@ interface Option {
 }
 
 interface MultiSelectProps {
+  id?: string
   options: Option[]
   value?: string[]
   onChange: (value: string[]) => void
@@ -51,6 +52,7 @@ interface MultiSelectProps {
  *   safely clearing the entire selection list at once (`onChange([])`) without opening the dropdown list.
  */
 export function MultiSelect({
+  id,
   options,
   value = [],
   onChange,
@@ -115,16 +117,18 @@ export function MultiSelect({
     }
   }
 
-  const handleRemove = (valueToRemove: string) => {
+  const handleRemove = (valueToRemove: string, e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation()
     onChange(value.filter((val) => val !== valueToRemove))
   }
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
-      {label && <label className="dy-text-sm dy-font-medium dy-leading-none">{label}</label>}
+      {label && <span className="dy-text-sm dy-font-medium dy-leading-none">{label}</span>}
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id={id}
             variant="outline"
             role="combobox"
             aria-expanded={open}

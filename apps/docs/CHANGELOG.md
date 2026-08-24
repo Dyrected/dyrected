@@ -1,5 +1,23 @@
 # @dyrected/docs
 
+## 0.1.19 — Operational Views (unreleased)
+
+### Minor Changes
+
+- **New section `model-content/operational-views`** — `overview`, `define-view`, `ux-guidelines`, `layouts/{table,kanban,calendar,cards,spreadsheet}`, `actions`, `metrics`, `routing-and-preferences`.
+- **Phase 2 layouts** — table (tablecn/TanStack), kanban (@dnd-kit `groupBy` + `moveMode`), calendar (ReUI event-calendar `dateField` + `resourceField`), cards (gallery), spreadsheet (inline grid) with mermaid wireframes.
+- **Actions + Metrics** — `defineAction` (row/bulk/header, `mutation` vs `handler`, `confirm`/`fields`), `ViewMetric` (`aggregate`/`aggregates` + `transform`/`expression`, `format`/`currency`, `subMetrics`).
+- **Routing & preferences** — `CollectionRoute` now renders `OperationalViewPage` (synthesized `list` for collections without `views`), `layout:collections:*` canonical keys with legacy `view-*: ` fallback, `?where`/`?search` shim, slot aliasing `beforeList → beforeViewHeader`.
+- **SDK** — new `deliver-content/sdk-api/run-action.mdx` (`client.collection(slug).runAction(viewSlug, actionName, { id/ids/input })` → `POST /api/collections/:collection/views/:viewSlug/actions/:action`).
+- **Collection config** — short `## Operational views` intro in `model-content/configuration/collections.mdx` linking to overview.
+- **Editor experience** — `list-view`, `spreadsheet-view`, `custom-components/list-view` updated for view aliases and first-class `spreadsheet` layout.
+- **Knowledge patch** — `packages/knowledge/scripts/generate.mjs` now extracts `views.ts` + `aggregate.ts` (`ViewConfig`/`ActionConfig`/`ViewLayout`/`defineView`/`defineAction`/`AggregateOperation`).
+
+### Patch Changes
+
+- Updated `model-content/operational-views/meta.json` nav, `deliver-content/sdk-api/meta.json` (+ `run-action`).
+- `pnpm --filter @dyrected/docs build` verified (376 pages, mermaid OK).
+
 ## 0.1.18
 
 ### Patch Changes

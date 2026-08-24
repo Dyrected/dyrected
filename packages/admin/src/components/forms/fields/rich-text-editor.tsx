@@ -268,9 +268,9 @@ const MenuBar = ({ editor, collection = "media", features, headingLevels }: Menu
           <PopoverContent className="dy-w-72 dy-p-3" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="dy-space-y-3">
               <div>
-                <label className="dy-text-xs dy-font-medium dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-1.5">
+                <span className="dy-text-xs dy-font-medium dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-1.5">
                   URL
-                </label>
+                </span>
                 <Input
                   type="url"
                   value={linkUrl}
@@ -472,7 +472,7 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
 
   return (
     <div className="dy-space-y-2">
-      {label && <label className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">{label}</label>}
+      {label && <span className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">{label}</span>}
       <div className="dy-flex dy-flex-col dy-w-full">
         {!disabled && <MenuBar editor={editor} collection={collection} features={features} headingLevels={levels} />}
         <EditorContent editor={editor} className={cn(disabled && "dy-opacity-80 dy-prose prose lg:prose-xl lg:dy-prose-xl")} />

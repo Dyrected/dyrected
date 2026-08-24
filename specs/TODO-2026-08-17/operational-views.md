@@ -299,9 +299,9 @@ const checkInAction = defineAction({
 
 Dyrected Cloud safely executes actions without running arbitrary server code:
 
-- **Declarative Mutations**: The `mutation` property is pure JSON (e.g. `{ checkedIn: true, checkedInAt: 'now()' }` or `{ tableNumber: 'input.tableNumber' }`).
-- **Safety**: Pure JSON mutations sync cleanly through `sync:schema` and run in Dyrected Cloud using the built-in expression resolver.
-- **Self-Hosted Flexibility**: For server-side integrations requiring third-party SDKs (e.g. Stripe charges, Slack notifications), self-hosted deployments can supply an async TypeScript `handler`.
+* **Declarative Mutations**: The `mutation` property is pure JSON (e.g. `{ checkedIn: true, checkedInAt: 'now()' }` or `{ tableNumber: 'input.tableNumber' }`).
+* **Safety**: Pure JSON mutations sync cleanly through `sync:schema` and run in Dyrected Cloud using the built-in expression resolver.
+* **Self-Hosted Flexibility**: For server-side integrations requiring third-party SDKs (e.g. Stripe charges, Slack notifications), self-hosted deployments can supply an async TypeScript `handler`.
 
 ## Action Scopes / Types
 

@@ -1,0 +1,180 @@
+import * as React from "react"
+import { Loader2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog"
+import { Button } from "../../../components/ui/button"
+import { Label } from "../../../components/ui/label"
+import { FieldRenderer } from "../../../components/forms/field-renderer"
+
+interface ActionFormDialogProps {
+  open: boolean
+  label: string
+  confirm?: string
+  fields?: any[]
+  collection?: string
+  schemas?: unknown
+  isRunning: boolean
+  onSubmit: (input: Record<string, unknown>) => void
+  onCancel: () => void
+}
+
+/**
+ * Input form dialog for actions that declare `fields`.
+ * Reuses Dyrected's central `FieldRenderer` to support all standard field types,
+ * media/relationship pickers, date pickers, and custom field components.
+ */
+export function ActionFormDialog({
+  open,
+  label,
+  confirm,
+  fields,
+  collection = "",
+  schemas,
+  isRunning,
+  onSubmit,
+  onCancel,
+}: ActionFormDialogProps) {
+  if (!open) return null
+  return (
+    <Dialog open onOpenChange={(next) => (!next ? onCancel() : undefined)}>
+      <DialogContent className="dy-sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{label}</DialogTitle>
+          {confirm && <DialogDescription>{confirm}</DialogDescription>}
+        </DialogHeader>
+        {/* Keyed by the field set so each staged action starts a fresh draft. */}
+        <ActionForm
+          key={formKey(fields)}
+          fields={fields}
+          collection={collection}
+          schemas={schemas}
+          isRunning={isRunning}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function formKey(fields?: any[]): string {
+  return (fields ?? []).map((field) => field.name).join(",")
+}
+
+function buildDefaults(fields?: any[]): Record<string, unknown> {
+  const defaults: Record<string, unknown> = {}
+  for (const field of fields ?? []) {
+    defaults[field.name] = field.defaultValue ?? (field.type === "boolean" ? false : "")
+  }
+  return defaults
+}
+
+function ActionForm({
+  fields,
+  collection,
+  schemas,
+  isRunning,
+  onSubmit,
+  onCancel,
+}: Pick<ActionFormDialogProps, "fields" | "collection" | "schemas" | "isRunning" | "onSubmit" | "onCancel">) {
+  const [values, setValues] = React.useState<Record<string, unknown>>(() => buildDefaults(fields))
+
+  const setValue = (name: string, value: unknown) => {
+    setValues((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault()
+    onSubmit(values)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="dy-space-y-4">
+      {(fields ?? []).map((field) => (
+        <ActionField
+          key={field.name}
+          field={field}
+          value={values[field.name]}
+          onChange={(value) => setValue(field.name, value)}
+          collection={collection ?? ""}
+          siblingValues={values}
+          schemas={schemas}
+        />
+      ))}
+      <DialogFooter className="dy-gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isRunning}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={isRunning}>
+          {isRunning && <Loader2 className="dy-mr-1 dy-h-3.5 dy-w-3.5 dy-animate-spin" />}
+          Run
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+function ActionField({
+  field,
+  value,
+  onChange,
+  collection,
+  siblingValues,
+  schemas,
+}: {
+  field: any
+  value: unknown
+  onChange: (value: unknown) => void
+  collection: string
+  siblingValues: Record<string, unknown>
+  schemas?: unknown
+}) {
+  const id = `action-field-${field.name}`
+  const label = (
+    <Label htmlFor={id} className="dy-text-xs dy-font-medium">
+      {field.label || field.name}
+      {field.required && <span className="dy-ml-0.5 dy-text-destructive">*</span>}
+    </Label>
+  )
+
+  const fieldBinding = {
+    name: field.name,
+    value,
+    onChange: (eventOrVal: any) => {
+      if (eventOrVal && typeof eventOrVal === "object" && "target" in eventOrVal) {
+        onChange(eventOrVal.target.type === "checkbox" ? eventOrVal.target.checked : eventOrVal.target.value)
+      } else {
+        onChange(eventOrVal)
+      }
+    },
+    onBlur: () => {},
+    ref: null,
+    id,
+  }
+
+  const context = {
+    siblingData: siblingValues,
+    value,
+    path: field.name,
+    schemas,
+  }
+
+  return (
+    <div className="dy-space-y-1.5">
+      {label}
+      <FieldRenderer
+        schema={field}
+        field={fieldBinding}
+        id={id}
+        collection={collection}
+        context={context as any}
+      />
+    </div>
+  )
+}

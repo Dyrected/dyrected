@@ -68,6 +68,10 @@ const recipeDocsPathMap = {
   "site-settings-global": "/docs/examples-and-recipes/library/site-settings-global",
   "tenant-scoped-access": "/docs/examples-and-recipes/library/tenant-scoped-access",
   "upload-collection": "/docs/examples-and-recipes/library/upload-collection",
+  "operational-table-view": "/docs/examples-and-recipes/library/operational-table-view",
+  "kanban-pipeline-view": "/docs/examples-and-recipes/library/kanban-pipeline-view",
+  "calendar-schedule-view": "/docs/examples-and-recipes/library/calendar-schedule-view",
+  "operational-metrics": "/docs/examples-and-recipes/library/operational-metrics",
 };
 
 function fail(message) {
@@ -578,6 +582,8 @@ const coreTypePaths = {
   schemaInference: path.join(coreTypesRoot, "schema-inference.ts"),
   detail: path.join(coreTypesRoot, "detail.ts"),
   workflows: path.join(coreTypesRoot, "workflows.ts"),
+  views: path.join(coreTypesRoot, "views.ts"),
+  aggregate: path.join(coreTypesRoot, "aggregate.ts"),
 };
 const workflowPath = path.join(
   repositoryRoot,
@@ -742,6 +748,33 @@ const references = [
   ...extractReferences(sdkPath, {
     category: "sdk",
     sourcePackage: "@dyrected/sdk",
+  }),
+  ...extractReferences(coreTypePaths.views, {
+    category: "operational-views",
+    sourcePackage: "@dyrected/core",
+    names: new Set([
+      "ViewConfig",
+      "DefineViewOptions",
+      "ViewMetric",
+      "ViewSubMetric",
+      "ActionConfig",
+      "DefineActionOptions",
+      "ActionContext",
+      "ViewActionFeatures",
+      "ViewLayout",
+      "ActionType",
+      "MetricColor",
+    ]),
+  }),
+  ...extractReferences(coreTypePaths.views, {
+    category: "operational-views",
+    sourcePackage: "@dyrected/core",
+    matches: (name) => name === "defineView" || name === "defineAction",
+  }),
+  ...extractReferences(coreTypePaths.aggregate, {
+    category: "configuration",
+    sourcePackage: "@dyrected/core",
+    names: new Set(["AggregateOperation", "AggregateArgs", "AggregateResult"]),
   }),
 ].sort((left, right) => left.id.localeCompare(right.id));
 

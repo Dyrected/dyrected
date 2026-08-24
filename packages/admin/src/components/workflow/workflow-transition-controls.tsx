@@ -100,9 +100,9 @@ function WorkflowCommentDialogBody({
         </DialogDescription>
       </DialogHeader>
       <div className="dy-space-y-2">
-        <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground">
+        <span className="dy-block dy-text-xs dy-font-semibold dy-text-muted-foreground">
           Comment
-        </label>
+        </span>
         <textarea
           className="dy-min-h-28 dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-background dy-px-3 dy-py-2 dy-text-sm dy-text-foreground placeholder:dy-text-muted-foreground focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-primary/30"
           value={comment}

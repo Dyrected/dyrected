@@ -29,6 +29,25 @@ describe('parseSqlWhere', () => {
     );
     expect(res.params).toEqual(['2026-08-19T00:00:00Z', 100, '%test%']);
   });
+
+  it('normalizes booleans to string parameters for Postgres and MySQL JSON compatibility', () => {
+    const res = parseSqlWhere(
+      {
+        AND: [
+          { attending: { equals: true } },
+          { checkedIn: { in: [false] } },
+          { archived: { not_in: [true, false] } },
+          { verified: true },
+        ],
+      },
+      getJsonField,
+      'pg',
+    );
+    expect(res.sql).toBe(
+      "((data->>'attending' = $1) AND (data->>'checkedIn' IN ($2)) AND (data->>'archived' NOT IN ($3, $4)) AND (data->>'verified' = $5))",
+    );
+    expect(res.params).toEqual(['true', 'false', 'true', 'false', 'true']);
+  });
 });
 
 describe('parseMongoWhere', () => {

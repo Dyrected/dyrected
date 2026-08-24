@@ -53,10 +53,13 @@ interface FieldRendererProps {
     value: any
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onChange: (...event: any[]) => void
+    onBlur?: () => void
     name: string
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ref: any
+    id?: string
   }
+  id?: string
   collection: string
   context?: AdminFieldComponentContext
 }
@@ -70,8 +73,14 @@ interface FieldRendererProps {
  * It receives standard props (field, schema, collection, context) and ensures 
  * they are passed down to the specialized field implementation.
  */
-export function FieldRenderer({ schema, field, collection, context }: FieldRendererProps) {
+export function FieldRenderer({ schema, field, id, collection, context }: FieldRendererProps) {
   void collection
+
+  const fieldWithId = React.useMemo(() => {
+    const effectiveId = id || field.id
+    if (!effectiveId) return field
+    return { ...field, id: effectiveId }
+  }, [field, id])
 
   // Evaluate Update Access
   const updateAccess = schema.access?.update
@@ -93,16 +102,16 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
   if (customComponentKey && components?.fields?.[customComponentKey]) {
     const CustomComponent = components.fields[customComponentKey]
     const customProps: AdminFieldComponentProps = {
-      value: field.value,
-      onChange: field.onChange,
+      value: fieldWithId.value,
+      onChange: fieldWithId.onChange,
       field: schema,
-      path: field.name,
+      path: fieldWithId.name,
       disabled,
       collection,
       context,
     }
     return (
-      <DyrectedFieldPathProvider path={field.name}>
+      <DyrectedFieldPathProvider path={fieldWithId.name}>
         <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
           <CustomComponent {...customProps} />
         </ErrorBoundary>
@@ -114,21 +123,21 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
 
   switch (schema.type as string) {
     case "textarea":
-      return <TextAreaField schema={schema as TextAreaSchema} field={field} disabled={disabled} />
+      return <TextAreaField schema={schema as TextAreaSchema} field={fieldWithId} disabled={disabled} />
     case "boolean":
       return (schema.admin as { layout?: string })?.layout === "switch"
-        ? <SwitchField field={field} disabled={disabled} />
-        : <CheckboxField field={field} disabled={disabled} />
+        ? <SwitchField field={fieldWithId} disabled={disabled} />
+        : <CheckboxField field={fieldWithId} disabled={disabled} />
     case "select":
-      return <SelectField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
+      return <SelectField schema={schema} field={fieldWithId} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
     case "radio":
-      return <RadioField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
+      return <RadioField schema={schema} field={fieldWithId} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
     case "multiSelect":
       return (
         <MultiSelect
           options={(Array.isArray(schema.options) ? schema.options : []) as Array<{ label: string; value: string }>}
-          value={field.value || []}
-          onChange={field.onChange}
+          value={fieldWithId.value || []}
+          onChange={fieldWithId.onChange}
           disabled={disabled}
           collection={collection}
           siblingValues={context?.siblingData as Record<string, string | number | boolean>}
@@ -141,8 +150,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
         <React.Suspense fallback={<div className="dy-h-24 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
           <MediaPicker
             collection={imageMediaColl}
-            value={field.value}
-            onChange={field.onChange}
+            value={fieldWithId.value}
+            onChange={fieldWithId.onChange}
             disabled={disabled}
             multiple={relSchema.hasMany}
           />
@@ -157,8 +166,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
         <React.Suspense fallback={<div className="dy-h-40 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
           <RichTextEditor
             collection={richTextMediaColl}
-            value={field.value}
-            onChange={field.onChange}
+            value={fieldWithId.value}
+            onChange={fieldWithId.onChange}
             disabled={disabled}
             features={rtSchema.features}
             headingLevels={rtSchema.headingLevels}
@@ -167,19 +176,19 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       )
     }
     case "json":
-      return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <JsonEditor value={fieldWithId.value} onChange={fieldWithId.onChange} disabled={disabled} />
     case "date":
-      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} fieldType="date" format={(schema as DateField).admin?.format} />
+      return <DatePicker id={fieldWithId.id} value={fieldWithId.value} onChange={fieldWithId.onChange} disabled={disabled} fieldType="date" format={(schema as DateField).admin?.format} />
     case "datetime":
-      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime fieldType="datetime" format={(schema as DateTimeField).admin?.format} />
+      return <DatePicker id={fieldWithId.id} value={fieldWithId.value} onChange={fieldWithId.onChange} disabled={disabled} withTime fieldType="datetime" format={(schema as DateTimeField).admin?.format} />
     case "daterange":
-      return <DateRangePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <DateRangePicker id={fieldWithId.id} value={fieldWithId.value} onChange={fieldWithId.onChange} disabled={disabled} />
     case "time":
-      return <TimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <TimePicker id={fieldWithId.id} value={fieldWithId.value} onChange={fieldWithId.onChange} disabled={disabled} />
     case "icon":
-      return <IconPicker schema={schema as AdminIconFieldSchema} field={field} disabled={disabled} />
+      return <IconPicker schema={schema as AdminIconFieldSchema} field={fieldWithId} disabled={disabled} />
     case "url":
-      return <UrlFieldComponent schema={schema as AdminUrlFieldSchema} field={field} disabled={disabled} context={context} />
+      return <UrlFieldComponent schema={schema as AdminUrlFieldSchema} field={fieldWithId} disabled={disabled} context={context} />
     case "relationship": {
       const defaultMediaColl = (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
       const isMediaRel = relSchema.relationTo === "media" ||
@@ -190,8 +199,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
           <React.Suspense fallback={<div className="dy-h-24 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
             <MediaPicker
               collection={relSchema.relationTo || defaultMediaColl}
-              value={field.value}
-              onChange={field.onChange}
+              value={fieldWithId.value}
+              onChange={fieldWithId.onChange}
               multiple={relSchema.hasMany}
               disabled={disabled}
             />
@@ -201,8 +210,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
 
       return (
         <RelationshipPicker
-          value={field.value}
-          onChange={field.onChange}
+          id={fieldWithId.id}
+          value={fieldWithId.value}
+          onChange={fieldWithId.onChange}
           relationTo={relSchema.relationTo || relSchema.collection}
           multiple={relSchema.hasMany}
           disabled={disabled}
@@ -210,6 +220,6 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       )
     }
     default:
-      return <TextField schema={schema as DefaultTextInputSchema} field={field} disabled={disabled} />
+      return <TextField schema={schema as DefaultTextInputSchema} field={fieldWithId} disabled={disabled} />
   }
 }

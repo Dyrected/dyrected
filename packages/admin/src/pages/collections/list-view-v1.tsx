@@ -1,3 +1,9 @@
+/**
+ * @deprecated Legacy list view — replaced by operational views (`OperationalViewPage` + `TableLayout`).
+ * `resolveSchemas` now synthesizes a default `list` view for every collection, and
+ * `CollectionRoute` renders that view directly. This file is kept for reference
+ * and will be removed in a future minor release.
+ */
 
 import * as React from "react"
 import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query"

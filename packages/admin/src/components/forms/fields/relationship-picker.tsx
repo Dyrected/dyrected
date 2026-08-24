@@ -34,6 +34,7 @@ const FormEngine = React.lazy(async () => {
 const PAGE_SIZE = 50
 
 interface RelationshipPickerProps {
+  id?: string
   value?: string | string[]
   onChange: (value: string | string[]) => void
   label?: string
@@ -51,7 +52,7 @@ interface DBCollection {
   fields: FieldSchema[]
 }
 
-export function RelationshipPicker({ value, onChange, label, relationTo, multiple, disabled }: RelationshipPickerProps) {
+export function RelationshipPicker({ id, value, onChange, label, relationTo, multiple, disabled }: RelationshipPickerProps) {
   const { client, schemas } = useDyrected()
   const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
@@ -119,10 +120,11 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
-      {label && <label className="dy-text-sm dy-font-medium dy-leading-none">{label}</label>}
+      {label && <span className="dy-text-sm dy-font-medium dy-leading-none">{label}</span>}
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id={id}
             variant="outline"
             role="combobox"
             aria-expanded={open}

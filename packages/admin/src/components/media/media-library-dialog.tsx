@@ -1,5 +1,9 @@
 import * as React from "react"
 import { useDyrected } from "../../providers/dyrected-context"
+import { type MediaRecord } from "../../controllers/media"
+
+/** Dynamic media-collection documents carry arbitrary fields alongside the typed core. */
+type LooseMediaRecord = MediaRecord & Record<string, unknown>
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -328,7 +332,7 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
-                              media?.forEach((item: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => {
+                              media?.forEach((item: LooseMediaRecord) => {
                                 if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
                                   select(item.id!)
                                   onSelect(item.id!, item as unknown as Media)
@@ -346,7 +350,7 @@ export function MediaLibraryDialog({
                           onClick={() => {
                             clearSelection()
                             sVals.forEach(val => {
-                              const item = media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
+                              const item = media?.find((m: LooseMediaRecord) => m.id === val || m.filename === val || m.url === val)
                               onSelect(val, item as unknown as Media)
                             })
                           }}
@@ -358,7 +362,7 @@ export function MediaLibraryDialog({
                   </div>
                   <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-2 dy-px-2">
                     <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 lg:dy-gap-4">
-                      {media?.map((item: { id?: string; filename?: string; url?: string; mimeType?: string; [key: string]: unknown }) => {
+                      {media?.map((item: LooseMediaRecord) => {
                         const sourceInfo = getMediaSourceInfo(item)
                         return (
                           <button
@@ -391,7 +395,7 @@ export function MediaLibraryDialog({
                           >
                             <img
                               src={getPreviewUrl(item)}
-                              alt={item.filename}
+                              alt={String(item.filename ?? "")}
                               className="dy-object-cover dy-w-full dy-h-full"
                             />
                             {/* External vs Storage Source Badge */}
@@ -413,7 +417,7 @@ export function MediaLibraryDialog({
                                 <Check className="dy-h-4 dy-w-4" />
                               </div>
                             )}
-                            {(item.mimeType?.startsWith('video/') || item.mimeType === 'video/youtube' || item.mimeType === 'video/vimeo' || item.mimeType === 'video/external') && (
+                            {(typeof item.mimeType === 'string' && item.mimeType.startsWith('video/') || item.mimeType === 'video/youtube' || item.mimeType === 'video/vimeo' || item.mimeType === 'video/external') && (
                               <div className="dy-absolute dy-inset-0 dy-flex dy-items-center dy-justify-center dy-bg-black/20 dy-group-hover:dy-bg-black/40 dy-transition-colors">
                                 <div className="dy-h-10 dy-w-10 dy-bg-background/20 dy-backdrop-blur-md dy-rounded-full dy-flex dy-items-center dy-justify-center dy-border dy-border-white/30 dy-shadow-2xl">
                                   <Video className="dy-h-5 dy-w-5 dy-text-white" />
@@ -421,7 +425,7 @@ export function MediaLibraryDialog({
                               </div>
                             )}
                             <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2.5 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
-                              <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{getDisplayFilename(item.filename)}</p>
+                              <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{getDisplayFilename(String(item.filename ?? ""))}</p>
                             </div>
                           </button>
                         )

@@ -1,0 +1,142 @@
+---
+title: Run an action
+description: Call a view action from code — row, bulk, or header — with the typed SDK or plain fetch.
+---
+
+Actions aren't only buttons in the admin UI. `client.collection(slug).runAction(viewSlug, actionName, args)` lets any backend route, webhook handler, or background script invoke the exact same `defineAction` you configured — running through the same validation, access rules, and hook pipeline as a click in the dashboard.
+
+By the end of this guide you'll know how to run row, bulk, and header actions from code, pass input fields, and handle errors.
+
+## When to reach for it
+
+Use `runAction` whenever an operational action already exists in your config and you want to trigger it programmatically — a door-scanner webhook checking in a guest, a cron job sending payment reminders, or a script batch-marking orders as paid.
+
+If the action does not exist yet, define it first in [Actions](/docs/model-content/operational-views/actions) and then call it from your code.
+
+## Running actions with the SDK
+
+Pass the view slug, the action name, and any required document IDs or form inputs to `runAction`:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({ baseUrl: "https://example.com" });
+
+const guestId = "rec_abc123";
+const selectedIds = ["rec_1", "rec_2", "rec_3"];
+
+// 1. Row action — updates a single document
+const guest = await client
+  .collection("guest-responses")
+  .runAction("attending-guests", "checkIn", { id: guestId });
+
+console.log(`Checked in: ${guest.name} (${guest.checkedIn})`);
+
+// 2. Row action with input fields
+await client.collection("guest-responses").runAction(
+  "attending-guests",
+  "assignTable",
+  { id: guestId, input: { tableNumber: 12, notes: "Near stage" } },
+);
+
+// 3. Bulk action — runs across multiple document IDs
+const result = await client.collection("guest-responses").runAction(
+  "asoebi-pipeline",
+  "markSelectedPaid",
+  { ids: selectedIds },
+);
+
+console.log(`Marked paid: ${result.modified} guests`);
+
+// 4. Bulk action with input fields
+await client.collection("guest-responses").runAction(
+  "asoebi-pipeline",
+  "markPaid",
+  { ids: selectedIds, input: { method: "cash" } },
+);
+
+// 5. Header action — view-wide trigger, no IDs required
+await client.collection("guest-responses").runAction(
+  "asoebi-pipeline",
+  "sendReminder",
+  {},
+);
+```
+
+For row actions the method returns the updated document. For bulk actions it returns `{ modified: number }`. In both cases the type is `UnknownRecord` until you narrow it with your `DyrectedSchema`.
+
+The action runs through the same `beforeChange` and `afterChange` hooks as a dashboard click — handlers don't bypass access or side effects.
+
+## Arguments and validation
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `viewSlug` | `string` | The slug of the operational view (`defineView({ slug })`). |
+| `actionName` | `string` | The name of the action (`defineAction({ name })`). |
+| `args.id` | `string` | Target document ID for row actions. |
+| `args.ids` | `string[]` | Target document IDs for bulk actions. |
+| `args.input` | `Record<string, unknown>` | Values matching any `fields` declared on the action. Validated before the mutation runs. |
+
+Input values are validated against the action's field schemas before the mutation or handler executes.
+
+## Error handling
+
+When an action cannot run, the SDK throws a `DyrectedError` with a `statusCode` and `message`:
+
+- **`403 Forbidden`** — the caller's credentials do not satisfy the `access` rules on the action or the collection.
+- **`404 Not Found`** — the `viewSlug` or `actionName` does not exist.
+- **`400 Bad Request`** — required `input` fields were missing or invalid, or the `mutation` expression failed.
+- **`409 Conflict`** — an optimistic-locking revision mismatch (workflows with `expectedRevision`).
+
+```ts
+try {
+  await client.collection("guest-responses").runAction(
+    "attending-guests",
+    "checkIn",
+    { id: guestId },
+  );
+  console.log("Check-in succeeded");
+} catch (error) {
+  console.error(`Action failed (${error.statusCode}): ${error.message}`);
+}
+```
+
+Set `client.setToken(jwt)` after `login()` before calling actions that require a user. `depth` is not sent on the action endpoint — if you need populated relations, read the document again with `findOne` after the action succeeds.
+
+## Plain HTTP with fetch
+
+If you are calling Dyrected from an environment without the SDK, send a `POST` to the same endpoint:
+
+```ts
+const token = "your_api_token";
+const guestId = "rec_abc123";
+
+const response = await fetch(
+  "https://example.com/api/collections/guest-responses/views/attending-guests/actions/checkIn",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id: guestId }),
+  },
+);
+
+if (!response.ok) {
+  throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+}
+
+const updatedDoc = await response.json();
+console.log(`Checked in: ${updatedDoc.name}`);
+```
+
+Send `Authorization: Bearer` or `x-api-key` as you would for any Dyrected collection endpoint. `input` goes in the same JSON body as `id` or `ids`.
+
+## Next steps
+
+- Define the action and its input dialog in [Actions](/docs/model-content/operational-views/actions).
+- Lock actions to the right roles in [Access Control](/docs/model-content/content-rules/access-control/overview).
+- Show live numbers above the view in [Metrics](/docs/model-content/operational-views/metrics).
+- See the generated `RunActionArgs` contract in the SDK reference on [Overview](/docs/deliver-content/sdk-api/overview).

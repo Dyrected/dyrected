@@ -276,6 +276,28 @@ export type RegisteredSchema = Register extends { schema: infer S }
 ```
 
 
+## RunActionArgs
+
+Arguments accepted by `client.collection(slug).runAction()`.
+
+```ts
+export interface RunActionArgs {
+  /** Target a single document (row action). */
+  id?: string;
+  /** Target multiple documents (bulk action). */
+  ids?: string[];
+  /** Values collected from the action's input form dialog. */
+  input?: Record<string, unknown>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (optional) | Target a single document (row action). |
+| <code>ids</code> (optional) | Target multiple documents (bulk action). |
+| <code>input</code> (optional) | Values collected from the action's input form dialog. |
+
+
 ## SchemaShape
 
 Exported interface from @dyrected/sdk.

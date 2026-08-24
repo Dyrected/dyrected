@@ -274,6 +274,61 @@
           "title"
         ]
       },
+      "guest-responses": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "description": "Full Name"
+          },
+          "attending": {
+            "type": "boolean",
+            "description": "Attending"
+          },
+          "guestCount": {
+            "type": "number",
+            "description": "Plus-Ones"
+          },
+          "asoebiStatus": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "paid",
+              "collected"
+            ],
+            "description": "Asoebi Status"
+          },
+          "appointmentDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Tasting Date"
+          },
+          "checkedIn": {
+            "type": "boolean",
+            "description": "Checked In"
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Checked In At"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
       "settings": {
         "type": "object",
         "properties": {
@@ -1979,6 +2034,318 @@
           },
           "403": {
             "description": "Collection read access denied"
+          }
+        }
+      }
+    },
+    "/api/collections/guest-responses": {
+      "get": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Find Guest Responses",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON filter"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search across configured searchable fields"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort field (e.g. -createdAt)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/guest-responses"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Create Guest response",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/guest-responses"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/guest-responses"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collections/guest-responses/{id}": {
+      "get": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Get a single Guest response",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/guest-responses"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Update Guest response",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/guest-responses"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/guest-responses"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Delete Guest response",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/api/collections/guest-responses/delete-many": {
+      "delete": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Delete multiple Guest Responses",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted and failed document IDs"
+          }
+        }
+      }
+    },
+    "/api/collections/guest-responses/aggregate": {
+      "post": {
+        "tags": [
+          "Collection: Guest Responses"
+        ],
+        "summary": "Aggregate Guest Responses",
+        "description": "Compute statistical aggregations (count, sum, avg, min, max) across Guest Responses.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "string",
+                      "example": "*"
+                    },
+                    "sum": {
+                      "type": "string",
+                      "description": "Field to sum"
+                    },
+                    "avg": {
+                      "type": "string",
+                      "description": "Field to average"
+                    },
+                    "min": {
+                      "type": "string",
+                      "description": "Field for minimum"
+                    },
+                    "max": {
+                      "type": "string",
+                      "description": "Field for maximum"
+                    },
+                    "cast": {
+                      "type": "string",
+                      "enum": [
+                        "number",
+                        "integer",
+                        "float",
+                        "boolean",
+                        "date",
+                        "string"
+                      ]
+                    },
+                    "where": {
+                      "type": "object",
+                      "description": "Per-aggregate filter condition",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid aggregate input"
+          },
+          "403": {
+            "description": "Forbidden - Access denied by read rule"
           }
         }
       }

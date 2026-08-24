@@ -3,7 +3,9 @@ title: The Collection List
 description: The list page is where editors find, filter, and manage records — including selecting several at once to delete them in one step.
 ---
 
-Every collection gets a list page: a searchable, sortable table of its records and the starting point for most editing work. This page covers what editors can do there day to day — find records, shape the table, act on a row, and act on many rows at once — and points you to the two faster ways to edit in bulk.
+Every collection gets a list page: a searchable, sortable table of its records and the starting point for most editing work. This list is now the `table` operational view — see [Operational Views](/docs/model-content/operational-views/overview) and [Table layout](/docs/model-content/operational-views/layouts/table) for the `defineView` counterpart that generates it. Collections without `views` still synthesize a `list` view so `/collections/:slug` never breaks.
+
+This page covers what editors can do there day to day — find records, shape the table, act on a row, and act on many rows at once — and points you to the two faster ways to edit in bulk.
 
 By the end you should know how editors navigate the list, how to control what it shows, and how bulk selection and deletion work.
 
@@ -19,9 +21,16 @@ If a collection has a `status` field, a status column is added automatically so 
 
 ## Shaping the table
 
-The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields. Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person. Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](/docs/editor-experience/preferences) for the full cascade and how to set defaults.
+The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields — or from the view's `columns` when you're in an operational view (`defineView({ columns: [...] })`). Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person via `layout:collections:${slug}:view:${viewSlug}` (see [Routing and preferences](/docs/model-content/operational-views/routing-and-preferences) for legacy `view-columns:` fallback). Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](/docs/editor-experience/preferences) for the full cascade and how to set defaults.
 
 ```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineSelectField,
+  defineDateTimeField,
+} from "@dyrected/core";
+
 export const Posts = defineCollection({
   slug: "posts",
   admin: {
@@ -30,7 +39,12 @@ export const Posts = defineCollection({
     defaultColumns: ["title", "status", "publishedAt"],
     searchableFields: ["title", "slug", "excerpt", "author"],
   },
-  fields: [...],
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", unique: true }),
+    defineSelectField({ name: "status", label: "Status", options: ["draft", "published"], defaultValue: "draft" }),
+    defineDateTimeField({ name: "publishedAt", label: "Published At" }),
+  ],
 });
 ```
 
@@ -58,7 +72,7 @@ Bulk delete respects per-record access just like the single-row action: from the
 
 Deleting is one kind of bulk work; editing and moving data are others. Two features on the same list page cover those:
 
-- **[Spreadsheet View](/docs/editor-experience/spreadsheet-view)** — switch the list into a grid and edit many records inline, like a spreadsheet, without opening each edit form.
+- **[Spreadsheet View](/docs/editor-experience/spreadsheet-view)** — inline grid for the same records; now also a first-class `layout: "spreadsheet"` view (`/docs/model-content/operational-views/layouts/spreadsheet`) rather than only a toggle on the legacy list.
 - **[CSV Import & Export](/docs/editor-experience/csv-import-export)** — bulk-import records from a CSV, and export the whole collection to a CSV file.
 
 ## Recommended path

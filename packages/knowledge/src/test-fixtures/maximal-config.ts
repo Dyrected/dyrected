@@ -46,6 +46,63 @@ export const Posts = defineCollection({
   ],
 });
 
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  labels: { singular: "Guest response", plural: "Guest Responses" },
+  fields: [
+    { name: "name", type: "text", label: "Full Name", required: true },
+    { name: "attending", type: "boolean", label: "Attending" },
+    { name: "guestCount", type: "number", label: "Plus-Ones" },
+    {
+      name: "asoebiStatus",
+      type: "select",
+      label: "Asoebi Status",
+      options: ["requested", "paid", "collected"],
+    },
+    { name: "appointmentDate", type: "datetime", label: "Tasting Date" },
+    { name: "checkedIn", type: "boolean", label: "Checked In" },
+    { name: "checkedInAt", type: "datetime", label: "Checked In At" },
+  ],
+  views: [
+    {
+      slug: "attending-guests",
+      label: "Attending Guests",
+      layout: "table",
+      filter: { attending: { equals: true } },
+      columns: ["name", "guestCount", "checkedIn"],
+      actions: [
+        {
+          name: "checkIn",
+          label: "Check In",
+          type: "row",
+          mutation: { checkedIn: true, checkedInAt: "now()" },
+        },
+      ],
+      metrics: [
+        {
+          label: "Total Attending",
+          color: "emerald",
+          aggregate: { count: "*", where: { attending: { equals: true } } },
+        },
+      ],
+    },
+    {
+      slug: "asoebi-pipeline",
+      label: "Asoebi Fulfillment",
+      layout: "kanban",
+      groupBy: "asoebiStatus",
+      columns: ["name", "asoebiStatus"],
+    },
+    {
+      slug: "tasting-schedule",
+      label: "Tasting Schedule",
+      layout: "calendar",
+      dateField: "appointmentDate",
+      columns: ["name", "guestCount"],
+    },
+  ],
+});
+
 export const Settings = defineGlobal({
   slug: "settings",
   label: "Site settings",
@@ -55,7 +112,8 @@ export const Settings = defineGlobal({
 });
 
 export default defineConfig({
-  collections: [Users, Media, Posts],
+  collections: [Users, Media, Posts, GuestResponses],
   globals: [Settings],
   storage,
 });
+

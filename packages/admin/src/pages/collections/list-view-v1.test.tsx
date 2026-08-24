@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { CollectionConfig } from "@dyrected/core"
-import { CollectionListPage } from "./list-page"
+import { CollectionListPage } from "./list-view-v1"
 
 const useDyrectedMock = vi.fn()
 const useQueryMock = vi.fn()

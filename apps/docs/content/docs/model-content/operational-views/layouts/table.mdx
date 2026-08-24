@@ -1,0 +1,89 @@
+---
+title: Table layout
+description: The default workspace for finding, filtering, and acting on records — faceted pills, column controls, and a floating bulk bar.
+---
+
+The table is the workhorse. When editors need to search, narrow by facets, scan columns, and act on one or many rows, start here. Every other layout optimizes for a narrower job — the table optimizes for completeness.
+
+By the end you should know how the table chrome works, which `defineView` keys drive it, and what a shipping-ready table view looks like.
+
+## Visual outcome
+
+```mermaid
+flowchart TB
+  subgraph Chrome[Table — tablecn + TanStack]
+    T1[Toolbar — Search + Faceted pills + View button]
+    T2[Header — sortable columns — View/Edit per row]
+    T3[Rows — name | guestCount | checkedIn | asoebiStatus]
+    T4[Floating bulk bar — 3 selected → Mark Paid / Export / Delete]
+    T1 --> T2 --> T3 --> T4
+  end
+```
+
+![Operational Table Layout](/previews/views-table.png)
+
+## When to use
+
+- **Use when:** The primary job is searching, filtering, auditing, and executing row or bulk actions (e.g. guest list check-in, order fulfillment, data exports).
+- **Don't use when:** The workflow is inherently a multi-step pipeline (use `kanban`), calendar-based (use `calendar`), or image-heavy (use `cards`).
+
+## Complete example
+
+Configure a table view with custom row actions, initial sorting, and summary metrics:
+
+```ts
+import { defineView, defineAction } from "@dyrected/core";
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  icon: "UserCheck",
+  type: "row",
+  confirm: "Confirm guest check-in at the door?",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const attendingGuests = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  icon: "UserCheck",
+  layout: "table",
+  filter: { attending: { equals: true } },
+  columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
+  sort: { field: "name", direction: "asc" },
+  actions: [checkInAction],
+  features: { exportSelected: true },
+  actionOrder: ["checkIn", "view", "edit", "delete"],
+  metrics: [
+    { label: "Total Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
+  ],
+});
+```
+
+The base `filter` restricts data to confirmed attendees, `columns` sets the initial visible fields, `features` enables CSV export for selected rows, and `actionOrder` places the **Check In** button right at the start of each row.
+
+## Chrome and configuration mapping
+
+| Table Feature | Configuration Key | Description |
+| --- | --- | --- |
+| **Search Bar** | `admin.searchableFields` | Queries text and email fields on the backend. |
+| **Faceted Filter Pills** | `filter` & interactive toolbar | Allows editors to filter by status, boolean flags, numbers, or dates with badge counts. |
+| **Column Visibility & Order** | `columns` & `View` toolbar button | Sets initial visible fields; editors can show/hide, reorder, or adjust table density. |
+| **Floating Bulk Bar** | `type: "bulk"` actions | Appears automatically when one or more rows are selected via checkbox. |
+| **Sorting** | `sort` | Initial sort field and direction; can be toggled by clicking table column headers. |
+
+## UX guardrails
+
+- **Columns 3–5**: Start with the title field plus 2–3 key status or operational fields. Editors can toggle additional fields using the View menu.
+- **Row actions 1–2**: Put the primary workflow verb first with `actionOrder`, keeping `view`/`edit` secondary.
+- **Metrics 2–3 above the fold**: Display summary KPIs at the top to provide quick context at a glance.
+
+## Next steps
+
+- Add workflow buttons — [Actions](/docs/model-content/operational-views/actions)
+- Add KPI summary cards — [Metrics](/docs/model-content/operational-views/metrics)
+- Best practices & layout comparison — [UX guidelines](/docs/model-content/operational-views/ux-guidelines)
+- Explore other layouts — [Kanban](/docs/model-content/operational-views/layouts/kanban), [Calendar](/docs/model-content/operational-views/layouts/calendar), [Cards](/docs/model-content/operational-views/layouts/cards), [Spreadsheet](/docs/model-content/operational-views/layouts/spreadsheet)
+
+{/* GENERATED:REFERENCE-OPERATIONAL-VIEWS:START */}
+{/* GENERATED:REFERENCE-OPERATIONAL-VIEWS:END */}

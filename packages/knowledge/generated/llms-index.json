@@ -42,6 +42,26 @@
       ]
     },
     {
+      "id": "calendar-schedule-view",
+      "title": "Set up a Calendar schedule view",
+      "description": "Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.",
+      "problem": "Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates.",
+      "summary": "Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.",
+      "docsPath": "/docs/examples-and-recipes/library/calendar-schedule-view",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/overview",
+        "/docs/model-content/operational-views/define-view",
+        "/docs/model-content/operational-views/layouts/calendar"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "create a calendar view",
+        "display bookings on a calendar",
+        "schedule appointments on monthly/weekly view",
+        "map dateField to an event calendar"
+      ]
+    },
+    {
       "id": "category-taxonomy",
       "title": "Create a category taxonomy for content",
       "description": "Use a reusable categories collection and a has-many relationship from content entries that need tagging.",
@@ -220,6 +240,26 @@
       ]
     },
     {
+      "id": "kanban-pipeline-view",
+      "title": "Build a Kanban pipeline board",
+      "description": "Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.",
+      "problem": "Fulfillment teams need to see orders progress across stages (Requested → Paid → Collected) and drag cards between columns to update status.",
+      "summary": "Configure a Kanban operational view using defineView with layout: 'kanban', groupBy: 'statusField', and quick status actions.",
+      "docsPath": "/docs/examples-and-recipes/library/kanban-pipeline-view",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/overview",
+        "/docs/model-content/operational-views/define-view",
+        "/docs/model-content/operational-views/layouts/kanban"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "create a kanban board view",
+        "group records into status columns",
+        "build an order fulfillment pipeline",
+        "drag cards to change document status"
+      ]
+    },
+    {
       "id": "navigation-global-links",
       "title": "Create a navigation global with nested links",
       "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
@@ -238,6 +278,47 @@
         "store menu links in the cms",
         "manage a navbar global",
         "add nested navigation links"
+      ]
+    },
+    {
+      "id": "operational-metrics",
+      "title": "Add KPI metric cards above a view",
+      "description": "Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.",
+      "problem": "Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning.",
+      "summary": "Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.",
+      "docsPath": "/docs/examples-and-recipes/library/operational-metrics",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/overview",
+        "/docs/model-content/operational-views/metrics",
+        "/docs/model-content/operational-views/define-view"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "add summary cards above a table view",
+        "calculate total revenue from quantity and unit price",
+        "display door check-in attendance percentage",
+        "configure aggregate and subMetrics on a view"
+      ]
+    },
+    {
+      "id": "operational-table-view",
+      "title": "Configure an operational table view",
+      "description": "Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.",
+      "problem": "Front-of-house staff need a fast list of confirmed attendees with a single-click check-in button, without wading through full collection fields.",
+      "summary": "Define a dedicated table view using defineView, filtering confirmed records and attaching a declarative checkIn row action.",
+      "docsPath": "/docs/examples-and-recipes/library/operational-table-view",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/overview",
+        "/docs/model-content/operational-views/define-view",
+        "/docs/model-content/operational-views/layouts/table",
+        "/docs/model-content/operational-views/actions"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "create a filtered table view",
+        "add a check-in button to table rows",
+        "customize visible columns on an operational table",
+        "define an operational view for staff"
       ]
     },
     {
@@ -483,8 +564,44 @@
   ],
   "references": [
     {
+      "id": "@dyrected/core:ActionConfig",
+      "name": "ActionConfig",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ActionContext",
+      "name": "ActionContext",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ActionType",
+      "name": "ActionType",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:AdminConfig",
       "name": "AdminConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AggregateArgs",
+      "name": "AggregateArgs",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AggregateOperation",
+      "name": "AggregateOperation",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AggregateResult",
+      "name": "AggregateResult",
       "category": "configuration",
       "sourcePackage": "@dyrected/core"
     },
@@ -687,9 +804,33 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:defineAction",
+      "name": "defineAction",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DefineActionOptions",
+      "name": "DefineActionOptions",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:definePublishingWorkflow",
       "name": "definePublishingWorkflow",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DefineViewOptions",
+      "name": "DefineViewOptions",
+      "category": "operational-views",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -1233,6 +1374,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:MetricColor",
+      "name": "MetricColor",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:MultiSelectField",
       "name": "MultiSelectField",
       "category": "fields",
@@ -1461,6 +1608,36 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:ViewActionFeatures",
+      "name": "ViewActionFeatures",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewConfig",
+      "name": "ViewConfig",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewLayout",
+      "name": "ViewLayout",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewMetric",
+      "name": "ViewMetric",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ViewSubMetric",
+      "name": "ViewSubMetric",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:WordLimitFieldAdmin",
       "name": "WordLimitFieldAdmin",
       "category": "fields",
@@ -1587,6 +1764,12 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:RunActionArgs",
+      "name": "RunActionArgs",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:SchemaShape",
       "name": "SchemaShape",
       "category": "sdk",
@@ -1622,6 +1805,41 @@
       "method": "GET",
       "path": "/api/audit",
       "summary": "Get audit entries across all readable audited collections"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/guest-responses",
+      "summary": "Find Guest Responses"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/guest-responses",
+      "summary": "Create Guest response"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/guest-responses/{id}",
+      "summary": "Delete Guest response"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/guest-responses/{id}",
+      "summary": "Get a single Guest response"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/collections/guest-responses/{id}",
+      "summary": "Update Guest response"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/guest-responses/aggregate",
+      "summary": "Aggregate Guest Responses"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/guest-responses/delete-many",
+      "summary": "Delete multiple Guest Responses"
     },
     {
       "method": "GET",

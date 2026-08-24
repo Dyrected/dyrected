@@ -44,6 +44,69 @@ When you define a collection, Dyrected generates the main content surfaces aroun
 
 Collections can also opt into behaviors such as authentication, uploads, workflows, and audit logging.
 
+## Operational views
+
+A collection can have more than one admin workspace. Add a `views` array with `defineView` — Dyrected turns each entry into its own table, board, calendar, gallery, or spreadsheet with a dedicated sidebar item, filter, columns, actions, and metrics.
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineBooleanField,
+  defineNumberField,
+  defineSelectField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+} from "@dyrected/core";
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  type: "row",
+  mutation: { checkedIn: true, checkedInAt: "now()" },
+});
+
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineBooleanField({ name: "attending", label: "Attending" }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones" }),
+    defineSelectField({ name: "asoebiStatus", label: "Asoebi Status", options: ["requested", "paid", "collected"] }),
+    defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
+  ],
+  views: [
+    defineView({
+      slug: "attending-guests",
+      label: "Attending Guests",
+      layout: "table",
+      filter: { attending: { equals: true } },
+      columns: ["name", "guestCount"],
+      actions: [checkInAction],
+    }),
+    defineView({
+      slug: "asoebi-pipeline",
+      label: "Asoebi Fulfillment",
+      layout: "kanban",
+      groupBy: "asoebiStatus",
+      columns: ["name", "asoebiStatus"],
+    }),
+    defineView({
+      slug: "tasting-schedule",
+      label: "Tasting Schedule",
+      layout: "calendar",
+      dateField: "appointmentDate",
+      columns: ["name", "guestCount"],
+    }),
+  ],
+});
+```
+
+If you omit `views`, Dyrected synthesizes a `list` table view from `admin.defaultColumns` or the first five display fields — so `/collections/:slug` always has a route. Keep `slug` and view `slug`s stable; they are part of the URL and preference keys.
+
+For layouts, actions, metrics, and UX taste, read [Operational Views](/docs/model-content/operational-views/overview).
+
 ## When to choose a collection
 
 Choose a collection when the answer to "how many of these exist?" is "more than one" or "probably more than one later."
@@ -448,6 +511,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * Custom detail view layout configuration for the Admin UI.
    */
   detail?: DetailSchema<TDoc> | false;
+
+  /**
+   * Operational views for this collection.
+   * Each view provides a tailored workspace for a specific job or workflow.
+   */
+  views?: ViewConfig[];
 }
 ```
 
@@ -469,6 +538,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
 | <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>views</code> (optional) | Operational views for this collection. Each view provides a tailored workspace for a specific job or workflow. |
 {/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}
 
 ## `admin` options

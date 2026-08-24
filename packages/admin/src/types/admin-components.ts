@@ -75,6 +75,35 @@ export interface CollectionListSlotProps {
   };
 }
 
+/** Props injected into custom operational-view slot components. */
+export interface CollectionViewSlotProps {
+  /** Authenticated SDK client. */
+  client: DyrectedClient;
+  /** Currently logged-in user document, or `null` when unauthenticated. */
+  user: Record<string, unknown> | null;
+  /** Schema config for the collection being rendered. */
+  collection: CollectionConfig;
+  /** URL slug of the collection (e.g. `"posts"`). */
+  collectionSlug: string;
+  /** Slug of the operational view being rendered. */
+  viewSlug: string;
+  /** The serialized view config (`layout`, `columns`, `metrics`, …). */
+  view: Record<string, unknown>;
+  /** Documents loaded for the current view. */
+  documents: Record<string, unknown>[];
+  /** `true` while the view query is in-flight. */
+  isLoading: boolean;
+  permissions: {
+    canCreate: boolean;
+  };
+  urls: {
+    /** Admin URL for the collection list view. */
+    collection: string;
+    /** Admin URL for the new-document form. */
+    create: string;
+  };
+}
+
 export interface AdminFieldComponentContext {
   user: Record<string, unknown> | null;
   schemas?: AdminSchemas;
@@ -131,4 +160,12 @@ export interface AdminComponents {
    * list — they do not replace it.
    */
   collectionList?: Record<string, ComponentType<CollectionListSlotProps>>;
+  /**
+   * Operational-view slot components keyed by the slot-key names declared in a
+   * collection's `admin.components.collectionView` object (`beforeViewHeader` /
+   * `afterViewHeader` / `beforeViewContent` / `afterViewContent`). They inject
+   * content around any operational view layout — table, spreadsheet, kanban,
+   * calendar, or cards.
+   */
+  collectionView?: Record<string, ComponentType<CollectionViewSlotProps>>;
 }

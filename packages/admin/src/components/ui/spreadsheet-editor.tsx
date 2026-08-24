@@ -165,7 +165,7 @@ function SubFieldRow({ subField, value, onChange, collection }: { subField: Fiel
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-0.5">
-      <label className="dy-text-[10px] dy-text-muted-foreground">{subField.label || subField.name}</label>
+      <span className="dy-text-[10px] dy-text-muted-foreground">{subField.label || subField.name}</span>
       <FieldRenderer
         schema={subField as unknown as import("@dyrected/sdk").Field}
         field={syntheticField}

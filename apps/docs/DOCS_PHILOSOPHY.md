@@ -190,6 +190,14 @@ Application-user auth stays in the application, a dedicated identity provider, o
 
 Do not let Cloud auth copy sound like Dyrected Cloud is a hosted replacement for a product's customer identity system.
 
+### Conditional runtime blocks in shared pages
+
+When a shared page covers features where self-hosted projects have server-only capabilities (such as custom TypeScript async handlers, direct DB access, or arbitrary Node.js code):
+
+- Use `<SelfHostedOnly>` to enclose server-specific code blocks, config options, and explanations so they only appear when the reader is viewing the self-hosted runtime.
+- Use `<CloudOnly>` when Cloud has dedicated managed paths or UI workflows.
+- Never expose unsupported server function code to Cloud readers without enclosing it in `<SelfHostedOnly>`, ensuring Cloud users receive a clean, focused, 100% supported guide without feeling left out or confused.
+
 ---
 
 ## 10. Structure borrowing

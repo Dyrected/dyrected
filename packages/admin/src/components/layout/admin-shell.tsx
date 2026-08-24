@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -22,11 +22,12 @@ import {
   Share2,
   LayoutDashboard,
   Users,
+  icons,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-context"
 import { isNewerVersion, useLatestRelease } from "../../hooks/use-latest-release"
 import { cn, getMediaUrl } from "../../lib/utils"
-import { resolveAdminIcon } from "../../lib/admin-icons"
+import { isAdminIconName, resolveAdminIcon } from "../../lib/admin-icons"
 import { BrandingProvider } from "./branding-provider"
 import { SidebarControlProvider } from "./sidebar-control"
 import {
@@ -39,6 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
@@ -59,25 +61,33 @@ function getUserInitial(user: Record<string, unknown> | null | undefined) {
   return getUserLabel(user).charAt(0).toUpperCase()
 }
 
-// ---------------------------------------------------------------------------
-// Single nav item
-// ---------------------------------------------------------------------------
 function NavItem({
   to,
   icon: Icon,
   label,
+  tooltipLabel,
   active,
+  isAncestorActive = false,
+  hasChildren = false,
   collapsed,
   onClick,
 }: {
   to: string
   icon: React.ElementType
   label: React.ReactNode
+  tooltipLabel?: string
   active: boolean
+  isAncestorActive?: boolean
+  hasChildren?: boolean
   collapsed: boolean
   onClick?: () => void
 }) {
-  return (
+  // Derive a plain-text tooltip when caller doesn't provide one — handles string labels
+  const tooltipText =
+    tooltipLabel ??
+    (typeof label === "string" ? label : undefined)
+
+  const link = (
     <Link
       to={to}
       onClick={onClick}
@@ -85,28 +95,104 @@ function NavItem({
         "dy-group dy-flex dy-items-center dy-gap-3 dy-rounded-md dy-px-3 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
         collapsed ? "dy-justify-center dy-px-2" : "",
         active
-          ? "dy-bg-primary dy-text-primary-foreground"
-          : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
+          ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+          : isAncestorActive
+            ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
+            : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
       )}
     >
       <Icon
         className={cn(
           "dy-shrink-0 dy-transition-colors",
           collapsed ? "dy-h-[17px] dy-w-[17px]" : "dy-h-[15px] dy-w-[15px]",
-          active ? "dy-text-background" : "dy-text-foreground dy-group-hover:dy-text-foreground"
+          active
+            ? "dy-text-primary-foreground"
+            : isAncestorActive
+              ? "dy-text-foreground"
+              : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
         )}
       />
       {!collapsed && <span className="dy-truncate">{label}</span>}
-      {!collapsed && active && (
-        <ChevronRight className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-opacity-50 dy-shrink-0" />
+      {!collapsed && (
+        <>
+          {hasChildren && isAncestorActive && (
+            <ChevronDown className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/70 dy-shrink-0" />
+          )}
+          {hasChildren && !isAncestorActive && !active && (
+            <ChevronRight className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/30 dy-group-hover:dy-text-muted-foreground/60 dy-shrink-0" />
+          )}
+          {hasChildren && active && (
+            <ChevronDown className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-text-primary-foreground/70 dy-shrink-0" />
+          )}
+        </>
       )}
     </Link>
+  )
+
+  if (!collapsed || !tooltipText) return link
+
+  return (
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+        {tooltipText}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
 // ---------------------------------------------------------------------------
 // Nav Group (Collapsible)
 // ---------------------------------------------------------------------------
+function NavSubItem({
+  to,
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  to: string
+  icon?: string
+  label: string
+  active: boolean
+  onClick?: () => void
+}) {
+  const Icon = icon && isAdminIconName(icon) ? icons[icon] : null
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={cn(
+        "dy-group dy-relative dy-flex dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-1.5 dy-text-xs dy-transition-all dy-duration-150",
+        active
+          ? "dy-bg-primary dy-text-primary-foreground dy-font-semibold dy-shadow-xs"
+          : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
+      )}
+    >
+      {Icon ? (
+        <Icon
+          className={cn(
+            "dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-transition-colors",
+            active
+              ? "dy-text-primary-foreground"
+              : "dy-text-muted-foreground/70 dy-group-hover:dy-text-foreground"
+          )}
+        />
+      ) : (
+        <span
+          className={cn(
+            "dy-h-1.5 dy-w-1.5 dy-shrink-0 dy-rounded-full dy-transition-colors",
+            active
+              ? "dy-bg-primary-foreground"
+              : "dy-bg-muted-foreground/40 dy-group-hover:dy-bg-foreground"
+          )}
+        />
+      )}
+      <span className="dy-truncate">{label}</span>
+    </Link>
+  )
+}
+
 function NavGroup({
   label,
   children,
@@ -151,6 +237,117 @@ function NavGroup({
   )
 }
 
+function CollapsedCollectionMenu({
+  col,
+  views,
+  isExactActive,
+  isChildActive,
+  onNavigate,
+  location,
+}: {
+  col: AdminSidebarCollection
+  views: NonNullable<AdminSidebarCollection["views"]>
+  isExactActive: boolean
+  isChildActive: boolean
+  onNavigate?: () => void
+  location: ReturnType<typeof useLocation>
+}) {
+  const [open, setOpen] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
+  const ParentIcon = resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)
+
+  const handleEnter = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    setOpen(true)
+  }
+  const handleLeave = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = window.setTimeout(() => setOpen(false), 140) as unknown as number
+  }
+
+  const tooltipLabel = col.labels?.plural ?? col.label ?? col.slug
+
+  const triggerButton = (
+    <button
+      type="button"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      onClick={() => setOpen((v) => !v)}
+      className={cn(
+        "dy-group dy-flex dy-w-full dy-items-center dy-justify-center dy-rounded-md dy-px-2 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
+        isExactActive
+          ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+          : isChildActive
+            ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
+            : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
+      )}
+      aria-label={`Open ${tooltipLabel} views`}
+    >
+      <ParentIcon
+        className={cn(
+          "dy-h-[17px] dy-w-[17px] dy-shrink-0 dy-transition-colors",
+          isExactActive
+            ? "dy-text-primary-foreground"
+            : isChildActive
+              ? "dy-text-foreground"
+              : "dy-text-muted-foreground dy-group-hover:dy-text-foreground",
+        )}
+      />
+    </button>
+  )
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        {open ? (
+          triggerButton
+        ) : (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+              {tooltipLabel}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="right"
+        align="start"
+        sideOffset={10}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        className="dy-w-56 dy-p-1.5 dy-border-border/40 dy-bg-popover/95 dy-backdrop-blur-sm dy-shadow-xl dy-rounded-xl"
+      >
+        <DropdownMenuLabel className="dy-text-xs dy-font-semibold">{col.labels?.plural ?? col.slug}</DropdownMenuLabel>
+        <DropdownMenuSeparator className="dy-bg-border/40" />
+        <DropdownMenuItem asChild>
+          <Link to={`/collections/${col.slug}`} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-rounded-md">
+            <LayoutDashboard className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+            All {col.labels?.plural ?? col.slug}
+          </Link>
+        </DropdownMenuItem>
+        {views.map((view) => {
+          const viewPath = `/collections/${col.slug}/views/${view.slug}`
+          const active = location.pathname === viewPath
+          const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
+          return (
+            <DropdownMenuItem
+              key={viewPath}
+              asChild
+              className={cn("dy-rounded-md", active && "dy-bg-accent dy-text-accent-foreground")}
+            >
+              <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
+                {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
+                {view.label}
+              </Link>
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function ThemeSelector({
   collapsed = false,
   mobile = false,
@@ -169,23 +366,36 @@ function ThemeSelector({
     { value: "dark", label: "Dark", icon: Moon },
   ]
 
+  const showTooltip = collapsed || mobile || iconOnly
+  const triggerButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      size={mobile || collapsed || iconOnly ? "icon" : "sm"}
+      className={cn(
+        "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
+        collapsed || mobile || iconOnly ? "dy-h-7 dy-w-7 dy-px-0 dy-justify-center" : "dy-h-7 dy-w-full dy-justify-start dy-px-2.5 dy-text-[11px]"
+      )}
+      aria-label="Change admin theme"
+    >
+      <Icon className="dy-h-3.5 dy-w-3.5" />
+      {!collapsed && !mobile && !iconOnly && <span>Theme</span>}
+    </Button>
+  )
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size={mobile || collapsed || iconOnly ? "icon" : "sm"}
-          className={cn(
-            "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
-            collapsed || mobile || iconOnly ? "dy-h-7 dy-w-7 dy-px-0 dy-justify-center" : "dy-h-7 dy-w-full dy-justify-start dy-px-2.5 dy-text-[11px]"
-          )}
-          title="Theme"
-          aria-label="Change admin theme"
-        >
-          <Icon className="dy-h-3.5 dy-w-3.5" />
-          {!collapsed && !mobile && !iconOnly && <span>Theme</span>}
-        </Button>
+        {showTooltip ? (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+              Theme — {theme}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          triggerButton
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent side={collapsed || mobile ? "bottom" : "top"} align="end" sideOffset={8} className="dy-w-40">
         <DropdownMenuLabel className="dy-px-2 dy-py-1.5 dy-text-xs dy-text-muted-foreground">
@@ -239,6 +449,11 @@ interface AdminSidebarCollection {
     update?: boolean;
     delete?: boolean;
   };
+  views?: Array<{
+    slug: string;
+    label: string;
+    icon?: string;
+  }>;
   shared?: boolean;
 }
 
@@ -273,6 +488,14 @@ function SidebarInner({
   updateInfo: UpdateInfo | null
 }) {
   const { client, user } = useDyrected()
+  const [collapsedCollections, setCollapsedCollections] = useState<Set<string>>(() => new Set())
+  const toggleCollection = (slug: string) =>
+    setCollapsedCollections((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
   const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCollections = collections.filter((c) => c.upload)
@@ -303,16 +526,73 @@ function SidebarInner({
       </div>
     )
 
+    const views = col.views ?? []
+    const hasMeaningfulViews = views.length > 1 || (views.length === 1 && views[0].slug !== "list")
+    const isChildActive = location.pathname.startsWith(`/collections/${col.slug}/views/`)
+    const isExactActive =
+      !isChildActive && location.pathname.startsWith(`/collections/${col.slug}`)
+    const isExpanded = !collapsedCollections.has(col.slug)
+
+    if (collapsed && hasMeaningfulViews) {
+      return (
+        <div key={col.slug} className="dy-space-y-0.5">
+          <CollapsedCollectionMenu
+            col={col}
+            views={views}
+            isExactActive={isExactActive}
+            isChildActive={isChildActive}
+            onNavigate={onNavigate}
+            location={location}
+          />
+        </div>
+      )
+    }
+
     return (
-      <NavItem
-        key={col.slug}
-        to={`/collections/${col.slug}`}
-        icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
-        label={navLabel}
-        active={location.pathname.startsWith(`/collections/${col.slug}`)}
-        collapsed={collapsed}
-        onClick={onNavigate}
-      />
+      <div key={col.slug} className="dy-space-y-0.5">
+        <div className="dy-flex dy-items-center dy-gap-1">
+          <div className="dy-flex-1 dy-min-w-0">
+            <NavItem
+              to={`/collections/${col.slug}`}
+              icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
+              label={navLabel}
+              tooltipLabel={col.labels?.plural ?? col.label ?? col.slug}
+              active={isExactActive}
+              isAncestorActive={isChildActive}
+              hasChildren={false}
+              collapsed={collapsed}
+              onClick={onNavigate}
+            />
+          </div>
+          {!collapsed && hasMeaningfulViews && (
+            <button
+              type="button"
+              onClick={() => toggleCollection(col.slug)}
+              aria-label={isExpanded ? `Collapse ${col.slug}` : `Expand ${col.slug}`}
+              className="dy-flex dy-h-6 dy-w-6 dy-shrink-0 dy-items-center dy-justify-center dy-rounded dy-text-muted-foreground/50 hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+            >
+              {isExpanded ? <ChevronDown className="dy-h-3.5 dy-w-3.5" /> : <ChevronRight className="dy-h-3.5 dy-w-3.5" />}
+            </button>
+          )}
+        </div>
+        {!collapsed && hasMeaningfulViews && isExpanded && (
+          <div className="dy-relative dy-ml-4 dy-border-l dy-border-border/60 dy-pl-2 dy-space-y-0.5 dy-my-1">
+            {views.map((view) => {
+              const viewPath = `/collections/${col.slug}/views/${view.slug}`
+              return (
+                <NavSubItem
+                  key={viewPath}
+                  to={viewPath}
+                  icon={view.icon}
+                  label={view.label}
+                  active={location.pathname === viewPath}
+                  onClick={onNavigate}
+                />
+              )
+            })}
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -506,6 +786,7 @@ function SidebarInner({
               )}
             </div>
           }
+          tooltipLabel="Setup & Help"
           active={location.pathname === "/setup"}
           collapsed={collapsed}
           onClick={onNavigate}
@@ -513,34 +794,46 @@ function SidebarInner({
         {!isEmbedded && user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                title={collapsed ? getUserLabel(user) : undefined}
-                aria-label={`Open account menu for ${getUserLabel(user)}`}
-                className={cn(
-                  "dy-group dy-flex dy-w-full dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-2 dy-text-left dy-transition-colors hover:dy-bg-accent/70 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
-                  collapsed ? "dy-justify-center dy-px-2" : ""
-                )}
-              >
-                <div className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/15 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                  {getUserInitial(user)}
-                </div>
-                {!collapsed && (
-                  <>
-                    <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-col">
-                      <span className="dy-truncate dy-text-[12px] dy-font-medium dy-text-foreground">
-                        {getUserLabel(user)}
-                      </span>
-                      {getUserString(user, "name") && getUserString(user, "email") && (
-                        <span className="dy-truncate dy-text-[10px] dy-text-muted-foreground">
-                          {getUserString(user, "email")}
-                        </span>
-                      )}
+              {(() => {
+                const userButton = (
+                  <button
+                    type="button"
+                    aria-label={`Open account menu for ${getUserLabel(user)}`}
+                    className={cn(
+                      "dy-group dy-flex dy-w-full dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-2 dy-text-left dy-transition-colors hover:dy-bg-accent/70 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
+                      collapsed ? "dy-justify-center dy-px-2" : ""
+                    )}
+                  >
+                    <div className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/15 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+                      {getUserInitial(user)}
                     </div>
-                    <ChevronDown className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-text-muted-foreground/60 dy-transition-transform group-data-[state=open]:dy-rotate-180" />
-                  </>
-                )}
-              </button>
+                    {!collapsed && (
+                      <>
+                        <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-col">
+                          <span className="dy-truncate dy-text-[12px] dy-font-medium dy-text-foreground">
+                            {getUserLabel(user)}
+                          </span>
+                          {getUserString(user, "name") && getUserString(user, "email") && (
+                            <span className="dy-truncate dy-text-[10px] dy-text-muted-foreground">
+                              {getUserString(user, "email")}
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDown className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-text-muted-foreground/60 dy-transition-transform group-data-[state=open]:dy-rotate-180" />
+                      </>
+                    )}
+                  </button>
+                )
+                if (!collapsed) return userButton
+                return (
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>{userButton}</TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+                      {getUserLabel(user)}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })()}
             </DropdownMenuTrigger>
             <DropdownMenuContent
               side={collapsed ? "right" : "top"}
@@ -575,24 +868,37 @@ function SidebarInner({
           collapsed ? "dy-flex-col dy-items-center" : "dy-flex-row dy-justify-between"
         )}>
           {onToggleCollapse && !isEmbedded && (
-            <button
-              onClick={onToggleCollapse}
-              className={cn(
-                "dy-group/btn dy-flex dy-h-7 dy-items-center dy-gap-2 dy-rounded-md dy-px-2.5 dy-text-[11px] dy-font-medium dy-text-muted-foreground/45 dy-transition-colors hover:dy-bg-accent/40 hover:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
-                collapsed ? "dy-justify-center dy-px-2 dy-w-full" : "dy-flex-1"
-              )}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <PanelLeftOpen className="dy-h-3.5 dy-w-3.5" />
-              ) : (
-                <>
-                  <PanelLeftClose className="dy-h-3.5 dy-w-3.5 dy-transition-transform dy-group-hover/btn:dy--translate-x-0.5" />
-                  <span className="dy-truncate">Collapse</span>
-                </>
-              )}
-            </button>
+            (() => {
+              const label = collapsed ? "Expand sidebar" : "Collapse sidebar"
+              const btn = (
+                <button
+                  onClick={onToggleCollapse}
+                  className={cn(
+                    "dy-group/btn dy-flex dy-h-7 dy-items-center dy-gap-2 dy-rounded-md dy-px-2.5 dy-text-[11px] dy-font-medium dy-text-muted-foreground/45 dy-transition-colors hover:dy-bg-accent/40 hover:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
+                    collapsed ? "dy-justify-center dy-px-2 dy-w-full" : "dy-flex-1"
+                  )}
+                  aria-label={label}
+                >
+                  {collapsed ? (
+                    <PanelLeftOpen className="dy-h-3.5 dy-w-3.5" />
+                  ) : (
+                    <>
+                      <PanelLeftClose className="dy-h-3.5 dy-w-3.5 dy-transition-transform dy-group-hover/btn:dy--translate-x-0.5" />
+                      <span className="dy-truncate">Collapse</span>
+                    </>
+                  )}
+                </button>
+              )
+              if (!collapsed) return btn
+              return (
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+                    {label}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })()
           )}
 
           <ThemeSelector collapsed={collapsed} iconOnly={!collapsed} />
@@ -668,12 +974,13 @@ export function AdminShell({
   return (
     <BrandingProvider>
       <SidebarControlProvider value={sidebarControl}>
-        <div
-          className={cn(
-            "dy-relative dy-flex dy-w-full dy-min-h-0 dy-overflow-hidden",
-            isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-h-[100dvh]"
-          )}
-        >
+        <TooltipProvider delayDuration={300}>
+          <div
+            className={cn(
+              "dy-relative dy-flex dy-w-full dy-min-h-0 dy-overflow-hidden",
+              isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-h-[100dvh]"
+            )}
+          >
           {/* ... existing sidebar and main content ... */}
           <aside
             className={cn(
@@ -745,7 +1052,8 @@ export function AdminShell({
               {children}
             </div>
           </main>
-        </div>
+          </div>
+        </TooltipProvider>
       </SidebarControlProvider>
     </BrandingProvider>
   )

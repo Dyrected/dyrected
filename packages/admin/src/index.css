@@ -87,6 +87,40 @@
     height: auto;
   }
 
+  /* Sexy scrollbars — thin, rounded, muted */
+  .dy-admin-ui * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .dy-admin-ui *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   /* Dyrected defaults: Lime Paper, Signal Lime, and Violet. */
   .dy-admin-ui {
     /* Fonts */
@@ -185,6 +219,22 @@
 
   .dy-admin-ui {
     color-scheme: light;
+    /* Tailwind v4-style theme color variables referenced by the ReUI event
+       calendar (event color presets, slot-line tint, default event color).
+       v3 does not emit these, so they are defined here, mapped to the theme. */
+    --color-border: hsl(var(--border));
+    --color-primary: hsl(var(--primary));
+    --color-blue-500: #3b82f6;
+    --color-emerald-500: #10b981;
+    --color-violet-500: #8b5cf6;
+    --color-rose-500: #f43f5e;
+    --color-amber-500: #f59e0b;
+    --color-cyan-500: #06b6d4;
+    --color-orange-500: #f97316;
+    --color-pink-500: #ec4899;
+    --color-teal-500: #14b8a6;
+    --color-indigo-500: #6366f1;
+
     /* Base text/background so elements without an explicit color utility (raw
        inputs via `color: inherit`, ghost/outline buttons, plain text) resolve
        to the themed foreground instead of the browser default black — which is

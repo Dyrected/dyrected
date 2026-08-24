@@ -3,6 +3,7 @@ import { Clock } from "lucide-react"
 import { Input } from "../../ui/input"
 
 interface TimePickerProps {
+  id?: string
   value?: string
   onChange: (value: string) => void
   label?: string
@@ -13,7 +14,7 @@ interface TimePickerProps {
  * A standalone time-only input field.
  * Stores values as "HH:mm" strings.
  */
-export function TimePicker({ value, onChange, label, disabled }: TimePickerProps) {
+export function TimePicker({ id, value, onChange, label, disabled }: TimePickerProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value)
   }
@@ -21,13 +22,14 @@ export function TimePicker({ value, onChange, label, disabled }: TimePickerProps
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
       {label && (
-        <label className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
+        <span className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
           {label}
-        </label>
+        </span>
       )}
       <div className="dy-relative dy-flex dy-items-center">
         <Clock className="dy-absolute dy-left-3 dy-h-4 dy-w-4 dy-text-primary dy-pointer-events-none" />
         <Input
+          id={id}
           type="time"
           value={value || ""}
           onChange={handleChange}

@@ -343,6 +343,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deliver-content/sdk-api/overview#example-19",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deliver-content/sdk-api/pagination#example-1",
     "page": "/deliver-content/sdk-api/pagination",
     "language": "ts",
@@ -373,6 +380,27 @@
   {
     "id": "/deliver-content/sdk-api/pagination#example-5",
     "page": "/deliver-content/sdk-api/pagination",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/run-action#example-1",
+    "page": "/deliver-content/sdk-api/run-action",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/run-action#example-2",
+    "page": "/deliver-content/sdk-api/run-action",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/run-action#example-3",
+    "page": "/deliver-content/sdk-api/run-action",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
@@ -1473,8 +1501,8 @@
     "id": "/editor-experience/custom-components/list-view#example-1",
     "page": "/editor-experience/custom-components/list-view",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/editor-experience/custom-components/list-view#example-2",
@@ -2096,8 +2124,8 @@
     "id": "/editor-experience/list-view#example-1",
     "page": "/editor-experience/list-view",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/editor-experience/media-hooks#example-1",
@@ -2667,6 +2695,13 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/calendar-schedule-view#example-1",
+    "page": "/examples-and-recipes/library/calendar-schedule-view",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/category-taxonomy#example-1",
     "page": "/examples-and-recipes/library/category-taxonomy",
     "language": "ts",
@@ -2730,8 +2765,29 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/kanban-pipeline-view#example-1",
+    "page": "/examples-and-recipes/library/kanban-pipeline-view",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/navigation-global-links#example-1",
     "page": "/examples-and-recipes/library/navigation-global-links",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/operational-metrics#example-1",
+    "page": "/examples-and-recipes/library/operational-metrics",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/operational-table-view#example-1",
+    "page": "/examples-and-recipes/library/operational-table-view",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
@@ -3447,6 +3503,13 @@
     "id": "/model-content/configuration/collections#example-7",
     "page": "/model-content/configuration/collections",
     "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-8",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
@@ -3494,6 +3557,27 @@
   },
   {
     "id": "/model-content/configuration/overview#example-3",
+    "page": "/model-content/configuration/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/overview#example-4",
+    "page": "/model-content/configuration/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/overview#example-5",
+    "page": "/model-content/configuration/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/overview#example-6",
     "page": "/model-content/configuration/overview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -5346,6 +5430,216 @@
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-1",
+    "page": "/model-content/operational-views/actions",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-2",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-3",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-4",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-5",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-6",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-1",
+    "page": "/model-content/operational-views/define-view",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-2",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-3",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-4",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/calendar#example-1",
+    "page": "/model-content/operational-views/layouts/calendar",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/calendar#example-2",
+    "page": "/model-content/operational-views/layouts/calendar",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/calendar#example-3",
+    "page": "/model-content/operational-views/layouts/calendar",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/cards#example-1",
+    "page": "/model-content/operational-views/layouts/cards",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/cards#example-2",
+    "page": "/model-content/operational-views/layouts/cards",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/kanban#example-1",
+    "page": "/model-content/operational-views/layouts/kanban",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/kanban#example-2",
+    "page": "/model-content/operational-views/layouts/kanban",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/spreadsheet#example-1",
+    "page": "/model-content/operational-views/layouts/spreadsheet",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/spreadsheet#example-2",
+    "page": "/model-content/operational-views/layouts/spreadsheet",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/table#example-1",
+    "page": "/model-content/operational-views/layouts/table",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/layouts/table#example-2",
+    "page": "/model-content/operational-views/layouts/table",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-1",
+    "page": "/model-content/operational-views/metrics",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-2",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-3",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-4",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-5",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/overview#example-1",
+    "page": "/model-content/operational-views/overview",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/overview#example-2",
+    "page": "/model-content/operational-views/overview",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/overview#example-3",
+    "page": "/model-content/operational-views/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/ux-guidelines#example-1",
+    "page": "/model-content/operational-views/ux-guidelines",
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/reference/cli#example-1",

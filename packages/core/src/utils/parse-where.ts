@@ -110,7 +110,7 @@ export function parseSqlWhere(
 
     // Shorthand scalar: { slug: 'hello' } → treat as equals
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      params.push(value);
+      params.push(typeof value === 'boolean' ? String(value) : value);
       return `${c} = ${next()}`;
     }
 
@@ -139,14 +139,20 @@ export function parseSqlWhere(
       case 'in': {
         const vals: any[] = Array.isArray(operand) ? operand : [operand];
         if (vals.length === 0) return '1=0'; // IN () is invalid SQL
-        const placeholders = vals.map((v) => { params.push(v); return next(); });
+        const placeholders = vals.map((v) => {
+          params.push(typeof v === 'boolean' ? String(v) : v);
+          return next();
+        });
         return `${c} IN (${placeholders.join(', ')})`;
       }
 
       case 'not_in': {
         const vals: any[] = Array.isArray(operand) ? operand : [operand];
         if (vals.length === 0) return '1=1';
-        const placeholders = vals.map((v) => { params.push(v); return next(); });
+        const placeholders = vals.map((v) => {
+          params.push(typeof v === 'boolean' ? String(v) : v);
+          return next();
+        });
         return `${c} NOT IN (${placeholders.join(', ')})`;
       }
 

@@ -5,12 +5,12 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { toast } from "sonner";
 
-export function FirstUserPage({ 
-  collectionSlug, 
-  onComplete 
-}: { 
-  collectionSlug: string; 
-  onComplete: (data: any) => void 
+export function FirstUserPage({
+  collectionSlug,
+  onComplete
+}: {
+  collectionSlug: string;
+  onComplete: (data: any) => void
 }) {
   const { client } = useDyrected();
   const [email, setEmail] = useState("");
@@ -106,7 +106,7 @@ export function FirstUserPage({
 
         <div className="dy-pt-4 dy-border-t dy-text-center dy-space-y-2">
           <p className="dy-text-[10px] dy-text-muted-foreground dy-uppercase dy-tracking-widest">
-            Dyrected CMS · Initial Setup
+            <a target="_blank" rel="noreferrer" href="https://dyrected.com?utm_source=admin&utm_medium=auth&utm_campaign=first-user">Dyrected CMS</a> | Initial Setup
           </p>
         </div>
       </div>
