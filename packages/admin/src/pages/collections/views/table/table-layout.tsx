@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { ColumnDef, ColumnFiltersState, PaginationState, SortingState } from "@tanstack/react-table"
+import type { ColumnFiltersState, PaginationState, SortingState } from "@tanstack/react-table"
 import {
   getCoreRowModel,
   getFacetedRowModel,
@@ -12,6 +12,8 @@ import { Checkbox } from "../../../../components/ui/checkbox"
 import { DataTable } from "./data-table"
 import { DataTableToolbar } from "./data-table-toolbar"
 import { DataTableViewOptions } from "./data-table-view-options"
+import { GroupedTableView } from "./grouped-table-view"
+import { getGroupableFields, useTableGroups } from "./use-table-groups"
 import { buildViewColumns } from "../build-view-columns"
 import { BulkActionBar } from "../bulk-action-bar"
 import { useColumnPreferences } from "../use-column-preferences"
@@ -95,7 +97,9 @@ export function TableLayout({
       try {
         const parsed = JSON.parse(f)
         if (Array.isArray(parsed)) return parsed as ColumnFiltersState
-      } catch {}
+      } catch {
+        // ignore invalid json filter param
+      }
     }
     return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
   }
@@ -104,12 +108,32 @@ export function TableLayout({
     if (op === "or" || op === "and") return op
     return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
   }
+  const getInitialSearch = (): string => searchParams.get("search") || ""
+  const getInitialGroupBy = (): string | undefined => {
+    const urlGroupBy = searchParams.get("groupBy")
+    if (urlGroupBy) {
+      return urlGroupBy === "none" ? undefined : urlGroupBy
+    }
+    return view.groupBy || undefined
+  }
 
   const [pagination, setPagination] = React.useState<PaginationState>(getInitialPagination)
   const [sorting, setSorting] = React.useState<SortingState>(getInitialSorting)
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
   const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [globalFilter, setGlobalFilter] = React.useState<string>(getInitialSearch)
+  const [groupBy, setGroupBy] = React.useState<string | undefined>(getInitialGroupBy)
+  const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
+
+  // Synchronize groupBy when the active view changes
+  React.useEffect(() => {
+    const urlGroupBy = searchParams.get("groupBy")
+    if (urlGroupBy) {
+      setGroupBy(urlGroupBy === "none" ? undefined : urlGroupBy)
+    } else {
+      setGroupBy(view.groupBy || undefined)
+    }
+  }, [view.groupBy, view.slug, searchParams])
 
   const handleSortingChange = React.useCallback(
     (updater: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -145,7 +169,12 @@ export function TableLayout({
     () => actions.filter((action) => (action.type ?? "row") === "row"),
     [actions],
   )
-  const searchColumnId = findTextColumn(view.columns, schema)
+
+  const groupableFields = React.useMemo(() => getGroupableFields(schema), [schema])
+  const groupByOptions = React.useMemo(
+    () => groupableFields.map((f) => ({ value: f.name, label: f.label })),
+    [groupableFields],
+  )
 
   /**
    * Managed columns are the schema-driven field columns; the select column
@@ -164,17 +193,17 @@ export function TableLayout({
       allColumnIds: [...specified, ...remaining],
       defaultHiddenIds: remaining,
     }
-  }, [schema, view.columns])
+  }, [view.columns, schema])
 
   const columnPreferences = useColumnPreferences({
     slug,
     viewSlug: view.slug,
     columnIds: allColumnIds,
     defaultHidden: defaultHiddenIds,
-    fixedIds: ["select"],
+    variant: "table",
   })
 
-  const columns = React.useMemo<ColumnDef<any, any>[]>(() => {
+  const columns = React.useMemo(() => {
     return buildViewColumns({
       schema,
       client,
@@ -191,7 +220,7 @@ export function TableLayout({
       leadingColumns: [
         {
           id: "select",
-          header: ({ table }) => (
+          header: ({ table }: any) => (
             <Checkbox
               checked={
                 table.getIsAllPageRowsSelected()
@@ -204,7 +233,7 @@ export function TableLayout({
               aria-label="Select all"
             />
           ),
-          cell: ({ row }) => (
+          cell: ({ row }: any) => (
             <Checkbox
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -240,27 +269,29 @@ export function TableLayout({
     return buildServerWhere({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
-      searchColumnId,
+      search: globalFilter,
       searchableFields: allColumnIds,
       schema,
       joinOperator,
     })
-  }, [view.filter, columnFilters, searchColumnId, allColumnIds, schema, joinOperator])
+  }, [view.filter, columnFilters, globalFilter, allColumnIds, schema, joinOperator])
 
-  // Keep URL in sync with filter / sort / pagination (replace, not push).
+  // Keep URL in sync with filter / sort / pagination / search / groupBy (replace, not push).
   React.useEffect(() => {
     const next = new URLSearchParams(searchParams)
     const sortStr = sorting.map((s) => `${s.desc ? "-" : ""}${s.id}`).join(",")
     if (sortStr) next.set("sort", sortStr)
     else next.delete("sort")
+    if (globalFilter) next.set("search", globalFilter)
+    else next.delete("search")
+    if (groupBy) next.set("groupBy", groupBy)
+    else next.delete("groupBy")
     if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
     else next.delete("filters")
     if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
     else next.delete("joinOperator")
     const pageStr = String(pagination.pageIndex + 1)
     const limitStr = String(pagination.pageSize)
-    // Only store page/limit when non-default to keep URLs tidy, but always
-    // store page when >1 so deep links work.
     if (pagination.pageIndex > 0) next.set("page", pageStr)
     else next.delete("page")
     if (pagination.pageSize !== 20) next.set("limit", limitStr)
@@ -270,7 +301,7 @@ export function TableLayout({
     }
     // Mirror to sessionStorage as fallback when URL is shared without params.
     persistToolbarState(toolbarStateKey, { sorting, columnFilters, pageSize: pagination.pageSize, joinOperator })
-  }, [sorting, columnFilters, joinOperator, pagination.pageIndex, pagination.pageSize, searchParams, setSearchParams, toolbarStateKey])
+  }, [sorting, globalFilter, groupBy, columnFilters, joinOperator, pagination.pageIndex, pagination.pageSize, searchParams, setSearchParams, toolbarStateKey])
 
   const {
     data: serverDocs,
@@ -285,6 +316,20 @@ export function TableLayout({
     sort: serverSort,
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
+  })
+
+  const {
+    isGrouped,
+    groupStates,
+    isPending: isGroupPending,
+    isFetching: isGroupFetching,
+  } = useTableGroups({
+    slug,
+    view,
+    schema,
+    groupField: groupBy,
+    filter: serverWhere,
+    sort: serverSort,
   })
 
   const table = useReactTable({
@@ -328,17 +373,37 @@ export function TableLayout({
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id as keyof typeof rowSelection])
 
-  if (isParentLoading || (isPending && !serverDocs.length)) {
+  const isInitialLoad =
+    !serverDocs.length &&
+    !globalFilter &&
+    !columnFilters.length &&
+    (!isGrouped || !groupStates.some((g) => g.docs.length))
+
+  const showSkeleton = isParentLoading || (isInitialLoad && (isGrouped ? isGroupPending : isPending))
+
+  if (showSkeleton) {
     return <SkeletonTable columns={allColumnIds.length} rows={8} aria-busy="true" />
   }
+
+  const collectionLabel = schema?.labels?.plural || schema?.labels?.singular || slug
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-4" data-collection={slug}>
       <DataTableToolbar
         table={table}
-        searchColumnId={searchColumnId}
-        searchPlaceholder="Search..."
-        isFetching={isFetching}
+        searchValue={globalFilter}
+        onSearchChange={(val) => {
+          setGlobalFilter(val)
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+        }}
+        searchPlaceholder={`Search ${collectionLabel}...`}
+        groupBy={groupBy}
+        groupByOptions={groupByOptions}
+        onGroupByChange={(field) => {
+          setGroupBy(field)
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+        }}
+        isFetching={isGrouped ? isGroupFetching : isFetching}
         joinOperator={joinOperator}
         onJoinOperatorChange={handleJoinOperatorChange}
       >
@@ -363,28 +428,44 @@ export function TableLayout({
           onSaveForEveryone={columnPreferences.isAdmin ? columnPreferences.saveForEveryone : undefined}
         />
       </DataTableToolbar>
-      <DataTable
-        table={table}
-        isFetching={isFetching}
-        actionBar={
-          <BulkActionBar
-            actions={actions}
-            selectedIds={selectedIds}
-            onRun={onRunAction}
-            isRunning={isRunningAction}
-            onClearSelection={() => setRowSelection({})}
-          />
-        }
-      />
+
+      {isGrouped ? (
+        <GroupedTableView
+          columns={columns}
+          groupStates={groupStates}
+          columnOrder={columnOrder}
+          columnVisibility={columnVisibility}
+          sorting={sorting}
+          onSortingChange={(updater) => handleSortingChange(updater as any)}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          actionBar={
+            <BulkActionBar
+              actions={actions}
+              selectedIds={selectedIds}
+              onRun={onRunAction}
+              isRunning={isRunningAction}
+              onClearSelection={() => setRowSelection({})}
+            />
+          }
+        />
+      ) : (
+        <DataTable
+          table={table}
+          isFetching={isFetching}
+          actionBar={
+            <BulkActionBar
+              actions={actions}
+              selectedIds={selectedIds}
+              onRun={onRunAction}
+              isRunning={isRunningAction}
+              onClearSelection={() => setRowSelection({})}
+            />
+          }
+        />
+      )}
     </div>
   )
-}
-
-/** First text/email column usable as a global-search binding across layouts. */
-export function findTextColumn(columns: string[] | undefined, schema: any): string | undefined {
-  const fieldsByName = new Map<string, any>((schema?.fields ?? []).map((f: any) => [f.name, f]))
-  const candidates = columns ?? [...fieldsByName.keys()]
-  return candidates.find((name) => ["text", "email"].includes(fieldsByName.get(name)?.type))
 }
 
 /** Fallback managed columns when the view declares none — mirrors buildViewColumns. */
@@ -394,3 +475,5 @@ function defaultManagedOrder(schema: any): string[] {
     .slice(0, 5)
     .map((field: any) => field.name)
 }
+
+

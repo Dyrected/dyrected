@@ -69,9 +69,16 @@ export function coerceGroupValue(value: string, groupField: string, schema: any)
 }
 
 /** Matches docs whose group field is null, missing, or an empty string. */
-function unassignedWhere(groupField: string): Record<string, any> {
+function unassignedWhere(groupField: string, fieldType?: string): Record<string, any> {
+  const conditions: Record<string, any>[] = [
+    { [groupField]: null },
+    { [groupField]: { exists: false } },
+  ]
+  if (!fieldType || fieldType === "text" || fieldType === "select" || fieldType === "textarea") {
+    conditions.push({ [groupField]: "" })
+  }
   return {
-    OR: [{ [groupField]: null }, { [groupField]: { exists: false } }, { [groupField]: "" }],
+    OR: conditions,
   }
 }
 
@@ -115,6 +122,10 @@ export function useKanbanGroups({
   const base = React.useMemo(() => resolveViewFilter(filter ?? view.filter), [filterHash])
   const sortString = React.useMemo(() => resolveViewSort(view.sort), [view.sort])
   const groups = React.useMemo(() => deriveGroups(groupField, schema), [groupField, schema])
+  const fieldDef = React.useMemo(
+    () => (schema?.fields ?? []).find((candidate: any) => candidate.name === groupField),
+    [schema, groupField],
+  )
 
   const enabled = Boolean(client && groups.length > 0 && groups.length <= MAX_GROUPS)
 
@@ -123,7 +134,7 @@ export function useKanbanGroups({
       if (!client) throw new Error("Dyrected client unavailable")
       const condition =
         value === UNASSIGNED
-          ? unassignedWhere(groupField)
+          ? unassignedWhere(groupField, fieldDef?.type)
           : { [groupField]: coerceGroupValue(value, groupField, schema) }
       const where = groupWhere(base, condition)
       const result = await (client as any).collection(slug).find({
@@ -139,7 +150,7 @@ export function useKanbanGroups({
         page: Number(result?.page ?? page),
       }
     },
-    [client, slug, groupField, schema, base, sortString],
+    [client, slug, groupField, fieldDef?.type, schema, base, sortString],
   )
 
   const queries = React.useMemo(() => {

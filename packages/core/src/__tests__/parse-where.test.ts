@@ -25,7 +25,7 @@ describe('parseSqlWhere', () => {
       'pg',
     );
     expect(res.sql).toBe(
-      "data->>'createdAt' < $1 AND data->>'score' >= $2 AND data->>'title' LIKE $3",
+      "data->>'createdAt' < $1 AND data->>'score' >= $2 AND (data->>'title')::text ILIKE $3",
     );
     expect(res.params).toEqual(['2026-08-19T00:00:00Z', 100, '%test%']);
   });
@@ -47,6 +47,49 @@ describe('parseSqlWhere', () => {
       "((data->>'attending' = $1) AND (data->>'checkedIn' IN ($2)) AND (data->>'archived' NOT IN ($3, $4)) AND (data->>'verified' = $5))",
     );
     expect(res.params).toEqual(['true', 'false', 'true', 'false', 'true']);
+  });
+
+  it('translates null values to IS NULL and IS NOT NULL without adding parameters', () => {
+    const res = parseSqlWhere(
+      {
+        OR: [
+          { tableNumber: null },
+          { tableNumber: { equals: null } },
+          { tableNumber: { not_equals: null } },
+          { tableNumber: { exists: false } },
+        ],
+      },
+      getJsonField,
+      'pg',
+    );
+    expect(res.sql).toBe(
+      "((data->>'tableNumber' IS NULL) OR (data->>'tableNumber' IS NULL) OR (data->>'tableNumber' IS NOT NULL) OR (data->>'tableNumber' IS NULL))",
+    );
+    expect(res.params).toEqual([]);
+  });
+
+  it('safely handles empty string on promoted columns in Postgres without throwing syntax errors', () => {
+    const getPromotedField = (field: string) => `"${field}"`;
+    const res = parseSqlWhere(
+      {
+        AND: [
+          { attending: { equals: true } },
+          {
+            OR: [
+              { tableNumber: null },
+              { tableNumber: { exists: false } },
+              { tableNumber: '' },
+            ],
+          },
+        ],
+      },
+      getPromotedField,
+      'pg',
+    );
+    expect(res.sql).toBe(
+      '(("attending" = $1) AND ((("tableNumber" IS NULL) OR ("tableNumber" IS NULL) OR (("tableNumber")::text = $2))))',
+    );
+    expect(res.params).toEqual([true, '']);
   });
 });
 

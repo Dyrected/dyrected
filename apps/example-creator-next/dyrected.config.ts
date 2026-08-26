@@ -1023,22 +1023,23 @@ const GuestResponses = defineCollection({
     icon: "Users",
   },
   fields: [
-    defineTextField({ name: "name", label: "Full Name", required: true }),
-    defineTextField({ name: "email", label: "Email" }),
+    defineTextField({ name: "name", label: "Full Name", required: true, promoted: true }),
+    defineTextField({ name: "email", label: "Email", promoted: true }),
     defineTextField({ name: "avatar", label: "Photo / Avatar URL" }),
-    defineBooleanField({ name: "attending", label: "Attending" }),
-    defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0 }),
-    defineNumberField({ name: "tableNumber", label: "Table Number" }),
-    defineBooleanField({ name: "checkedIn", label: "Checked In", defaultValue: false }),
-    defineDateTimeField({ name: "checkedInAt", label: "Checked In At" }),
+    defineBooleanField({ name: "attending", label: "Attending", promoted: true }),
+    defineNumberField({ name: "guestCount", label: "Plus-Ones", defaultValue: 0, promoted: true }),
+    defineNumberField({ name: "tableNumber", label: "Table Number", promoted: true }),
+    defineBooleanField({ name: "checkedIn", label: "Checked In", defaultValue: false, promoted: true }),
+    defineDateTimeField({ name: "checkedInAt", label: "Checked In At", promoted: true }),
 
     // Asoebi (outfit) details
-    defineBooleanField({ name: "asoebi", label: "Wants Asoebi" }),
+    defineBooleanField({ name: "asoebi", label: "Wants Asoebi", promoted: true }),
     defineSelectField({
       name: "asoebiStatus",
       label: "Asoebi Status",
       options: ["requested", "paid", "collected"],
       defaultValue: "requested",
+      promoted: true,
     }),
     defineSelectField({
       name: "asoebiSize",
@@ -1058,6 +1059,7 @@ const GuestResponses = defineCollection({
       label: "Attending Guests",
       icon: "UserCheck",
       layout: "table",
+      groupBy: "tableNumber",
       filter: { attending: { equals: true } },
       columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
       sort: { field: "name", direction: "asc" },
@@ -1144,6 +1146,7 @@ const GuestResponses = defineCollection({
           ],
         },
       ],
+      default: true,
     }),
 
     // 2. Kanban board for outfit fulfillment
@@ -1259,6 +1262,12 @@ const GuestResponses = defineCollection({
           ],
         },
       ],
+      features: {
+        view: false,
+        delete: false,
+        edit: false,
+        duplicate: false,
+      },
     }),
   ],
   initialData: [

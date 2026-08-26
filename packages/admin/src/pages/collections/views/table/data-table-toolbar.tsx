@@ -23,9 +23,19 @@ export const FILTER_INPUT_CLASSES = "dy-border-dashed dy-bg-muted/40 hover:dy-bg
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
   table: Table<TData>
-  /** Column id to bind the search input to. */
+  /** Column id to bind the search input to (single column fallback). */
   searchColumnId?: string
+  /** Global search input value */
+  searchValue?: string
+  /** Global search change handler */
+  onSearchChange?: (value: string) => void
   searchPlaceholder?: string
+  /** Active group-by field name */
+  groupBy?: string
+  /** Eligible fields to group by */
+  groupByOptions?: Array<{ value: string; label: string }>
+  /** Handler when groupBy changes */
+  onGroupByChange?: (value: string | undefined) => void
   /** Whether a background query/refetch is in flight. */
   isFetching?: boolean
   joinOperator?: "and" | "or"
@@ -39,7 +49,12 @@ interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
 export function DataTableToolbar<TData>({
   table,
   searchColumnId,
+  searchValue,
+  onSearchChange,
   searchPlaceholder = "Search...",
+  groupBy,
+  groupByOptions,
+  onGroupByChange,
   isFetching,
   joinOperator = "and",
   onJoinOperatorChange,
@@ -47,7 +62,7 @@ export function DataTableToolbar<TData>({
   className,
   ...props
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const isFiltered = table.getState().columnFilters.length > 0 || Boolean(searchValue)
 
   const filterableColumns = React.useMemo(
     () =>
@@ -76,6 +91,19 @@ export function DataTableToolbar<TData>({
   )
 
   const searchColumn = searchColumnId ? table.getColumn(searchColumnId) : undefined
+  const showSearchInput = onSearchChange !== undefined || searchValue !== undefined || searchColumn !== undefined
+  const currentSearchValue = searchValue !== undefined ? searchValue : ((searchColumn?.getFilterValue() as string) ?? "")
+
+  const handleSearchCommit = React.useCallback(
+    (val: string) => {
+      if (onSearchChange) {
+        onSearchChange(val)
+      } else if (searchColumn) {
+        searchColumn.setFilterValue(val)
+      }
+    },
+    [onSearchChange, searchColumn],
+  )
 
   return (
     <div
@@ -88,13 +116,12 @@ export function DataTableToolbar<TData>({
       {...props}
     >
       <div className="dy-flex dy-flex-1 dy-flex-wrap dy-items-center dy-gap-2">
-        {searchColumn && (
+        {showSearchInput && (
           <div className="dy-w-40 lg:dy-w-56">
-            <Input
-              size="sm"
+            <DebouncedToolbarSearchInput
               placeholder={searchPlaceholder}
-              value={(searchColumn.getFilterValue() as string) ?? ""}
-              onChange={(event) => searchColumn.setFilterValue(event.target.value)}
+              value={currentSearchValue}
+              onChange={handleSearchCommit}
               className={FILTER_INPUT_CLASSES}
             />
           </div>
@@ -149,6 +176,46 @@ export function DataTableToolbar<TData>({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+        {groupByOptions && groupByOptions.length > 0 && onGroupByChange && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "dy-h-8 dy-gap-1.5 dy-border-dashed dy-px-2.5 dy-text-xs dy-font-normal",
+                  FILTER_INPUT_CLASSES,
+                )}
+                aria-label="Group table by field"
+              >
+                <span className="dy-text-muted-foreground">Group:</span>
+                <span className="dy-font-medium dy-text-foreground">
+                  {groupBy ? (groupByOptions.find((o) => o.value === groupBy)?.label ?? groupBy) : "None"}
+                </span>
+                <ChevronDown className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="dy-w-48">
+              <DropdownMenuItem
+                onClick={() => onGroupByChange(undefined)}
+                className="dy-cursor-pointer dy-flex dy-items-center dy-justify-between"
+              >
+                <span>None (flat list)</span>
+                {!groupBy && <Check className="dy-h-4 dy-w-4 dy-text-primary" />}
+              </DropdownMenuItem>
+              {groupByOptions.map((opt) => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => onGroupByChange(opt.value)}
+                  className="dy-cursor-pointer dy-flex dy-items-center dy-justify-between"
+                >
+                  <span>{opt.label}</span>
+                  {groupBy === opt.value && <Check className="dy-h-4 dy-w-4 dy-text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <DataTableSort table={table} />
         {isFiltered && (
           <Button
@@ -156,7 +223,10 @@ export function DataTableToolbar<TData>({
             variant="outline"
             size="sm"
             className="dy-border-dashed"
-            onClick={() => table.resetColumnFilters()}
+            onClick={() => {
+              table.resetColumnFilters()
+              if (onSearchChange) onSearchChange("")
+            }}
           >
             <X />
             Reset
@@ -202,3 +272,44 @@ function ToolbarFacetedFilter<TData>({ column }: ToolbarFacetedFilterProps<TData
     />
   )
 }
+
+function DebouncedToolbarSearchInput({
+  value: initialValue = "",
+  onChange,
+  placeholder,
+  className,
+  debounce = 250,
+}: {
+  value?: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+  debounce?: number
+}) {
+  const [value, setValue] = React.useState(initialValue)
+
+  React.useEffect(() => {
+    setValue(initialValue)
+  }, [initialValue])
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (value !== initialValue) {
+        onChange(value)
+      }
+    }, debounce)
+    return () => clearTimeout(timer)
+  }, [value, debounce, onChange, initialValue])
+
+  return (
+    <Input
+      size="sm"
+      type="search"
+      placeholder={placeholder}
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+      className={className}
+    />
+  )
+}
+

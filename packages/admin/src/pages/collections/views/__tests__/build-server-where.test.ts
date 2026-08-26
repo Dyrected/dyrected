@@ -171,5 +171,54 @@ describe("buildServerWhere", () => {
         ],
       })
     })
+
+    it("filters out non-text fields (boolean, number, date) from candidate searchableFields", () => {
+      const allFieldIds = ["name", "email", "guestCount", "attending", "status", "createdAt"]
+      const result = buildServerWhere({
+        search: "Ade",
+        searchableFields: allFieldIds,
+        schema,
+      })
+      // Only text-like fields (name, email, status) should be included, not guestCount, attending, or createdAt
+      expect(result).toEqual({
+        OR: [
+          { name: { contains: "Ade" } },
+          { email: { contains: "Ade" } },
+          { status: { contains: "Ade" } },
+        ],
+      })
+    })
+
+    it("automatically searches all text fields when searchableFields is not provided", () => {
+      const result = buildServerWhere({
+        search: "Ade",
+        schema,
+      })
+      expect(result).toEqual({
+        OR: [
+          { name: { contains: "Ade" } },
+          { email: { contains: "Ade" } },
+          { status: { contains: "Ade" } },
+        ],
+      })
+    })
+
+    it("uses admin.searchableFields from schema when configured", () => {
+      const customSchema = {
+        ...schema,
+        admin: {
+          searchableFields: ["name"],
+        },
+      }
+      const result = buildServerWhere({
+        search: "Ade",
+        schema: customSchema,
+      })
+      expect(result).toEqual({
+        OR: [{ name: { contains: "Ade" } }],
+      })
+    })
   })
 })
+
+

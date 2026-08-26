@@ -89,10 +89,10 @@ export function parseSqlWhere(
   placeholder: '?' | 'pg' = '?',
   /**
    * SQL keyword used for `contains`/`starts_with`. Postgres `LIKE` is
-   * case-sensitive, so the Postgres adapter passes `'ILIKE'` to keep substring
+   * case-sensitive, so the Postgres adapter defaults to `'ILIKE'` to keep substring
    * matching case-insensitive like SQLite and MySQL.
    */
-  likeOperator: 'LIKE' | 'ILIKE' = 'LIKE',
+  likeOperator: 'LIKE' | 'ILIKE' = placeholder === 'pg' ? 'ILIKE' : 'LIKE',
 ): SqlWhereResult {
   const params: any[] = [];
   let pgIndex = 1;
@@ -107,10 +107,21 @@ export function parseSqlWhere(
 
   function buildOperator(field: string, value: WhereOperator | any): string {
     const c = col(field);
+    const isJsonExtract =
+      c.startsWith('data->>') ||
+      c.startsWith('json_extract(') ||
+      c.startsWith('JSON_UNQUOTE(');
 
     // Shorthand scalar: { slug: 'hello' } → treat as equals
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      params.push(typeof value === 'boolean' ? String(value) : value);
+      if (value === null) {
+        return `${c} IS NULL`;
+      }
+      if (value === '' && placeholder === 'pg') {
+        params.push('');
+        return `(${c})::text = ${next()}`;
+      }
+      params.push(typeof value === 'boolean' && isJsonExtract ? String(value) : value);
       return `${c} = ${next()}`;
     }
 
@@ -127,20 +138,39 @@ export function parseSqlWhere(
   }
 
   function buildSingleOp(c: string, op: WhereOperatorName, operand: any): string {
+    const isJsonExtract =
+      c.startsWith('data->>') ||
+      c.startsWith('json_extract(') ||
+      c.startsWith('JSON_UNQUOTE(');
+
     switch (op) {
       case 'equals':
-        params.push(typeof operand === 'boolean' ? String(operand) : operand);
+        if (operand === null) {
+          return `${c} IS NULL`;
+        }
+        if (operand === '' && placeholder === 'pg') {
+          params.push('');
+          return `(${c})::text = ${next()}`;
+        }
+        params.push(typeof operand === 'boolean' && isJsonExtract ? String(operand) : operand);
         return `${c} = ${next()}`;
 
       case 'not_equals':
-        params.push(typeof operand === 'boolean' ? String(operand) : operand);
+        if (operand === null) {
+          return `${c} IS NOT NULL`;
+        }
+        if (operand === '' && placeholder === 'pg') {
+          params.push('');
+          return `(${c})::text != ${next()}`;
+        }
+        params.push(typeof operand === 'boolean' && isJsonExtract ? String(operand) : operand);
         return `${c} != ${next()}`;
 
       case 'in': {
         const vals: any[] = Array.isArray(operand) ? operand : [operand];
         if (vals.length === 0) return '1=0'; // IN () is invalid SQL
         const placeholders = vals.map((v) => {
-          params.push(typeof v === 'boolean' ? String(v) : v);
+          params.push(typeof v === 'boolean' && isJsonExtract ? String(v) : v);
           return next();
         });
         return `${c} IN (${placeholders.join(', ')})`;
@@ -150,7 +180,7 @@ export function parseSqlWhere(
         const vals: any[] = Array.isArray(operand) ? operand : [operand];
         if (vals.length === 0) return '1=1';
         const placeholders = vals.map((v) => {
-          params.push(typeof v === 'boolean' ? String(v) : v);
+          params.push(typeof v === 'boolean' && isJsonExtract ? String(v) : v);
           return next();
         });
         return `${c} NOT IN (${placeholders.join(', ')})`;
@@ -181,11 +211,11 @@ export function parseSqlWhere(
       case 'contains':
       case 'like':
         params.push(`%${operand}%`);
-        return `${c} ${likeOperator} ${next()}`;
+        return placeholder === 'pg' ? `(${c})::text ${likeOperator} ${next()}` : `${c} ${likeOperator} ${next()}`;
 
       case 'starts_with':
         params.push(`${operand}%`);
-        return `${c} ${likeOperator} ${next()}`;
+        return placeholder === 'pg' ? `(${c})::text ${likeOperator} ${next()}` : `${c} ${likeOperator} ${next()}`;
 
       case 'exists':
         return operand ? `${c} IS NOT NULL` : `${c} IS NULL`;

@@ -6,15 +6,16 @@ import {
   useReactTable,
   type ColumnFiltersState,
 } from "@tanstack/react-table"
-import { ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { useSearchParams } from "react-router-dom"
 import { Button } from "../../../../components/ui/button"
-import { Input } from "../../../../components/ui/input"
 import { CardGridItem } from "./card-grid-item"
+import { GroupedCardsView } from "./grouped-cards-view"
 import { SkeletonCardGrid } from "../view-skeletons"
 import { buildViewColumns } from "../build-view-columns"
-import { DataTableToolbar, FILTER_INPUT_CLASSES } from "../table/data-table-toolbar"
+import { DataTableToolbar } from "../table/data-table-toolbar"
+import { getGroupableFields, useTableGroups } from "../table/use-table-groups"
 import { ViewOptionsPanel } from "../view-options-panel"
 import { useColumnPreferences } from "../use-column-preferences"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
@@ -38,7 +39,7 @@ export interface CardsLayoutProps {
 
 /**
  * Cards layout for operational views — responsive grid with server-driven search,
- * server-side operator filters (DataTableToolbar), and pagination.
+ * grouping, server-side operator filters (DataTableToolbar), and pagination.
  */
 export function CardsLayout({
   slug,
@@ -63,11 +64,20 @@ export function CardsLayout({
       try {
         const parsed = JSON.parse(f)
         if (Array.isArray(parsed)) return parsed as ColumnFiltersState
-      } catch {}
+      } catch {
+        // ignore invalid json filter param
+      }
     }
     return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
   }
   const getInitialSearch = (): string => searchParams.get("search") ?? ""
+  const getInitialGroupBy = (): string | undefined => {
+    const urlGroupBy = searchParams.get("groupBy")
+    if (urlGroupBy) {
+      return urlGroupBy === "none" ? undefined : urlGroupBy
+    }
+    return view.groupBy || undefined
+  }
   const getInitialPage = (): number => {
     const p = searchParams.get("page")
     if (p) {
@@ -82,10 +92,21 @@ export function CardsLayout({
     return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
   }
   const [globalFilter, setGlobalFilter] = React.useState(getInitialSearch)
+  const [groupBy, setGroupBy] = React.useState<string | undefined>(getInitialGroupBy)
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
   const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
   const [page, setPage] = React.useState(getInitialPage)
   const pageSize = 24
+
+  // Synchronize groupBy when the active view changes
+  React.useEffect(() => {
+    const urlGroupBy = searchParams.get("groupBy")
+    if (urlGroupBy) {
+      setGroupBy(urlGroupBy === "none" ? undefined : urlGroupBy)
+    } else {
+      setGroupBy(view.groupBy || undefined)
+    }
+  }, [view.groupBy, view.slug, searchParams])
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -111,6 +132,12 @@ export function CardsLayout({
   const fieldsByName = React.useMemo(
     () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
     [schema],
+  )
+
+  const groupableFields = React.useMemo(() => getGroupableFields(schema), [schema])
+  const groupByOptions = React.useMemo(
+    () => groupableFields.map((f) => ({ value: f.name, label: f.label })),
+    [groupableFields],
   )
 
   const { allFieldIds, defaultHiddenIds } = React.useMemo(() => {
@@ -162,6 +189,8 @@ export function CardsLayout({
     const next = new URLSearchParams(searchParams)
     if (globalFilter) next.set("search", globalFilter)
     else next.delete("search")
+    if (groupBy) next.set("groupBy", groupBy)
+    else next.delete("groupBy")
     if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
     else next.delete("filters")
     if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
@@ -170,7 +199,7 @@ export function CardsLayout({
     else next.delete("page")
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
     persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
-  }, [globalFilter, columnFilters, joinOperator, page, searchParams, setSearchParams, toolbarStateKey])
+  }, [globalFilter, groupBy, columnFilters, joinOperator, page, searchParams, setSearchParams, toolbarStateKey])
 
   const {
     data: docs,
@@ -179,11 +208,26 @@ export function CardsLayout({
     hasNextPage,
     hasPrevPage,
     isPending,
+    isFetching,
   } = useViewData({
     slug,
     viewSlug: view.slug,
     page,
     limit: pageSize,
+    filter: serverWhere,
+    sort: resolveViewSort(view.sort),
+  })
+
+  const {
+    isGrouped,
+    groupStates,
+    isPending: isGroupPending,
+    isFetching: isGroupFetching,
+  } = useTableGroups({
+    slug,
+    view,
+    schema,
+    groupField: groupBy,
     filter: serverWhere,
     sort: resolveViewSort(view.sort),
   })
@@ -204,7 +248,15 @@ export function CardsLayout({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  if (isParentLoading || (isPending && !docs.length)) {
+  const isInitialLoad =
+    !docs.length &&
+    !globalFilter &&
+    !columnFilters.length &&
+    (!isGrouped || !groupStates.some((g) => g.docs.length))
+
+  const showSkeleton = isParentLoading || (isInitialLoad && (isGrouped ? isGroupPending : isPending))
+
+  if (showSkeleton) {
     return <SkeletonCardGrid items={8} aria-busy="true" />
   }
 
@@ -212,52 +264,61 @@ export function CardsLayout({
 
   return (
     <div className="dy-space-y-4" data-collection={slug}>
-      <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
-        <div className="dy-relative dy-w-full sm:dy-max-w-xs">
-          <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
-          <Input
-            size="sm"
-            type="search"
-            aria-label={`Search ${collectionLabel}`}
-            placeholder={`Search ${collectionLabel}...`}
-            value={globalFilter}
-            onChange={(event) => {
-              setGlobalFilter(event.target.value)
-              setPage(1)
-            }}
-            className={`dy-pl-10 ${FILTER_INPUT_CLASSES}`}
-          />
-        </div>
-        <DataTableToolbar
-          table={table}
-          joinOperator={joinOperator}
-          onJoinOperatorChange={handleJoinOperatorChange}
-        >
-          <ViewOptionsPanel
-            label="Fields"
-            managedIds={allFieldIds}
-            labelById={labelByIdFrom(allFieldIds, fieldsByName)}
-            hiddenIds={fieldPreferences.preferences.hidden}
-            showLabelIds={fieldPreferences.preferences.showLabel ?? []}
-            withLabelToggle
-            isDirty={fieldPreferences.isDirty}
-            isSaving={fieldPreferences.isSaving}
-            isAdmin={fieldPreferences.isAdmin}
-            onOrderChange={fieldPreferences.setOrder}
-            onToggleVisibility={fieldPreferences.toggleVisibility}
-            onToggleLabel={fieldPreferences.toggleLabel}
-            onShowAll={fieldPreferences.showAll}
-            onHideAllExcept={fieldPreferences.hideAllExcept}
-            onReset={fieldPreferences.reset}
-            onSaveForMe={fieldPreferences.saveForMe}
-            onSaveForEveryone={
-              fieldPreferences.isAdmin ? fieldPreferences.saveForEveryone : undefined
-            }
-          />
-        </DataTableToolbar>
-      </div>
+      <DataTableToolbar
+        table={table}
+        searchValue={globalFilter}
+        onSearchChange={(val) => {
+          setGlobalFilter(val)
+          setPage(1)
+        }}
+        searchPlaceholder={`Search ${collectionLabel}...`}
+        groupBy={groupBy}
+        groupByOptions={groupByOptions}
+        onGroupByChange={(field) => {
+          setGroupBy(field)
+          setPage(1)
+        }}
+        isFetching={isGrouped ? isGroupFetching : isFetching}
+        joinOperator={joinOperator}
+        onJoinOperatorChange={handleJoinOperatorChange}
+      >
+        <ViewOptionsPanel
+          label="Fields"
+          managedIds={allFieldIds}
+          labelById={labelByIdFrom(allFieldIds, fieldsByName)}
+          hiddenIds={fieldPreferences.preferences.hidden}
+          showLabelIds={fieldPreferences.preferences.showLabel ?? []}
+          withLabelToggle
+          isDirty={fieldPreferences.isDirty}
+          isSaving={fieldPreferences.isSaving}
+          isAdmin={fieldPreferences.isAdmin}
+          onOrderChange={fieldPreferences.setOrder}
+          onToggleVisibility={fieldPreferences.toggleVisibility}
+          onToggleLabel={fieldPreferences.toggleLabel}
+          onShowAll={fieldPreferences.showAll}
+          onHideAllExcept={fieldPreferences.hideAllExcept}
+          onReset={fieldPreferences.reset}
+          onSaveForMe={fieldPreferences.saveForMe}
+          onSaveForEveryone={
+            fieldPreferences.isAdmin ? fieldPreferences.saveForEveryone : undefined
+          }
+        />
+      </DataTableToolbar>
 
-      {docs.length ? (
+      {isGrouped ? (
+        <GroupedCardsView
+          slug={slug}
+          schema={schema}
+          view={view}
+          client={client}
+          schemas={schemas}
+          actions={actions}
+          onRunAction={onRunAction}
+          groupStates={groupStates}
+          visibleFieldIds={visibleFieldIds.length ? visibleFieldIds : undefined}
+          showLabels={fieldPreferences.preferences.showLabel}
+        />
+      ) : docs.length ? (
         <>
           <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3 xl:dy-grid-cols-4 dy-gap-4">
             {docs.map((doc) => (
@@ -325,3 +386,4 @@ function labelByIdFrom(ids: string[], fieldsByName: Map<string, any>): Map<strin
   }
   return labels
 }
+

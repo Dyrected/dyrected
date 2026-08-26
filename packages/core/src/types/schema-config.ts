@@ -345,6 +345,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     group?: string;
 
+    /**
+     * Slug of the view to render by default when navigating to `/collections/:slug`.
+     * If not specified, defaults to the view with `default: true` or the all-records table view.
+     */
+    defaultView?: string;
+
     /** If `true`, this collection is not shown in the Admin UI sidebar. */
     hidden?: boolean;
 
@@ -407,6 +413,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * Custom detail view layout configuration for the Admin UI.
    */
   detail?: DetailSchema<TDoc> | false;
+
+  /**
+   * Slug of the view to render by default when navigating to `/collections/:slug`.
+   * Can also be set in `admin.defaultView` or by adding `default: true` to a view.
+   */
+  defaultView?: string;
 
   /**
    * Operational views for this collection.

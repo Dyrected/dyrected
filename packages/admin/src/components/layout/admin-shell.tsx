@@ -240,6 +240,7 @@ function NavGroup({
 function CollapsedCollectionMenu({
   col,
   views,
+  hasDefaultView = false,
   isExactActive,
   isChildActive,
   onNavigate,
@@ -247,6 +248,7 @@ function CollapsedCollectionMenu({
 }: {
   col: AdminSidebarCollection
   views: NonNullable<AdminSidebarCollection["views"]>
+  hasDefaultView?: boolean
   isExactActive: boolean
   isChildActive: boolean
   onNavigate?: () => void
@@ -320,12 +322,14 @@ function CollapsedCollectionMenu({
       >
         <DropdownMenuLabel className="dy-text-xs dy-font-semibold">{col.labels?.plural ?? col.slug}</DropdownMenuLabel>
         <DropdownMenuSeparator className="dy-bg-border/40" />
-        <DropdownMenuItem asChild>
-          <Link to={`/collections/${col.slug}`} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-rounded-md">
-            <LayoutDashboard className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-            All {col.labels?.plural ?? col.slug}
-          </Link>
-        </DropdownMenuItem>
+        {!hasDefaultView && (
+          <DropdownMenuItem asChild>
+            <Link to={`/collections/${col.slug}`} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-rounded-md">
+              <LayoutDashboard className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+              All {col.labels?.plural ?? col.slug}
+            </Link>
+          </DropdownMenuItem>
+        )}
         {views.map((view) => {
           const viewPath = `/collections/${col.slug}/views/${view.slug}`
           const active = location.pathname === viewPath
@@ -442,7 +446,9 @@ interface AdminSidebarCollection {
     icon?: string;
     group?: string;
     hidden?: boolean;
+    defaultView?: string;
   };
+  defaultView?: string;
   access?: {
     read?: boolean;
     create?: boolean;
@@ -453,8 +459,19 @@ interface AdminSidebarCollection {
     slug: string;
     label: string;
     icon?: string;
+    default?: boolean;
   }>;
   shared?: boolean;
+}
+
+function getDefaultView(col: AdminSidebarCollection) {
+  const views = col.views ?? []
+  const configuredSlug = col.admin?.defaultView ?? col.defaultView
+  if (configuredSlug) {
+    const matched = views.find((v) => v.slug === configuredSlug)
+    if (matched) return matched
+  }
+  return views.find((v) => v.default === true)
 }
 
 interface AdminSidebarGlobal {
@@ -488,14 +505,27 @@ function SidebarInner({
   updateInfo: UpdateInfo | null
 }) {
   const { client, user } = useDyrected()
-  const [collapsedCollections, setCollapsedCollections] = useState<Set<string>>(() => new Set())
-  const toggleCollection = (slug: string) =>
-    setCollapsedCollections((prev) => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
+  const [userToggledOpen, setUserToggledOpen] = useState<Set<string>>(() => new Set())
+  const [userToggledClosed, setUserToggledClosed] = useState<Set<string>>(() => new Set())
+
+  const toggleCollection = (slug: string, isCollectionActive: boolean) => {
+    if (isCollectionActive) {
+      setUserToggledClosed((prev) => {
+        const next = new Set(prev)
+        if (next.has(slug)) next.delete(slug)
+        else next.add(slug)
+        return next
+      })
+    } else {
+      setUserToggledOpen((prev) => {
+        const next = new Set(prev)
+        if (next.has(slug)) next.delete(slug)
+        else next.add(slug)
+        return next
+      })
+    }
+  }
+
   const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCollections = collections.filter((c) => c.upload)
@@ -527,11 +557,20 @@ function SidebarInner({
     )
 
     const views = col.views ?? []
+    const defaultView = getDefaultView(col)
+    const hasDefaultView = Boolean(defaultView)
+    const defaultViewPath = defaultView
+      ? `/collections/${col.slug}/views/${defaultView.slug}`
+      : `/collections/${col.slug}`
+
     const hasMeaningfulViews = views.length > 1 || (views.length === 1 && views[0].slug !== "list")
     const isChildActive = location.pathname.startsWith(`/collections/${col.slug}/views/`)
     const isExactActive =
       !isChildActive && location.pathname.startsWith(`/collections/${col.slug}`)
-    const isExpanded = !collapsedCollections.has(col.slug)
+    const isCollectionActive = isChildActive || isExactActive
+    const isExpanded = isCollectionActive
+      ? !userToggledClosed.has(col.slug)
+      : userToggledOpen.has(col.slug)
 
     if (collapsed && hasMeaningfulViews) {
       return (
@@ -539,6 +578,7 @@ function SidebarInner({
           <CollapsedCollectionMenu
             col={col}
             views={views}
+            hasDefaultView={hasDefaultView}
             isExactActive={isExactActive}
             isChildActive={isChildActive}
             onNavigate={onNavigate}
@@ -553,7 +593,7 @@ function SidebarInner({
         <div className="dy-flex dy-items-center dy-gap-1">
           <div className="dy-flex-1 dy-min-w-0">
             <NavItem
-              to={`/collections/${col.slug}`}
+              to={defaultViewPath}
               icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
               label={navLabel}
               tooltipLabel={col.labels?.plural ?? col.label ?? col.slug}
@@ -567,7 +607,7 @@ function SidebarInner({
           {!collapsed && hasMeaningfulViews && (
             <button
               type="button"
-              onClick={() => toggleCollection(col.slug)}
+              onClick={() => toggleCollection(col.slug, isCollectionActive)}
               aria-label={isExpanded ? `Collapse ${col.slug}` : `Expand ${col.slug}`}
               className="dy-flex dy-h-6 dy-w-6 dy-shrink-0 dy-items-center dy-justify-center dy-rounded dy-text-muted-foreground/50 hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
             >
@@ -577,6 +617,16 @@ function SidebarInner({
         </div>
         {!collapsed && hasMeaningfulViews && isExpanded && (
           <div className="dy-relative dy-ml-4 dy-border-l dy-border-border/60 dy-pl-2 dy-space-y-0.5 dy-my-1">
+            {!hasDefaultView && (
+              <NavSubItem
+                key={`/collections/${col.slug}`}
+                to={`/collections/${col.slug}`}
+                icon="LayoutDashboard"
+                label={`All ${col.labels?.plural ?? col.slug}`}
+                active={isExactActive}
+                onClick={onNavigate}
+              />
+            )}
             {views.map((view) => {
               const viewPath = `/collections/${col.slug}/views/${view.slug}`
               return (

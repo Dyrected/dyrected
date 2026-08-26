@@ -24,6 +24,10 @@ interface BulkActionBarProps {
 export function BulkActionBar({ actions, selectedIds, onRun, isRunning, onClearSelection }: BulkActionBarProps) {
   const bulkActions = actions.filter((action) => (action.type ?? "row") === "bulk")
 
+  if (!selectedIds.length) {
+    return null
+  }
+
   return (
     <div className="dy-fixed dy-inset-x-0 dy-bottom-4 dy-z-50 dy-mx-auto dy-flex dy-w-fit dy-max-w-[calc(100vw-2rem)] dy-items-center dy-gap-2 dy-rounded-md dy-border dy-bg-background dy-p-2 dy-pl-3 dy-shadow-lg">
       <p className="dy-whitespace-nowrap dy-text-xs dy-font-medium dy-tabular-nums">

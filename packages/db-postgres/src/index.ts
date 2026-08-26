@@ -173,50 +173,118 @@ export class PostgresAdapter implements DatabaseAdapter {
     return `collection_${slug}`;
   }
 
-  private async ensureTable(slug: string, fields: any[] = []) {
-    await this.ensureInitialized();
-    const tableNameOnly = this.getPhysicalTableName(slug);
-    const relation = await this.sql<{ table_name: string | null }[]>`
-      SELECT to_regclass(${tableNameOnly}) AS table_name
-    `;
+  private knownTables: Set<string> = new Set<string>();
+  private tableColumnsCache: Map<string, string[]> = new Map<string, string[]>();
 
-    if (!relation[0]?.table_name) {
-    const table = this.getTableIdentifier(slug);
-    await this.sql`
-      CREATE TABLE IF NOT EXISTS ${table} (
-        id TEXT PRIMARY KEY,
-        data JSONB,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      )
-    `;
+  private getKnownTables(): Set<string> {
+    if (!this.knownTables) {
+      this.knownTables = new Set<string>();
     }
+    return this.knownTables;
+  }
 
-    // Handle Promoted Fields
+  private getColumnsCache(): Map<string, string[]> {
+    if (!this.tableColumnsCache) {
+      this.tableColumnsCache = new Map<string, string[]>();
+    }
+    return this.tableColumnsCache;
+  }
+
+  private async getTableColumns(tableNameOnly: string): Promise<string[]> {
+    const cache = this.getColumnsCache();
+    const cached = cache.get(tableNameOnly);
+    if (cached) return cached;
+
     const cols = await this.sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = ${tableNameOnly}
     `;
     const existingCols = cols.map((c) => c.column_name);
+    cache.set(tableNameOnly, existingCols);
+    return existingCols;
+  }
+
+  private async ensureTable(slug: string, fields: any[] = []) {
+    await this.ensureInitialized();
+    const tableNameOnly = this.getPhysicalTableName(slug);
+    const knownTables = this.getKnownTables();
+
+    if (!knownTables.has(tableNameOnly)) {
+      const relation = await this.sql<{ table_name: string | null }[]>`
+        SELECT to_regclass(${tableNameOnly}) AS table_name
+      `;
+
+      if (!relation[0]?.table_name) {
+        const table = this.getTableIdentifier(slug);
+        await this.sql`
+          CREATE TABLE IF NOT EXISTS ${table} (
+            id TEXT PRIMARY KEY,
+            data JSONB,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+      }
+      knownTables.add(tableNameOnly);
+    }
+
+    // Handle Promoted Fields
+    const existingCols = await this.getTableColumns(tableNameOnly);
 
     for (const field of fields) {
-      if (field.promoted && !existingCols.includes(field.name)) {
-        console.log(
-          `[dyrected/postgres] Promoting field "${field.name}" to column in ${slug}`,
-        );
+      if (field.promoted) {
         let sqlType = "TEXT";
         if (field.type === "number") sqlType = "NUMERIC";
         if (field.type === "boolean") sqlType = "BOOLEAN";
+        if (field.type === "date" || field.type === "datetime") sqlType = "TIMESTAMPTZ";
 
         const targetTable = slug.includes(".")
           ? slug
           : `"${`collection_${slug}`.replace(/"/g, '""')}"`;
-        await this.sql.unsafe(
-          `ALTER TABLE ${targetTable} ADD COLUMN "${field.name.replace(/"/g, '""')}" ${sqlType}`,
-        );
+
+        if (!existingCols.includes(field.name)) {
+          console.log(
+            `[dyrected/postgres] Promoting field "${field.name}" to column in ${slug}`,
+          );
+          await this.sql.unsafe(
+            `ALTER TABLE ${targetTable} ADD COLUMN "${field.name.replace(/"/g, '""')}" ${sqlType}`,
+          );
+          existingCols.push(field.name);
+        }
+
+        // Backfill existing rows where the promoted column is NULL but JSON data contains the field
+        const escapedField = field.name.replace(/"/g, '""');
+        const escapedFieldStr = field.name.replace(/'/g, "''");
+        let castExpr = `(data->>'${escapedFieldStr}')`;
+        if (field.type === "number") {
+          castExpr = `CASE WHEN (data->>'${escapedFieldStr}') ~ '^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN (data->>'${escapedFieldStr}')::NUMERIC ELSE NULL END`;
+        } else if (field.type === "boolean") {
+          castExpr = `(data->>'${escapedFieldStr}')::BOOLEAN`;
+        } else if (field.type === "date" || field.type === "datetime") {
+          castExpr = `(data->>'${escapedFieldStr}')::TIMESTAMPTZ`;
+        }
+
+        try {
+          await this.sql.unsafe(
+            `UPDATE ${targetTable} SET "${escapedField}" = ${castExpr} WHERE "${escapedField}" IS NULL AND data ? '${escapedFieldStr}'`,
+          );
+        } catch {
+          // Ignore backfill errors
+        }
       }
     }
+  }
+
+  private formatDoc(row: any, existingCols: string[]): { id: string; [key: string]: any } {
+    const doc: { id: string; [key: string]: any } = { id: row.id, ...(row.data || {}) };
+    for (const col of existingCols) {
+      if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
+      if (row[col] !== undefined && row[col] !== null) {
+        doc[col] = row[col];
+      }
+    }
+    return doc;
   }
 
   async find(args: {
@@ -229,6 +297,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     await this.ensureInitialized();
     await this.ensureTable(args.collection);
     const tableSlug = args.collection;
+    const tableNameOnly = this.getPhysicalTableName(tableSlug);
     const tableName = tableSlug.includes(".")
       ? tableSlug
       : `"${tableSlug.startsWith("collection_") ? tableSlug : `collection_${tableSlug}`}"`;
@@ -237,12 +306,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     const offset = (page - 1) * limit;
 
     // Inspect columns for promoted fields
-    const cols = await this.sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = ${`collection_${tableSlug}`}
-    `;
-    const existingCols = cols.map((c) => c.column_name);
+    const existingCols = await this.getTableColumns(tableNameOnly);
 
     // Build parameterized WHERE using the shared DSL translator (Postgres JSON path)
     let whereSql = "";
@@ -259,6 +323,7 @@ export class PostgresAdapter implements DatabaseAdapter {
           return `data->>'${field}'`;
         },
         "pg",
+        "ILIKE",
       );
       whereSql = `WHERE ${parsed.sql}`;
       params = parsed.params;
@@ -281,7 +346,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     const totalPages = Math.ceil(total / limit);
     return {
-      docs: rows.map((r) => ({ id: r.id, ...r.data })),
+      docs: rows.map((r) => this.formatDoc(r, existingCols)),
       total,
       limit,
       page,
@@ -295,27 +360,25 @@ export class PostgresAdapter implements DatabaseAdapter {
     await this.ensureInitialized();
     await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
+    const tableNameOnly = this.getPhysicalTableName(params.collection);
+    const existingCols = await this.getTableColumns(tableNameOnly);
     const rows = this.inTransaction
       ? await this
           .sql`SELECT * FROM ${table} WHERE id = ${params.id} FOR UPDATE`
       : await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
     const row = rows[0];
     if (!row) return null;
-    return { id: row.id, ...row.data };
+    return this.formatDoc(row, existingCols);
   }
 
   async create(params: { collection: string; data: any }) {
     await this.ensureInitialized();
     await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
+    const tableNameOnly = this.getPhysicalTableName(params.collection);
 
     // Inspect columns for promoted fields
-    const cols = await this.sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = ${`collection_${params.collection}`}
-    `;
-    const existingCols = cols.map((c) => c.column_name);
+    const existingCols = await this.getTableColumns(tableNameOnly);
 
     const id = params.data.id || Math.random().toString(36).substring(7);
     const data = { ...params.data };
@@ -344,14 +407,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     await this.ensureInitialized();
     await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
+    const tableNameOnly = this.getPhysicalTableName(params.collection);
     
     // Inspect columns for promoted fields
-    const cols = await this.sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = ${`collection_${params.collection}`}
-    `;
-    const existingCols = cols.map((c) => c.column_name);
+    const existingCols = await this.getTableColumns(tableNameOnly);
 
     const data = { ...params.data };
     const promotedValues: Record<string, any> = {};
@@ -460,17 +519,13 @@ export class PostgresAdapter implements DatabaseAdapter {
     await this.ensureInitialized();
     await this.ensureTable(args.collection);
 
+    const tableNameOnly = this.getPhysicalTableName(args.collection);
     const tableName = args.collection.includes(".")
       ? args.collection
       : `"${args.collection.startsWith("collection_") ? args.collection : `collection_${args.collection}`}"`;
 
     // Inspect columns so we can resolve promoted fields vs JSON paths.
-    const cols = await this.sql`
-      SELECT column_name
-      FROM information_schema.columns
-      WHERE table_name = ${`collection_${args.collection}`}
-    `;
-    const existingCols = cols.map((c) => c.column_name);
+    const existingCols = await this.getTableColumns(tableNameOnly);
 
     const toFieldExpr = (field: string) => {
       if (field === "createdAt") return '"created_at"';
@@ -549,6 +604,8 @@ export class PostgresAdapter implements DatabaseAdapter {
   async disconnect(): Promise<void> {
     const cache = getSharedPostgresClientCache();
     cache.delete(this.config.url);
+    this.knownTables?.clear();
+    this.tableColumnsCache?.clear();
     if (this.initPromise) {
       try {
         await this.initPromise;

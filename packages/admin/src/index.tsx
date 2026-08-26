@@ -180,9 +180,20 @@ function CollectionRoute() {
   }
 
   // Operational views are specialized sub-views at `/collections/:slug/views/:viewSlug`.
-  // When a user navigates to `/collections/:slug`, it serves the unfiltered master
-  // all-records table view with all collection fields accessible.
-  const hasCustomViews = Boolean((schema as any).views?.length);
+  // When a user navigates to `/collections/:slug`, if a default view is configured
+  // (via schema.defaultView, schema.admin.defaultView, or view.default: true),
+  // redirect directly to the default view's canonical URL.
+  // Otherwise, serve the unfiltered master all-records table view.
+  const customViews = (schema as any).views ?? [];
+  const configuredDefaultSlug = (schema as any).admin?.defaultView ?? (schema as any).defaultView;
+  const configuredDefaultView =
+    (configuredDefaultSlug ? customViews.find((v: any) => v.slug === configuredDefaultSlug) : undefined) ??
+    customViews.find((v: any) => v.default === true);
+
+  if (configuredDefaultView) {
+    return <Navigate to={`/collections/${slug}/views/${configuredDefaultView.slug}`} replace />;
+  }
+
   const defaultMasterView = {
     slug: "default",
     label: (schema as any).labels?.plural ?? slug,
@@ -194,7 +205,7 @@ function CollectionRoute() {
     actions: [],
   };
 
-  const rawView = hasCustomViews ? defaultMasterView : ((schema as any).views?.[0] ?? defaultMasterView);
+  const rawView = defaultMasterView;
 
   // URL compat shim for legacy v1 links (`?where=<json>&search=<term>`)
   let effectiveView: typeof rawView = rawView;

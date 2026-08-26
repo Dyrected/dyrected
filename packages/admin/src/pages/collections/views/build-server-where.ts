@@ -1,5 +1,58 @@
 import type { OperatorFilterValue } from "./build-view-columns"
 
+export const TEXT_LIKE_FIELD_TYPES = new Set([
+  "text",
+  "email",
+  "textarea",
+  "richText",
+  "select",
+  "radio",
+  "url",
+])
+
+export function isTextLikeField(field: any): boolean {
+  if (!field || typeof field !== "object") return false
+  const type = field.type
+  if (!type || typeof type !== "string") return false
+  return TEXT_LIKE_FIELD_TYPES.has(type)
+}
+
+/**
+ * Resolves candidate fields to strictly text-compatible fields.
+ * Non-text fields (boolean, number, date, json, blocks, relationship, join,
+ * row, and system timestamps) are stripped to avoid DB-level type mismatch errors (e.g. Postgres ILIKE on boolean).
+ */
+export function getSearchableFieldsFromSchema(
+  schema: any,
+  candidateFields?: string[],
+): string[] {
+  const fields = (schema?.fields ?? []) as Array<{ name: string; type: string }>
+  const fieldByName = new Map(fields.filter((f) => !!f?.name).map((f) => [f.name, f]))
+
+  // 1. If explicit admin.searchableFields configured on schema
+  if (Array.isArray(schema?.admin?.searchableFields) && schema.admin.searchableFields.length > 0) {
+    const configured = schema.admin.searchableFields.filter((name: string) => {
+      const f = fieldByName.get(name)
+      return !f || isTextLikeField(f)
+    })
+    if (configured.length > 0) return configured
+  }
+
+  // 2. If candidateFields provided, filter against schema to keep only text-like fields
+  if (candidateFields && candidateFields.length > 0) {
+    const filtered = candidateFields.filter((name) => {
+      const f = fieldByName.get(name)
+      if (f) return isTextLikeField(f)
+      if (["id", "createdAt", "updatedAt", "createdBy", "updatedBy"].includes(name)) return false
+      return false
+    })
+    if (filtered.length > 0) return filtered
+  }
+
+  // 3. Fallback: all text-like fields in schema
+  return fields.filter((f) => isTextLikeField(f)).map((f) => f.name)
+}
+
 interface BuildServerWhereOptions {
   baseFilter?: Record<string, any>
   columnFilters?: Array<{ id: string; value: unknown }>
@@ -120,15 +173,15 @@ export function buildServerWhere({
   columnFilters = [],
   search,
   searchColumnId,
-  searchableFields = [],
+  searchableFields,
   schema,
   joinOperator = "and",
 }: BuildServerWhereOptions): Record<string, any> | undefined {
   const toolbarConditions: Record<string, any>[] = []
 
   for (const entry of columnFilters) {
-    if (searchColumnId && entry.id === searchColumnId) {
-      // Handled below via search input
+    if (searchColumnId && entry.id === searchColumnId && search !== undefined) {
+      // Handled via top-level search input
       continue
     }
     const condition = translateColumnFilter(entry.id, entry.value, schema)
@@ -145,12 +198,15 @@ export function buildServerWhere({
 
   const trimmedSearch = search?.trim()
   if (trimmedSearch) {
-    if (searchColumnId) {
+    if (searchColumnId && !searchableFields?.length) {
       topLevelConditions.push({ [searchColumnId]: { contains: trimmedSearch } })
-    } else if (searchableFields.length > 0) {
-      topLevelConditions.push({
-        OR: searchableFields.map((field) => ({ [field]: { contains: trimmedSearch } })),
-      })
+    } else {
+      const resolvedFields = getSearchableFieldsFromSchema(schema, searchableFields)
+      if (resolvedFields.length > 0) {
+        topLevelConditions.push({
+          OR: resolvedFields.map((field) => ({ [field]: { contains: trimmedSearch } })),
+        })
+      }
     }
   }
 

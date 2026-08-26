@@ -57,6 +57,8 @@ export interface ViewConfig {
   columns?: string[];
   sort?: { field: string; direction: 'asc' | 'desc' };
   actions?: ActionConfig[];
+  /** When true, this view is loaded by default when visiting `/collections/:slug`. */
+  default?: boolean;
   /** Toggles built-in operations (view/edit/duplicate/delete/export). */
   features?: ViewActionFeatures;
   /**
@@ -109,6 +111,8 @@ export interface DefineViewOptions {
   columns?: string[];
   sort?: { field: string; direction: 'asc' | 'desc' };
   actions?: ActionConfig[];
+  /** When true, this view is loaded by default when visiting `/collections/:slug`. */
+  default?: boolean;
   features?: ViewActionFeatures;
   actionOrder?: string[];
   metrics?: ViewMetric[];
@@ -141,6 +145,7 @@ export function defineView(config: DefineViewOptions): ViewConfig {
     columns: config.columns,
     sort: config.sort,
     actions: config.actions,
+    default: config.default,
     features: config.features,
     actionOrder: config.actionOrder,
     metrics: config.metrics,
