@@ -389,7 +389,8 @@ FIX INSTRUCTIONS:
   async aggregate(args: {
     collection: string;
     aggregates: Record<string, any>;
-  }): Promise<Record<string, number | null>> {
+    groupBy?: string;
+  }): Promise<Record<string, any>> {
     if (Object.keys(args.aggregates).length === 0) {
       return {};
     }
@@ -426,6 +427,7 @@ FIX INSTRUCTIONS:
 
     const selectParts: string[] = [];
     const allParams: any[] = [];
+    const isDistinctMap: Record<string, boolean> = {};
 
     for (const [name, op] of Object.entries(args.aggregates)) {
       let whereSql: string | null = null;
@@ -436,7 +438,18 @@ FIX INSTRUCTIONS:
       }
 
       let aggExpr: string;
-      if ("count" in op) {
+      if ("countDistinct" in op && typeof op.countDistinct === "string") {
+        const fieldExpr = toFieldExpr(op.countDistinct);
+        aggExpr = whereSql
+          ? `COUNT(DISTINCT IF(${whereSql}, ${fieldExpr}, NULL))`
+          : `COUNT(DISTINCT ${fieldExpr})`;
+      } else if ("distinct" in op && typeof op.distinct === "string") {
+        isDistinctMap[name] = true;
+        const fieldExpr = toFieldExpr(op.distinct);
+        aggExpr = whereSql
+          ? `COALESCE(JSON_ARRAYAGG(DISTINCT IF(${whereSql}, ${fieldExpr}, NULL)), JSON_ARRAY())`
+          : `COALESCE(JSON_ARRAYAGG(DISTINCT ${fieldExpr}), JSON_ARRAY())`;
+      } else if ("count" in op) {
         aggExpr = whereSql ? `COUNT(IF(${whereSql}, 1, NULL))` : `COUNT(*)`;
       } else if (op.sum) {
         const val = toCastExpr(op.sum, op.cast);
@@ -459,14 +472,42 @@ FIX INSTRUCTIONS:
       );
     }
 
+    if (args.groupBy) {
+      const groupCol = toFieldExpr(args.groupBy);
+      const query = `SELECT ${groupCol} AS \`__group_key\`, ${selectParts.join(", ")} FROM \`${tableName}\` GROUP BY ${groupCol}`;
+      const [rows] = await this.query(query, allParams);
+
+      const groups: Record<string, Record<string, any>> = {};
+      for (const row of (rows ?? [])) {
+        const key = row.__group_key === null || row.__group_key === undefined ? "__unassigned__" : String(row.__group_key);
+        const groupResult: Record<string, any> = {};
+        for (const name of Object.keys(args.aggregates)) {
+          const raw = row[name];
+          if (isDistinctMap[name]) {
+            const parsed = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
+            groupResult[name] = Array.isArray(parsed) ? parsed.filter((v: any) => v !== null && v !== undefined) : [];
+          } else {
+            groupResult[name] = raw === null || raw === undefined ? null : Number(raw);
+          }
+        }
+        groups[key] = groupResult;
+      }
+      return { groups };
+    }
+
     const query = `SELECT ${selectParts.join(", ")} FROM \`${tableName}\``;
     const [rows] = await this.query(query, allParams);
     const row = rows[0] ?? {};
 
-    const result: Record<string, number | null> = {};
+    const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {
       const raw = row[name];
-      result[name] = raw === null || raw === undefined ? null : Number(raw);
+      if (isDistinctMap[name]) {
+        const parsed = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
+        result[name] = Array.isArray(parsed) ? parsed.filter((v: any) => v !== null && v !== undefined) : [];
+      } else {
+        result[name] = raw === null || raw === undefined ? null : Number(raw);
+      }
     }
     return result;
   }

@@ -45,6 +45,31 @@ export const tableSeatingGrid = defineView({
 
 Setting `layout: "spreadsheet"` renders the data in a full keyboard-accessible spreadsheet grid.
 
+## Grouped spreadsheets
+
+When records have natural categories — such as seating tables, event tracks, or inventory categories — add `groupBy` to organize the spreadsheet into collapsible sections:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const tableSeatingGrid = defineView({
+  slug: "table-seating-grid",
+  label: "Seating Matrix",
+  icon: "TableProperties",
+  layout: "spreadsheet",
+  groupBy: "tableNumber",
+  filter: { attending: { equals: true } },
+  columns: ["name", "tableNumber", "asoebiSize", "asoebiQuantity"],
+});
+```
+
+### Contextual row creation
+In a grouped spreadsheet, each section header includes a **`+ Add to [Group]`** button:
+- Clicking **`+ Add to Table 2`** creates a new row with `tableNumber: 2` already set.
+- Clicking **`+ Add to Unassigned`** leaves the grouping field empty so you can assign it later.
+
+All inline cell edits and new rows across every group accumulate in the same floating **Save changes** bar, committing everything in a single atomic batch.
+
 ## How fields edit in the grid
 
 | Field Type | Cell Editor Interaction | Commit Timing |

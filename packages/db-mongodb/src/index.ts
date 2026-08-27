@@ -199,7 +199,8 @@ export class MongoAdapter implements DatabaseAdapter {
   async aggregate(args: {
     collection: string;
     aggregates: Record<string, any>;
-  }): Promise<Record<string, number | null>> {
+    groupBy?: string;
+  }): Promise<Record<string, any>> {
     if (Object.keys(args.aggregates).length === 0) {
       return {};
     }
@@ -217,25 +218,30 @@ export class MongoAdapter implements DatabaseAdapter {
       date: "date",
     };
 
+    const wrapCast = (fieldExpr: string, cast?: string) => {
+      const castType = cast ? castToMongoType[cast] : null;
+      if (!castType) return `$${fieldExpr}`;
+      return {
+        $convert: {
+          input: `$${fieldExpr}`,
+          to: castType,
+          onError: null,
+          onNull: null,
+        },
+      };
+    };
+
     /** Build the $group accumulator expression for one named aggregate. */
     const buildGroupAccumulator = (op: Record<string, any>) => {
-      const castType = op.cast ? castToMongoType[op.cast] : null;
-
-      const wrapCast = (fieldExpr: string) => {
-        if (!castType) return `$${fieldExpr}`;
-        return {
-          $convert: {
-            input: `$${fieldExpr}`,
-            to: castType,
-            onError: null,
-            onNull: null,
-          },
-        };
-      };
-
+      if ("countDistinct" in op && typeof op.countDistinct === "string") {
+        return { result: { $addToSet: `$${op.countDistinct}` } };
+      }
+      if ("distinct" in op && typeof op.distinct === "string") {
+        return { result: { $addToSet: `$${op.distinct}` } };
+      }
       if ("count" in op) return { result: { $sum: 1 } };
       if (op.sum) {
-        const val = wrapCast(op.sum);
+        const val = wrapCast(op.sum, op.cast);
         return {
           result: { $sum: val },
           hasValid: {
@@ -245,11 +251,77 @@ export class MongoAdapter implements DatabaseAdapter {
           },
         };
       }
-      if (op.avg) return { result: { $avg: wrapCast(op.avg) } };
-      if (op.min) return { result: { $min: wrapCast(op.min) } };
-      if (op.max) return { result: { $max: wrapCast(op.max) } };
+      if (op.avg) return { result: { $avg: wrapCast(op.avg, op.cast) } };
+      if (op.min) return { result: { $min: wrapCast(op.min, op.cast) } };
+      if (op.max) return { result: { $max: wrapCast(op.max, op.cast) } };
       return { result: { $sum: 1 } };
     };
+
+    if (args.groupBy) {
+      const groupField = args.groupBy;
+      const groupAccumulators: Record<string, any> = {};
+      const distinctKeys = new Set<string>();
+      const countDistinctKeys = new Set<string>();
+
+      for (const [name, op] of Object.entries(args.aggregates)) {
+        if ("countDistinct" in op && typeof op.countDistinct === "string") {
+          countDistinctKeys.add(name);
+          groupAccumulators[`${name}_set`] = { $addToSet: `$${op.countDistinct}` };
+        } else if ("distinct" in op && typeof op.distinct === "string") {
+          distinctKeys.add(name);
+          groupAccumulators[name] = { $addToSet: `$${op.distinct}` };
+        } else if ("count" in op) {
+          groupAccumulators[name] = { $sum: 1 };
+        } else if (op.sum) {
+          const val = wrapCast(op.sum, op.cast);
+          groupAccumulators[name] = { $sum: val };
+          groupAccumulators[`${name}_hasValid`] = {
+            $sum: { $cond: [{ $isNumber: val }, 1, 0] },
+          };
+        } else if (op.avg) {
+          groupAccumulators[name] = { $avg: wrapCast(op.avg, op.cast) };
+        } else if (op.min) {
+          groupAccumulators[name] = { $min: wrapCast(op.min, op.cast) };
+        } else if (op.max) {
+          groupAccumulators[name] = { $max: wrapCast(op.max, op.cast) };
+        } else {
+          groupAccumulators[name] = { $sum: 1 };
+        }
+      }
+
+      const pipeline: any[] = [
+        {
+          $group: {
+            _id: `$${groupField}`,
+            ...groupAccumulators,
+          },
+        },
+      ];
+
+      const rawGroups = await col.aggregate(pipeline, { session: this.session }).toArray();
+      const groups: Record<string, Record<string, any>> = {};
+
+      for (const g of rawGroups) {
+        const key = g._id === null || g._id === undefined ? "__unassigned__" : String(g._id);
+        const groupResult: Record<string, any> = {};
+        for (const name of Object.keys(args.aggregates)) {
+          const op = args.aggregates[name];
+          if (countDistinctKeys.has(name)) {
+            const rawSet = (g[`${name}_set`] ?? []) as any[];
+            groupResult[name] = rawSet.filter((v) => v !== null && v !== undefined).length;
+          } else if (distinctKeys.has(name)) {
+            const rawSet = (g[name] ?? []) as any[];
+            groupResult[name] = rawSet.filter((v) => v !== null && v !== undefined);
+          } else if (op.sum && g[`${name}_hasValid`] === 0) {
+            groupResult[name] = null;
+          } else {
+            groupResult[name] = g[name] ?? ("count" in op ? 0 : null);
+          }
+        }
+        groups[key] = groupResult;
+      }
+      return { groups };
+    }
 
     // Build a $facet stage where every named aggregate runs in its own sub-pipeline.
     const facets: Record<string, any[]> = {};
@@ -271,13 +343,23 @@ export class MongoAdapter implements DatabaseAdapter {
     ).toArray();
 
     // Flatten: $facet returns { name: [{ _id: null, result: value, hasValid?: number }] | [] }
-    const result: Record<string, number | null> = {};
+    const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {
       const op = args.aggregates[name];
       const facetDocs: any[] = raw?.[name] ?? [];
       const doc = facetDocs[0];
       if (!doc) {
-        result[name] = "count" in op ? 0 : null;
+        if ("distinct" in op) {
+          result[name] = [];
+        } else {
+          result[name] = ("count" in op || "countDistinct" in op) ? 0 : null;
+        }
+      } else if ("countDistinct" in op) {
+        const rawSet = (doc.result ?? []) as any[];
+        result[name] = Array.isArray(rawSet) ? rawSet.filter((v) => v !== null && v !== undefined).length : 0;
+      } else if ("distinct" in op) {
+        const rawSet = (doc.result ?? []) as any[];
+        result[name] = Array.isArray(rawSet) ? rawSet.filter((v) => v !== null && v !== undefined) : [];
       } else if (op.sum && doc.hasValid === 0) {
         result[name] = null;
       } else {

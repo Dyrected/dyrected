@@ -45,6 +45,8 @@ Every key in your aggregate request defines one metric. You can mix and match an
 | Operation | Syntax | Description | Return Type |
 |---|---|---|---|
 | **Count** | `{ count: "*" }` | Counts matching documents in the collection. | `number` |
+| **Distinct Count** | `{ countDistinct: "field" }` | Counts unique non-null values for a field. | `number` |
+| **Distinct Values** | `{ distinct: "field" }` | Extracts unique non-null values as a deduplicated list. | `Array<string \| number \| boolean>` |
 | **Sum** | `{ sum: "field", cast?: "number" }` | Computes the total of all numeric values for a field. | `number \| null` |
 | **Average** | `{ avg: "field", cast?: "number" }` | Computes the mathematical mean of a numeric field. | `number \| null` |
 | **Minimum** | `{ min: "field", cast?: "number" }` | Finds the smallest numeric value for a field. | `number \| null` |
@@ -53,14 +55,21 @@ Every key in your aggregate request defines one metric. You can mix and match an
 ```ts
 const metrics = await client.collection("orders").aggregate({
   totalOrders: { count: "*" },
+  uniqueCustomers: { countDistinct: "customerEmail" },
+  paymentMethods: { distinct: "paymentMethod" },
   totalRevenue: { sum: "totalAmount" },
   averageOrderValue: { avg: "totalAmount" },
   lowestSale: { min: "totalAmount" },
   highestSale: { max: "totalAmount" },
 });
+
+console.log(metrics.totalOrders); // 1420
+console.log(metrics.uniqueCustomers); // 950
+console.log(metrics.paymentMethods); // ["card", "transfer", "crypto"]
+console.log(metrics.totalRevenue); // 89450.75
 ```
 
-If no documents match an aggregation, `count` returns `0`, while `sum`, `avg`, `min`, and `max` return `null`.
+If no documents match an aggregation, `count` and `countDistinct` return `0`, `distinct` returns `[]`, while `sum`, `avg`, `min`, and `max` return `null`.
 
 ---
 
@@ -118,6 +127,36 @@ const yardage = await client.collection("rsvps").aggregate({
 
 ---
 
+## Grouped aggregation with `groupBy`
+
+To compute metrics grouped by category, status, or assignee in a single query, pass the `groupBy` parameter alongside your aggregates:
+
+```ts
+const breakdown = await client.collection("orders").aggregate({
+  groupBy: "status",
+  aggregates: {
+    orderCount: { count: "*" },
+    totalRevenue: { sum: "totalAmount" },
+  },
+});
+
+console.log(breakdown.groups["paid"]);
+// => { orderCount: 320, totalRevenue: 45000.00 }
+
+console.log(breakdown.groups["pending"]);
+// => { orderCount: 45, totalRevenue: 6200.50 }
+
+console.log(breakdown.groups["__unassigned__"]);
+// => { orderCount: 5, totalRevenue: 150.00 }
+```
+
+### Why use `groupBy`?
+- **Zero $N+1$ query overhead**: Computes metrics for 50+ categories in **1 database roundtrip** using native SQL `GROUP BY` or MongoDB `$group`.
+- **Automatic unassigned grouping**: Records with `null`, `undefined`, or missing group values are grouped under the sentinel key `"__unassigned__"`.
+- **Powers charts and summaries**: Perfect for bar charts, pipeline funnels, and grouped table headers without running separate API requests for every option.
+
+---
+
 ## Access control and security
 
 Collection aggregations respect your collection's `access.read` rule:
@@ -138,17 +177,43 @@ curl -X POST https://example.com/api/collections/orders/aggregate \
   -H "x-api-key: your-api-key" \
   -d '{
     "totalCount": { "count": "*" },
+    "uniqueBuyers": { "countDistinct": "customerEmail" },
     "totalRevenue": { "sum": "totalAmount" },
     "avgOrder": { "avg": "totalAmount", "where": { "status": { "equals": "completed" } } }
   }'
 ```
 
-### Response format (`200 OK`)
+### Grouped breakdown via REST API
+
+You can group results by adding `?groupBy=<field>` query parameter or wrapping your request in `{ aggregates: { ... }, groupBy: "<field>" }`:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate?groupBy=status \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "orderCount": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" }
+  }'
+```
+
+#### Response format (`200 OK`)
 
 ```json
 {
-  "totalCount": 1420,
-  "totalRevenue": 89450.75,
-  "avgOrder": 63.00
+  "groups": {
+    "paid": {
+      "orderCount": 320,
+      "totalRevenue": 45000.00
+    },
+    "pending": {
+      "orderCount": 45,
+      "totalRevenue": 6200.50
+    },
+    "__unassigned__": {
+      "orderCount": 5,
+      "totalRevenue": 150.00
+    }
+  }
 }
 ```

@@ -385,6 +385,73 @@ export function runAggregateAdapterContract(
       expect(result.groups["paid"]).toEqual({ orderCount: 2, totalRevenue: 300 });
       expect(result.groups["pending"]).toEqual({ orderCount: 1, totalRevenue: 50 });
     });
+
+    it("handles promoted numeric columns, unassigned nulls, and boolean filters in groupBy without type errors", async () => {
+      const db = await createAdapter();
+      const collection = `agg-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "tableNumber", type: "number", promoted: true },
+          { name: "attending", type: "boolean", promoted: true },
+          { name: "asoebiSize", type: "select" },
+          { name: "guestCount", type: "number" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      // 1. Attending guests with table numbers
+      await db.create({ collection, data: { tableNumber: 1, attending: true, asoebiSize: "M", guestCount: 2 } });
+      await db.create({ collection, data: { tableNumber: 1, attending: true, asoebiSize: "L", guestCount: 1 } });
+      await db.create({ collection, data: { tableNumber: 2, attending: true, asoebiSize: "M", guestCount: 3 } });
+
+      // 2. Attending guest without table number (unassigned)
+      await db.create({ collection, data: { tableNumber: null, attending: true, asoebiSize: "S", guestCount: 1 } });
+
+      // 3. Non-attending guest (should be filtered out when filter applies)
+      await db.create({ collection, data: { tableNumber: 1, attending: false, asoebiSize: "M", guestCount: 1 } });
+
+      // Test A: Group by promoted numeric column with boolean filter
+      const resultByTable = await db.aggregate({
+        collection,
+        groupBy: "tableNumber",
+        aggregates: {
+          totalAttending: { count: "*", where: { attending: { equals: true } } },
+          totalGuests: { sum: "guestCount", where: { attending: { equals: true } } },
+        },
+      });
+
+      expect(resultByTable.groups).toBeDefined();
+      expect(resultByTable.groups["1"]).toEqual({ totalAttending: 2, totalGuests: 3 });
+      expect(resultByTable.groups["2"]).toEqual({ totalAttending: 1, totalGuests: 3 });
+      expect(resultByTable.groups["__unassigned__"]).toEqual({ totalAttending: 1, totalGuests: 1 });
+
+      // Test B: Group by unpromoted JSON field (asoebiSize) with distinct extraction
+      const resultBySize = await db.aggregate({
+        collection,
+        groupBy: "asoebiSize",
+        aggregates: {
+          guestCount: { sum: "guestCount" },
+        },
+      });
+
+      expect(resultBySize.groups).toBeDefined();
+      expect(resultBySize.groups["M"]).toEqual({ guestCount: 6 }); // 2 + 1 + 3 (including non-attending)
+      expect(resultBySize.groups["L"]).toEqual({ guestCount: 1 });
+      expect(resultBySize.groups["S"]).toEqual({ guestCount: 1 });
+
+      // Test C: Distinct on promoted numeric column without nulls in result
+      const distinctTables = await db.aggregate({
+        collection,
+        aggregates: {
+          tables: { distinct: "tableNumber", where: { attending: { equals: true } } },
+        },
+      });
+
+      expect(distinctTables.tables).toBeDefined();
+      expect(distinctTables.tables).not.toContain(null);
+      expect(distinctTables.tables).toEqual(expect.arrayContaining([1, 2]));
+    });
   });
 }
 

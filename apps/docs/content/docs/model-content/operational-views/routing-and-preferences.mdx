@@ -11,18 +11,31 @@ By the end you'll know the route shape, what the sidebar actually renders, how t
 
 | Route Pattern | View Rendered | Behavior |
 | --- | --- | --- |
-| `/collections/:slug` | Master Collection Table | Unfiltered view of all documents in the collection with complete field access. |
+| `/collections/:slug` | Default View / Collection Table | If `defaultView` is set on the collection, redirects directly to `/collections/:slug/views/:defaultView`. Otherwise renders the master all-records table. |
 | `/collections/:slug/views/:viewSlug` | Dedicated Operational View | Specialized workspace (table, kanban, calendar, cards, or spreadsheet) configured with its own filter, columns, actions, and metrics. |
 | `/collections/:slug/:id` | Record Detail View | Comprehensive inspection and form view for a single document. |
 | `/collections/:slug/new` | Record Creation Form | Form for creating a new document in the collection. |
 
-If a collection does not author custom `views`, Dyrected automatically synthesizes a default `list` table view from `admin.defaultColumns` or display fields so `/collections/:slug` is always functional immediately.
+### Default view routing
+When a collection config sets `defaultView`:
+```ts
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  defaultView: "attending-guests",
+  views: [attendingGuests, seatingMatrix],
+  fields: [ /* ... */ ],
+});
+```
+1. Navigating to `/collections/guest-responses` automatically redirects to `/collections/guest-responses/views/attending-guests`.
+2. The browser tab title reflects the active view: `Attending Guests · Guest Responses - Dyrected`.
+3. In the sidebar, clicking **Guest Responses** opens the default view directly.
 
 ## Sidebar Navigation
 
 The admin sidebar automatically organizes collections and their operational views:
-- **Expanded Sidebar**: Collections with views display an interactive chevron that expands to reveal each specialized sub-view, complete with icons and labels.
-- **Collapsed Sidebar**: Hovering over a collapsed collection icon opens a quick-jump popover menu displaying the master collection link and all dedicated sub-views.
+- **Clean Submenus**: Collection submenus are collapsed by default to keep navigation clean and uncluttered, expanding automatically when viewing that collection.
+- **Dedicated Views**: When `defaultView` is configured, the submenu cleanly lists only your defined operational views. If no default view is set, an `All [Collection]` master link is included.
+- **Collapsed Sidebar**: Hovering over a collapsed collection icon opens a quick-jump popover menu displaying your operational views.
 - **Permissions**: Views and collections respect `admin.hidden` and role-based access rules.
 
 ## Local Preferences & State Persistence

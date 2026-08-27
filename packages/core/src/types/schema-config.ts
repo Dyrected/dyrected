@@ -415,14 +415,45 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   detail?: DetailSchema<TDoc> | false;
 
   /**
-   * Slug of the view to render by default when navigating to `/collections/:slug`.
-   * Can also be set in `admin.defaultView` or by adding `default: true` to a view.
+   * Slug of the operational view to render by default when navigating to `/collections/:slug`.
+   *
+   * When set:
+   * 1. Navigating to `/collections/:slug` automatically redirects to `/collections/:slug/views/:defaultView`.
+   * 2. The main collection link in the sidebar directly opens this default view.
+   * 3. The sidebar submenu cleanly lists only your defined views without showing a generic `All [Collection]` item.
+   *
+   * @example
+   * ```ts
+   * export const GuestResponses = defineCollection({
+   *   slug: "guest-responses",
+   *   defaultView: "attending-guests",
+   *   views: [attendingGuests, seatingMatrix],
+   *   fields: [...],
+   * });
+   * ```
    */
   defaultView?: string;
 
   /**
-   * Operational views for this collection.
-   * Each view provides a tailored workspace for a specific job or workflow.
+   * Tailored operational workspaces for this collection (`table`, `spreadsheet`, `kanban`, `calendar`, `cards`, `gantt`).
+   * Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.
+   *
+   * @example
+   * ```ts
+   * views: [
+   *   defineView({
+   *     slug: "attending-guests",
+   *     label: "Attending Guests",
+   *     icon: "UserCheck",
+   *     layout: "table",
+   *     groupBy: "tableNumber",
+   *     filter: { attending: { equals: true } },
+   *     columns: ["name", "email", "guestCount", "checkedIn"],
+   *   }),
+   * ]
+   * ```
+   *
+   * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}
    */
   views?: ViewConfig[];
 }

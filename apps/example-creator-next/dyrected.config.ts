@@ -1052,7 +1052,7 @@ const GuestResponses = defineCollection({
     defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
     defineTextareaField({ name: "wellWishes", label: "Well Wishes" }),
   ],
-  defaultView: "attending-guests",
+  // defaultView: "attending-guests",
   views: [
     // 1. Table layout for door check-in
     defineView({
@@ -1147,7 +1147,6 @@ const GuestResponses = defineCollection({
           ],
         },
       ],
-      default: true,
     }),
 
     // 2. Kanban board for outfit fulfillment

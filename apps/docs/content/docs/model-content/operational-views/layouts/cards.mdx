@@ -56,11 +56,28 @@ export const guestDirectory = defineView({
 
 `columns` controls the card fields. If the collection includes an image, avatar, or media field, Dyrected displays it as the card's visual cover. `actions` places quick one-click buttons directly at the base of each card.
 
+## Grouped card galleries
+
+Add `groupBy` to organize visual cards into categorized sections (e.g. by department, category, or status):
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const staffByDepartment = defineView({
+  slug: "staff-by-department",
+  label: "Staff by Department",
+  icon: "LayoutGrid",
+  layout: "cards",
+  groupBy: "department",
+  columns: ["name", "role", "email", "avatar"],
+});
+```
+
 ## Chrome features
 
 - **Live Backend Search**: Search queries text and email fields across large datasets instantaneously.
-- **Faceted Category Pills**: Filter by badges and tags directly from the toolbar.
-- **Field & Label Toggles**: Editors can toggle column visibility and label density via the **View** menu.
+- **Unified Filter Menu**: Filter by badges, select fields, numbers, or dates with active filter count badges.
+- **Field & Label Toggles**: Editors can toggle column visibility and label density via the **Fields** menu.
 
 ## UX guardrails
 

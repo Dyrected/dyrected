@@ -484,10 +484,9 @@ function getDefaultView(col: AdminSidebarCollection) {
   const views = col.views ?? []
   const configuredSlug = col.admin?.defaultView ?? col.defaultView
   if (configuredSlug) {
-    const matched = views.find((v) => v.slug === configuredSlug)
-    if (matched) return matched
+    return views.find((v) => v.slug === configuredSlug)
   }
-  return views.find((v) => v.default === true)
+  return undefined
 }
 
 interface AdminSidebarGlobal {

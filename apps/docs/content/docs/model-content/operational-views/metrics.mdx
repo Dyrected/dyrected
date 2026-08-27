@@ -48,7 +48,23 @@ export const attendingGuests = defineView({
 });
 ```
 
-### 2. Calculated revenue with `transform`
+### 2. Distinct count of unique values
+
+Count unique non-null values for a field (e.g. how many distinct tables have seated guests):
+
+```ts
+export const occupiedTables = {
+  label: "Occupied Tables",
+  color: "indigo",
+  unit: "Tables",
+  aggregate: {
+    distinctCount: "tableNumber",
+    where: { attending: { equals: true } },
+  },
+};
+```
+
+### 3. Calculated revenue with `transform`
 
 Multiply an aggregated numeric sum by a unit price:
 
@@ -69,7 +85,7 @@ export const revenueMetric = {
 
 `value` represents the returned aggregation result.
 
-### 3. Multi-aggregate expressions & ratios
+### 4. Multi-aggregate expressions & ratios
 
 Combine multiple database operations using an `expression`:
 
@@ -86,7 +102,7 @@ export const attendanceRate = {
 };
 ```
 
-### 4. Sub-metrics breakdown
+### 5. Sub-metrics breakdown
 
 Add secondary footer metrics under the primary hero card:
 
@@ -119,8 +135,8 @@ export const checkInMetric = {
 | --- | --- | --- |
 | `label` | `string` **required** | Title displayed on the metric card. |
 | `color` | `MetricColor` | Theme palette accent (`"purple"`, `"emerald"`, `"amber"`, `"rose"`, `"blue"`, `"indigo"`, `"cyan"`, `"orange"`). |
-| `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`). |
-| `aggregate` | `AggregateOperation` | Single operation `{ count/sum/avg/min/max: field, where?, cast?: "number" }`. |
+| `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`, `"Tables"`). |
+| `aggregate` | `AggregateOperation` | Single operation `{ count: "*", distinctCount: "field", sum: "field", avg: "field", min: "field", max: "field", where?, cast?: "number" }`. |
 | `aggregates` | `Record<string, AggregateOperation>` | Named map of operations referenced in `expression` as `aggregates.key`. |
 | `transform` | `string` | JEXL formula evaluated over `value` for single aggregates (e.g. `"value * 100"`). |
 | `expression` | `string` | JEXL formula evaluated over `aggregates` (e.g. `"aggregates.a + aggregates.b"`). |

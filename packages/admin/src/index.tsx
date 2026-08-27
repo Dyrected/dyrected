@@ -186,9 +186,7 @@ function CollectionRoute() {
   // Otherwise, serve the unfiltered master all-records table view.
   const customViews = (schema as any).views ?? [];
   const configuredDefaultSlug = (schema as any).admin?.defaultView ?? (schema as any).defaultView;
-  const configuredDefaultView =
-    (configuredDefaultSlug ? customViews.find((v: any) => v.slug === configuredDefaultSlug) : undefined) ??
-    customViews.find((v: any) => v.default === true);
+  const configuredDefaultView = configuredDefaultSlug ? customViews.find((v: any) => v.slug === configuredDefaultSlug) : undefined;
 
   if (configuredDefaultView) {
     return <Navigate to={`/collections/${slug}/views/${configuredDefaultView.slug}`} replace />;

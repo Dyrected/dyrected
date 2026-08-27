@@ -295,6 +295,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           auth: !!col.auth,
           audit: !!col.audit,
           drafts: !!col.drafts,
+          defaultView: col.defaultView ?? col.admin?.defaultView,
           views: await Promise.all((col.views || []).map((view: any) => serializeViewForApi(view, serializeAccess))),
           admin: col.admin,
           detail: serializeDetailForApi(col.detail),

@@ -62,15 +62,35 @@ export const attendingGuests = defineView({
 
 The base `filter` restricts data to confirmed attendees, `columns` sets the initial visible fields, `features` enables CSV export for selected rows, and `actionOrder` places the **Check In** button right at the start of each row.
 
+## Grouped tables
+
+Add `groupBy` to organize table rows into collapsible sections with item count badges:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const groupedGuests = defineView({
+  slug: "table-groups",
+  label: "Seating Tables",
+  layout: "table",
+  groupBy: "tableNumber",
+  filter: { attending: { equals: true } },
+  columns: ["name", "email", "guestCount", "checkedIn"],
+});
+```
+
+Editors can expand and collapse groups individually. Bulk actions apply to selected rows across groups.
+
 ## Chrome and configuration mapping
 
 | Table Feature | Configuration Key | Description |
 | --- | --- | --- |
-| **Search Bar** | `admin.searchableFields` | Queries text and email fields on the backend. |
-| **Faceted Filter Pills** | `filter` & interactive toolbar | Allows editors to filter by status, boolean flags, numbers, or dates with badge counts. |
-| **Column Visibility & Order** | `columns` & `View` toolbar button | Sets initial visible fields; editors can show/hide, reorder, or adjust table density. |
+| **Search Bar** | `admin.searchableFields` | Live debounced search querying text and email fields on the backend. |
+| **Filter Menu & Pills** | Interactive toolbar | Searchable command menu supporting text, number, date, select, and boolean filters. Active filters display as removable pills with total count. |
+| **Filter Match Logic** | Toolbar toggle | When 2+ filters are active, switch between **`Match: All`** (AND logic) and **`Match: Any`** (OR logic). |
+| **Column Visibility & Order** | `columns` & `Fields` toolbar button | Sets initial visible fields; editors can show/hide and reorder columns per user. |
 | **Floating Bulk Bar** | `type: "bulk"` actions | Appears automatically when one or more rows are selected via checkbox. |
-| **Sorting** | `sort` | Initial sort field and direction; can be toggled by clicking table column headers. |
+| **Sorting** | `sort` | Initial sort field and direction; can be toggled by clicking column headers. |
 
 ## UX guardrails
 

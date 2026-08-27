@@ -368,7 +368,8 @@ export class SqliteAdapter implements DatabaseAdapter {
         for (const name of Object.keys(args.aggregates)) {
           const raw = row[name];
           if (isDistinctMap[name]) {
-            groupResult[name] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
+            const rawArr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
+            groupResult[name] = Array.isArray(rawArr) ? rawArr.filter((v: any) => v !== null && v !== undefined) : [];
           } else {
             groupResult[name] = raw === null || raw === undefined ? null : Number(raw);
           }
@@ -385,7 +386,8 @@ export class SqliteAdapter implements DatabaseAdapter {
     for (const name of Object.keys(args.aggregates)) {
       const raw = row[name];
       if (isDistinctMap[name]) {
-        result[name] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
+        const rawArr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
+        result[name] = Array.isArray(rawArr) ? rawArr.filter((v: any) => v !== null && v !== undefined) : [];
       } else {
         result[name] = raw === null || raw === undefined ? null : Number(raw);
       }
