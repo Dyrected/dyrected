@@ -345,12 +345,9 @@ export function EditEntryPage() {
 
   const [isConfiguringView, setIsConfiguringView] = useState(false)
 
-  // Fetch schema
-  const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
-    queryKey: ["schemas"],
-    queryFn: () => client!.getSchemas(),
-    enabled: !!client,
-  })
+  // Use cached schemas from context
+  const { schemas } = useDyrected()
+  const isLoadingSchemas = !schemas
 
   const schema = schemas?.collections.find((c: { slug: string }) => c.slug === slug)
 

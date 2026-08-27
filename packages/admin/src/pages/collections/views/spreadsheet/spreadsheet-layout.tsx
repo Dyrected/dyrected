@@ -8,11 +8,10 @@ import {
 import type { ColumnDef, ColumnFiltersState, PaginationState, SortingState } from "@tanstack/react-table"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Save, Undo2 } from "lucide-react"
 
 import { Button } from "../../../../components/ui/button"
-import { Input } from "../../../../components/ui/input"
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { normalizeOptions } from "../build-view-columns"
 import { evaluateAccess } from "../system-actions"
@@ -24,6 +23,8 @@ import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference
 import { DataTableViewOptions } from "../table/data-table-view-options"
 import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
+import { useTableGroups } from "../table/use-table-groups"
+import { GroupedSpreadsheetView } from "./grouped-spreadsheet-view"
 import type { SerializedAction, SerializedView } from "../types"
 import { DataGrid } from "./data-grid"
 import { SkeletonSpreadsheet } from "./../view-skeletons"
@@ -80,6 +81,7 @@ const NEW_ROW_PREFIX = "__new__"
 
 interface PendingNewRow {
   __tempId: string
+  __groupValue?: string
   values: Record<string, unknown>
 }
 
@@ -99,6 +101,42 @@ export function SpreadsheetLayout({
   const { client, user } = useDyrected()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const initialGroupBy = searchParams.get("groupBy") ?? view.groupBy
+  const [groupBy, setGroupBy] = React.useState<string | undefined>(initialGroupBy)
+
+  const handleGroupByChange = React.useCallback(
+    (field: string | undefined) => {
+      setGroupBy(field)
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (field) {
+          next.set("groupBy", field)
+        } else {
+          next.delete("groupBy")
+        }
+        return next
+      })
+    },
+    [setSearchParams],
+  )
+
+  const groupByOptions = React.useMemo(() => {
+    const fields = (schema?.fields ?? []) as any[]
+    return fields
+      .filter((f) =>
+        ["select", "radio", "boolean", "relationship", "number", "text"].includes(f.type) &&
+        !f.admin?.hidden &&
+        f.name !== "id" &&
+        f.type !== "json" &&
+        f.type !== "blocks",
+      )
+      .map((f) => ({
+        label: f.label || f.name,
+        value: f.name,
+      }))
+  }, [schema?.fields])
 
   const [updates, setUpdates] = React.useState<PendingUpdates>({})
   const [newRows, setNewRows] = React.useState<PendingNewRow[]>([])
@@ -212,6 +250,18 @@ export function SpreadsheetLayout({
     limit: pagination.pageSize,
   })
 
+  const {
+    groupStates,
+    isPending: isGroupPending,
+  } = useTableGroups({
+    slug,
+    view,
+    schema,
+    groupField: groupBy,
+    filter: serverWhere,
+    sort: serverSort,
+  })
+
   /** Server rows merged with pending edits, followed by unsaved new rows. */
   const gridData = React.useMemo(() => {
     const editedDocs = serverDocs.map((doc) => {
@@ -270,11 +320,12 @@ export function SpreadsheetLayout({
    * Search-surviving saved documents — pending new rows (temp ids) are
    * excluded since they have nothing to export yet.
    */
-  const exportableDocs = React.useMemo(
-    () =>
-      serverDocs.filter((doc) => !String(doc.id ?? "").startsWith("__new__")),
-    [serverDocs],
-  )
+  const exportableDocs = React.useMemo(() => {
+    if (groupBy && groupStates.length > 0) {
+      return groupStates.flatMap((g) => g.docs)
+    }
+    return serverDocs.filter((doc) => !String(doc.id ?? "").startsWith("__new__"))
+  }, [groupBy, groupStates, serverDocs])
 
   const invalidate = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
@@ -317,7 +368,8 @@ export function SpreadsheetLayout({
    */
   const handleDataUpdate = React.useCallback(
     (event: { rowIndex: number; columnId: string; value: unknown }) => {
-      const row = gridData[event.rowIndex]
+      const allDocs = groupBy && groupStates.length > 0 ? groupStates.flatMap((g) => g.docs) : serverDocs
+      const row = gridData[event.rowIndex] ?? allDocs.find((d) => d[event.columnId] !== undefined)
       if (!row) return
       const rowId = String(row.id)
 
@@ -333,7 +385,7 @@ export function SpreadsheetLayout({
       }
 
       setUpdates((prev) => {
-        const previousRow = serverDocs.find((doc) => String(doc.id) === rowId)
+        const previousRow = allDocs.find((doc) => String(doc.id) === rowId)
         const merged = { ...prev[rowId], [event.columnId]: event.value }
         if (previousRow && previousRow[event.columnId] === event.value) {
           delete merged[event.columnId]
@@ -347,7 +399,7 @@ export function SpreadsheetLayout({
         return { ...prev, [rowId]: merged }
       })
     },
-    [gridData, serverDocs],
+    [gridData, groupBy, groupStates, serverDocs],
   )
 
   const tableMeta: DataGridTableMeta<any> = React.useMemo(
@@ -367,64 +419,98 @@ export function SpreadsheetLayout({
     setNewRows((prev) => [...prev, { __tempId: `${NEW_ROW_PREFIX}${Date.now()}-${prev.length}`, values: {} }])
   }, [])
 
+  const handleAddRowForGroup = React.useCallback(
+    (groupValue: string) => {
+      const initialVals: Record<string, unknown> = {}
+      if (groupBy && groupValue !== "__unassigned__") {
+        initialVals[groupBy] = groupValue
+      }
+      setNewRows((prev) => [
+        ...prev,
+        {
+          __tempId: `${NEW_ROW_PREFIX}${Date.now()}-${prev.length}`,
+          __groupValue: groupValue,
+          values: initialVals,
+        },
+      ])
+    },
+    [groupBy],
+  )
+
   const handleDiscard = React.useCallback(() => {
     setUpdates({})
     setNewRows([])
   }, [])
 
-  if (isParentLoading || (isPending && !serverDocs.length)) {
+  const showSkeleton =
+    isParentLoading ||
+    (!groupBy && isPending && !serverDocs.length) ||
+    (Boolean(groupBy) && isGroupPending && !groupStates.length)
+
+  if (showSkeleton) {
     return <SkeletonSpreadsheet columns={Math.max(orderedColumnIds.length, 4)} rows={12} aria-busy="true" />
   }
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-3">
-      <div className="dy-flex dy-w-full dy-items-start dy-justify-between dy-gap-2">
-        <div className="dy-w-40 lg:dy-w-56">
-          <Input
-            size="sm"
-            placeholder="Search..."
-            value={globalFilter}
-            onChange={(event) => {
-              setGlobalFilter(event.target.value)
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-            }}
-            className="dy-border-dashed dy-bg-muted/40 hover:dy-bg-muted/60 focus-visible:dy-bg-background"
-          />
-        </div>
-        <DataTableToolbar table={table} className="dy-flex-1" />
-        <div className="dy-flex dy-items-center dy-gap-2">
-          <ExportMenu
-            slug={slug}
-            schema={schema}
-            findArgs={{ where: serverWhere, sort: serverSort }}
-            currentDocs={exportableDocs}
-          />
-          <DataTableViewOptions
-            table={table}
-            preferences={preferences.preferences}
-            isDirty={preferences.isDirty}
-            isSaving={preferences.isSaving}
-            isAdmin={preferences.isAdmin}
-            onOrderChange={preferences.setOrder}
-            onToggleVisibility={preferences.toggleVisibility}
-            onShowAll={preferences.showAll}
-            onHideAllExcept={preferences.hideAllExcept}
-            onReset={preferences.reset}
-            onSaveForMe={preferences.saveForMe}
-            onSaveForEveryone={preferences.isAdmin ? preferences.saveForEveryone : undefined}
-          />
-        </div>
-      </div>
-
-      <DataGrid
+      <DataTableToolbar
         table={table}
-        columnIds={orderedColumnIds}
-        tableMeta={tableMeta}
-        readOnly={!canUpdate}
-        onRowAdd={canUpdate ? handleAddRow : undefined}
-      />
+        searchValue={globalFilter}
+        onSearchChange={setGlobalFilter}
+        searchPlaceholder="Search spreadsheet..."
+        groupBy={groupBy}
+        onGroupByChange={handleGroupByChange}
+        groupByOptions={groupByOptions}
+      >
+        <ExportMenu
+          slug={slug}
+          schema={schema}
+          findArgs={{ where: serverWhere, sort: serverSort }}
+          currentDocs={exportableDocs}
+        />
+        <DataTableViewOptions
+          table={table}
+          preferences={preferences.preferences}
+          isDirty={preferences.isDirty}
+          isSaving={preferences.isSaving}
+          isAdmin={preferences.isAdmin}
+          onOrderChange={preferences.setOrder}
+          onToggleVisibility={preferences.toggleVisibility}
+          onShowAll={preferences.showAll}
+          onHideAllExcept={preferences.hideAllExcept}
+          onReset={preferences.reset}
+          onSaveForMe={preferences.saveForMe}
+          onSaveForEveryone={preferences.isAdmin ? preferences.saveForEveryone : undefined}
+        />
+      </DataTableToolbar>
 
-      <DataTablePagination table={table} pageSizeOptions={[20, 50, 100]} />
+      {groupBy && groupStates.length > 0 ? (
+        <GroupedSpreadsheetView
+          columns={columns}
+          orderedColumnIds={orderedColumnIds}
+          groupStates={groupStates}
+          columnOrder={preferences.preferences.order}
+          columnVisibility={table.getState().columnVisibility}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          tableMeta={tableMeta}
+          readOnly={!canUpdate}
+          updates={updates}
+          newRows={newRows}
+          onRowAddForGroup={canUpdate ? handleAddRowForGroup : undefined}
+        />
+      ) : (
+        <>
+          <DataGrid
+            table={table}
+            columnIds={orderedColumnIds}
+            tableMeta={tableMeta}
+            readOnly={!canUpdate}
+            onRowAdd={canUpdate ? handleAddRow : undefined}
+          />
+          <DataTablePagination table={table} pageSizeOptions={[20, 50, 100]} />
+        </>
+      )}
 
       {!canUpdate ? (
         <p className="dy-text-xs dy-text-muted-foreground">

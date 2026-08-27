@@ -172,11 +172,9 @@ export function Dashboard() {
     return false;
   })();
 
-  const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
-    queryKey: ["schemas"],
-    queryFn: async () => (await client!.getSchemas()) as AdminSchemas,
-    enabled: !!client,
-  })
+  const { schemas: contextSchemas } = useDyrected()
+  const schemas = contextSchemas
+  const isLoadingSchemas = !schemas
 
   const allCollections = (schemas?.collections || []) as SchemaCollection[]
   const collections = allCollections.filter(isVisibleCollection)

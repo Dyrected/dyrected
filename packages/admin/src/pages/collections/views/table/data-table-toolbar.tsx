@@ -1,8 +1,7 @@
 import * as React from "react"
-import type { Column, Table } from "@tanstack/react-table"
+import type { Table } from "@tanstack/react-table"
 import { X, Loader2, ChevronDown, Check } from "lucide-react"
 
-import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { DataTableFilterMenu } from "./data-table-filter-menu"
 import { DataTableSort } from "./data-table-sort"
 import { Button } from "../../../../components/ui/button"
@@ -64,32 +63,6 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0 || Boolean(searchValue)
 
-  const filterableColumns = React.useMemo(
-    () =>
-      table
-        .getAllColumns()
-        .filter((column) => column.getCanFilter() && column.id !== searchColumnId),
-    [table, searchColumnId],
-  )
-
-  const facetedColumns = React.useMemo(
-    () =>
-      filterableColumns.filter((column) => {
-        const meta = column.columnDef.meta as any
-        return meta?.variant === "multiSelect" || meta?.variant === "select"
-      }),
-    [filterableColumns],
-  )
-
-  const menuColumns = React.useMemo(
-    () =>
-      filterableColumns.filter((column) => {
-        const meta = column.columnDef.meta as any
-        return meta?.variant === "text" || meta?.variant === "number" || meta?.variant === "date"
-      }),
-    [filterableColumns],
-  )
-
   const searchColumn = searchColumnId ? table.getColumn(searchColumnId) : undefined
   const showSearchInput = onSearchChange !== undefined || searchValue !== undefined || searchColumn !== undefined
   const currentSearchValue = searchValue !== undefined ? searchValue : ((searchColumn?.getFilterValue() as string) ?? "")
@@ -110,14 +83,14 @@ export function DataTableToolbar<TData>({
       role="toolbar"
       aria-orientation="horizontal"
       className={cn(
-        "dy-flex dy-flex-wrap md:dy-flex-nowrap dy-max-w-full dy-items-start dy-justify-between dy-gap-2",
+        "dy-flex dy-flex-col sm:dy-flex-row sm:dy-items-center dy-justify-between dy-gap-2.5 dy-w-full",
         className,
       )}
       {...props}
     >
-      <div className="dy-flex dy-flex-1 dy-flex-wrap dy-items-center dy-gap-2">
+      <div className="dy-flex dy-flex-1 dy-flex-wrap dy-items-center dy-gap-2 dy-min-w-0">
         {showSearchInput && (
-          <div className="dy-w-40 lg:dy-w-56">
+          <div className="dy-w-full sm:dy-w-44 lg:dy-w-56">
             <DebouncedToolbarSearchInput
               placeholder={searchPlaceholder}
               value={currentSearchValue}
@@ -126,13 +99,7 @@ export function DataTableToolbar<TData>({
             />
           </div>
         )}
-        {/* Command-based menu handles text / number / date columns; facets stay as pills. */}
-        {menuColumns.length > 0 && (
-          <DataTableFilterMenu table={table} excludeColumnIds={searchColumnId ? [searchColumnId] : []} />
-        )}
-        {facetedColumns.map((column) => (
-          <ToolbarFacetedFilter key={column.id} column={column} />
-        ))}
+        <DataTableFilterMenu table={table} excludeColumnIds={searchColumnId ? [searchColumnId] : []} />
         {table.getState().columnFilters.length >= 2 && onJoinOperatorChange && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -228,7 +195,7 @@ export function DataTableToolbar<TData>({
               if (onSearchChange) onSearchChange("")
             }}
           >
-            <X />
+            <X className="dy-h-3.5 dy-w-3.5" />
             Reset
           </Button>
         )}
@@ -249,27 +216,12 @@ export function DataTableToolbar<TData>({
           </div>
         )}
       </div>
-      <div className="dy-flex dy-items-center dy-gap-2">
-        {children}
-      </div>
+      {children && (
+        <div className="dy-flex dy-items-center dy-gap-2 dy-self-end sm:dy-self-center dy-shrink-0">
+          {children}
+        </div>
+      )}
     </div>
-  )
-}
-
-interface ToolbarFacetedFilterProps<TData> {
-  column: Column<TData>
-}
-
-function ToolbarFacetedFilter<TData>({ column }: ToolbarFacetedFilterProps<TData>) {
-  const meta = column.columnDef.meta as any
-  if (!meta?.variant || !meta.options?.length) return null
-  return (
-    <DataTableFacetedFilter
-      column={column}
-      title={meta.label ?? column.id}
-      options={meta.options}
-      multiple={meta.variant === "multiSelect"}
-    />
   )
 }
 
@@ -287,9 +239,13 @@ function DebouncedToolbarSearchInput({
   debounce?: number
 }) {
   const [value, setValue] = React.useState(initialValue)
+  const prevInitialValueRef = React.useRef(initialValue)
 
   React.useEffect(() => {
-    setValue(initialValue)
+    if (prevInitialValueRef.current !== initialValue) {
+      prevInitialValueRef.current = initialValue
+      setValue((prev) => (prev === initialValue ? prev : initialValue))
+    }
   }, [initialValue])
 
   React.useEffect(() => {

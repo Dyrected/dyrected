@@ -26,6 +26,24 @@ export interface CountOperation {
 }
 
 /**
+ * A `countDistinct` aggregate operation that counts the number of unique
+ * non-null values for a specific field.
+ */
+export interface DistinctCountOperation {
+  countDistinct: string;
+  where?: Record<string, unknown>;
+}
+
+/**
+ * A `distinct` aggregate operation that retrieves the unique values
+ * (or unique values with item counts) for a specific field.
+ */
+export interface DistinctValuesOperation {
+  distinct: string;
+  where?: Record<string, unknown>;
+}
+
+/**
  * A `sum`, `avg`, `min`, or `max` aggregate operation on a named field.
  *
  * - `cast` converts stored values before the aggregation runs.
@@ -42,9 +60,13 @@ export interface NumericOperation {
 }
 
 /**
- * A single named aggregate request — either a count or a numeric operation.
+ * A single named aggregate request — either a count, distinct count, distinct values, or numeric operation.
  */
-export type AggregateOperation = CountOperation | NumericOperation;
+export type AggregateOperation =
+  | CountOperation
+  | DistinctCountOperation
+  | DistinctValuesOperation
+  | NumericOperation;
 
 /**
  * The map of named aggregate operations sent in a single aggregate request.
@@ -53,6 +75,8 @@ export type AggregateOperation = CountOperation | NumericOperation;
  * ```ts
  * {
  *   totalSubmitted: { count: "*" },
+ *   uniqueGuests: { countDistinct: "email" },
+ *   availableSizes: { distinct: "asoebiSize" },
  *   totalAsoebiYards: { sum: "asoebiYards", cast: "number", where: { wantsAsoebi: { equals: true } } },
  * }
  * ```
@@ -67,30 +91,21 @@ export interface AggregateArgs {
   collection: string;
   /** Named aggregate operations to compute. */
   aggregates: AggregateInput;
+  /** Optional field to group the aggregates by. */
+  groupBy?: string;
 }
 
 /**
  * The result returned by `DatabaseAdapter.aggregate`.
  *
- * Every named key maps to a `number | null`.
- * `null` is returned when no documents matched the aggregate's `where`
- * (applicable to `sum`, `avg`, `min`, `max`).
- * `count` also returns `null` only if the database errors — it normally
- * returns `0` for an empty match set.
+ * For scalar aggregates, every named key maps to a `number | null` or `any[]` (for distinct).
+ * When `groupBy` is used, returns a breakdown per group.
  */
-export type AggregateResult = Record<string, number | null>;
+export type AggregateResult = Record<string, any>;
 
 /**
  * Derives the typed result shape from an `AggregateInput`.
- * Every named key maps to `number | null`.
- *
- * @example
- * ```ts
- * type Input = { totalSubmitted: CountOperation; totalYards: NumericOperation };
- * type Result = InferAggregateResult<Input>;
- * // => { totalSubmitted: number | null; totalYards: number | null }
- * ```
  */
 export type InferAggregateResult<T extends AggregateInput> = {
-  [K in keyof T]: number | null;
+  [K in keyof T]: any;
 };

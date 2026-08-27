@@ -29,6 +29,7 @@ import {
 import { cn } from "../../../../lib/utils"
 import type { OperatorFilterValue } from "../build-view-columns"
 import type { ViewColumnMeta } from "../types"
+import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { getDefaultFilterOperator, getFilterOperators, type FilterOperatorOption } from "./filter-operators"
 
 /**
@@ -62,12 +63,11 @@ export function DataTableFilterMenu<TData>({
           return (
             column.getCanFilter() &&
             !!meta?.variant &&
-            meta.variant !== "multiSelect" &&
             !excludeColumnIds.includes(column.id)
           )
         }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [table],
+    [table, excludeColumnIds],
   )
 
   const selectedColumn = selectedColumnId
@@ -85,58 +85,70 @@ export function DataTableFilterMenu<TData>({
   const onFilterAdd = (column: Column<TData>, rawValue: string) => {
     if (!rawValue.trim()) return
     const meta = column.columnDef.meta as ViewColumnMeta
-    column.setFilterValue({
-      operator: getDefaultFilterOperator(meta?.variant ?? "text"),
-      value: meta?.variant === "number" ? Number(rawValue) : rawValue,
-    })
+    if (meta?.variant === "multiSelect" || meta?.variant === "select") {
+      column.setFilterValue([rawValue])
+    } else {
+      column.setFilterValue({
+        operator: getDefaultFilterOperator(meta?.variant ?? "text"),
+        value: meta?.variant === "number" ? Number(rawValue) : rawValue,
+      })
+    }
     closeAndReset()
   }
 
-  const activeFilters = table
+  const allActiveFilters = table
     .getState()
     .columnFilters.filter((entry) => columns.some((column) => column.id === entry.id))
 
   return (
     <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
-      {activeFilters.map((entry) => (
-        <FilterPill
-          key={entry.id}
-          filter={entry as { id: string; value: unknown }}
-          columns={columns}
-          onUpdate={(patch) => {
-            const column = table.getColumn(entry.id)
-            const current = (column?.getFilterValue() ?? {}) as OperatorFilterValue
-            column?.setFilterValue({ ...current, ...patch })
-          }}
-          onMoveTo={(targetColumn) => {
-            const targetMeta = targetColumn.columnDef.meta as ViewColumnMeta
-            table.setColumnFilters((prev) => [
-              ...prev.filter((item) => item.id !== entry.id),
-              {
-                id: targetColumn.id,
-                value: {
-                  operator: getDefaultFilterOperator(targetMeta.variant ?? "text"),
-                  value: undefined,
-                  value2: undefined,
+      {allActiveFilters.map((entry) => {
+        const col = columns.find((column) => column.id === entry.id)
+        if (!col) return null
+        const meta = col.columnDef.meta as ViewColumnMeta | undefined
+        const isFaceted = (meta?.variant === "select" || meta?.variant === "multiSelect") && Boolean(meta?.options?.length)
+
+        if (isFaceted) {
+          return (
+            <DataTableFacetedFilter
+              key={entry.id}
+              column={col}
+              title={meta?.label ?? col.id}
+              options={meta?.options ?? []}
+              multiple={meta?.variant === "multiSelect"}
+            />
+          )
+        }
+
+        return (
+          <FilterPill
+            key={entry.id}
+            filter={entry as { id: string; value: unknown }}
+            columns={columns}
+            onUpdate={(patch) => {
+              const current = (col.getFilterValue() ?? {}) as OperatorFilterValue
+              col.setFilterValue({ ...current, ...patch })
+            }}
+            onMoveTo={(targetColumn) => {
+              const targetMeta = targetColumn.columnDef.meta as ViewColumnMeta
+              table.setColumnFilters((prev) => [
+                ...prev.filter((item) => item.id !== entry.id),
+                {
+                  id: targetColumn.id,
+                  value: {
+                    operator: getDefaultFilterOperator(targetMeta.variant ?? "text"),
+                    value: undefined,
+                    value2: undefined,
+                  },
                 },
-              },
-            ])
-          }}
-          onRemove={() => {
-            table.setColumnFilters((prev) => prev.filter((item) => item.id !== entry.id))
-          }}
-        />
-      ))}
-      {activeFilters.length > 0 && (
-        <Button
-          aria-label="Reset all filters"
-          variant="outline"
-          size="icon"
-          onClick={() => table.resetColumnFilters()}
-        >
-          <X />
-        </Button>
-      )}
+              ])
+            }}
+            onRemove={() => {
+              col.setFilterValue(undefined)
+            }}
+          />
+        )
+      })}
       <Popover
         open={open}
         onOpenChange={(next) => {
@@ -146,8 +158,8 @@ export function DataTableFilterMenu<TData>({
       >
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="dy-border-dashed dy-font-normal">
-            <ListFilter />
-            Filter{activeFilters.length > 0 ? ` (${activeFilters.length})` : ""}
+            <ListFilter className="dy-h-3.5 dy-w-3.5" />
+            Filter{allActiveFilters.length > 0 ? ` (${allActiveFilters.length})` : ""}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="dy-w-64 dy-p-0" align="start">
@@ -433,8 +445,37 @@ interface FilterValueSelectorProps<TData> {
 
 /** Second stage of the command popover: choose the initial value. */
 function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSelectorProps<TData>) {
-  const meta = column.columnDef.meta as ViewColumnMeta
+  const meta = column.columnDef.meta as (ViewColumnMeta & { options?: Array<{ label: string; value: string }> })
   const isEmpty = !value.trim()
+
+  if (meta?.options && meta.options.length > 0) {
+    const filteredOptions = value.trim()
+      ? meta.options.filter(
+          (opt) =>
+            opt.label.toLowerCase().includes(value.toLowerCase()) ||
+            String(opt.value).toLowerCase().includes(value.toLowerCase()),
+        )
+      : meta.options
+
+    return (
+      <CommandGroup>
+        {filteredOptions.length === 0 ? (
+          <CommandEmpty>No options match &quot;{value}&quot;.</CommandEmpty>
+        ) : (
+          filteredOptions.map((opt) => (
+            <CommandItem
+              key={String(opt.value)}
+              value={String(opt.value)}
+              onSelect={() => onSelect(String(opt.value))}
+            >
+              <BadgeCheck className="dy-mr-1.5 dy-h-4 dy-w-4 dy-text-primary" />
+              <span className="dy-truncate">{opt.label}</span>
+            </CommandItem>
+          ))
+        )}
+      </CommandGroup>
+    )
+  }
 
   switch (meta.variant) {
     case "number": {

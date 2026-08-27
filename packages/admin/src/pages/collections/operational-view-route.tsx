@@ -1,5 +1,4 @@
 import { useDyrected } from "../../providers/dyrected-context"
-import { useQuery } from "@tanstack/react-query"
 import { AdminNotFound, AdminNotFoundSkeleton } from "../../components/layout/admin-not-found"
 import { useParams } from "react-router-dom"
 
@@ -7,15 +6,9 @@ import { OperationalViewPage } from "./views/operational-view-page"
 
 export function OperationalViewRoute() {
   const { slug, viewSlug } = useParams()
-  const { client } = useDyrected()
+  const { schemas } = useDyrected()
 
-  const { data: schemas, isLoading } = useQuery({
-    queryKey: ["schemas"],
-    queryFn: () => client?.getSchemas() || Promise.resolve({ collections: [], globals: [] }),
-    enabled: !!client,
-  })
-
-  if (isLoading || !schemas) {
+  if (!schemas) {
     return <AdminNotFoundSkeleton />
   }
 

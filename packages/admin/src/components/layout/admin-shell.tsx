@@ -1,6 +1,5 @@
 import * as React from "react"
 import { useState, useEffect, useRef } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { Link, useLocation } from "react-router-dom"
 import {
   Database,
@@ -237,6 +236,22 @@ function NavGroup({
   )
 }
 
+function AdminIconRenderer({
+  icon,
+  fallback: Fallback,
+  className,
+}: {
+  icon?: string
+  fallback: React.ElementType
+  className?: string
+}) {
+  if (icon && isAdminIconName(icon)) {
+    const Icon = icons[icon]
+    return <Icon className={className} />
+  }
+  return <Fallback className={className} />
+}
+
 function CollapsedCollectionMenu({
   col,
   views,
@@ -256,7 +271,6 @@ function CollapsedCollectionMenu({
 }) {
   const [open, setOpen] = useState(false)
   const timeoutRef = useRef<number | null>(null)
-  const ParentIcon = resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)
 
   const handleEnter = () => {
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
@@ -285,7 +299,9 @@ function CollapsedCollectionMenu({
       )}
       aria-label={`Open ${tooltipLabel} views`}
     >
-      <ParentIcon
+      <AdminIconRenderer
+        icon={col.admin?.icon}
+        fallback={col.auth ? Users : Database}
         className={cn(
           "dy-h-[17px] dy-w-[17px] dy-shrink-0 dy-transition-colors",
           isExactActive
@@ -597,8 +613,8 @@ function SidebarInner({
               icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
               label={navLabel}
               tooltipLabel={col.labels?.plural ?? col.label ?? col.slug}
-              active={isExactActive}
-              isAncestorActive={isChildActive}
+              active={isExactActive && !hasMeaningfulViews}
+              isAncestorActive={isCollectionActive && hasMeaningfulViews}
               hasChildren={false}
               collapsed={collapsed}
               onClick={onNavigate}
@@ -977,7 +993,7 @@ export function AdminShell({
   children: React.ReactNode
   isEmbedded?: boolean
 }) {
-  const { client, logout } = useDyrected()
+  const { logout } = useDyrected()
   const location = useLocation()
   const updateInfo = useUpdateCheck()
 
@@ -1012,14 +1028,9 @@ export function AdminShell({
     return () => window.removeEventListener("dyrected:toggle-menu", handleToggle)
   }, [isEmbedded])
 
-  const { data: schemas, isLoading } = useQuery({
-    queryKey: ["schemas"],
-    queryFn: async () => {
-      if (!client) return null
-      return client.getSchemas()
-    },
-    enabled: !!client,
-  })
+  const { schemas: contextSchemas } = useDyrected()
+  const schemas = contextSchemas
+  const isLoading = !schemas
 
   return (
     <BrandingProvider>

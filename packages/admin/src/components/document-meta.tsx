@@ -33,8 +33,17 @@ function pageLabel(
     const singular = collection?.labels?.singular ?? humanize(slug);
     const plural = collection?.labels?.plural ?? humanize(slug);
 
+    if (segments[2] === "views" && segments[3]) {
+      const viewSlug = segments[3];
+      const view = (collection as any)?.views?.find((v: any) => v.slug === viewSlug);
+      const viewLabel = view?.label ?? humanize(viewSlug);
+      return `${viewLabel} · ${plural}`;
+    }
+
     if (segments[2] === "new") return `New ${singular}`;
     if (segments[2] === "edit") return `Edit ${singular}`;
+    if (segments[3] === "edit") return `Edit ${singular}`;
+    if (segments[2]) return `${singular} Details`;
     return plural;
   }
 
