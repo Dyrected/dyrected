@@ -199,6 +199,8 @@ export interface AggregateArgs {
   collection: string;
   /** Named aggregate operations to compute. */
   aggregates: AggregateInput;
+  /** Optional field to group the aggregates by. */
+  groupBy?: string;
 }
 ```
 
@@ -206,14 +208,19 @@ export interface AggregateArgs {
 | --- | --- |
 | <code>collection</code> (required) | Collection slug. |
 | <code>aggregates</code> (required) | Named aggregate operations to compute. |
+| <code>groupBy</code> (optional) | Optional field to group the aggregates by. |
 
 
 ## AggregateOperation
 
-A single named aggregate request — either a count or a numeric operation.
+A single named aggregate request — either a count, distinct count, distinct values, or numeric operation.
 
 ```ts
-export type AggregateOperation = CountOperation | NumericOperation;
+export type AggregateOperation =
+  | CountOperation
+  | DistinctCountOperation
+  | DistinctValuesOperation
+  | NumericOperation;
 ```
 
 
@@ -221,14 +228,11 @@ export type AggregateOperation = CountOperation | NumericOperation;
 
 The result returned by `DatabaseAdapter.aggregate`.
 
-Every named key maps to a `number | null`.
-`null` is returned when no documents matched the aggregate's `where`
-(applicable to `sum`, `avg`, `min`, `max`).
-`count` also returns `null` only if the database errors — it normally
-returns `0` for an empty match set.
+For scalar aggregates, every named key maps to a `number | null` or `any[]` (for distinct).
+When `groupBy` is used, returns a breakdown per group.
 
 ```ts
-export type AggregateResult = Record<string, number | null>;
+export type AggregateResult = Record<string, any>;
 ```
 
 

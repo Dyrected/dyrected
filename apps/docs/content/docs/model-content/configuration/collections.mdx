@@ -449,6 +449,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     group?: string;
 
+    /**
+     * Slug of the view to render by default when navigating to `/collections/:slug`.
+     * If not specified, defaults to the view with `default: true` or the all-records table view.
+     */
+    defaultView?: string;
+
     /** If `true`, this collection is not shown in the Admin UI sidebar. */
     hidden?: boolean;
 
@@ -513,8 +519,45 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   detail?: DetailSchema<TDoc> | false;
 
   /**
-   * Operational views for this collection.
-   * Each view provides a tailored workspace for a specific job or workflow.
+   * Slug of the operational view to render by default when navigating to `/collections/:slug`.
+   *
+   * When set:
+   * 1. Navigating to `/collections/:slug` automatically redirects to `/collections/:slug/views/:defaultView`.
+   * 2. The main collection link in the sidebar directly opens this default view.
+   * 3. The sidebar submenu cleanly lists only your defined views without showing a generic `All [Collection]` item.
+   *
+   * @example
+   * ```ts
+   * export const GuestResponses = defineCollection({
+   *   slug: "guest-responses",
+   *   defaultView: "attending-guests",
+   *   views: [attendingGuests, seatingMatrix],
+   *   fields: [...],
+   * });
+   * ```
+   */
+  defaultView?: string;
+
+  /**
+   * Tailored operational workspaces for this collection (`table`, `spreadsheet`, `kanban`, `calendar`, `cards`, `gantt`).
+   * Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.
+   *
+   * @example
+   * ```ts
+   * views: [
+   *   defineView({
+   *     slug: "attending-guests",
+   *     label: "Attending Guests",
+   *     icon: "UserCheck",
+   *     layout: "table",
+   *     groupBy: "tableNumber",
+   *     filter: { attending: { equals: true } },
+   *     columns: ["name", "email", "guestCount", "checkedIn"],
+   *   }),
+   * ]
+   * ```
+   *
+   * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}
    */
   views?: ViewConfig[];
 }
@@ -538,7 +581,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
 | <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
-| <code>views</code> (optional) | Operational views for this collection. Each view provides a tailored workspace for a specific job or workflow. |
+| <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
+| <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
 {/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}
 
 ## `admin` options

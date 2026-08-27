@@ -161,7 +161,14 @@
       "Collection: Guest Responses"
     ],
     "authenticated": true,
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "groupBy",
+        "in": "query",
+        "required": false,
+        "description": "Optional field name to compute aggregates grouped by distinct values"
+      }
+    ],
     "responses": [
       "200",
       "400",
@@ -308,7 +315,14 @@
       "Collection: Media"
     ],
     "authenticated": true,
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "groupBy",
+        "in": "query",
+        "required": false,
+        "description": "Optional field name to compute aggregates grouped by distinct values"
+      }
+    ],
     "responses": [
       "200",
       "400",
@@ -596,7 +610,14 @@
       "Collection: Posts"
     ],
     "authenticated": true,
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "groupBy",
+        "in": "query",
+        "required": false,
+        "description": "Optional field name to compute aggregates grouped by distinct values"
+      }
+    ],
     "responses": [
       "200",
       "400",
@@ -778,7 +799,14 @@
       "Collection: Users"
     ],
     "authenticated": true,
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "groupBy",
+        "in": "query",
+        "required": false,
+        "description": "Optional field name to compute aggregates grouped by distinct values"
+      }
+    ],
     "responses": [
       "200",
       "400",

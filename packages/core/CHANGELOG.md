@@ -1,5 +1,27 @@
 # @dyrected/core
 
+## 2.10.0
+
+### Minor Changes
+
+- 55d71f7: - **Aggregate Engine Expansion (`countDistinct`, `distinct`, `groupBy`)**:
+  - Added support for `countDistinct` (`{ countDistinct: "fieldName" }`) to count unique non-null values in a single database query.
+  - Added support for `distinct` (`{ distinct: "fieldName" }`) to extract unique non-null values without loading full documents.
+  - Added grouped aggregation support via `groupBy` parameter (`?groupBy=<field>` or `{ groupBy: "field", aggregates: { ... } }`) returning per-group metric breakdowns with automatic `"__unassigned__"` sentinel handling for missing/null values.
+  - Implemented cross-adapter parity for all aggregation operations across PostgreSQL, SQLite, MySQL, and MongoDB.
+  - Updated live OpenAPI specification (`/api/openapi.json`) and Swagger documentation with complete aggregate schemas and response types.
+
+  - **Grouped Views & Admin UI Performance Optimization**:
+    - Replaced client-side document group extraction with native single-query database aggregations in grouped Table, Kanban, and Spreadsheet views, eliminating $N+1$ query waterfalls and reducing database roundtrips.
+    - Deduplicated schema queries across `AdminShell`, `OperationalViewRoute`, and dashboard pages by utilizing cached context schemas.
+    - Added `defaultView` collection configuration support with automated route redirection and clean sidebar submenu rendering.
+
+### Patch Changes
+
+- 7cbb3cd: - **Filter Join Operator**: Support `AND` / `OR` toggle in toolbar and URL parameters (`joinOperator=and|or`) for inter-column filter combinations in operational views.
+  - **Action Dialog Document Context**: Pass target document/row context (`doc`, `docs`, `record`, `row`, `data`, `formData`) into action form dialogs, `FieldRenderer`, and custom field components.
+  - **View Features & Action Ordering**: Properly serialize and respect `view.features` (`edit`, `delete`, `duplicate`) and custom `actionOrder` in operational view action menus and table columns.
+
 ## 2.9.0
 
 ### Minor Changes

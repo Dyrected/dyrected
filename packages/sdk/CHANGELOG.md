@@ -1,5 +1,7 @@
 # @dyrected/sdk
 
+## 2.10.0
+
 ## 2.9.0
 
 ### Minor Changes

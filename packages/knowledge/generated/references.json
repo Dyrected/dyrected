@@ -5,53 +5,53 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface ActionConfig {\n  name: string;\n  label: string;\n  icon?: string;\n  type?: ActionType;\n  confirm?: string;\n  fields?: Field[];\n  mutation?: Record<string, any>;\n  handler?: (context: ActionContext) => Promise<any>;\n  access?: AccessConfig;\n}",
+    "description": "An operational workflow action that can mutate data or trigger server logic.",
+    "signature": "export interface ActionConfig<TDoc extends Record<string, unknown> = Record<string, unknown>> {\n  /** Unique action identifier (e.g. `\"checkIn\"`, `\"markPaid\"`). */\n  name: string;\n  /** Button label displayed in the UI. */\n  label: string;\n  /** Lucide icon name for the button (e.g. `\"UserCheck\"`, `\"CheckCircle\"`). */\n  icon?: string;\n  /** Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`. */\n  type?: ActionType;\n  /** Optional confirmation prompt shown before executing (e.g. `\"Confirm guest check-in at the door?\"`). */\n  confirm?: string;\n  /** Optional interactive modal form fields prompting the user for input before executing. */\n  fields?: Field[];\n  /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: \"now()\" }`). */\n  mutation?: Partial<TDoc> | Record<string, unknown>;\n  /** Self-hosted server handler function executed when the action is triggered. */\n  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;\n  /** Role-based access rules controlling who can trigger this action. */\n  access?: AccessConfig;\n}",
     "members": [
       {
         "name": "name",
         "signature": "name: string",
-        "description": ""
+        "description": "Unique action identifier (e.g. `\"checkIn\"`, `\"markPaid\"`)."
       },
       {
         "name": "label",
         "signature": "label: string",
-        "description": ""
+        "description": "Button label displayed in the UI."
       },
       {
         "name": "icon",
         "signature": "icon?: string",
-        "description": ""
+        "description": "Lucide icon name for the button (e.g. `\"UserCheck\"`, `\"CheckCircle\"`)."
       },
       {
         "name": "type",
         "signature": "type?: ActionType",
-        "description": ""
+        "description": "Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`."
       },
       {
         "name": "confirm",
         "signature": "confirm?: string",
-        "description": ""
+        "description": "Optional confirmation prompt shown before executing (e.g. `\"Confirm guest check-in at the door?\"`)."
       },
       {
         "name": "fields",
         "signature": "fields?: Field[]",
-        "description": ""
+        "description": "Optional interactive modal form fields prompting the user for input before executing."
       },
       {
         "name": "mutation",
-        "signature": "mutation?: Record<string, any>",
-        "description": ""
+        "signature": "mutation?: Partial<TDoc> | Record<string, unknown>",
+        "description": "Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: \"now()\" }`)."
       },
       {
         "name": "handler",
-        "signature": "handler?: (context: ActionContext) => Promise<any>",
-        "description": ""
+        "signature": "handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown",
+        "description": "Self-hosted server handler function executed when the action is triggered."
       },
       {
         "name": "access",
         "signature": "access?: AccessConfig",
-        "description": ""
+        "description": "Role-based access rules controlling who can trigger this action."
       }
     ]
   },
@@ -61,33 +61,33 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface ActionContext {\n  doc: Record<string, unknown>;\n  docs: Record<string, unknown>[];\n  user: Record<string, unknown> | null;\n  input: Record<string, unknown>;\n  collection: Record<string, unknown>;\n}",
+    "description": "Context passed to an action's server handler function.",
+    "signature": "export interface ActionContext<TDoc extends Record<string, unknown> = Record<string, unknown>> {\n  /** The target document (for row actions). */\n  doc: TDoc;\n  /** All targeted documents (for bulk actions). */\n  docs: TDoc[];\n  /** The authenticated acting user, if available. */\n  user: Record<string, unknown> | null;\n  /** User inputs submitted via the action's modal form fields. */\n  input: Record<string, unknown>;\n  /** The collection configuration object. */\n  collection: Record<string, unknown>;\n}",
     "members": [
       {
         "name": "doc",
-        "signature": "doc: Record<string, unknown>",
-        "description": ""
+        "signature": "doc: TDoc",
+        "description": "The target document (for row actions)."
       },
       {
         "name": "docs",
-        "signature": "docs: Record<string, unknown>[]",
-        "description": ""
+        "signature": "docs: TDoc[]",
+        "description": "All targeted documents (for bulk actions)."
       },
       {
         "name": "user",
         "signature": "user: Record<string, unknown> | null",
-        "description": ""
+        "description": "The authenticated acting user, if available."
       },
       {
         "name": "input",
         "signature": "input: Record<string, unknown>",
-        "description": ""
+        "description": "User inputs submitted via the action's modal form fields."
       },
       {
         "name": "collection",
         "signature": "collection: Record<string, unknown>",
-        "description": ""
+        "description": "The collection configuration object."
       }
     ]
   },
@@ -97,7 +97,7 @@
     "kind": "type",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "Scope and placement for an operational view action:\n- `'row'`: Renders as an inline action button on each document/row.\n- `'bulk'`: Appears in the floating bulk action bar when one or more rows are selected.\n- `'header'`: Renders as a primary action button in the view header.",
     "signature": "export type ActionType = 'row' | 'bulk' | 'header';",
     "members": []
   },
@@ -139,7 +139,7 @@
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The arguments passed to `DatabaseAdapter.aggregate`.",
-    "signature": "export interface AggregateArgs {\n  /** Collection slug. */\n  collection: string;\n  /** Named aggregate operations to compute. */\n  aggregates: AggregateInput;\n}",
+    "signature": "export interface AggregateArgs {\n  /** Collection slug. */\n  collection: string;\n  /** Named aggregate operations to compute. */\n  aggregates: AggregateInput;\n  /** Optional field to group the aggregates by. */\n  groupBy?: string;\n}",
     "members": [
       {
         "name": "collection",
@@ -150,6 +150,11 @@
         "name": "aggregates",
         "signature": "aggregates: AggregateInput",
         "description": "Named aggregate operations to compute."
+      },
+      {
+        "name": "groupBy",
+        "signature": "groupBy?: string",
+        "description": "Optional field to group the aggregates by."
       }
     ]
   },
@@ -159,8 +164,8 @@
     "kind": "type",
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
-    "description": "A single named aggregate request — either a count or a numeric operation.",
-    "signature": "export type AggregateOperation = CountOperation | NumericOperation;",
+    "description": "A single named aggregate request — either a count, distinct count, distinct values, or numeric operation.",
+    "signature": "export type AggregateOperation =\n  | CountOperation\n  | DistinctCountOperation\n  | DistinctValuesOperation\n  | NumericOperation;",
     "members": []
   },
   {
@@ -169,8 +174,8 @@
     "kind": "type",
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
-    "description": "The result returned by `DatabaseAdapter.aggregate`.\n\nEvery named key maps to a `number | null`.\n`null` is returned when no documents matched the aggregate's `where`\n(applicable to `sum`, `avg`, `min`, `max`).\n`count` also returns `null` only if the database errors — it normally\nreturns `0` for an empty match set.",
-    "signature": "export type AggregateResult = Record<string, number | null>;",
+    "description": "The result returned by `DatabaseAdapter.aggregate`.\n\nFor scalar aggregates, every named key maps to a `number | null` or `any[]` (for distinct).\nWhen `groupBy` is used, returns a breakdown per group.",
+    "signature": "export type AggregateResult = Record<string, any>;",
     "members": []
   },
   {
@@ -545,7 +550,7 @@
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "Use this contract when you want the exact shape of a collection config.\n\nMost collection work comes down to a small set of top-level options: giving\nthe collection a stable slug, defining its fields, deciding how it should\nappear in the Admin UI, and choosing whether it also handles access, hooks,\nauth, uploads, workflows, or other optional behavior.\n\nPass your document's TypeScript type as the generic parameter `TDoc` to get\nfully typed hooks and access functions.\n\nSee: [Collections documentation](https://dyrected.com/docs/model-content/configuration/collections)",
-    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   *\n   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the\n   * underlying database table or collection name. Treat it as part of the\n   * long-term data contract rather than a cosmetic label.\n   *\n   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or\n   * `'contact-submissions'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to one specific site in a multi-tenant setup.\n   *\n   * Use this when the collection should belong to a single site rather than\n   * the whole installation. When set, only requests bearing a matching\n   * `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * setup and accessible regardless of the `X-Site-Id` header.\n   *\n   * Use this for content that should stay common across sites, such as shared\n   * taxonomies, reusable assets, or centrally managed reference data.\n   */\n  shared?: boolean;\n\n  /**\n   * Human-readable names for documents in this collection, shown in the Admin UI.\n   *\n   * Use this when the slug is technical or when you want the dashboard to read\n   * more naturally. For example, `slug: 'people'` might use\n   * `labels: { singular: 'Person', plural: 'People' }`.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#labels Collections labels}\n   */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true` or an auth config object, this collection is an auth collection. It gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   *\n   * Turn this on when each document should behave like an account that can log\n   * in, hold credentials, and participate in user flows. Typical examples are\n   * `users`, `admins`, `members`, or `customers`.\n   *\n   * Pass an object when you want to tune built-in account lockout behavior for\n   * repeated failed logins.\n   *\n   * @see {@link https://dyrected.com/docs/editor-experience/editor-accounts Authentication overview}\n   */\n  auth?: boolean | AuthConfig;\n\n  /**\n   * If `true` or a config object, this collection supports file uploads.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   *\n   * Turn this on when each document in the collection should represent a\n   * stored file, such as an image, PDF, video, or downloadable asset.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/media/overview Upload overview}\n   */\n  upload?: boolean | UploadConfig;\n\n  /**\n   * Field definitions that make up the document schema for this collection.\n   *\n   * This is the main schema contract for every document in the collection. It\n   * decides what editors can fill in, how data is validated, how records are\n   * stored, and what the API and SDK return.\n   *\n   * In practice, fields are where you model the actual content structure of the\n   * collection: simple values such as text and dates, relationships to other\n   * collections, nested objects and arrays, and flexible `blocks` fields for\n   * reusable page sections or long-form layouts.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/fields/overview Fields overview}\n   * @see {@link https://dyrected.com/docs/model-content/fields/blocks Blocks and page sections}\n   */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds the built-in system fields\n   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.\n   * Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty.\n   *\n   * Use this for starter records, demo content, or sensible defaults that\n   * should appear automatically before editors create anything themselves.\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   *\n   * Turn this on when you need accountability around changes, such as knowing\n   * who changed what, inspecting before-and-after state, or supporting\n   * compliance and operational review.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   *\n   * Use this when content moves through stages such as draft, review, and\n   * published, or when teams need an approval process before changes go live.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * If `true`, enables zero-config draft and publish functionality.\n   * Documents start as drafts, editors can save working drafts without affecting\n   * live content, and any authorized editor can publish or unpublish entries.\n   */\n  drafts?: boolean;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value can be a function, a Jexl string, a\n   * boolean, or a named policy reference. Returning `true` allows access and\n   * `false` denies it. Returning a `where`-style object grants access only to\n   * matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,\n   *   create: ({ user }) => !!user,\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview Access control overview}\n   */\n  access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n    /**\n     * Controls who can read this collection's audit log (`GET /:slug/__audit`),\n     * for collections with `audit` enabled. Falls back to the `read` rule when\n     * omitted, so the audit trail is visible to whoever can read the documents.\n     * Set it explicitly to gate the audit log separately — for example, admins\n     * only, even on a collection anyone can read.\n     */\n    readAudit?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the Hooks reference for the full lifecycle diagram.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks Hooks overview}\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections Collection hooks}\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHookEntry[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHookEntry<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHookEntry<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only:\n     * webhooks, cache busting, and notifications. Return value is ignored.\n     *\n     * Errors are isolated: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /** Runs before a document is deleted. Throw to cancel the deletion. */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are isolated: caught, logged, and discarded. The deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /**\n   * Admin UI configuration for this collection.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#admin-options Admin options}\n   */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  };\n\n  /**\n   * Custom detail view layout configuration for the Admin UI.\n   */\n  detail?: DetailSchema<TDoc> | false;\n\n  /**\n   * Operational views for this collection.\n   * Each view provides a tailored workspace for a specific job or workflow.\n   */\n  views?: ViewConfig[];\n}",
+    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   *\n   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the\n   * underlying database table or collection name. Treat it as part of the\n   * long-term data contract rather than a cosmetic label.\n   *\n   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or\n   * `'contact-submissions'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to one specific site in a multi-tenant setup.\n   *\n   * Use this when the collection should belong to a single site rather than\n   * the whole installation. When set, only requests bearing a matching\n   * `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * setup and accessible regardless of the `X-Site-Id` header.\n   *\n   * Use this for content that should stay common across sites, such as shared\n   * taxonomies, reusable assets, or centrally managed reference data.\n   */\n  shared?: boolean;\n\n  /**\n   * Human-readable names for documents in this collection, shown in the Admin UI.\n   *\n   * Use this when the slug is technical or when you want the dashboard to read\n   * more naturally. For example, `slug: 'people'` might use\n   * `labels: { singular: 'Person', plural: 'People' }`.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#labels Collections labels}\n   */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true` or an auth config object, this collection is an auth collection. It gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   *\n   * Turn this on when each document should behave like an account that can log\n   * in, hold credentials, and participate in user flows. Typical examples are\n   * `users`, `admins`, `members`, or `customers`.\n   *\n   * Pass an object when you want to tune built-in account lockout behavior for\n   * repeated failed logins.\n   *\n   * @see {@link https://dyrected.com/docs/editor-experience/editor-accounts Authentication overview}\n   */\n  auth?: boolean | AuthConfig;\n\n  /**\n   * If `true` or a config object, this collection supports file uploads.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   *\n   * Turn this on when each document in the collection should represent a\n   * stored file, such as an image, PDF, video, or downloadable asset.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/media/overview Upload overview}\n   */\n  upload?: boolean | UploadConfig;\n\n  /**\n   * Field definitions that make up the document schema for this collection.\n   *\n   * This is the main schema contract for every document in the collection. It\n   * decides what editors can fill in, how data is validated, how records are\n   * stored, and what the API and SDK return.\n   *\n   * In practice, fields are where you model the actual content structure of the\n   * collection: simple values such as text and dates, relationships to other\n   * collections, nested objects and arrays, and flexible `blocks` fields for\n   * reusable page sections or long-form layouts.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/fields/overview Fields overview}\n   * @see {@link https://dyrected.com/docs/model-content/fields/blocks Blocks and page sections}\n   */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds the built-in system fields\n   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.\n   * Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty.\n   *\n   * Use this for starter records, demo content, or sensible defaults that\n   * should appear automatically before editors create anything themselves.\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   *\n   * Turn this on when you need accountability around changes, such as knowing\n   * who changed what, inspecting before-and-after state, or supporting\n   * compliance and operational review.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   *\n   * Use this when content moves through stages such as draft, review, and\n   * published, or when teams need an approval process before changes go live.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * If `true`, enables zero-config draft and publish functionality.\n   * Documents start as drafts, editors can save working drafts without affecting\n   * live content, and any authorized editor can publish or unpublish entries.\n   */\n  drafts?: boolean;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value can be a function, a Jexl string, a\n   * boolean, or a named policy reference. Returning `true` allows access and\n   * `false` denies it. Returning a `where`-style object grants access only to\n   * matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,\n   *   create: ({ user }) => !!user,\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview Access control overview}\n   */\n  access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n    /**\n     * Controls who can read this collection's audit log (`GET /:slug/__audit`),\n     * for collections with `audit` enabled. Falls back to the `read` rule when\n     * omitted, so the audit trail is visible to whoever can read the documents.\n     * Set it explicitly to gate the audit log separately — for example, admins\n     * only, even on a collection anyone can read.\n     */\n    readAudit?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the Hooks reference for the full lifecycle diagram.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks Hooks overview}\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections Collection hooks}\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHookEntry[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHookEntry<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHookEntry<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only:\n     * webhooks, cache busting, and notifications. Return value is ignored.\n     *\n     * Errors are isolated: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /** Runs before a document is deleted. Throw to cancel the deletion. */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are isolated: caught, logged, and discarded. The deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /**\n   * Admin UI configuration for this collection.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#admin-options Admin options}\n   */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /**\n     * Slug of the view to render by default when navigating to `/collections/:slug`.\n     * If not specified, defaults to the view with `default: true` or the all-records table view.\n     */\n    defaultView?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  };\n\n  /**\n   * Custom detail view layout configuration for the Admin UI.\n   */\n  detail?: DetailSchema<TDoc> | false;\n\n  /**\n   * Slug of the operational view to render by default when navigating to `/collections/:slug`.\n   *\n   * When set:\n   * 1. Navigating to `/collections/:slug` automatically redirects to `/collections/:slug/views/:defaultView`.\n   * 2. The main collection link in the sidebar directly opens this default view.\n   * 3. The sidebar submenu cleanly lists only your defined views without showing a generic `All [Collection]` item.\n   *\n   * @example\n   * ```ts\n   * export const GuestResponses = defineCollection({\n   *   slug: \"guest-responses\",\n   *   defaultView: \"attending-guests\",\n   *   views: [attendingGuests, seatingMatrix],\n   *   fields: [...],\n   * });\n   * ```\n   */\n  defaultView?: string;\n\n  /**\n   * Tailored operational workspaces for this collection (`table`, `spreadsheet`, `kanban`, `calendar`, `cards`, `gantt`).\n   * Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.\n   *\n   * @example\n   * ```ts\n   * views: [\n   *   defineView({\n   *     slug: \"attending-guests\",\n   *     label: \"Attending Guests\",\n   *     icon: \"UserCheck\",\n   *     layout: \"table\",\n   *     groupBy: \"tableNumber\",\n   *     filter: { attending: { equals: true } },\n   *     columns: [\"name\", \"email\", \"guestCount\", \"checkedIn\"],\n   *   }),\n   * ]\n   * ```\n   *\n   * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}\n   */\n  views?: ViewConfig[];\n}",
     "members": [
       {
         "name": "slug",
@@ -619,7 +624,7 @@
       },
       {
         "name": "admin",
-        "signature": "admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  }",
+        "signature": "admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /**\n     * Slug of the view to render by default when navigating to `/collections/:slug`.\n     * If not specified, defaults to the view with `default: true` or the all-records table view.\n     */\n    defaultView?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  }",
         "description": "Admin UI configuration for this collection.\n\nSee: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options)"
       },
       {
@@ -628,9 +633,14 @@
         "description": "Custom detail view layout configuration for the Admin UI."
       },
       {
+        "name": "defaultView",
+        "signature": "defaultView?: string",
+        "description": "Slug of the operational view to render by default when navigating to `/collections/:slug`.\n\nWhen set:\n1. Navigating to `/collections/:slug` automatically redirects to `/collections/:slug/views/:defaultView`.\n2. The main collection link in the sidebar directly opens this default view.\n3. The sidebar submenu cleanly lists only your defined views without showing a generic `All [Collection]` item."
+      },
+      {
         "name": "views",
         "signature": "views?: ViewConfig[]",
-        "description": "Operational views for this collection.\nEach view provides a tailored workspace for a specific job or workflow."
+        "description": "Tailored operational workspaces for this collection (`table`, `spreadsheet`, `kanban`, `calendar`, `cards`, `gantt`).\nEach view provides curated columns, filters, metrics, and workflow buttons for a specific job.\n\nSee: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview)"
       }
     ]
   },
@@ -791,8 +801,8 @@
     "kind": "function",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export function defineAction(config: DefineActionOptions): ActionConfig",
+    "description": "Defines a custom workflow action for an operational view.",
+    "signature": "export function defineAction<const T extends DefineActionOptions>(config: T): T",
     "members": []
   },
   {
@@ -801,53 +811,53 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface DefineActionOptions {\n  name: string;\n  label: string;\n  icon?: string;\n  type?: ActionType;\n  confirm?: string;\n  fields?: Field[];\n  mutation?: Record<string, any>;\n  handler?: (context: ActionContext) => Promise<any>;\n  access?: AccessConfig;\n}",
+    "description": "Options for defining a custom workflow action with `defineAction`.",
+    "signature": "export interface DefineActionOptions<TDoc extends Record<string, unknown> = Record<string, unknown>> {\n  /** Unique action identifier (e.g. `\"checkIn\"`, `\"markPaid\"`). */\n  name: string;\n  /** Button label displayed in the UI. */\n  label: string;\n  /** Lucide icon name for the button (e.g. `\"UserCheck\"`, `\"CheckCircle\"`). */\n  icon?: string;\n  /** Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`. */\n  type?: ActionType;\n  /** Optional confirmation prompt shown before executing (e.g. `\"Confirm guest check-in at the door?\"`). */\n  confirm?: string;\n  /** Optional interactive modal form fields prompting the user for input before executing. */\n  fields?: Field[];\n  /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: \"now()\" }`). */\n  mutation?: Partial<TDoc> | Record<string, unknown>;\n  /** Self-hosted server handler function executed when the action is triggered. */\n  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;\n  /** Role-based access rules controlling who can trigger this action. */\n  access?: AccessConfig;\n}",
     "members": [
       {
         "name": "name",
         "signature": "name: string",
-        "description": ""
+        "description": "Unique action identifier (e.g. `\"checkIn\"`, `\"markPaid\"`)."
       },
       {
         "name": "label",
         "signature": "label: string",
-        "description": ""
+        "description": "Button label displayed in the UI."
       },
       {
         "name": "icon",
         "signature": "icon?: string",
-        "description": ""
+        "description": "Lucide icon name for the button (e.g. `\"UserCheck\"`, `\"CheckCircle\"`)."
       },
       {
         "name": "type",
         "signature": "type?: ActionType",
-        "description": ""
+        "description": "Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`."
       },
       {
         "name": "confirm",
         "signature": "confirm?: string",
-        "description": ""
+        "description": "Optional confirmation prompt shown before executing (e.g. `\"Confirm guest check-in at the door?\"`)."
       },
       {
         "name": "fields",
         "signature": "fields?: Field[]",
-        "description": ""
+        "description": "Optional interactive modal form fields prompting the user for input before executing."
       },
       {
         "name": "mutation",
-        "signature": "mutation?: Record<string, any>",
-        "description": ""
+        "signature": "mutation?: Partial<TDoc> | Record<string, unknown>",
+        "description": "Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: \"now()\" }`)."
       },
       {
         "name": "handler",
-        "signature": "handler?: (context: ActionContext) => Promise<any>",
-        "description": ""
+        "signature": "handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown",
+        "description": "Self-hosted server handler function executed when the action is triggered."
       },
       {
         "name": "access",
         "signature": "access?: AccessConfig",
-        "description": ""
+        "description": "Role-based access rules controlling who can trigger this action."
       }
     ]
   },
@@ -867,8 +877,8 @@
     "kind": "function",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export function defineView(config: DefineViewOptions): ViewConfig",
+    "description": "Defines a typed operational view for a collection.",
+    "signature": "export function defineView<const T extends DefineViewOptions>(config: T): T",
     "members": []
   },
   {
@@ -877,88 +887,88 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface DefineViewOptions {\n  slug: string;\n  label: string;\n  icon?: string;\n  layout?: ViewLayout;\n  filter?: Record<string, any> | string;\n  groupBy?: string;\n  dateField?: string;\n  startDateField?: string;\n  endDateField?: string;\n  columns?: string[];\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  actions?: ActionConfig[];\n  features?: ViewActionFeatures;\n  actionOrder?: string[];\n  metrics?: ViewMetric[];\n  access?: AccessConfig;\n}",
+    "description": "Options for defining an operational view with `defineView`.",
+    "signature": "export interface DefineViewOptions {\n  /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug`). */\n  slug: string;\n  /** Human-readable title displayed in the sidebar navigation and view header. */\n  label: string;\n  /** Lucide icon name (e.g. `\"UserCheck\"`, `\"Calendar\"`, `\"Shirt\"`, `\"TableProperties\"`). */\n  icon?: string;\n  /** Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`. */\n  layout?: ViewLayout;\n  /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */\n  filter?: Record<string, any> | string;\n  /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */\n  groupBy?: string;\n  /** Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`. */\n  dateField?: string;\n  /** Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`. */\n  startDateField?: string;\n  /** Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`. */\n  endDateField?: string;\n  /** Field names to show in this view, in order. If omitted, Dyrected infers default display fields. */\n  columns?: string[];\n  /** Default sorting rule when entering the view. */\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  /** Custom workflow actions available in this view. */\n  actions?: ActionConfig[];\n  /** Toggles built-in operations (view/edit/duplicate/delete/export). */\n  features?: ViewActionFeatures;\n  /**\n   * Explicit display order for action buttons — mixing custom action names and built-in names\n   * (`\"view\"`, `\"edit\"`, `\"duplicate\"`, `\"delete\"`). Unlisted actions append in default order.\n   */\n  actionOrder?: string[];\n  /** KPI summary cards rendered in the hero row above the view. */\n  metrics?: ViewMetric[];\n  /** Role-based access rules controlling who can see or use this view. */\n  access?: AccessConfig;\n}",
     "members": [
       {
         "name": "slug",
         "signature": "slug: string",
-        "description": ""
+        "description": "Stable URL slug for the view (`/collections/:slug/views/:viewSlug`)."
       },
       {
         "name": "label",
         "signature": "label: string",
-        "description": ""
+        "description": "Human-readable title displayed in the sidebar navigation and view header."
       },
       {
         "name": "icon",
         "signature": "icon?: string",
-        "description": ""
+        "description": "Lucide icon name (e.g. `\"UserCheck\"`, `\"Calendar\"`, `\"Shirt\"`, `\"TableProperties\"`)."
       },
       {
         "name": "layout",
         "signature": "layout?: ViewLayout",
-        "description": ""
+        "description": "Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`."
       },
       {
         "name": "filter",
         "signature": "filter?: Record<string, any> | string",
-        "description": ""
+        "description": "Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string)."
       },
       {
         "name": "groupBy",
         "signature": "groupBy?: string",
-        "description": ""
+        "description": "Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet."
       },
       {
         "name": "dateField",
         "signature": "dateField?: string",
-        "description": ""
+        "description": "Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`."
       },
       {
         "name": "startDateField",
         "signature": "startDateField?: string",
-        "description": ""
+        "description": "Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`."
       },
       {
         "name": "endDateField",
         "signature": "endDateField?: string",
-        "description": ""
+        "description": "Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`."
       },
       {
         "name": "columns",
         "signature": "columns?: string[]",
-        "description": ""
+        "description": "Field names to show in this view, in order. If omitted, Dyrected infers default display fields."
       },
       {
         "name": "sort",
         "signature": "sort?: { field: string; direction: 'asc' | 'desc' }",
-        "description": ""
+        "description": "Default sorting rule when entering the view."
       },
       {
         "name": "actions",
         "signature": "actions?: ActionConfig[]",
-        "description": ""
+        "description": "Custom workflow actions available in this view."
       },
       {
         "name": "features",
         "signature": "features?: ViewActionFeatures",
-        "description": ""
+        "description": "Toggles built-in operations (view/edit/duplicate/delete/export)."
       },
       {
         "name": "actionOrder",
         "signature": "actionOrder?: string[]",
-        "description": ""
+        "description": "Explicit display order for action buttons — mixing custom action names and built-in names\n(`\"view\"`, `\"edit\"`, `\"duplicate\"`, `\"delete\"`). Unlisted actions append in default order."
       },
       {
         "name": "metrics",
         "signature": "metrics?: ViewMetric[]",
-        "description": ""
+        "description": "KPI summary cards rendered in the hero row above the view."
       },
       {
         "name": "access",
         "signature": "access?: AccessConfig",
-        "description": ""
+        "description": "Role-based access rules controlling who can see or use this view."
       }
     ]
   },
@@ -2861,7 +2871,7 @@
     "kind": "type",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "Color palette options for metric cards:\n`'purple' | 'emerald' | 'amber' | 'rose' | 'blue' | 'indigo' | 'cyan' | 'orange'`",
     "signature": "export type MetricColor = 'purple' | 'emerald' | 'amber' | 'rose' | 'blue' | 'indigo' | 'cyan' | 'orange' | string;",
     "members": []
   },
@@ -3356,33 +3366,33 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "Toggles for the built-in document operations an operational view surfaces\n(View/Edit/Duplicate/Delete/Export-selected). All default to enabled;\nset any to `false` to hide that operation for the view.",
-    "signature": "export interface ViewActionFeatures {\n  view?: boolean;\n  edit?: boolean;\n  duplicate?: boolean;\n  delete?: boolean;\n  exportSelected?: boolean;\n}",
+    "description": "Toggles for the built-in document operations an operational view surfaces.\nAll default to enabled (`true`). Set any to `false` to hide that operation.",
+    "signature": "export interface ViewActionFeatures {\n  /** Enables the \"View\" preview / read-only drawer button. Defaults to `true`. */\n  view?: boolean;\n  /** Enables the \"Edit\" document form link. Defaults to `true`. */\n  edit?: boolean;\n  /** Enables the \"Duplicate\" record action. Defaults to `true`. */\n  duplicate?: boolean;\n  /** Enables the \"Delete\" record action. Defaults to `true`. */\n  delete?: boolean;\n  /** Enables the \"Export selected\" CSV action in the bulk action bar. Defaults to `true`. */\n  exportSelected?: boolean;\n}",
     "members": [
       {
         "name": "view",
         "signature": "view?: boolean",
-        "description": ""
+        "description": "Enables the \"View\" preview / read-only drawer button. Defaults to `true`."
       },
       {
         "name": "edit",
         "signature": "edit?: boolean",
-        "description": ""
+        "description": "Enables the \"Edit\" document form link. Defaults to `true`."
       },
       {
         "name": "duplicate",
         "signature": "duplicate?: boolean",
-        "description": ""
+        "description": "Enables the \"Duplicate\" record action. Defaults to `true`."
       },
       {
         "name": "delete",
         "signature": "delete?: boolean",
-        "description": ""
+        "description": "Enables the \"Delete\" record action. Defaults to `true`."
       },
       {
         "name": "exportSelected",
         "signature": "exportSelected?: boolean",
-        "description": ""
+        "description": "Enables the \"Export selected\" CSV action in the bulk action bar. Defaults to `true`."
       }
     ]
   },
@@ -3392,68 +3402,68 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface ViewConfig {\n  slug: string;\n  label: string;\n  icon?: string;\n  layout?: ViewLayout;\n  filter?: Record<string, any> | string;\n  groupBy?: string;\n  dateField?: string;\n  startDateField?: string;\n  endDateField?: string;\n  columns?: string[];\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  actions?: ActionConfig[];\n  /** Toggles built-in operations (view/edit/duplicate/delete/export). */\n  features?: ViewActionFeatures;\n  /**\n   * Explicit display order for actions — built-in names (\"view\", \"edit\",\n   * \"duplicate\", \"delete\") and/or custom action names. Unlisted actions\n   * append in their default order.\n   */\n  actionOrder?: string[];\n  metrics?: ViewMetric[];\n  access?: AccessConfig;\n}",
+    "description": "Complete configuration for a tailored operational view.",
+    "signature": "export interface ViewConfig {\n  /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug`). */\n  slug: string;\n  /** Human-readable title displayed in the sidebar navigation and view header. */\n  label: string;\n  /** Lucide icon name (e.g. `\"UserCheck\"`, `\"Calendar\"`, `\"Shirt\"`, `\"TableProperties\"`). */\n  icon?: string;\n  /** Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`. */\n  layout?: ViewLayout;\n  /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */\n  filter?: Record<string, any> | string;\n  /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */\n  groupBy?: string;\n  /** Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`. */\n  dateField?: string;\n  /** Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`. */\n  startDateField?: string;\n  /** Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`. */\n  endDateField?: string;\n  /** Field names to show in this view, in order. If omitted, Dyrected infers default display fields. */\n  columns?: string[];\n  /** Default sorting rule when entering the view. */\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  /** Custom workflow actions available in this view. */\n  actions?: ActionConfig[];\n  /** Toggles built-in operations (view/edit/duplicate/delete/export). */\n  features?: ViewActionFeatures;\n  /**\n   * Explicit display order for action buttons — mixing custom action names and built-in names\n   * (`\"view\"`, `\"edit\"`, `\"duplicate\"`, `\"delete\"`). Unlisted actions append in default order.\n   */\n  actionOrder?: string[];\n  /** KPI summary cards rendered in the hero row above the view. */\n  metrics?: ViewMetric[];\n  /** Role-based access rules controlling who can see or use this view. */\n  access?: AccessConfig;\n}",
     "members": [
       {
         "name": "slug",
         "signature": "slug: string",
-        "description": ""
+        "description": "Stable URL slug for the view (`/collections/:slug/views/:viewSlug`)."
       },
       {
         "name": "label",
         "signature": "label: string",
-        "description": ""
+        "description": "Human-readable title displayed in the sidebar navigation and view header."
       },
       {
         "name": "icon",
         "signature": "icon?: string",
-        "description": ""
+        "description": "Lucide icon name (e.g. `\"UserCheck\"`, `\"Calendar\"`, `\"Shirt\"`, `\"TableProperties\"`)."
       },
       {
         "name": "layout",
         "signature": "layout?: ViewLayout",
-        "description": ""
+        "description": "Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`."
       },
       {
         "name": "filter",
         "signature": "filter?: Record<string, any> | string",
-        "description": ""
+        "description": "Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string)."
       },
       {
         "name": "groupBy",
         "signature": "groupBy?: string",
-        "description": ""
+        "description": "Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet."
       },
       {
         "name": "dateField",
         "signature": "dateField?: string",
-        "description": ""
+        "description": "Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`."
       },
       {
         "name": "startDateField",
         "signature": "startDateField?: string",
-        "description": ""
+        "description": "Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`."
       },
       {
         "name": "endDateField",
         "signature": "endDateField?: string",
-        "description": ""
+        "description": "Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`."
       },
       {
         "name": "columns",
         "signature": "columns?: string[]",
-        "description": ""
+        "description": "Field names to show in this view, in order. If omitted, Dyrected infers default display fields."
       },
       {
         "name": "sort",
         "signature": "sort?: { field: string; direction: 'asc' | 'desc' }",
-        "description": ""
+        "description": "Default sorting rule when entering the view."
       },
       {
         "name": "actions",
         "signature": "actions?: ActionConfig[]",
-        "description": ""
+        "description": "Custom workflow actions available in this view."
       },
       {
         "name": "features",
@@ -3463,17 +3473,17 @@
       {
         "name": "actionOrder",
         "signature": "actionOrder?: string[]",
-        "description": "Explicit display order for actions — built-in names (\"view\", \"edit\",\n\"duplicate\", \"delete\") and/or custom action names. Unlisted actions\nappend in their default order."
+        "description": "Explicit display order for action buttons — mixing custom action names and built-in names\n(`\"view\"`, `\"edit\"`, `\"duplicate\"`, `\"delete\"`). Unlisted actions append in default order."
       },
       {
         "name": "metrics",
         "signature": "metrics?: ViewMetric[]",
-        "description": ""
+        "description": "KPI summary cards rendered in the hero row above the view."
       },
       {
         "name": "access",
         "signature": "access?: AccessConfig",
-        "description": ""
+        "description": "Role-based access rules controlling who can see or use this view."
       }
     ]
   },
@@ -3483,7 +3493,7 @@
     "kind": "type",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "Supported layout engines for operational views in the Dyrected Admin UI:\n- `'table'`: The workhorse — column sorting, search, faceted filters, and bulk actions.\n- `'spreadsheet'`: Inline-editable matrix with batch saving (`Save changes` / `Discard`).\n- `'kanban'`: Interactive card board grouped by status or category with drag-and-drop.\n- `'calendar'`: Event schedule grid plotting records across month/week/day views by date.\n- `'gantt'`: Timeline bars plotted across start and end dates.\n- `'cards'`: Visual image/thumbnail gallery grid.",
     "signature": "export type ViewLayout = 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards';",
     "members": []
   },
@@ -3493,58 +3503,58 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface ViewMetric {\n  label: string;\n  color?: MetricColor;\n  unit?: string;\n  aggregate?: AggregateOperation;\n  aggregates?: Record<string, AggregateOperation>;\n  transform?: string;\n  expression?: string;\n  format?: 'currency' | 'number' | 'percent' | string;\n  currency?: string;\n  subMetrics?: ViewSubMetric[];\n}",
+    "description": "Configuration for a KPI summary card rendered at the top of an operational view.\n\nAll aggregations run directly on the database engine for maximum performance.",
+    "signature": "export interface ViewMetric {\n  /** Title displayed on the metric card header. */\n  label: string;\n  /** Accent color for the card's visual indicator. */\n  color?: MetricColor;\n  /** Unit badge shown alongside the numeric value (e.g. `\"Guests\"`, `\"Orders\"`, `\"Tables\"`). */\n  unit?: string;\n  /** Single database aggregate operation (`count`, `distinctCount`, `sum`, `avg`, `min`, `max`). */\n  aggregate?: AggregateOperation;\n  /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */\n  aggregates?: Record<string, AggregateOperation>;\n  /** JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 25000\"`). */\n  transform?: string;\n  /** JEXL math formula evaluated over `aggregates` (e.g. `\"(aggregates.paid / aggregates.total) * 100\"`). */\n  expression?: string;\n  /** Display formatter: `'currency' | 'number' | 'percent'`. */\n  format?: 'currency' | 'number' | 'percent' | string;\n  /** 3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`. */\n  currency?: string;\n  /** Optional secondary breakdown items shown in the card footer. */\n  subMetrics?: ViewSubMetric[];\n}",
     "members": [
       {
         "name": "label",
         "signature": "label: string",
-        "description": ""
+        "description": "Title displayed on the metric card header."
       },
       {
         "name": "color",
         "signature": "color?: MetricColor",
-        "description": ""
+        "description": "Accent color for the card's visual indicator."
       },
       {
         "name": "unit",
         "signature": "unit?: string",
-        "description": ""
+        "description": "Unit badge shown alongside the numeric value (e.g. `\"Guests\"`, `\"Orders\"`, `\"Tables\"`)."
       },
       {
         "name": "aggregate",
         "signature": "aggregate?: AggregateOperation",
-        "description": ""
+        "description": "Single database aggregate operation (`count`, `distinctCount`, `sum`, `avg`, `min`, `max`)."
       },
       {
         "name": "aggregates",
         "signature": "aggregates?: Record<string, AggregateOperation>",
-        "description": ""
+        "description": "Map of named aggregate operations referenced in `expression` as `aggregates.key`."
       },
       {
         "name": "transform",
         "signature": "transform?: string",
-        "description": ""
+        "description": "JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 25000\"`)."
       },
       {
         "name": "expression",
         "signature": "expression?: string",
-        "description": ""
+        "description": "JEXL math formula evaluated over `aggregates` (e.g. `\"(aggregates.paid / aggregates.total) * 100\"`)."
       },
       {
         "name": "format",
         "signature": "format?: 'currency' | 'number' | 'percent' | string",
-        "description": ""
+        "description": "Display formatter: `'currency' | 'number' | 'percent'`."
       },
       {
         "name": "currency",
         "signature": "currency?: string",
-        "description": ""
+        "description": "3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`."
       },
       {
         "name": "subMetrics",
         "signature": "subMetrics?: ViewSubMetric[]",
-        "description": ""
+        "description": "Optional secondary breakdown items shown in the card footer."
       }
     ]
   },
@@ -3554,43 +3564,43 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface ViewSubMetric {\n  label: string;\n  aggregate?: AggregateOperation;\n  aggregates?: Record<string, AggregateOperation>;\n  transform?: string;\n  expression?: string;\n  format?: 'currency' | 'number' | 'percent' | string;\n  currency?: string;\n}",
+    "description": "A sub-metric breakdown item displayed in the compact footer of a metric card.",
+    "signature": "export interface ViewSubMetric {\n  /** Short label for the sub-metric (e.g. \"Pending\", \"Collected\"). */\n  label: string;\n  /** Single database aggregate operation. */\n  aggregate?: AggregateOperation;\n  /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */\n  aggregates?: Record<string, AggregateOperation>;\n  /** JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 100\"`). */\n  transform?: string;\n  /** JEXL math formula evaluated over `aggregates` (e.g. `\"aggregates.a - aggregates.b\"`). */\n  expression?: string;\n  /** Display formatter: `'currency' | 'number' | 'percent'`. */\n  format?: 'currency' | 'number' | 'percent' | string;\n  /** 3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`. */\n  currency?: string;\n}",
     "members": [
       {
         "name": "label",
         "signature": "label: string",
-        "description": ""
+        "description": "Short label for the sub-metric (e.g. \"Pending\", \"Collected\")."
       },
       {
         "name": "aggregate",
         "signature": "aggregate?: AggregateOperation",
-        "description": ""
+        "description": "Single database aggregate operation."
       },
       {
         "name": "aggregates",
         "signature": "aggregates?: Record<string, AggregateOperation>",
-        "description": ""
+        "description": "Map of named aggregate operations referenced in `expression` as `aggregates.key`."
       },
       {
         "name": "transform",
         "signature": "transform?: string",
-        "description": ""
+        "description": "JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 100\"`)."
       },
       {
         "name": "expression",
         "signature": "expression?: string",
-        "description": ""
+        "description": "JEXL math formula evaluated over `aggregates` (e.g. `\"aggregates.a - aggregates.b\"`)."
       },
       {
         "name": "format",
         "signature": "format?: 'currency' | 'number' | 'percent' | string",
-        "description": ""
+        "description": "Display formatter: `'currency' | 'number' | 'percent'`."
       },
       {
         "name": "currency",
         "signature": "currency?: string",
-        "description": ""
+        "description": "3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`."
       }
     ]
   },

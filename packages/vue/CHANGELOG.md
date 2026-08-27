@@ -1,5 +1,15 @@
 # @dyrected/vue
 
+## 2.10.0
+
+### Patch Changes
+
+- Updated dependencies [55d71f7]
+- Updated dependencies [7cbb3cd]
+  - @dyrected/core@2.10.0
+  - @dyrected/admin@2.10.0
+  - @dyrected/sdk@2.10.0
+
 ## 2.9.0
 
 ### Patch Changes
