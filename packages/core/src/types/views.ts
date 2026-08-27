@@ -167,7 +167,7 @@ export interface ViewConfig {
 /**
  * An operational workflow action that can mutate data or trigger server logic.
  */
-export interface ActionConfig {
+export interface ActionConfig<TDoc extends Record<string, unknown> = Record<string, unknown>> {
   /** Unique action identifier (e.g. `"checkIn"`, `"markPaid"`). */
   name: string;
   /** Button label displayed in the UI. */
@@ -181,9 +181,9 @@ export interface ActionConfig {
   /** Optional interactive modal form fields prompting the user for input before executing. */
   fields?: Field[];
   /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: "now()" }`). */
-  mutation?: Record<string, any>;
+  mutation?: Partial<TDoc> | Record<string, unknown>;
   /** Self-hosted server handler function executed when the action is triggered. */
-  handler?: (context: ActionContext) => Promise<any>;
+  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;
   /** Role-based access rules controlling who can trigger this action. */
   access?: AccessConfig;
 }
@@ -191,11 +191,11 @@ export interface ActionConfig {
 /**
  * Context passed to an action's server handler function.
  */
-export interface ActionContext {
+export interface ActionContext<TDoc extends Record<string, unknown> = Record<string, unknown>> {
   /** The target document (for row actions). */
-  doc: Record<string, unknown>;
+  doc: TDoc;
   /** All targeted documents (for bulk actions). */
-  docs: Record<string, unknown>[];
+  docs: TDoc[];
   /** The authenticated acting user, if available. */
   user: Record<string, unknown> | null;
   /** User inputs submitted via the action's modal form fields. */
@@ -284,7 +284,7 @@ export interface DefineViewOptions {
  * });
  * ```
  */
-export interface DefineActionOptions {
+export interface DefineActionOptions<TDoc extends Record<string, unknown> = Record<string, unknown>> {
   /** Unique action identifier (e.g. `"checkIn"`, `"markPaid"`). */
   name: string;
   /** Button label displayed in the UI. */
@@ -298,9 +298,9 @@ export interface DefineActionOptions {
   /** Optional interactive modal form fields prompting the user for input before executing. */
   fields?: Field[];
   /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: "now()" }`). */
-  mutation?: Record<string, any>;
+  mutation?: Partial<TDoc> | Record<string, unknown>;
   /** Self-hosted server handler function executed when the action is triggered. */
-  handler?: (context: ActionContext) => Promise<any>;
+  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;
   /** Role-based access rules controlling who can trigger this action. */
   access?: AccessConfig;
 }
@@ -322,25 +322,8 @@ export interface DefineActionOptions {
  * });
  * ```
  */
-export function defineView(config: DefineViewOptions): ViewConfig {
-  return {
-    slug: config.slug,
-    label: config.label,
-    icon: config.icon,
-    layout: config.layout ?? 'table',
-    filter: config.filter,
-    groupBy: config.groupBy,
-    dateField: config.dateField,
-    startDateField: config.startDateField,
-    endDateField: config.endDateField,
-    columns: config.columns,
-    sort: config.sort,
-    actions: config.actions,
-    features: config.features,
-    actionOrder: config.actionOrder,
-    metrics: config.metrics,
-    access: config.access,
-  };
+export function defineView<const T extends DefineViewOptions>(config: T): T {
+  return config;
 }
 
 /**
@@ -358,16 +341,6 @@ export function defineView(config: DefineViewOptions): ViewConfig {
  * });
  * ```
  */
-export function defineAction(config: DefineActionOptions): ActionConfig {
-  return {
-    name: config.name,
-    label: config.label,
-    icon: config.icon,
-    type: config.type ?? 'row',
-    confirm: config.confirm,
-    fields: config.fields,
-    mutation: config.mutation,
-    handler: config.handler,
-    access: config.access,
-  };
+export function defineAction<const T extends DefineActionOptions>(config: T): T {
+  return config;
 }

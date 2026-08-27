@@ -841,7 +841,6 @@ export function defineTab<const T extends readonly Field[]>(args: {
 }
 
 export * from "./types/index.js";
-export { defineView, defineAction, type ViewConfig, type ActionConfig, type ViewMetric, type ViewLayout, type ActionType } from "./types/views.js";
 export * from "./utils/config.js";
 export * from "./utils/admin-auth.js";
 export * from "./utils/parse-where.js";

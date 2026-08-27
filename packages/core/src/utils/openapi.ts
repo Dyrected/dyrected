@@ -465,39 +465,94 @@ export function generateOpenApi(config: DyrectedConfig) {
       post: {
         tags: [collectionTag],
         summary: `Aggregate ${labels.plural}`,
-        description: `Compute statistical aggregations (count, sum, avg, min, max) across ${labels.plural}.`,
+        description: `Compute statistical aggregations (count, countDistinct, distinct, sum, avg, min, max, groupBy) across ${labels.plural}.`,
+        parameters: [
+          {
+            name: "groupBy",
+            in: "query",
+            description: "Optional field name to compute aggregates grouped by distinct values",
+            required: false,
+            schema: { type: "string" },
+          },
+        ],
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
-                type: "object",
-                additionalProperties: {
-                  type: "object",
-                  properties: {
-                    count: { type: "string", example: "*" },
-                    sum: { type: "string", description: "Field to sum" },
-                    avg: { type: "string", description: "Field to average" },
-                    min: { type: "string", description: "Field for minimum" },
-                    max: { type: "string", description: "Field for maximum" },
-                    cast: {
-                      type: "string",
-                      enum: [
-                        "number",
-                        "integer",
-                        "float",
-                        "boolean",
-                        "date",
-                        "string",
-                      ],
-                    },
-                    where: {
+                oneOf: [
+                  {
+                    type: "object",
+                    description: "Flat aggregate operations dictionary",
+                    additionalProperties: {
                       type: "object",
-                      description: "Per-aggregate filter condition",
-                      additionalProperties: true,
+                      properties: {
+                        count: { type: "string", example: "*" },
+                        countDistinct: { type: "string", description: "Field to count unique non-null values" },
+                        distinct: { type: "string", description: "Field to extract unique non-null values" },
+                        sum: { type: "string", description: "Field to sum" },
+                        avg: { type: "string", description: "Field to average" },
+                        min: { type: "string", description: "Field for minimum" },
+                        max: { type: "string", description: "Field for maximum" },
+                        cast: {
+                          type: "string",
+                          enum: [
+                            "number",
+                            "integer",
+                            "float",
+                            "boolean",
+                            "date",
+                            "string",
+                          ],
+                        },
+                        where: {
+                          type: "object",
+                          description: "Per-aggregate filter condition",
+                          additionalProperties: true,
+                        },
+                      },
                     },
                   },
-                },
+                  {
+                    type: "object",
+                    description: "Grouped aggregate payload with explicit groupBy property",
+                    properties: {
+                      groupBy: { type: "string", description: "Field name to group aggregates by" },
+                      aggregates: {
+                        type: "object",
+                        additionalProperties: {
+                          type: "object",
+                          properties: {
+                            count: { type: "string", example: "*" },
+                            countDistinct: { type: "string", description: "Field to count unique non-null values" },
+                            distinct: { type: "string", description: "Field to extract unique non-null values" },
+                            sum: { type: "string", description: "Field to sum" },
+                            avg: { type: "string", description: "Field to average" },
+                            min: { type: "string", description: "Field for minimum" },
+                            max: { type: "string", description: "Field for maximum" },
+                            cast: {
+                              type: "string",
+                              enum: [
+                                "number",
+                                "integer",
+                                "float",
+                                "boolean",
+                                "date",
+                                "string",
+                              ],
+                            },
+                            where: {
+                              type: "object",
+                              description: "Per-aggregate filter condition",
+                              additionalProperties: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                    required: ["aggregates"],
+                  },
+                ],
               },
             },
           },
@@ -508,11 +563,36 @@ export function generateOpenApi(config: DyrectedConfig) {
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  additionalProperties: {
-                    type: "number",
-                    nullable: true,
-                  },
+                  oneOf: [
+                    {
+                      type: "object",
+                      description: "Flat aggregate results map",
+                      additionalProperties: {
+                        oneOf: [
+                          { type: "number", nullable: true },
+                          { type: "array", items: { type: "string" } },
+                        ],
+                      },
+                    },
+                    {
+                      type: "object",
+                      description: "Grouped aggregate results breakdown",
+                      properties: {
+                        groups: {
+                          type: "object",
+                          additionalProperties: {
+                            type: "object",
+                            additionalProperties: {
+                              oneOf: [
+                                { type: "number", nullable: true },
+                                { type: "array", items: { type: "string" } },
+                              ],
+                            },
+                          },
+                        },
+                      },
+                    },
+                  ],
                 },
               },
             },
