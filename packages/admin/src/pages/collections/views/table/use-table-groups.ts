@@ -117,11 +117,28 @@ export function useTableGroups({
 
   const hasPredefinedOptions = Array.isArray(fieldDef?.options) && fieldDef.options.length > 0
 
-  // For scalar fields (number, text) without predefined options, derive distinct values from documents
+  // For scalar fields (number, text) without predefined options, derive distinct values using SQL aggregate
   const { data: distinctValues = [] } = useQuery({
     queryKey: ["table-group-distinct", slug, groupField, filterHash],
     queryFn: async () => {
       if (!client || !groupField) return []
+      try {
+        const aggRes = await (client as any).collection(slug).aggregate({
+          distinctValues: { distinct: groupField, where: base },
+        })
+        if (aggRes && Array.isArray(aggRes.distinctValues)) {
+          const raw = aggRes.distinctValues as any[]
+          const values = raw.filter((v) => v !== undefined && v !== null && v !== "")
+          return values.map(String).sort((a: string, b: string) => {
+            const numA = Number(a)
+            const numB = Number(b)
+            if (!Number.isNaN(numA) && !Number.isNaN(numB)) return numA - numB
+            return a.localeCompare(b)
+          })
+        }
+      } catch {
+        // Fallback to find if aggregate not available
+      }
       const res = await (client as any).collection(slug).find({
         where: base,
         limit: 100,
@@ -149,7 +166,7 @@ export function useTableGroups({
         fieldDef.type !== "relationship" &&
         !hasPredefinedOptions,
     ),
-    staleTime: 15_000,
+    staleTime: 30_000,
   })
 
   const groups = React.useMemo(() => {

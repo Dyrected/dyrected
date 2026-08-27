@@ -283,7 +283,8 @@ export class SqliteAdapter implements DatabaseAdapter {
   async aggregate(args: {
     collection: string;
     aggregates: Record<string, any>;
-  }): Promise<Record<string, number | null>> {
+    groupBy?: string;
+  }): Promise<Record<string, any>> {
     if (Object.keys(args.aggregates).length === 0) {
       return {};
     }
@@ -320,6 +321,7 @@ export class SqliteAdapter implements DatabaseAdapter {
 
     const selectParts: string[] = [];
     const allParams: any[] = [];
+    const isDistinctMap: Record<string, boolean> = {};
 
     for (const [name, op] of Object.entries(args.aggregates)) {
       let filterClause = '';
@@ -330,7 +332,14 @@ export class SqliteAdapter implements DatabaseAdapter {
       }
 
       let aggExpr: string;
-      if ('count' in op) {
+      if ('countDistinct' in op && typeof op.countDistinct === 'string') {
+        const fieldExpr = toFieldExpr(op.countDistinct);
+        aggExpr = `COUNT(DISTINCT ${fieldExpr}) ${filterClause}`;
+      } else if ('distinct' in op && typeof op.distinct === 'string') {
+        isDistinctMap[name] = true;
+        const fieldExpr = toFieldExpr(op.distinct);
+        aggExpr = `COALESCE(json_group_array(DISTINCT ${fieldExpr}) ${filterClause}, '[]')`;
+      } else if ('count' in op) {
         aggExpr = `COUNT(*) ${filterClause}`;
       } else if (op.sum) {
         aggExpr = `SUM(${toCastExpr(op.sum, op.cast)}) ${filterClause}`;
@@ -347,13 +356,39 @@ export class SqliteAdapter implements DatabaseAdapter {
       selectParts.push(`${aggExpr} AS "${name.replace(/"/g, '""')}"`);
     }
 
-    const query = `SELECT ${selectParts.join(', ')} FROM ${tableName}`;
-    const row = this.sqlite.prepare(query).get(...allParams) as Record<string, unknown> | undefined ?? {};
+    if (args.groupBy) {
+      const groupCol = toFieldExpr(args.groupBy);
+      const query = `SELECT ${groupCol} AS "__group_key", ${selectParts.join(', ')} FROM ${tableName} GROUP BY ${groupCol}`;
+      const rows = (this.sqlite.prepare(query).all(...allParams) as Record<string, unknown>[]) ?? [];
 
-    const result: Record<string, number | null> = {};
+      const groups: Record<string, Record<string, any>> = {};
+      for (const row of rows) {
+        const key = row.__group_key === null || row.__group_key === undefined ? '__unassigned__' : String(row.__group_key);
+        const groupResult: Record<string, any> = {};
+        for (const name of Object.keys(args.aggregates)) {
+          const raw = row[name];
+          if (isDistinctMap[name]) {
+            groupResult[name] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
+          } else {
+            groupResult[name] = raw === null || raw === undefined ? null : Number(raw);
+          }
+        }
+        groups[key] = groupResult;
+      }
+      return { groups };
+    }
+
+    const query = `SELECT ${selectParts.join(', ')} FROM ${tableName}`;
+    const row = (this.sqlite.prepare(query).get(...allParams) as Record<string, unknown> | undefined) ?? {};
+
+    const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {
       const raw = row[name];
-      result[name] = raw === null || raw === undefined ? null : Number(raw);
+      if (isDistinctMap[name]) {
+        result[name] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
+      } else {
+        result[name] = raw === null || raw === undefined ? null : Number(raw);
+      }
     }
     return result;
   }

@@ -152,7 +152,17 @@ export function parseSqlWhere(
           params.push('');
           return `(${c})::text = ${next()}`;
         }
-        params.push(typeof operand === 'boolean' && isJsonExtract ? String(operand) : operand);
+        if (typeof operand === 'boolean') {
+          if (placeholder === '?') {
+            params.push(operand ? 1 : 0);
+          } else if (isJsonExtract) {
+            params.push(String(operand));
+          } else {
+            params.push(operand);
+          }
+        } else {
+          params.push(operand);
+        }
         return `${c} = ${next()}`;
 
       case 'not_equals':
@@ -163,14 +173,34 @@ export function parseSqlWhere(
           params.push('');
           return `(${c})::text != ${next()}`;
         }
-        params.push(typeof operand === 'boolean' && isJsonExtract ? String(operand) : operand);
+        if (typeof operand === 'boolean') {
+          if (placeholder === '?') {
+            params.push(operand ? 1 : 0);
+          } else if (isJsonExtract) {
+            params.push(String(operand));
+          } else {
+            params.push(operand);
+          }
+        } else {
+          params.push(operand);
+        }
         return `${c} != ${next()}`;
 
       case 'in': {
         const vals: any[] = Array.isArray(operand) ? operand : [operand];
         if (vals.length === 0) return '1=0'; // IN () is invalid SQL
         const placeholders = vals.map((v) => {
-          params.push(typeof v === 'boolean' && isJsonExtract ? String(v) : v);
+          if (typeof v === 'boolean') {
+            if (placeholder === '?') {
+              params.push(v ? 1 : 0);
+            } else if (isJsonExtract) {
+              params.push(String(v));
+            } else {
+              params.push(v);
+            }
+          } else {
+            params.push(v);
+          }
           return next();
         });
         return `${c} IN (${placeholders.join(', ')})`;

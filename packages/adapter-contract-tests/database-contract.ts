@@ -318,6 +318,73 @@ export function runAggregateAdapterContract(
       expect(result.minVal).toBeNull();
       expect(result.maxVal).toBeNull();
     });
+
+    it("supports countDistinct and distinct value extractions in a single pass", async () => {
+      const db = await createAdapter();
+      const collection = `agg-distinct-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "category", type: "text", promoted: true },
+          { name: "tag", type: "text" },
+          { name: "active", type: "boolean" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { category: "vip", tag: "gold", active: true } });
+      await db.create({ collection, data: { category: "vip", tag: "silver", active: true } });
+      await db.create({ collection, data: { category: "regular", tag: "silver", active: true } });
+      await db.create({ collection, data: { category: "regular", tag: "bronze", active: false } });
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          totalRows: { count: "*" },
+          uniqueCategories: { countDistinct: "category" },
+          uniqueTags: { countDistinct: "tag" },
+          distinctCategories: { distinct: "category" },
+          distinctActiveTags: { distinct: "tag", where: { active: { equals: true } } },
+        },
+      });
+
+      expect(result.totalRows).toBe(4);
+      expect(result.uniqueCategories).toBe(2);
+      expect(result.uniqueTags).toBe(3);
+      expect(result.distinctCategories).toEqual(expect.arrayContaining(["vip", "regular"]));
+      expect(result.distinctActiveTags).toEqual(expect.arrayContaining(["gold", "silver"]));
+      expect(result.distinctActiveTags).not.toContain("bronze");
+    });
+
+    it("supports grouped aggregation via groupBy parameter", async () => {
+      const db = await createAdapter();
+      const collection = `agg-groupby-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "status", type: "text", promoted: true },
+          { name: "revenue", type: "number" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { status: "paid", revenue: 100 } });
+      await db.create({ collection, data: { status: "paid", revenue: 200 } });
+      await db.create({ collection, data: { status: "pending", revenue: 50 } });
+
+      const result = await db.aggregate({
+        collection,
+        groupBy: "status",
+        aggregates: {
+          orderCount: { count: "*" },
+          totalRevenue: { sum: "revenue" },
+        },
+      });
+
+      expect(result.groups).toBeDefined();
+      expect(result.groups["paid"]).toEqual({ orderCount: 2, totalRevenue: 300 });
+      expect(result.groups["pending"]).toEqual({ orderCount: 1, totalRevenue: 50 });
+    });
   });
 }
 

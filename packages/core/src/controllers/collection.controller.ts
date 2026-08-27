@@ -1600,13 +1600,30 @@ export class CollectionController {
       );
     }
 
+    // Support both wrapped { aggregates: { ... }, groupBy: "field" } and flat { op1: { ... }, op2: { ... } } body shapes.
+    let rawAggregates: Record<string, unknown>;
+    let groupBy: string | undefined;
+
+    if ("aggregates" in body && typeof body.aggregates === "object" && body.aggregates !== null && !Array.isArray(body.aggregates)) {
+      rawAggregates = body.aggregates as Record<string, unknown>;
+      if (typeof body.groupBy === "string" && body.groupBy.trim()) {
+        groupBy = body.groupBy.trim();
+      }
+    } else {
+      rawAggregates = body;
+      const queryGroupBy = c.req.query("groupBy");
+      if (typeof queryGroupBy === "string" && queryGroupBy.trim()) {
+        groupBy = queryGroupBy.trim();
+      }
+    }
+
     // Sanitize each per-aggregate where clause using the same sanitizer as find().
     const { sanitizeWhereClause } = await import(
       "../utils/where-sanitizer.js"
     );
 
     const sanitizedAggregates: Record<string, unknown> = {};
-    for (const [key, op] of Object.entries(body)) {
+    for (const [key, op] of Object.entries(rawAggregates)) {
       if (!op || typeof op !== "object" || Array.isArray(op)) {
         return c.json(
           {
@@ -1643,6 +1660,7 @@ export class CollectionController {
     const result = await db.aggregate({
       collection: this.collection.slug,
       aggregates: sanitizedAggregates as any,
+      ...(groupBy ? { groupBy } : {}),
     });
 
     return c.json(result);
