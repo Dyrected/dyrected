@@ -19,7 +19,7 @@ export const PromptInput = React.forwardRef<HTMLFormElement, PromptInputProps>(
         const value = formData.get('value') as string;
         if (value?.trim()) onSubmit(value.trim());
       }}
-      className={cn('flex gap-2', className)}
+      className={cn('dy-flex dy-gap-2', className)}
       {...props}
     >
       {children}
@@ -41,7 +41,7 @@ export const PromptInputTextarea = React.forwardRef<HTMLTextAreaElement, PromptI
       value={value}
       onChange={onChange}
       className={cn(
-        'flex-1 resize-none rounded-lg border bg-background px-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring',
+        'dy-flex-1 dy-resize-none dy-rounded-lg dy-border dy-bg-background dy-px-4 dy-py-2 dy-text-sm placeholder:dy-text-muted-foreground focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring',
         className
       )}
       {...props}
@@ -57,7 +57,7 @@ export interface PromptInputActionsProps {
 
 export const PromptInputActions = React.forwardRef<HTMLDivElement, PromptInputActionsProps>(
   ({ children, className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-end gap-1.5', className)} {...props}>
+    <div ref={ref} className={cn('dy-flex dy-items-end dy-gap-1.5', className)} {...props}>
       {children}
     </div>
   )
@@ -77,12 +77,12 @@ export const PromptInputAction = React.forwardRef<HTMLButtonElement, PromptInput
       disabled={disabled}
       title={tooltip}
       className={cn(
-        'h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90',
+        'dy-h-8 dy-w-8 dy-rounded-lg dy-bg-primary dy-text-primary-foreground dy-flex dy-items-center dy-justify-center dy-transition-colors disabled:dy-opacity-50 disabled:dy-cursor-not-allowed hover:dy-bg-primary/90',
         className
       )}
       {...props}
     >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="dy-h-4 dy-w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
       </svg>
     </button>

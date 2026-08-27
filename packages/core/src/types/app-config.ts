@@ -12,6 +12,7 @@ import type { Block } from "./schema-core.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 import type { DestinationStream, Logger, LoggerOptions } from "pino";
 import type { HookRequestContext } from "./request.js";
+import type { AIConfig } from "./ai.js";
 
 export type DyrectedLoggerConfig =
   | {
@@ -300,4 +301,9 @@ export interface DyrectedConfig<
     admin?: AdminConfig;
     adminAuth?: AdminAuthConfig;
   }>;
+
+  /**
+   * AI Assistant and LLM tools configuration.
+   */
+  ai?: AIConfig;
 }

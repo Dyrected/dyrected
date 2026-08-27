@@ -714,10 +714,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   // 2c. AI Routes
   const aiController = new AIController(config);
-  app.post("/api/ai/threads", requireAuth(config), (c) => aiController.createThread(c));
-  app.get("/api/ai/threads", requireAuth(config), (c) => aiController.listThreads(c));
-  app.get("/api/ai/threads/:threadId", requireAuth(config), (c) => aiController.getThread(c));
-  app.post("/api/ai/threads/:threadId/messages", requireAuth(config), (c) => aiController.postMessage(c));
+  app.post("/api/ai/chat", optionalAuth(config), (c) => aiController.chat(c));
+  app.post("/api/ai/threads", optionalAuth(config), (c) => aiController.createThread(c));
+  app.get("/api/ai/threads", optionalAuth(config), (c) => aiController.listThreads(c));
+  app.delete("/api/ai/threads", optionalAuth(config), (c) => aiController.clearThreads(c));
+  app.get("/api/ai/threads/:threadId", optionalAuth(config), (c) => aiController.getThread(c));
+  app.delete("/api/ai/threads/:threadId", optionalAuth(config), (c) => aiController.deleteThread(c));
+  app.post("/api/ai/threads/:threadId/messages", optionalAuth(config), (c) => aiController.postMessage(c));
 
   // 3. Auth Routes — for collections with auth: true
   for (const collection of config.collections) {

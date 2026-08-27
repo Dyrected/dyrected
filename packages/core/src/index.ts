@@ -852,3 +852,6 @@ export * from "./utils/openapi.js";
 export * from "./workflows.js";
 export * from "./detail.js";
 export * from "./services/ai.service.js";
+export * from "./services/ai-tools.js";
+export { z } from "zod";
+

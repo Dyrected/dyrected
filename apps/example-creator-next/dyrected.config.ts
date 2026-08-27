@@ -21,6 +21,7 @@ import {
   displayComputed,
   displayDivider,
   displayText,
+  z,
 } from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
 import { postgresAdapter } from "@dyrected/db-postgres";
@@ -775,6 +776,7 @@ const Services = defineCollection({
       hasMany: true,
     }),
   ],
+  defaultView: "service-catalog",
   views: [
     defineView({
       slug: "service-catalog",
@@ -805,6 +807,10 @@ const Services = defineCollection({
 const BlogArticles = defineCollection({
   slug: "blog-articles",
   labels: { singular: "Blog article", plural: "Blog articles" },
+  ai: {
+    prompt:
+      "Write actionable, high-conversion leadership articles. Structure with strong hooks, clear H2/H3 takeaways, and SEO meta summaries.",
+  },
   admin: {
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "date", "category", "readTime"],
@@ -1518,4 +1524,26 @@ export default defineConfig({
   },
   collections: [Admins, Media, Pages, Services, BlogArticles, GuestResponses],
   globals: [SiteSettings, AssessmentCategories],
+  ai: {
+    systemPrompt:
+      "You are the AI Assistant for Future You Coaching — an executive leadership and professional development coaching practice. Tone is warm, authoritative, and focused on career transformation.",
+    model: "gemini-3.6-flash",
+    maxSteps: 5,
+    maxRetries: 3,
+    tools: {
+      checkBookingAvailability: {
+        description: "Check available consultation slots for future coaching sessions",
+        parameters: z.object({
+          date: z.string().describe("Target date in YYYY-MM-DD format"),
+        }),
+        execute: async ({ date }: { date: string }) => {
+          return {
+            date,
+            availableSlots: ["09:00 AM", "01:00 PM", "04:30 PM"],
+            timezone: "UTC",
+          };
+        },
+      },
+    },
+  },
 });
