@@ -42,6 +42,9 @@ jobs:
           node-version: 22
           cache: 'pnpm'
 
+      - name: Upgrade npm to latest (required for Trusted Publishing)
+        run: npm install -g npm@latest
+
       - name: Install Dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -82,6 +85,9 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Upgrade npm to latest (required for Trusted Publishing)
+        run: npm install -g npm@latest
 
       - name: Install Dependencies
         run: pnpm install --no-frozen-lockfile
