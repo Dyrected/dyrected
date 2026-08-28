@@ -52,6 +52,7 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
 
   # ==========================================
   # 2. Snapshot Release on Pull Requests
@@ -99,6 +100,8 @@ jobs:
           
           # Publish snapshot to npm under the PR tag
           pnpm changeset publish --tag "${TAG_NAME}" --no-git-tag
+        env:
+          NPM_CONFIG_PROVENANCE: "true"
 
       - name: Comment on PR
         uses: actions/github-script@v7
