@@ -272,16 +272,38 @@ You help CMS users brainstorm, write, edit, optimize, and translate high-convert
 3. **Structured Tables & Code Tags:** Use Markdown tables for comparisons. Always specify language identifiers on code blocks (e.g. html, json, ts).
 4. **Actionable Next Steps:** End with 1–2 sharp, practical editorial suggestions.
 
-### 8. SEMANTIC SEARCH & GROUNDED CITATIONS
-When answering questions about policies, product details, material specifications, articles, or documentation:
-1. **Search First:** Use the \`searchContent\` tool to locate verified project material before answering.
-2. **Grounding:** Base your answers strictly on the retrieved source snippets. Do not extrapolate or invent facts not present in the sources.
-3. **Citing Sources:** Every factual claim derived from \`searchContent\` must cite its source. At the end of your response, output a clean Sources section in this format:
+### 8. DATA ROUTING & MULTI-SOURCE INTELLIGENCE
+You have two distinct, specialized ways of retrieving information from the CMS:
 
-### Sources:
-- **[Document Title]** (/admin/collections/{collection}/{documentId})
+1. **STRUCTURED DATABASE QUERIES (\`queryCollection\`, \`aggregateCollection\`, \`getDocument\`):**
+   - Use for exact facts, counts, totals, numeric ranges (e.g. price > 50,000), date filters, status queries (published vs draft), and mathematical aggregations.
+   - Example 1: *"How many published articles do we have?"* $\to$ Call \`aggregateCollection\`.
+   - Example 2: *"Which services cost more than ₦50,000?"* $\to$ Call \`queryCollection\` with where filter.
+   - Example 3: *"Fetch service #12"* $\to$ Call \`getDocument\`.
 
-4. **Missing Information:** If the retrieved search content does not contain the answer, explicitly state: *"I searched our project content for '{query}', but could not find information regarding that topic."*
+2. **UNSTRUCTURED SEMANTIC SEARCH (\`searchContent\`):**
+   - Use for open-ended questions, concepts, thematic topics, explanations, policies, FAQs, and qualitative inquiries.
+   - Example 1: *"What does our documentation say about refunds and cancellations?"* $\to$ Call \`searchContent\`.
+   - Example 2: *"Find articles explaining our enterprise onboarding."* $\to$ Call \`searchContent\`.
+
+3. **HYBRID CHAINING:**
+   - If a question asks for both specific data and qualitative explanation (e.g. *"Which service is the most expensive and what does its curriculum cover?"*), execute a multi-step plan:
+     - Step 1: \`queryCollection\` (sort: "-price", limit: 1) to find the highest priced service.
+     - Step 2: \`searchContent\` (query: curriculum details) to retrieve the qualitative details.
+     - Step 3: Synthesize a clear, grounded answer citing both sources.
+
+4. **UNCERTAINTY & MISSING DATA:**
+   - If a structured query returns 0 results or semantic search returns low similarity, explicitly state what was searched and admit the absence of data rather than guessing.
+
+### 9. CONTENT MUTATIONS & HUMAN-IN-THE-LOOP PROPOSALS
+When the user asks you to create, modify, or delete any CMS document or global settings:
+1. **Never modify data directly without a proposal.** You MUST call one of the mutation proposal tools:
+   - \`proposeCreateDocument({ collection, data, summary })\`
+   - \`proposeUpdateDocument({ collection, id, data, summary })\`
+   - \`proposeDeleteDocument({ collection, id, summary, permanent })\`
+   - \`proposeUpdateGlobal({ global, data, summary })\`
+2. **Draft Clear Proposals:** Provide realistic, schema-compliant field values and a concise 1-sentence summary of the proposed change.
+3. **Inform the User:** Explain the proposed changes clearly in your response so the user can review the visual diff and click **[Approve & Apply]** in the interface.
 `;
 }
 
@@ -378,14 +400,30 @@ export class AIAgent {
     return thread;
   }
 
-  async listThreads(limit = 20): Promise<AIThread[]> {
-    const result = await this.db.find({
+  async listThreads(limit = 50): Promise<AIThread[]> {
+    const where: Record<string, any> = { projectId: this.projectId };
+    if (this.userId && this.userId !== 'anonymous') {
+      where.userId = this.userId;
+    }
+
+    let result = await this.db.find({
       collection: "_dyrected_ai_threads",
-      where: { projectId: this.projectId, userId: this.userId },
+      where,
       sort: "-updatedAt",
       limit,
     });
-    return result.docs as AIThread[];
+
+    // If user-specific lookup returned 0 results, fallback to all threads for this project so historical conversations aren't lost
+    if ((!result?.docs || result.docs.length === 0) && this.userId && this.userId !== 'anonymous') {
+      result = await this.db.find({
+        collection: "_dyrected_ai_threads",
+        where: { projectId: this.projectId },
+        sort: "-updatedAt",
+        limit,
+      });
+    }
+
+    return (result?.docs || []) as AIThread[];
   }
 
   async deleteThread(threadId: string): Promise<boolean> {
@@ -436,12 +474,14 @@ export class AIAgent {
     threadId: string,
     content: string,
     metadata?: Record<string, unknown>,
+    parts?: any[],
   ): Promise<AIMessage> {
     const message: AIMessage = {
       id: generateId(),
       threadId,
       role: "assistant",
       content,
+      parts,
       createdAt: new Date(),
       metadata,
     };
@@ -516,15 +556,35 @@ export class AIAgent {
     return { text: fullText, usage, finishReason };
   }
 
-  async createStreamResponse(threadId: string, userMessage: string): Promise<Response> {
+  async createStreamResponse(
+    threadId: string,
+    userMessage: string,
+    clientMessages?: any[]
+  ): Promise<Response> {
     const context = await this.getContext();
     const systemPrompt = buildDyrectedSystemPrompt(context);
     const history = await this.getMessages(threadId);
 
-    const messages = history.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    }));
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> =
+      Array.isArray(clientMessages) && clientMessages.length > 1
+        ? clientMessages
+            .map((m: any) => {
+              let text = '';
+              if (typeof m.content === 'string') {
+                text = m.content;
+              } else if (Array.isArray(m.parts)) {
+                text = m.parts.map((p: any) => (p.type === 'text' ? p.text : '')).join('');
+              }
+              return {
+                role: m.role as 'user' | 'assistant',
+                content: text,
+              };
+            })
+            .filter((m) => Boolean(m.content && m.content.trim()))
+        : history.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          }));
 
     if (messages.length === 0 || messages[messages.length - 1]?.content !== userMessage) {
       messages.push({ role: "user" as const, content: userMessage });
@@ -551,10 +611,45 @@ export class AIAgent {
       maxOutputTokens: 4096,
       onFinish: async (event) => {
         try {
-          await this.persistAssistantMessage(threadId, event.text, {
-            tokens: event.usage?.totalTokens,
-            finishReason: event.finishReason,
-          });
+          const parts: any[] = [];
+          if (event.steps && Array.isArray(event.steps)) {
+            for (const step of event.steps) {
+              if (step.toolCalls && Array.isArray(step.toolCalls)) {
+                for (const tc of step.toolCalls) {
+                  const matchingResult = step.toolResults?.find(
+                    (tr: any) => tr.toolCallId === tc.toolCallId || tr.toolName === tc.toolName
+                  ) as any;
+                  const tcAny = tc as any;
+                  parts.push({
+                    type: 'tool-invocation',
+                    toolInvocation: {
+                      state: 'result',
+                      toolCallId: tcAny.toolCallId,
+                      toolName: tcAny.toolName,
+                      args: tcAny.args ?? tcAny.input ?? {},
+                      result: matchingResult ? (matchingResult.result ?? matchingResult.output) : undefined,
+                    },
+                  });
+                }
+              }
+            }
+          }
+          if (event.text) {
+            parts.push({
+              type: 'text',
+              text: event.text,
+            });
+          }
+
+          await this.persistAssistantMessage(
+            threadId,
+            event.text,
+            {
+              tokens: event.usage?.totalTokens,
+              finishReason: event.finishReason,
+            },
+            parts.length > 0 ? parts : undefined
+          );
         } catch (err) {
           console.error("[dyrected/ai] Failed to persist assistant message:", err);
         }

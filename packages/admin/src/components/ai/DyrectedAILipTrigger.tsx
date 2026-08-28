@@ -22,6 +22,12 @@ import {
   Sliders,
   Settings,
   Wrench,
+  Copy,
+  Check,
+  RotateCcw,
+  Edit3,
+  AlertTriangle,
+  Brain,
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -34,6 +40,8 @@ import {
   Message,
   MessageContent,
   MessageResponse,
+  MessageActions,
+  MessageAction,
 } from '@/components/ai-elements/message';
 import {
   PromptInput,
@@ -211,7 +219,7 @@ export function DyrectedAILipTrigger() {
             <button
               type="button"
               onClick={() => handleOpen(activeThreadId)}
-              aria-label="Open Dyrected AI Assistant (Cmd+J)"
+              aria-label="Open AI Assistant (Cmd+J)"
               className={cn(
                 'dy-fixed dy-right-0 dy-top-1/2 -dy-translate-y-1/2 dy-z-40 dy-flex dy-flex-col dy-items-center dy-gap-1.5 dy-px-2 dy-py-3.5 dy-bg-primary dy-text-primary-foreground dy-rounded-l-xl dy-shadow-xl hover:dy-pr-3.5 hover:dy-shadow-2xl dy-transition-all dy-duration-200 dy-group dy-cursor-pointer dy-border-y dy-border-l dy-border-primary/20'
               )}
@@ -269,6 +277,111 @@ function TypingDots() {
       <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce" />
       <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce [animation-delay:0.15s]" />
       <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce [animation-delay:0.3s]" />
+    </div>
+  );
+}
+
+function extractReasoningAndResponse(message: any, isComplete: boolean) {
+  let reasoningFromParts = '';
+  let textFromParts = '';
+
+  if (Array.isArray(message.parts)) {
+    for (const part of message.parts) {
+      if (part.type === 'reasoning') {
+        reasoningFromParts += (part.text || part.reasoning || '');
+      } else if (part.type === 'text') {
+        textFromParts += (part.text || '');
+      }
+    }
+  }
+
+  const rawContent = textFromParts || (typeof message.content === 'string' ? message.content : '');
+
+  // Parse <think>...</think> or <thought>...</thought> tags if present in text
+  const thinkRegex = /<(?:think|thought)>([\s\S]*?)(?:<\/(?:think|thought)>|$)/i;
+  const match = rawContent.match(thinkRegex);
+
+  let thinking = reasoningFromParts;
+  let finalResponse = rawContent;
+
+  if (match) {
+    const extractedThink = match[1] || '';
+    thinking = (thinking ? thinking + '\n\n' : '') + extractedThink.trim();
+    finalResponse = rawContent.replace(/<(?:think|thought)>[\s\S]*?(?:<\/(?:think|thought)>|$)/gi, '').trim();
+  }
+
+  const isStillThinking =
+    !isComplete &&
+    Boolean(
+      match &&
+      !rawContent.includes('</think>') &&
+      !rawContent.includes('</thought>') &&
+      !finalResponse
+    );
+
+  return {
+    thinking: thinking.trim(),
+    finalResponse,
+    isStillThinking,
+  };
+}
+
+function AIReasoningAccordion({
+  thinking,
+  isStillThinking = false,
+}: {
+  thinking: string;
+  isStillThinking?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(isStillThinking);
+
+  // If streaming and currently thinking, keep open
+  useEffect(() => {
+    if (isStillThinking) {
+      setIsOpen(true);
+    }
+  }, [isStillThinking]);
+
+  if (!thinking && !isStillThinking) return null;
+
+  return (
+    <div className="dy-mb-2.5 dy-rounded-lg dy-border dy-border-border/60 dy-bg-muted/20 dy-overflow-hidden dy-text-xs dy-transition-all">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="dy-w-full dy-px-3 dy-py-1.5 dy-flex dy-items-center dy-justify-between dy-gap-2 dy-text-left hover:dy-bg-muted/40 dy-transition-colors group"
+      >
+        <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+          <Brain
+            className={cn(
+              'dy-w-3.5 dy-h-3.5 dy-shrink-0',
+              isStillThinking
+                ? 'dy-text-primary dy-animate-pulse'
+                : 'dy-text-muted-foreground group-hover:dy-text-foreground'
+            )}
+          />
+          <span className="dy-font-medium dy-truncate dy-text-muted-foreground group-hover:dy-text-foreground">
+            {isStillThinking ? 'Thinking...' : 'Reasoning process'}
+          </span>
+        </div>
+
+        <div className="dy-flex dy-items-center dy-gap-1 dy-text-[10px] dy-text-muted-foreground/80 dy-shrink-0">
+          <span>{isOpen ? 'Hide' : 'Show'}</span>
+          {isOpen ? (
+            <ChevronDown className="dy-w-3 dy-h-3" />
+          ) : (
+            <ChevronRight className="dy-w-3 dy-h-3" />
+          )}
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="dy-px-3 dy-pb-2.5 dy-pt-1 dy-border-t dy-border-border/30 dy-bg-background/40">
+          <div className="dy-pl-2.5 dy-border-l-2 dy-border-primary/40 dy-font-mono dy-text-[11px] dy-leading-relaxed dy-text-muted-foreground dy-whitespace-pre-wrap dy-break-words">
+            {thinking || (isStillThinking ? 'Reasoning in progress...' : '')}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -392,6 +505,38 @@ function getToolDisplayInfo(item: ReturnType<typeof extractToolInvocation>) {
         details: isDone ? 'Global values loaded' : 'Reading singleton...',
       };
     }
+    case 'proposeCreateDocument': {
+      return {
+        label: isDone ? `Proposed new ${args.collection || 'document'}` : `Drafting new ${args.collection || 'document'}...`,
+        icon: Plus,
+        details: isDone ? 'Proposal created for review' : 'Validating fields...',
+        action: result?.requiresApproval ? result : undefined,
+      };
+    }
+    case 'proposeUpdateDocument': {
+      return {
+        label: isDone ? `Proposed update for ${args.collection || 'document'} #${args.id || ''}` : `Drafting update for ${args.collection || 'document'}...`,
+        icon: Edit3,
+        details: isDone ? 'Proposal created for review' : 'Capturing current snapshot...',
+        action: result?.requiresApproval ? result : undefined,
+      };
+    }
+    case 'proposeDeleteDocument': {
+      return {
+        label: isDone ? `Proposed deleting ${args.collection || 'document'} #${args.id || ''}` : `Drafting deletion request...`,
+        icon: Trash2,
+        details: isDone ? 'Deletion proposal created' : 'Checking relations...',
+        action: result?.requiresApproval ? result : undefined,
+      };
+    }
+    case 'proposeUpdateGlobal': {
+      return {
+        label: isDone ? `Proposed updating global "${args.global || 'settings'}"` : `Drafting global update...`,
+        icon: Settings,
+        details: isDone ? 'Settings proposal created' : 'Validating schema...',
+        action: result?.requiresApproval ? result : undefined,
+      };
+    }
     default: {
       const formatted = toolName
         .replace(/([A-Z])/g, ' $1')
@@ -404,6 +549,218 @@ function getToolDisplayInfo(item: ReturnType<typeof extractToolInvocation>) {
       };
     }
   }
+}
+
+function AIActionProposalCard({
+  action,
+  baseUrl,
+  authHeaders,
+}: {
+  action: any;
+  baseUrl: string;
+  authHeaders: Record<string, string>;
+}) {
+  const queryClient = useQueryClient();
+  const [actionStatus, setActionStatus] = useState<string>(action.status || 'pending');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Synchronize fresh action status from server on mount / refresh
+  useEffect(() => {
+    if (!action.actionId || !baseUrl) return;
+    let cancelled = false;
+    fetch(`${baseUrl}/api/ai/actions/${action.actionId}`, {
+      headers: authHeaders,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.action?.status) {
+          setActionStatus((prev) => (prev !== data.action.status ? data.action.status : prev));
+        }
+      })
+      .catch(() => { });
+    return () => {
+      cancelled = true;
+    };
+  }, [action.actionId, baseUrl, authHeaders]);
+
+  const executeMutation = useMutation({
+    mutationFn: async () => {
+      setErrorMsg(null);
+      const res = await fetch(`${baseUrl}/api/ai/actions/${action.actionId}/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to execute proposed mutation');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setActionStatus('executed');
+      queryClient.invalidateQueries();
+    },
+    onError: (err: any) => {
+      setErrorMsg(err.message || 'Execution failed');
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async () => {
+      setErrorMsg(null);
+      const res = await fetch(`${baseUrl}/api/ai/actions/${action.actionId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to reject action');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setActionStatus('rejected');
+    },
+    onError: (err: any) => {
+      setErrorMsg(err.message || 'Rejection failed');
+    },
+  });
+
+  const targetName = action.collection || action.global || 'Content';
+
+  const diffEntries = useMemo(() => {
+    if (!action.proposedData || typeof action.proposedData !== 'object') return [];
+    return Object.entries(action.proposedData).map(([key, newVal]) => {
+      const beforeVal = action.beforeSnapshot ? action.beforeSnapshot[key] : undefined;
+      return {
+        key,
+        before: beforeVal !== undefined ? JSON.stringify(beforeVal, null, 2).replace(/^"|"$/g, '') : null,
+        after: JSON.stringify(newVal, null, 2).replace(/^"|"$/g, ''),
+      };
+    });
+  }, [action.proposedData, action.beforeSnapshot]);
+
+  const isPending = actionStatus === 'pending';
+  const isExecuted = actionStatus === 'executed';
+  const isRejected = actionStatus === 'rejected';
+
+  return (
+    <div
+      className={cn(
+        'dy-my-2 dy-rounded-lg dy-border dy-border-border/60 dy-bg-muted/15 dy-text-xs dy-transition-all dy-overflow-hidden',
+        isRejected && 'dy-opacity-60'
+      )}
+    >
+      {/* Minimal Header Bar with Integrated Action Buttons */}
+      <div className="dy-px-3 dy-py-2 dy-flex dy-items-center dy-justify-between dy-gap-2 dy-border-b dy-border-border/40">
+        <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
+          <span className="dy-text-muted-foreground">
+            {action.type === 'deleteDocument' ? (
+              <Trash2 className="dy-w-3.5 dy-h-3.5 dy-text-destructive" />
+            ) : action.type === 'createDocument' ? (
+              <Plus className="dy-w-3.5 dy-h-3.5 dy-text-emerald-500" />
+            ) : (
+              <Edit3 className="dy-w-3.5 dy-h-3.5 dy-text-primary" />
+            )}
+          </span>
+          <span className="dy-font-mono dy-font-semibold dy-text-[11px] dy-text-foreground dy-truncate">
+            {action.type === 'createDocument'
+              ? `create ${targetName}`
+              : action.type === 'deleteDocument'
+                ? `delete ${targetName} #${action.documentId}`
+                : action.type === 'updateGlobal'
+                  ? `global / ${targetName}`
+                  : `${targetName} #${action.documentId}`}
+          </span>
+        </div>
+
+        {/* Right-aligned Minimal Controls */}
+        <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0">
+          {isPending && (
+            <>
+              <button
+                type="button"
+                disabled={executeMutation.isPending || rejectMutation.isPending}
+                onClick={() => executeMutation.mutate()}
+                className="dy-px-2.5 dy-py-1 dy-rounded dy-bg-emerald-600 hover:dy-bg-emerald-700 active:dy-scale-95 dy-text-white dy-font-medium dy-text-[11px] dy-flex dy-items-center dy-gap-1 dy-transition-all disabled:dy-opacity-50"
+              >
+                {executeMutation.isPending ? (
+                  <RefreshCw className="dy-w-3 dy-h-3 dy-animate-spin" />
+                ) : (
+                  <Check className="dy-w-3 dy-h-3" />
+                )}
+                <span>Approve</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={executeMutation.isPending || rejectMutation.isPending}
+                onClick={() => rejectMutation.mutate()}
+                title="Discard proposal"
+                className="dy-p-1 dy-rounded hover:dy-bg-muted dy-text-muted-foreground hover:dy-text-foreground dy-transition-colors disabled:dy-opacity-50"
+              >
+                <X className="dy-w-3.5 dy-h-3.5" />
+              </button>
+            </>
+          )}
+
+          {isExecuted && (
+            <span className="dy-px-2 dy-py-0.5 dy-rounded dy-bg-emerald-500/10 dy-text-emerald-600 dark:dy-text-emerald-400 dy-text-[10px] dy-font-medium dy-flex dy-items-center dy-gap-1">
+              <Check className="dy-w-3 dy-h-3" />
+              <span>Applied</span>
+            </span>
+          )}
+
+          {isRejected && (
+            <span className="dy-px-2 dy-py-0.5 dy-rounded dy-bg-muted dy-text-muted-foreground dy-text-[10px] dy-font-medium">
+              Discarded
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Clean Single-Line Diff Body */}
+      <div className="dy-px-3 dy-py-2 dy-space-y-1 dy-font-mono dy-text-[11px]">
+        {action.type === 'deleteDocument' ? (
+          <div className="dy-text-destructive/90 dy-flex dy-items-center dy-gap-1.5 dy-font-sans dy-text-xs">
+            <AlertTriangle className="dy-w-3.5 dy-h-3.5 dy-shrink-0" />
+            <span>Document will be permanently removed upon approval.</span>
+          </div>
+        ) : (
+          diffEntries.map(({ key, before, after }) => (
+            <div key={key} className="dy-flex dy-items-baseline dy-gap-2 dy-flex-wrap">
+              <span className="dy-text-muted-foreground dy-min-w-[70px]">{key}:</span>
+              {before !== null && (
+                <>
+                  <span className="dy-line-through dy-text-destructive/80 dy-opacity-80">
+                    {before || '""'}
+                  </span>
+                  <span className="dy-text-muted-foreground/60">&rarr;</span>
+                </>
+              )}
+              <span className="dy-font-semibold dy-text-emerald-600 dark:dy-text-emerald-400">
+                {after}
+              </span>
+            </div>
+          ))
+        )}
+
+        {/* Error notification if failed */}
+        {errorMsg && (
+          <div className="dy-pt-1 dy-text-destructive dy-text-[11px] dy-flex dy-items-center dy-gap-1 font-sans">
+            <AlertCircle className="dy-w-3 dy-h-3 dy-shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AIToolExecutionsGroup({
@@ -641,35 +998,95 @@ export function DyrectedAIChatPanel({
     });
   }, [baseUrl, authHeaders, threadId]);
 
+  const formattedInitialMessages = useMemo(() => {
+    return (threadMessagesData?.messages || []).map((m: any) => ({
+      id: m.id,
+      role: m.role,
+      parts:
+        Array.isArray(m.parts) && m.parts.length > 0
+          ? m.parts
+          : [{ type: 'text' as const, text: m.content || '' }],
+    }));
+  }, [threadMessagesData?.messages]);
+
   const { messages, sendMessage, status, error, setMessages } = useChat({
     id: threadId || 'new',
     transport: chatTransport,
-    messages: (threadMessagesData?.messages || []).map((m: any) => ({
-      id: m.id,
-      role: m.role,
-      parts: [{ type: 'text' as const, text: m.content }],
-    })),
+    messages: formattedInitialMessages,
   });
 
   // Keep useChat synchronized when switching to an existing thread with history
   useEffect(() => {
-    if (threadMessagesData?.messages && threadMessagesData.messages.length > 0) {
-      setMessages(
-        threadMessagesData.messages.map((m: any) => ({
-          id: m.id,
-          role: m.role,
-          parts: [{ type: 'text' as const, text: m.content }],
-        }))
-      );
+    if (formattedInitialMessages.length > 0) {
+      setMessages(formattedInitialMessages);
     }
-  }, [threadMessagesData?.messages, setMessages]);
+  }, [formattedInitialMessages, setMessages]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+
+  // Automatically refresh threads history when a new conversation or response completes
+  useEffect(() => {
+    if (status === 'ready' && messages.length > 0) {
+      queryClient.invalidateQueries({ queryKey: ['ai', 'threads'] });
+    }
+  }, [status, messages.length, queryClient]);
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = useCallback((id: string, text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
+
+  const handleEditPrompt = useCallback((text: string) => {
+    setInput(text);
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    if (messages.length === 0 || isLoading) return;
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+    if (lastUserMsg) {
+      const text =
+        lastUserMsg.parts?.map((p: any) => (p.type === 'text' ? p.text : '')).join('') ||
+        (lastUserMsg as any).content ||
+        '';
+      if (text) {
+        sendMessage({ text });
+      }
+    }
+  }, [messages, isLoading, sendMessage]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const text = input.trim();
     setInput('');
+
+    let currentThreadId = threadId;
+    if (!currentThreadId) {
+      try {
+        const res = await fetch(`${baseUrl}/api/ai/threads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+          body: JSON.stringify({ title: text.slice(0, 50) }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.thread?.id) {
+            currentThreadId = data.thread.id;
+            onSelectThread(currentThreadId);
+            queryClient.invalidateQueries({ queryKey: ['ai', 'threads'] });
+          }
+        }
+      } catch (err) {
+        console.error('[dyrected/ai] Failed to pre-create thread:', err);
+      }
+    }
+
     try {
       await sendMessage({ text });
       queryClient.invalidateQueries({ queryKey: ['ai', 'threads'] });
@@ -753,8 +1170,8 @@ export function DyrectedAIChatPanel({
               reindexMutation.isPending
                 ? 'dy-text-primary dy-animate-pulse'
                 : reindexSuccess
-                ? 'dy-text-emerald-500 font-medium'
-                : 'dy-text-muted-foreground hover:dy-text-foreground'
+                  ? 'dy-text-emerald-500 font-medium'
+                  : 'dy-text-muted-foreground hover:dy-text-foreground'
             )}
           >
             <RefreshCw
@@ -890,8 +1307,8 @@ export function DyrectedAIChatPanel({
                       {isQuota
                         ? 'Gemini API Rate Limit / Quota Reached'
                         : isMissingKey
-                        ? 'Gemini API Key Required'
-                        : 'AI Assistant Error'}
+                          ? 'Gemini API Key Required'
+                          : 'AI Assistant Error'}
                     </p>
                     <p className="dy-text-destructive/90 dy-leading-relaxed">
                       {rawMsg || 'An error occurred while connecting to the AI service.'}
@@ -943,11 +1360,10 @@ export function DyrectedAIChatPanel({
                 </div>
               ) : (
                 <>
-                  {messages.map((message) => {
-                    const messageText =
-                      message.parts?.map((p: any) => (p.type === 'text' ? p.text : '')).join('') ||
-                      (message as any).content ||
-                      '';
+                  {messages.map((message, idx) => {
+                    const isMessageComplete = !isLoading || idx < messages.length - 1;
+                    const { thinking, finalResponse, isStillThinking } =
+                      extractReasoningAndResponse(message, isMessageComplete);
 
                     const toolParts =
                       message.parts?.filter(
@@ -957,19 +1373,101 @@ export function DyrectedAIChatPanel({
                           p.type?.startsWith('tool-')
                       ) || [];
 
+                    const proposalActions =
+                      toolParts
+                        .map((tp: any) => {
+                          const extracted = extractToolInvocation(tp, Boolean(finalResponse || thinking));
+                          const info = getToolDisplayInfo(extracted);
+                          return info.action;
+                        })
+                        .filter(Boolean);
+
+                    const isLastAssistantMessage =
+                      message.role === 'assistant' &&
+                      (idx === messages.length - 1 ||
+                        (idx === messages.length - 2 && messages[messages.length - 1]?.role === 'user'));
+
+                    const textToCopy = finalResponse || thinking;
+
                     return (
                       <Message key={message.id} from={message.role as 'user' | 'assistant'}>
                         <MessageContent>
+                          {/* 1. Tool Execution Breakdown (queries, aggregations, RAG search) */}
                           {toolParts.length > 0 && (
                             <AIToolExecutionsGroup
                               toolParts={toolParts}
-                              isMessageComplete={Boolean(messageText)}
+                              isMessageComplete={Boolean(finalResponse || thinking)}
                             />
                           )}
-                          {messageText ? (
-                            <MessageResponse>{messageText}</MessageResponse>
-                          ) : (
+
+                          {/* 2. Collapsible AI Reasoning / Thinking Process */}
+                          {(thinking || isStillThinking) && (
+                            <AIReasoningAccordion
+                              thinking={thinking}
+                              isStillThinking={isStillThinking}
+                            />
+                          )}
+
+                          {/* 3. Final Response Text or Live Typing Dots */}
+                          {finalResponse ? (
+                            <MessageResponse>{finalResponse}</MessageResponse>
+                          ) : isStillThinking ? null : (
                             <TypingDots />
+                          )}
+
+                          {/* 4. Action Proposal Diff Cards (at the bottom) */}
+                          {proposalActions.length > 0 && (
+                            <div className="dy-mt-2.5 dy-space-y-2">
+                              {proposalActions.map((action: any, aIdx: number) => (
+                                <AIActionProposalCard
+                                  key={action.actionId || aIdx}
+                                  action={action}
+                                  baseUrl={baseUrl}
+                                  authHeaders={authHeaders}
+                                />
+                              ))}
+                            </div>
+                          )}
+
+                          {textToCopy && (
+                            <MessageActions className={message.role === 'user' ? 'dy-justify-end' : 'dy-justify-start'}>
+                              <MessageAction
+                                onClick={() => handleCopy(message.id, textToCopy)}
+                                tooltip={copiedId === message.id ? 'Copied to clipboard' : 'Copy'}
+                              >
+                                {copiedId === message.id ? (
+                                  <>
+                                    <Check className="dy-w-3 dy-h-3 dy-text-emerald-500" />
+                                    <span className="dy-text-emerald-500">Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="dy-w-3 dy-h-3" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </MessageAction>
+
+                              {message.role === 'assistant' && isLastAssistantMessage && !isLoading && (
+                                <MessageAction
+                                  onClick={handleRetry}
+                                  tooltip="Regenerate response"
+                                >
+                                  <RotateCcw className="dy-w-3 dy-h-3" />
+                                  <span>Retry</span>
+                                </MessageAction>
+                              )}
+
+                              {message.role === 'user' && (
+                                <MessageAction
+                                  onClick={() => handleEditPrompt(textToCopy)}
+                                  tooltip="Edit & resend prompt"
+                                >
+                                  <Edit3 className="dy-w-3 dy-h-3" />
+                                  <span>Edit</span>
+                                </MessageAction>
+                              )}
+                            </MessageActions>
                           )}
                         </MessageContent>
                       </Message>

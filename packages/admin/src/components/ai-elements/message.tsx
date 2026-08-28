@@ -20,7 +20,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
     <MessageContext.Provider value={{ from }}>
       <div
         ref={ref}
-        className={cn('dy-w-full dy-flex dy-gap-3', from === 'user' && 'dy-flex-row-reverse', className)}
+        className={cn('dy-w-full dy-flex dy-gap-3 dy-group/msg', from === 'user' && 'dy-flex-row-reverse', className)}
         data-from={from}
         {...props}
       >
@@ -171,3 +171,46 @@ export const MessageResponse = React.forwardRef<HTMLDivElement, MessageResponseP
   }
 );
 MessageResponse.displayName = 'MessageResponse';
+
+export interface MessageActionsProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+}
+
+export const MessageActions = React.forwardRef<HTMLDivElement, MessageActionsProps>(
+  ({ className, children, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        'dy-flex dy-items-center dy-gap-1 dy-pt-1.5 dy-transition-opacity dy-opacity-80 md:dy-opacity-0 md:group-hover/msg:dy-opacity-100',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+);
+MessageActions.displayName = 'MessageActions';
+
+export interface MessageActionProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  tooltip?: string;
+  className?: string;
+}
+
+export const MessageAction = React.forwardRef<HTMLButtonElement, MessageActionProps>(
+  ({ className, children, tooltip, title, ...props }, ref) => (
+    <button
+      ref={ref}
+      type="button"
+      title={tooltip || title}
+      className={cn(
+        'dy-inline-flex dy-items-center dy-justify-center dy-gap-1 dy-h-6 dy-px-1.5 dy-rounded-md dy-text-[11px] dy-font-medium dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-muted/80 dy-transition-colors dy-cursor-pointer disabled:dy-opacity-50 disabled:dy-pointer-events-none',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+);
+MessageAction.displayName = 'MessageAction';

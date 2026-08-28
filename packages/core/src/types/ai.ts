@@ -16,6 +16,7 @@ export interface AIMessage {
   threadId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  parts?: any[];
   createdAt: Date | string;
   metadata?: Record<string, unknown>;
   [key: string]: unknown;
@@ -199,10 +200,55 @@ export interface AggregateCollectionResult {
   result: Record<string, unknown>;
 }
 
+export type AIActionType = 'createDocument' | 'updateDocument' | 'deleteDocument' | 'updateGlobal';
+export type AIActionStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'failed';
+
+export interface AIAction {
+  id: string;
+  projectId: string;
+  threadId?: string;
+  userId?: string;
+  type: AIActionType;
+  targetCollection?: string;
+  targetGlobal?: string;
+  documentId?: string;
+  summary: string;
+  beforeSnapshot?: Record<string, unknown> | null;
+  proposedData: Record<string, unknown>;
+  status: AIActionStatus;
+  errorMessage?: string;
+  expiresAt: Date | string;
+  createdAt: Date | string;
+  executedAt?: Date | string;
+  [key: string]: unknown;
+}
+
+export interface AIAuditRecord {
+  id: string;
+  projectId: string;
+  actionId: string;
+  executedBy?: string;
+  actionType: AIActionType;
+  target: string;
+  snapshotBefore?: Record<string, unknown> | null;
+  snapshotAfter?: Record<string, unknown> | null;
+  rollbackPayload?: Record<string, unknown> | null;
+  createdAt: Date | string;
+  [key: string]: unknown;
+}
+
 export const AI_THREADS_COLLECTION = '_dyrected_ai_threads';
 export const AI_MESSAGES_COLLECTION = '_dyrected_ai_messages';
 export const AI_CHUNKS_COLLECTION = '_dyrected_ai_chunks';
+export const AI_ACTIONS_COLLECTION = '_dyrected_ai_actions';
+export const AI_AUDIT_COLLECTION = '_dyrected_ai_audit';
 
 export function isAICollection(slug: string): boolean {
-  return slug === AI_THREADS_COLLECTION || slug === AI_MESSAGES_COLLECTION || slug === AI_CHUNKS_COLLECTION;
+  return (
+    slug === AI_THREADS_COLLECTION ||
+    slug === AI_MESSAGES_COLLECTION ||
+    slug === AI_CHUNKS_COLLECTION ||
+    slug === AI_ACTIONS_COLLECTION ||
+    slug === AI_AUDIT_COLLECTION
+  );
 }
