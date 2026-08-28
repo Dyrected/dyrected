@@ -1,15 +1,27 @@
-name: Release
+name: Release & Snapshots
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to snapshot publish'
+        required: false
+        type: string
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
+  # ==========================================
+  # 1. Official Release on 'main'
+  # ==========================================
   release:
-    name: Release
+    name: Official Release (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -18,9 +30,11 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,3 +52,92 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================
+  # 2. Snapshot Release on Pull Requests
+  # ==========================================
+  snapshot:
+    name: PR Snapshot Release
+    if: |
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'snapshot')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number != '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write # Required for npm Trusted Publishing (OIDC)
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Packages
+        run: pnpm build:packages
+
+      - name: Version & Publish Snapshot to npm
+        id: publish_snapshot
+        run: |
+          PR_NUM="${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
+          TAG_NAME="pr-${PR_NUM}"
+          
+          # Create snapshot version
+          pnpm changeset version --snapshot "${TAG_NAME}"
+          
+          # Publish snapshot to npm under the PR tag
+          pnpm changeset publish --tag "${TAG_NAME}" --no-git-tag
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number || context.payload.inputs?.pr_number;
+            if (!prNumber) return;
+            
+            const tag = `pr-${prNumber}`;
+            const body = `### 🚀 PR Snapshot Released to npm!
+            
+            You can test this branch before merging:
+            
+            \`\`\`bash
+            pnpm add @dyrected/core@${tag}
+            \`\`\`
+            
+            > *Note: This snapshot is temporary and tagged under \`${tag}\`.*`;
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.find(c => c.body && c.body.includes('PR Snapshot Released to npm!'));
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body,
+              });
+            }
