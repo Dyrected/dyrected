@@ -29,6 +29,7 @@ import {
   Edit3,
   AlertTriangle,
   Brain,
+  Square,
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -273,12 +274,17 @@ export function DyrectedAILipTrigger() {
   );
 }
 
-function TypingDots() {
+function TypingDots({ label = 'Generating response...' }: { label?: string }) {
   return (
-    <div className="dy-flex dy-items-center dy-gap-1 dy-py-1 dy-px-0.5" aria-label="Thinking">
-      <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce" />
-      <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce [animation-delay:0.15s]" />
-      <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce [animation-delay:0.3s]" />
+    <div className="dy-flex dy-items-center dy-gap-2 dy-py-1.5 dy-px-1" aria-label={label}>
+      <div className="dy-flex dy-items-center dy-gap-1">
+        <span className="dy-w-1.5 dy-h-1.5 dy-bg-primary dy-rounded-full dy-animate-bounce" />
+        <span className="dy-w-1.5 dy-h-1.5 dy-bg-primary dy-rounded-full dy-animate-bounce [animation-delay:0.15s]" />
+        <span className="dy-w-1.5 dy-h-1.5 dy-bg-primary dy-rounded-full dy-animate-bounce [animation-delay:0.3s]" />
+      </div>
+      <span className="dy-text-[11px] dy-font-medium dy-text-muted-foreground/80 dy-animate-pulse">
+        {label}
+      </span>
     </div>
   );
 }
@@ -1253,7 +1259,7 @@ export function DyrectedAIChatPanel({
     }));
   }, [threadMessagesData?.messages]);
 
-  const { messages, sendMessage, status, error, setMessages } = useChat({
+  const { messages, sendMessage, status, error, setMessages, stop } = useChat({
     id: threadId || 'new',
     transport: chatTransport,
     messages: formattedInitialMessages,
@@ -1609,7 +1615,7 @@ export function DyrectedAIChatPanel({
                     const { thinking, finalResponse, isStillThinking } =
                       extractReasoningAndResponse(message, isMessageComplete);
 
-                    const toolParts =
+                    const rawToolParts =
                       message.parts?.filter(
                         (p: any) =>
                           p.type === 'tool-invocation' ||
@@ -1617,14 +1623,43 @@ export function DyrectedAIChatPanel({
                           p.type?.startsWith('tool-')
                       ) || [];
 
-                    const proposalActions =
-                      toolParts
-                        .map((tp: any) => {
-                          const extracted = extractToolInvocation(tp, Boolean(finalResponse || thinking));
-                          const info = getToolDisplayInfo(extracted);
-                          return info.action;
-                        })
-                        .filter(Boolean);
+                    // Deduplicate tool parts by toolCallId / id (preferring resolved results over calls)
+                    const toolPartsMap = new Map<string, any>();
+                    rawToolParts.forEach((tp: any, pIdx: number) => {
+                      const inv = tp.toolInvocation || tp;
+                      const callId = inv.toolCallId || tp.toolCallId || tp.id || `tp-${pIdx}`;
+                      const existing = toolPartsMap.get(callId);
+                      if (!existing) {
+                        toolPartsMap.set(callId, tp);
+                      } else {
+                        const hasResult = Boolean(
+                          inv.result !== undefined ||
+                          inv.output !== undefined ||
+                          tp.result !== undefined ||
+                          tp.output !== undefined ||
+                          inv.state === 'result'
+                        );
+                        if (hasResult) {
+                          toolPartsMap.set(callId, tp);
+                        }
+                      }
+                    });
+                    const toolParts = Array.from(toolPartsMap.values());
+
+                    // Extract and deduplicate proposal actions by unique actionId
+                    const seenActionIds = new Set<string>();
+                    const proposalActions: any[] = [];
+                    for (const tp of toolParts) {
+                      const extracted = extractToolInvocation(tp, Boolean(finalResponse || thinking));
+                      const info = getToolDisplayInfo(extracted);
+                      if (info.action) {
+                        const actId = info.action.actionId || JSON.stringify(info.action);
+                        if (!seenActionIds.has(actId)) {
+                          seenActionIds.add(actId);
+                          proposalActions.push(info.action);
+                        }
+                      }
+                    }
 
                     const isLastAssistantMessage =
                       message.role === 'assistant' &&
@@ -1634,7 +1669,7 @@ export function DyrectedAIChatPanel({
                     const textToCopy = finalResponse || thinking;
 
                     return (
-                      <Message key={message.id} from={message.role as 'user' | 'assistant'}>
+                      <Message key={message.id || `msg-${idx}`} from={message.role as 'user' | 'assistant'}>
                         <MessageContent>
                           {/* 1. Tool Execution Breakdown (queries, aggregations, RAG search) */}
                           {toolParts.length > 0 && (
@@ -1654,9 +1689,17 @@ export function DyrectedAIChatPanel({
 
                           {/* 3. Final Response Text or Live Typing Dots */}
                           {finalResponse ? (
-                            <MessageResponse>{finalResponse}</MessageResponse>
+                            <div className="dy-relative">
+                              <MessageResponse>{finalResponse}</MessageResponse>
+                              {isLoading && isLastAssistantMessage && (
+                                <span
+                                  aria-hidden="true"
+                                  className="dy-inline-block dy-w-1.5 dy-h-3.5 dy-bg-primary dy-ml-1 dy-rounded-[1px] dy-animate-pulse dy-align-middle"
+                                />
+                              )}
+                            </div>
                           ) : isStillThinking ? null : (
-                            <TypingDots />
+                            <TypingDots label={toolParts.length > 0 ? 'Synthesizing data...' : 'Drafting response...'} />
                           )}
 
                           {/* 4. Action Proposal Diff Cards (at the bottom) */}
@@ -1664,7 +1707,7 @@ export function DyrectedAIChatPanel({
                             <div className="dy-mt-2.5 dy-space-y-2">
                               {proposalActions.map((action: any, aIdx: number) => (
                                 <AIActionProposalCard
-                                  key={action.actionId || aIdx}
+                                  key={action.actionId ? `act-${action.actionId}` : `act-${idx}-${aIdx}`}
                                   action={action}
                                   baseUrl={baseUrl}
                                   authHeaders={authHeaders}
@@ -1721,7 +1764,7 @@ export function DyrectedAIChatPanel({
                   {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
                     <Message from="assistant">
                       <MessageContent>
-                        <TypingDots />
+                        <TypingDots label="Thinking..." />
                       </MessageContent>
                     </Message>
                   )}
@@ -1729,6 +1772,24 @@ export function DyrectedAIChatPanel({
               )}
             </ConversationContent>
           </Conversation>
+
+          {/* Active Streaming Progress Banner */}
+          {isLoading && (
+            <div className="dy-flex dy-items-center dy-justify-between dy-px-3 dy-py-1.5 dy-bg-primary/5 dy-border-t dy-border-primary/20 dy-text-[11.5px] dy-text-primary dy-font-medium">
+              <div className="dy-flex dy-items-center dy-gap-2">
+                <Sparkles className="dy-w-3.5 dy-h-3.5 dy-animate-spin" />
+                <span>AI is generating response...</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => stop()}
+                className="dy-flex dy-items-center dy-gap-1 dy-px-2 dy-py-0.5 dy-rounded dy-bg-primary/10 hover:dy-bg-primary/20 dy-text-[10.5px] dy-text-primary dy-font-medium dy-transition-colors"
+              >
+                <Square className="dy-w-2.5 dy-h-2.5 dy-fill-current" />
+                <span>Stop</span>
+              </button>
+            </div>
+          )}
 
           {/* Prompt Input using ai-elements */}
           <div className="dy-p-3 dy-border-t dy-border-border/60 dy-shrink-0">
@@ -1746,10 +1807,21 @@ export function DyrectedAIChatPanel({
                 className="dy-min-h-[44px] dy-max-h-32"
               />
               <PromptInputActions>
-                <PromptInputAction
-                  tooltip="Send message"
-                  disabled={isLoading || !input.trim()}
-                />
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={() => stop()}
+                    title="Stop generating"
+                    className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-destructive/15 dy-text-destructive hover:dy-bg-destructive/25 dy-flex dy-items-center dy-justify-center dy-transition-colors"
+                  >
+                    <Square className="dy-h-3.5 dy-w-3.5 dy-fill-current" />
+                  </button>
+                ) : (
+                  <PromptInputAction
+                    tooltip="Send message"
+                    disabled={!input.trim()}
+                  />
+                )}
               </PromptInputActions>
             </PromptInput>
           </div>
