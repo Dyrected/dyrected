@@ -105,6 +105,111 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-1",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "http",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-2",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-3",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-4",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-5",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-6",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-7",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-8",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-9",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-10",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-11",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-12",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-13",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-14",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-15",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
     "id": "/deliver-content/rest-api/overview#example-1",
     "page": "/deliver-content/rest-api/overview",
     "language": "text",

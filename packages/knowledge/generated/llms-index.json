@@ -1803,6 +1803,66 @@
   "endpoints": [
     {
       "method": "GET",
+      "path": "/api/ai/actions/{actionId}",
+      "summary": "Get an AI mutation action proposal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/actions/{actionId}/execute",
+      "summary": "Approve and execute an AI mutation proposal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/actions/{actionId}/reject",
+      "summary": "Reject an AI mutation proposal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/chat",
+      "summary": "Send prompt and stream AI assistant response"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/rag/reindex",
+      "summary": "Trigger vector reindexing for semantic search"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/rag/search",
+      "summary": "Perform semantic vector search against indexed content"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ai/threads",
+      "summary": "Clear all conversation threads"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/threads",
+      "summary": "List conversation threads"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/threads",
+      "summary": "Create a new conversation thread"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ai/threads/{threadId}",
+      "summary": "Delete a specific conversation thread"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/threads/{threadId}",
+      "summary": "Get conversation thread and historical messages"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/threads/{threadId}/messages",
+      "summary": "Post a message to an existing thread and stream reply"
+    },
+    {
+      "method": "GET",
       "path": "/api/audit",
       "summary": "Get audit entries across all readable audited collections"
     },

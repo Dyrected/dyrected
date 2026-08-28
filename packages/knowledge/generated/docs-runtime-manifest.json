@@ -45,6 +45,21 @@
     "status": "classified"
   },
   {
+    "id": "deliver-content--rest-api--ai-endpoints",
+    "relativePath": "deliver-content/rest-api/ai-endpoints",
+    "title": "AI Endpoints",
+    "description": "Complete REST API reference for Dyrected AI streaming chat, conversation threads, mutation action approval, and RAG vector indexing.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "deliver-content/rest-api",
+    "sourceFile": "apps/docs/content/docs/deliver-content/rest-api/ai-endpoints.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/deliver-content/rest-api/ai-endpoints",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/deliver-content/rest-api/ai-endpoints",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deliver-content/rest-api/ai-endpoints",
+    "status": "classified"
+  },
+  {
     "id": "deliver-content--rest-api--overview",
     "relativePath": "deliver-content/rest-api/overview",
     "title": "Overview",

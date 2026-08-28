@@ -4419,6 +4419,216 @@ export const references: readonly ReferenceEntry[] = [
 
 export const endpoints: readonly EndpointReference[] = [
   {
+    "id": "GET /api/ai/actions/{actionId}",
+    "method": "GET",
+    "path": "/api/ai/actions/{actionId}",
+    "summary": "Get an AI mutation action proposal",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "actionId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/actions/{actionId}/execute",
+    "method": "POST",
+    "path": "/api/ai/actions/{actionId}/execute",
+    "summary": "Approve and execute an AI mutation proposal",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "actionId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/actions/{actionId}/reject",
+    "method": "POST",
+    "path": "/api/ai/actions/{actionId}/reject",
+    "summary": "Reject an AI mutation proposal",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "actionId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/chat",
+    "method": "POST",
+    "path": "/api/ai/chat",
+    "summary": "Send prompt and stream AI assistant response",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/rag/reindex",
+    "method": "POST",
+    "path": "/api/ai/rag/reindex",
+    "summary": "Trigger vector reindexing for semantic search",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/rag/search",
+    "method": "POST",
+    "path": "/api/ai/rag/search",
+    "summary": "Perform semantic vector search against indexed content",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "DELETE /api/ai/threads",
+    "method": "DELETE",
+    "path": "/api/ai/threads",
+    "summary": "Clear all conversation threads",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/ai/threads",
+    "method": "GET",
+    "path": "/api/ai/threads",
+    "summary": "List conversation threads",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/threads",
+    "method": "POST",
+    "path": "/api/ai/threads",
+    "summary": "Create a new conversation thread",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "DELETE /api/ai/threads/{threadId}",
+    "method": "DELETE",
+    "path": "/api/ai/threads/{threadId}",
+    "summary": "Delete a specific conversation thread",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "threadId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/ai/threads/{threadId}",
+    "method": "GET",
+    "path": "/api/ai/threads/{threadId}",
+    "summary": "Get conversation thread and historical messages",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "threadId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/threads/{threadId}/messages",
+    "method": "POST",
+    "path": "/api/ai/threads/{threadId}/messages",
+    "summary": "Post a message to an existing thread and stream reply",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "threadId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
     "id": "GET /api/audit",
     "method": "GET",
     "path": "/api/audit",

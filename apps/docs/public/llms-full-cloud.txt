@@ -380,6 +380,260 @@ If you want to quickly prototype and want the structured, opinionated styling of
 
 ---
 
+## AI Endpoints
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/deliver-content/rest-api/ai-endpoints
+
+When you enable AI in `dyrected.config.ts`, Dyrected automatically exposes standard HTTP REST endpoints under `/api/ai/*`. You can use these endpoints from any frontend (React, Vue, mobile apps, or curl) to stream chat responses, manage conversation threads, approve mutation proposals, and trigger semantic search indexing.
+
+By the end of this page, you will know the request and response shapes for each AI endpoint and how to stream responses via Server-Sent Events (SSE).
+
+## Authentication & Headers
+
+All AI endpoints use standard Dyrected authentication. Include your authorization header or session cookie:
+
+```http
+Authorization: Bearer <your-auth-token>
+Content-Type: application/json
+```
+
+---
+
+## 1. Chat Streaming
+
+### `POST /api/ai/chat`
+Sends a prompt to the AI agent and returns a real-time Server-Sent Events (SSE) stream compatible with `@ai-sdk/react`'s `useChat`. If `threadId` is omitted, Dyrected automatically creates a new conversation thread.
+
+#### Request Body
+```json
+{
+  "threadId": "thr_01j7abc123",
+  "content": "Can you draft a 3-paragraph summary of our coaching services?",
+  "messages": [
+    { "role": "user", "content": "Can you draft a 3-paragraph summary of our coaching services?" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `content` or `prompt` | `string` | Yes | The user prompt to process. |
+| `threadId` | `string` | No | ID of an existing conversation thread. If omitted, a new thread is created. |
+| `messages` | `Array` | No | Full conversation history array in `@ai-sdk` format. |
+
+#### Response (Stream)
+Returns a chunked `text/event-stream` stream containing token text, tool invocations, reasoning blocks, and proposal cards.
+
+```bash
+curl -N -X POST "http://localhost:3000/api/ai/chat" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Calculate a quote for 500 flyers"}'
+```
+
+---
+
+## 2. Conversation Threads
+
+### `GET /api/ai/threads`
+Lists recent conversation threads for the current user and project.
+
+#### Query Parameters
+- `limit` (optional, default `20`): Number of threads to return.
+
+#### Response `200 OK`
+```json
+{
+  "threads": [
+    {
+      "id": "thr_01j7abc123",
+      "title": "Quote for 500 Flyers",
+      "createdAt": "2026-08-28T14:30:00.000Z",
+      "updatedAt": "2026-08-28T14:32:10.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `POST /api/ai/threads`
+Creates an empty conversation thread with an optional custom title.
+
+#### Request Body
+```json
+{
+  "title": "Q3 Content Planning"
+}
+```
+
+#### Response `201 Created`
+```json
+{
+  "thread": {
+    "id": "thr_01j7xyz890",
+    "title": "Q3 Content Planning",
+    "createdAt": "2026-08-28T15:00:00.000Z",
+    "updatedAt": "2026-08-28T15:00:00.000Z"
+  }
+}
+```
+
+---
+
+### `GET /api/ai/threads/:threadId`
+Retrieves thread metadata along with its full historical messages.
+
+#### Response `200 OK`
+```json
+{
+  "thread": {
+    "id": "thr_01j7abc123",
+    "title": "Quote for 500 Flyers"
+  },
+  "messages": [
+    {
+      "id": "msg_01j7abc456",
+      "role": "user",
+      "content": "Calculate a quote for 500 flyers",
+      "createdAt": "2026-08-28T14:30:00.000Z"
+    },
+    {
+      "id": "msg_01j7abc789",
+      "role": "assistant",
+      "content": "The quote for 500 A5 flyers on 250gsm gloss is ₦45,000.",
+      "parts": [
+        { "type": "text", "text": "The quote for 500 A5 flyers on 250gsm gloss is ₦45,000." }
+      ],
+      "createdAt": "2026-08-28T14:30:05.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `DELETE /api/ai/threads/:threadId`
+Deletes a conversation thread and all of its associated messages.
+
+#### Response `200 OK`
+```json
+{
+  "success": true
+}
+```
+
+---
+
+### `DELETE /api/ai/threads`
+Deletes all conversation threads and message history for the active user/project.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "count": 14
+}
+```
+
+---
+
+## 3. Human-in-the-Loop Proposal Actions
+
+When the AI generates a content mutation (e.g. creating an order or rewriting an article), it creates an `AIAction` with a unique `actionId`. Editors approve or reject this action through these REST endpoints.
+
+### `POST /api/ai/actions/:actionId/apply`
+Approves and executes the proposed database change.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "action": {
+    "id": "act_mtcrwg94_8d3jozp",
+    "type": "create",
+    "collection": "orders",
+    "status": "applied",
+    "appliedAt": "2026-08-28T15:10:00.000Z"
+  }
+}
+```
+
+---
+
+### `POST /api/ai/actions/:actionId/reject`
+Rejects and dismisses the proposed database change without modifying any records.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "action": {
+    "id": "act_mtcrwg94_8d3jozp",
+    "status": "rejected"
+  }
+}
+```
+
+---
+
+## 4. Semantic Search & RAG
+
+### `POST /api/ai/rag/reindex`
+Triggers vector embedding reindexing for one or all collections.
+
+#### Request Body
+```json
+{
+  "collection": "blog-articles",
+  "force": false
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "collections": [
+    {
+      "collection": "blog-articles",
+      "indexedChunks": 48,
+      "durationMs": 320
+    }
+  ],
+  "totalChunks": 48
+}
+```
+
+---
+
+### `POST /api/ai/rag/search`
+Runs a semantic vector similarity search against your indexed project content.
+
+#### Request Body
+```json
+{
+  "query": "executive leadership coaching techniques",
+  "limit": 5
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "results": [
+    {
+      "collection": "services",
+      "documentId": "8tf7wa",
+      "score": 0.89,
+      "content": "1-on-1 Executive Coaching for C-Suite Leaders focusing on strategic clarity..."
+    }
+  ]
+}
+```
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/deliver-content/rest-api/overview
@@ -486,6 +740,18 @@ The table below is generated from a representative maximal configuration so it c
 
 | Method | Path | Summary | Authentication |
 | --- | --- | --- | --- |
+| GET | `/api/ai/actions/{actionId}` | Get an AI mutation action proposal | Required |
+| POST | `/api/ai/actions/{actionId}/execute` | Approve and execute an AI mutation proposal | Required |
+| POST | `/api/ai/actions/{actionId}/reject` | Reject an AI mutation proposal | Required |
+| POST | `/api/ai/chat` | Send prompt and stream AI assistant response | Required |
+| POST | `/api/ai/rag/reindex` | Trigger vector reindexing for semantic search | Required |
+| POST | `/api/ai/rag/search` | Perform semantic vector search against indexed content | Required |
+| DELETE | `/api/ai/threads` | Clear all conversation threads | Required |
+| GET | `/api/ai/threads` | List conversation threads | Required |
+| POST | `/api/ai/threads` | Create a new conversation thread | Required |
+| DELETE | `/api/ai/threads/{threadId}` | Delete a specific conversation thread | Required |
+| GET | `/api/ai/threads/{threadId}` | Get conversation thread and historical messages | Required |
+| POST | `/api/ai/threads/{threadId}/messages` | Post a message to an existing thread and stream reply | Required |
 | GET | `/api/audit` | Get audit entries across all readable audited collections | Required |
 | GET | `/api/collections/guest-responses` | Find Guest Responses | Required |
 | POST | `/api/collections/guest-responses` | Create Guest response | Required |

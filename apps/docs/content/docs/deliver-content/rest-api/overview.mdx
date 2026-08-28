@@ -105,6 +105,18 @@ The table below is generated from a representative maximal configuration so it c
 {/* GENERATED:REFERENCE-REST-API:START */}
 | Method | Path | Summary | Authentication |
 | --- | --- | --- | --- |
+| GET | `/api/ai/actions/{actionId}` | Get an AI mutation action proposal | Required |
+| POST | `/api/ai/actions/{actionId}/execute` | Approve and execute an AI mutation proposal | Required |
+| POST | `/api/ai/actions/{actionId}/reject` | Reject an AI mutation proposal | Required |
+| POST | `/api/ai/chat` | Send prompt and stream AI assistant response | Required |
+| POST | `/api/ai/rag/reindex` | Trigger vector reindexing for semantic search | Required |
+| POST | `/api/ai/rag/search` | Perform semantic vector search against indexed content | Required |
+| DELETE | `/api/ai/threads` | Clear all conversation threads | Required |
+| GET | `/api/ai/threads` | List conversation threads | Required |
+| POST | `/api/ai/threads` | Create a new conversation thread | Required |
+| DELETE | `/api/ai/threads/{threadId}` | Delete a specific conversation thread | Required |
+| GET | `/api/ai/threads/{threadId}` | Get conversation thread and historical messages | Required |
+| POST | `/api/ai/threads/{threadId}/messages` | Post a message to an existing thread and stream reply | Required |
 | GET | `/api/audit` | Get audit entries across all readable audited collections | Required |
 | GET | `/api/collections/guest-responses` | Find Guest Responses | Required |
 | POST | `/api/collections/guest-responses` | Create Guest response | Required |
