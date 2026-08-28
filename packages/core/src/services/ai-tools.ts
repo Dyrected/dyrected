@@ -13,6 +13,7 @@ import type {
 } from '../types/ai.js';
 import { isAICollection } from '../types/ai.js';
 import { isAccessAllowed } from '../auth/access.js';
+import { RAGService } from './rag/rag.service.js';
 
 export function createDyrectedAITools({
   db,
@@ -316,6 +317,65 @@ export function createDyrectedAITools({
           return { collection, result };
         } catch (err: any) {
           return { error: `Failed to compute aggregates on "${collection}": ${err.message}` };
+        }
+      },
+    }),
+
+    searchContent: tool({
+      description:
+        'Semantically search unstructured Dyrected CMS content (articles, documentation, FAQs, guides, policies, materials, pages) for relevant context, facts, and answers.',
+      inputSchema: z.object({
+        query: z.string().describe('The natural language semantic search query or topic to look up'),
+        collections: z
+          .array(z.string())
+          .optional()
+          .describe('Optional collection slugs to restrict search scope to (e.g. ["articles", "faqs"])'),
+        limit: z
+          .number()
+          .min(1)
+          .max(10)
+          .optional()
+          .default(4)
+          .describe('Number of top relevant snippets to return (1-10)'),
+        minScore: z
+          .number()
+          .min(0)
+          .max(1)
+          .optional()
+          .default(0.45)
+          .describe('Minimum cosine similarity cutoff threshold (0.0 to 1.0)'),
+      }),
+      execute: async ({
+        query,
+        collections,
+        limit = 4,
+        minScore = 0.45,
+      }: {
+        query: string;
+        collections?: string[];
+        limit?: number;
+        minScore?: number;
+      }) => {
+        try {
+          const result = await RAGService.search({
+            db,
+            config,
+            query,
+            projectId,
+            collections,
+            limit,
+            minScore,
+            user,
+          });
+
+          return result;
+        } catch (err: any) {
+          return {
+            query,
+            resultsCount: 0,
+            sources: [],
+            error: `Semantic search failed: ${err.message}`,
+          };
         }
       },
     }),

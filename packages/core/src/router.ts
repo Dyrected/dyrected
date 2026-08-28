@@ -721,6 +721,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.get("/api/ai/threads/:threadId", optionalAuth(config), (c) => aiController.getThread(c));
   app.delete("/api/ai/threads/:threadId", optionalAuth(config), (c) => aiController.deleteThread(c));
   app.post("/api/ai/threads/:threadId/messages", optionalAuth(config), (c) => aiController.postMessage(c));
+  app.post("/api/ai/rag/reindex", optionalAuth(config), (c) => aiController.reindex(c));
+  app.post("/api/ai/rag/search", optionalAuth(config), (c) => aiController.searchRAG(c));
 
   // 3. Auth Routes — for collections with auth: true
   for (const collection of config.collections) {

@@ -149,4 +149,71 @@ export class AIController {
     const count = await agent.clearAllThreads();
     return c.json({ success: true, count });
   }
+
+  async reindex(c: Context<DyrectedContext>) {
+    const db = c.get('config')?.db || this.config.db;
+    if (!db) {
+      throw new HTTPException(500, { message: 'Database not initialized' });
+    }
+
+    const projectId = c.req.header('X-Site-Id') || c.get('siteId') || 'default';
+    const body = await c.req.json().catch(() => ({}));
+    const targetCollection = typeof body.collection === 'string' ? body.collection : undefined;
+    const force = !!body.force;
+
+    const { RAGService } = await import('../services/rag/rag.service.js');
+
+    if (targetCollection) {
+      const stats = await RAGService.reindexCollection({
+        db,
+        config: this.config,
+        collection: targetCollection,
+        projectId,
+        force,
+      });
+      return c.json({ success: true, collections: [stats], totalChunks: stats.indexedChunks });
+    }
+
+    const result = await RAGService.reindexAll({
+      db,
+      config: this.config,
+      projectId,
+      force,
+    });
+
+    return c.json({ success: true, ...result });
+  }
+
+  async searchRAG(c: Context<DyrectedContext>) {
+    const db = c.get('config')?.db || this.config.db;
+    if (!db) {
+      throw new HTTPException(500, { message: 'Database not initialized' });
+    }
+
+    const user = c.get('user');
+    const projectId = c.req.header('X-Site-Id') || c.get('siteId') || 'default';
+    const body = await c.req.json().catch(() => ({}));
+    const query = typeof body.query === 'string' ? body.query : '';
+    const collections = Array.isArray(body.collections) ? body.collections : undefined;
+    const limit = typeof body.limit === 'number' ? body.limit : undefined;
+    const minScore = typeof body.minScore === 'number' ? body.minScore : undefined;
+
+    if (!query.trim()) {
+      throw new HTTPException(400, { message: 'Search query is required' });
+    }
+
+    const { RAGService } = await import('../services/rag/rag.service.js');
+    const result = await RAGService.search({
+      db,
+      config: this.config,
+      query,
+      projectId,
+      collections,
+      limit,
+      minScore,
+      user: user as any,
+    });
+
+    return c.json(result);
+  }
 }

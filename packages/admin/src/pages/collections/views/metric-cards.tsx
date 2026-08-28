@@ -15,11 +15,7 @@ interface MetricCardsProps {
  */
 function getGridCols(count: number) {
   if (count <= 1) return "dy-grid-cols-1"
-  if (count === 2) return "dy-grid-cols-2"
-  if (count === 3) return "dy-grid-cols-2 lg:dy-grid-cols-3"
-  if (count === 4) return "dy-grid-cols-2 lg:dy-grid-cols-4"
-  if (count === 5) return "dy-grid-cols-2 md:dy-grid-cols-3 lg:dy-grid-cols-5"
-  return "dy-grid-cols-2 sm:dy-grid-cols-3 lg:dy-grid-cols-4"
+  return "dy-grid-cols-[repeat(auto-fit,minmax(220px,1fr))]"
 }
 
 interface ColorTokens {

@@ -320,7 +320,7 @@ export function CardsLayout({
         />
       ) : docs.length ? (
         <>
-          <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3 xl:dy-grid-cols-4 dy-gap-4">
+          <div className="dy-grid dy-grid-cols-[repeat(auto-fill,minmax(280px,1fr))] dy-gap-4">
             {docs.map((doc) => (
               <CardGridItem
                 key={String(doc.id)}

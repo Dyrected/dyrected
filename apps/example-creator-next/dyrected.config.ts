@@ -1527,7 +1527,8 @@ export default defineConfig({
   ai: {
     systemPrompt:
       "You are the AI Assistant for Future You Coaching — an executive leadership and professional development coaching practice. Tone is warm, authoritative, and focused on career transformation.",
-    model: "gemini-3.6-flash",
+    provider: "agentrouter",
+    model: "deepseek-v4-flash", // Available high-speed model with native tool-calling on AgentRouter
     maxSteps: 5,
     maxRetries: 3,
     tools: {

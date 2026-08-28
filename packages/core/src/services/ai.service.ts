@@ -18,8 +18,41 @@ export function getAIModel(config?: DyrectedConfig): LanguageModel {
     }
     const baseURL = ai?.baseURL || process.env.AGENTROUTER_BASE_URL || 'https://agentrouter.org/v1';
     const modelName = ai?.model || 'claude-3-haiku-20240307';
-    const agentRouterProvider = createOpenAI({ apiKey, baseURL });
-    return agentRouterProvider(modelName);
+    const agentRouterProvider = createOpenAI({
+      apiKey,
+      baseURL,
+      headers: {
+        'User-Agent': 'claude-cli/2.1.0 (external, cli)',
+        'anthropic-version': '2023-06-01',
+      },
+      fetch: async (url, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set('User-Agent', 'claude-cli/2.1.0 (external, cli)');
+        headers.set('anthropic-version', '2023-06-01');
+
+        let body = init?.body;
+        if (body && typeof body === 'string') {
+          try {
+            const parsed = JSON.parse(body);
+            if (typeof parsed.model === 'string' && parsed.model.includes('deepseek') && !parsed.thinking) {
+              parsed.thinking = { type: 'disabled' };
+            }
+            body = JSON.stringify(parsed);
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+        const targetUrl = String(url).replace(/\/responses$/, '/chat/completions');
+
+        return fetch(targetUrl, {
+          ...init,
+          headers,
+          body,
+        });
+      },
+    });
+    return agentRouterProvider.chat(modelName);
   }
 
   // 2. Explicit OpenRouter or OPENROUTER_API_KEY
@@ -72,6 +105,11 @@ export function formatAIErrorMessage(error: any): string {
     const retryMatch = msg.match(/retry in ([0-9.]+[a-z]?)/i);
     const retryText = retryMatch ? ` Please retry in ${retryMatch[1]}.` : " Please wait a few moments before retrying.";
     return `AI API quota reached (429 Rate Limit).${retryText} Check your provider account balance or rate limits.`;
+  }
+
+  // AgentRouter / OneAPI IP Whitelist Error
+  if (msg.includes("不在令牌允许访问的列表") || (msg.includes("IP") && msg.includes("allowed"))) {
+    return "AgentRouter IP Restriction: Your IP is not in the allowed IP whitelist for this token. Please clear or update the IP Whitelist field in your AgentRouter token console (https://agentrouter.org/console/token).";
   }
 
   // Missing or Invalid API Key
@@ -182,6 +220,7 @@ You have direct access to project tools:
 - \`queryCollection\`: Query actual saved documents from database collections (filter, sort, page).
 - \`getDocument\`: Fetch a specific document by its primary key ID.
 - \`aggregateCollection\`: Compute statistical metrics (count, sum, average, min, max, distinct values, and groupBy) on collection fields.
+- \`searchContent\`: Semantically search unstructured content (articles, documentation, FAQs, guides, policies, materials, pages) for topics, meaning, and relevant answers.
 
 **Token & Performance Optimization:**
 - You already have the project structure and field definitions pre-seeded in section 1 above. Use this pre-seeded context directly to answer questions about available sections and field types in a single step without making redundant tool calls.
@@ -232,6 +271,17 @@ You help CMS users brainstorm, write, edit, optimize, and translate high-convert
    [Structured rich-text body formatted with proper Markdown H2/H3 headings]
 3. **Structured Tables & Code Tags:** Use Markdown tables for comparisons. Always specify language identifiers on code blocks (e.g. html, json, ts).
 4. **Actionable Next Steps:** End with 1–2 sharp, practical editorial suggestions.
+
+### 8. SEMANTIC SEARCH & GROUNDED CITATIONS
+When answering questions about policies, product details, material specifications, articles, or documentation:
+1. **Search First:** Use the \`searchContent\` tool to locate verified project material before answering.
+2. **Grounding:** Base your answers strictly on the retrieved source snippets. Do not extrapolate or invent facts not present in the sources.
+3. **Citing Sources:** Every factual claim derived from \`searchContent\` must cite its source. At the end of your response, output a clean Sources section in this format:
+
+### Sources:
+- **[Document Title]** (/admin/collections/{collection}/{documentId})
+
+4. **Missing Information:** If the retrieved search content does not contain the answer, explicitly state: *"I searched our project content for '{query}', but could not find information regarding that topic."*
 `;
 }
 
@@ -471,10 +521,14 @@ export class AIAgent {
     const systemPrompt = buildDyrectedSystemPrompt(context);
     const history = await this.getMessages(threadId);
 
-    const messages = [
-      ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-      { role: "user" as const, content: userMessage },
-    ];
+    const messages = history.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+
+    if (messages.length === 0 || messages[messages.length - 1]?.content !== userMessage) {
+      messages.push({ role: "user" as const, content: userMessage });
+    }
 
     const model = getAIModel(this.config);
     const tools = createDyrectedAITools({

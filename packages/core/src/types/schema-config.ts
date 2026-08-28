@@ -410,11 +410,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Optional custom AI assistant instructions for this collection.
+   * Optional custom AI assistant instructions and RAG indexing options for this collection.
    */
   ai?: {
     /** Specific editorial guidelines, brand voice, or instructions for this collection. */
     prompt?: string;
+    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
+    rag?: import("./ai.js").CollectionRAGConfig;
   };
 
   /**

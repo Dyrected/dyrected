@@ -361,7 +361,7 @@ export function MediaLibraryDialog({
                     )}
                   </div>
                   <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-2 dy-px-2">
-                    <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 lg:dy-gap-4">
+                    <div className="dy-grid dy-grid-cols-[repeat(auto-fill,minmax(140px,1fr))] dy-gap-3 dy-pb-4 lg:dy-gap-4">
                       {media?.map((item: LooseMediaRecord) => {
                         const sourceInfo = getMediaSourceInfo(item)
                         return (

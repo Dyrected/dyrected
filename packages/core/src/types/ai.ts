@@ -48,6 +48,70 @@ export interface AIToolDefinition<TParams = any, TResult = any> {
   execute: (args: TParams, context: AIToolContext) => Promise<TResult> | TResult;
 }
 
+export interface GlobalRAGConfig {
+  /** Enable or disable automatic RAG indexing globally. Defaults to true. */
+  enabled?: boolean;
+  /** Embedding model identifier. Defaults to 'text-embedding-004' (Google) or 'text-embedding-3-small' (OpenAI/AgentRouter). */
+  embeddingModel?: string;
+  /** Default character budget per chunk. Defaults to 1500 (~375-500 tokens). */
+  maxChunkSize?: number;
+  /** Default character overlap between chunks. Defaults to 150. */
+  chunkOverlap?: number;
+  /** Default minimum cosine similarity score threshold (0.0 to 1.0). Defaults to 0.45. */
+  minScore?: number;
+  /** Default number of top snippets to retrieve. Defaults to 4. */
+  topK?: number;
+}
+
+export interface CollectionRAGConfig {
+  /** Enable or disable RAG indexing for this collection. Defaults to true. */
+  enabled?: boolean;
+  /** Whitelist of specific field names to index. Defaults to all text/richText/textarea fields. */
+  fields?: string[];
+  /** Field to use for citation display titles (e.g. 'title', 'name', 'question'). */
+  titleField?: string;
+  /** Custom character budget per chunk for this collection. */
+  maxChunkSize?: number;
+  /** Custom character overlap between chunks for this collection. */
+  chunkOverlap?: number;
+}
+
+export interface AIChunk {
+  id: string;
+  projectId: string;
+  collection: string;
+  documentId: string;
+  field: string;
+  chunkIndex: number;
+  text: string;
+  embedding: number[];
+  tokenCount: number;
+  contentHash: string;
+  metadata?: {
+    title?: string;
+    slug?: string;
+    locale?: string;
+    status?: string;
+    updatedAt?: Date | string;
+    [key: string]: unknown;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  [key: string]: unknown;
+}
+
+export interface RAGSearchResult {
+  id: string;
+  collection: string;
+  documentId: string;
+  title: string;
+  field: string;
+  score: number;
+  text: string;
+  url: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface AIConfig {
   /** AI Provider to use. Defaults to 'google' or auto-detects from environment variables. */
   provider?: 'google' | 'agentrouter' | 'openrouter' | 'openai' | 'custom';
@@ -65,6 +129,8 @@ export interface AIConfig {
   maxSteps?: number;
   /** Number of automatic retry attempts on transient rate limits / network errors. Defaults to 3. */
   maxRetries?: number;
+  /** Global RAG (Retrieval-Augmented Generation) configuration options. */
+  rag?: GlobalRAGConfig;
   /** Conversation compaction options. */
   compaction?: {
     enabled?: boolean;
@@ -135,7 +201,8 @@ export interface AggregateCollectionResult {
 
 export const AI_THREADS_COLLECTION = '_dyrected_ai_threads';
 export const AI_MESSAGES_COLLECTION = '_dyrected_ai_messages';
+export const AI_CHUNKS_COLLECTION = '_dyrected_ai_chunks';
 
 export function isAICollection(slug: string): boolean {
-  return slug === AI_THREADS_COLLECTION || slug === AI_MESSAGES_COLLECTION;
+  return slug === AI_THREADS_COLLECTION || slug === AI_MESSAGES_COLLECTION || slug === AI_CHUNKS_COLLECTION;
 }

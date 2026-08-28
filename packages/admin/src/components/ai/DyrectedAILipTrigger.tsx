@@ -2,7 +2,27 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Sparkles, Plus, AlertCircle, MessageSquare, History, ChevronLeft, Trash2, X } from 'lucide-react';
+import {
+  Sparkles,
+  Plus,
+  AlertCircle,
+  MessageSquare,
+  History,
+  ChevronLeft,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  X,
+  RefreshCw,
+  FileText,
+  Search,
+  Database,
+  BarChart2,
+  Layers,
+  Sliders,
+  Settings,
+  Wrench,
+} from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,31 +46,108 @@ import { useDyrected } from '@/providers/dyrected-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
+const DEFAULT_PANEL_WIDTH = 440;
+const MIN_PANEL_WIDTH = 340;
+
 export function DyrectedAILipTrigger() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const aiThreadParam = searchParams.get('aiThread');
 
-  const isOpen = Boolean(aiThreadParam);
-  const activeThreadId = aiThreadParam === 'new' ? null : aiThreadParam;
+  // Persist open state in localStorage so navigating pages preserves the drawer
+  const [isOpenState, setIsOpenState] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    if (aiThreadParam !== null) return true;
+    return localStorage.getItem('dyrected_ai_open') === 'true';
+  });
+
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    if (aiThreadParam) return aiThreadParam === 'new' ? null : aiThreadParam;
+    const saved = localStorage.getItem('dyrected_ai_active_thread');
+    return saved && saved !== 'new' ? saved : null;
+  });
+
+  // Sync if URL query explicitly provides aiThread param
+  useEffect(() => {
+    if (aiThreadParam !== null) {
+      setIsOpenState(true);
+      const tid = aiThreadParam === 'new' ? null : aiThreadParam;
+      setActiveThreadId(tid);
+      localStorage.setItem('dyrected_ai_open', 'true');
+      localStorage.setItem('dyrected_ai_active_thread', aiThreadParam);
+    }
+  }, [aiThreadParam]);
+
+  const isOpen = isOpenState;
+
+  // Resizable panel width state (stored in localStorage)
+  const [panelWidth, setPanelWidth] = useState<number>(() => {
+    if (typeof window === 'undefined') return DEFAULT_PANEL_WIDTH;
+    const saved = localStorage.getItem('dyrected_ai_panel_width');
+    const parsed = saved ? parseInt(saved, 10) : DEFAULT_PANEL_WIDTH;
+    return isNaN(parsed) ? DEFAULT_PANEL_WIDTH : Math.max(MIN_PANEL_WIDTH, Math.min(parsed, 1200));
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = startX - moveEvent.clientX;
+      const maxWidth = Math.min(window.innerWidth * 0.75, 1100);
+      const nextWidth = Math.max(MIN_PANEL_WIDTH, Math.min(startWidth + deltaX, maxWidth));
+      setPanelWidth(nextWidth);
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      setPanelWidth((curr) => {
+        localStorage.setItem('dyrected_ai_panel_width', String(curr));
+        return curr;
+      });
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [panelWidth]);
+
+  const handleResetWidth = useCallback(() => {
+    setPanelWidth(DEFAULT_PANEL_WIDTH);
+    localStorage.setItem('dyrected_ai_panel_width', String(DEFAULT_PANEL_WIDTH));
+  }, []);
 
   const handleOpen = useCallback((threadId?: string | null) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('aiThread', threadId || 'new');
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
+    setIsOpenState(true);
+    const target = threadId || null;
+    setActiveThreadId(target);
+    localStorage.setItem('dyrected_ai_open', 'true');
+    localStorage.setItem('dyrected_ai_active_thread', target || 'new');
+  }, []);
 
   const handleClose = useCallback(() => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('aiThread');
-    setSearchParams(next, { replace: true });
+    setIsOpenState(false);
+    localStorage.setItem('dyrected_ai_open', 'false');
+    if (searchParams.has('aiThread')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('aiThread');
+      setSearchParams(next, { replace: true });
+    }
   }, [searchParams, setSearchParams]);
 
   const handleSelectThread = useCallback((threadId: string | null) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('aiThread', threadId || 'new');
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
+    setActiveThreadId(threadId);
+    localStorage.setItem('dyrected_ai_active_thread', threadId || 'new');
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -76,9 +173,32 @@ export function DyrectedAILipTrigger() {
           {isOpen && (
             <aside
               aria-label="Dyrected AI Assistant"
-              className="dy-flex dy-flex-col dy-w-96 lg:dy-w-[420px] dy-h-full dy-border-l dy-border-border/60 dy-bg-background dy-shrink-0 dy-relative dy-z-20 dy-animate-in dy-slide-in-from-right-6 dy-duration-200"
+              style={{ width: `${panelWidth}px` }}
+              className={cn(
+                'dy-flex dy-flex-col dy-h-full dy-border-l dy-border-border/60 dy-bg-background dy-shrink-0 dy-relative dy-z-20 dy-animate-in dy-slide-in-from-right-6 dy-duration-200',
+                isResizing && 'dy-select-none dy-transition-none'
+              )}
             >
+              {/* VS Code-style Resizing Handle on the left border */}
+              <div
+                onMouseDown={startResizing}
+                onDoubleClick={handleResetWidth}
+                title="Drag to resize width, double-click to reset (440px)"
+                className={cn(
+                  'dy-absolute dy-top-0 dy-bottom-0 -dy-left-1.5 dy-w-3 dy-cursor-col-resize dy-z-30 dy-group dy-flex dy-items-center dy-justify-center hover:dy-bg-primary/10 dy-transition-colors',
+                  isResizing && 'dy-bg-primary/20'
+                )}
+              >
+                <div
+                  className={cn(
+                    'dy-w-[2px] dy-h-12 dy-rounded-full dy-bg-border/60 group-hover:dy-bg-primary/80 group-hover:dy-w-[3px] dy-transition-all',
+                    isResizing && 'dy-bg-primary dy-w-[3px] dy-h-20'
+                  )}
+                />
+              </div>
+
               <DyrectedAIChatPanel
+                key={activeThreadId || 'new'}
                 threadId={activeThreadId}
                 onSelectThread={handleSelectThread}
                 onClose={handleClose}
@@ -129,6 +249,7 @@ export function DyrectedAILipTrigger() {
                 className="dy-w-full sm:dy-max-w-md dy-p-0 dy-flex dy-flex-col dy-h-full dy-border-l dy-border-border/60"
               >
                 <DyrectedAIChatPanel
+                  key={activeThreadId || 'new'}
                   threadId={activeThreadId}
                   onSelectThread={handleSelectThread}
                   onClose={handleClose}
@@ -148,6 +269,280 @@ function TypingDots() {
       <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce" />
       <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce [animation-delay:0.15s]" />
       <span className="dy-w-1.5 dy-h-1.5 dy-bg-muted-foreground/70 dy-rounded-full dy-animate-bounce [animation-delay:0.3s]" />
+    </div>
+  );
+}
+
+function extractToolInvocation(tp: any, isMessageComplete: boolean) {
+  const inv = tp.toolInvocation || tp;
+  let toolName =
+    inv.toolName ||
+    inv.name ||
+    tp.toolName ||
+    tp.name;
+
+  if (
+    !toolName &&
+    typeof tp.type === 'string' &&
+    tp.type.startsWith('tool-') &&
+    tp.type !== 'tool-invocation' &&
+    tp.type !== 'tool-call' &&
+    tp.type !== 'tool-result'
+  ) {
+    toolName = tp.type.replace(/^tool-/, '');
+  }
+
+  const args = inv.args || inv.input || inv.parameters || tp.args || tp.input || {};
+  const result = inv.result ?? inv.output ?? tp.result ?? tp.output;
+
+  // Infer toolName from arguments if missing or generic
+  if (!toolName || toolName === 'tool' || toolName === 'tool-invocation') {
+    if (args.query !== undefined) toolName = 'searchContent';
+    else if (args.aggregates !== undefined) toolName = 'aggregateCollection';
+    else if (args.collection !== undefined && args.id !== undefined) toolName = 'getDocument';
+    else if (args.collection !== undefined) toolName = 'queryCollection';
+    else if (args.global !== undefined) toolName = 'getGlobalSchema';
+    else toolName = 'CMS Action';
+  }
+
+  const isDone =
+    isMessageComplete ||
+    inv.state === 'result' ||
+    tp.state === 'result' ||
+    result !== undefined ||
+    tp.type === 'tool-result';
+
+  return {
+    inv,
+    toolName,
+    args,
+    result,
+    isDone,
+  };
+}
+
+function getToolDisplayInfo(item: ReturnType<typeof extractToolInvocation>) {
+  const { toolName, args, result, isDone } = item;
+
+  switch (toolName) {
+    case 'searchContent': {
+      const q = args.query ? `"${args.query}"` : 'knowledge base';
+      return {
+        label: isDone
+          ? `Searched content for ${q}`
+          : `Searching knowledge base for ${q}...`,
+        icon: Search,
+        details: isDone
+          ? `${result?.sources?.length ?? 0} matches found`
+          : 'Querying vector embeddings...',
+        sources: result?.sources || [],
+      };
+    }
+    case 'queryCollection': {
+      const col = args.collection || 'collection';
+      return {
+        label: isDone ? `Queried ${col}` : `Querying ${col}...`,
+        icon: Database,
+        details: isDone
+          ? `${result?.docs?.length ?? result?.total ?? 0} items retrieved`
+          : 'Applying filters and pagination...',
+      };
+    }
+    case 'getDocument': {
+      const col = args.collection || 'entry';
+      return {
+        label: isDone
+          ? `Fetched ${col} #${args.id || ''}`
+          : `Fetching ${col} #${args.id || ''}...`,
+        icon: FileText,
+        details: isDone ? 'Record loaded' : 'Reading database record...',
+      };
+    }
+    case 'aggregateCollection': {
+      const col = args.collection || 'collection';
+      return {
+        label: isDone
+          ? `Computed metrics on ${col}`
+          : `Computing statistics for ${col}...`,
+        icon: BarChart2,
+        details: isDone ? 'Calculated aggregates' : 'Running database aggregation...',
+      };
+    }
+    case 'listCollections': {
+      return {
+        label: isDone ? 'Discovered content sections' : 'Checking available collections...',
+        icon: Layers,
+        details: isDone ? `${result?.collections?.length ?? 0} collections` : 'Inspecting CMS registry...',
+      };
+    }
+    case 'getCollectionSchema': {
+      const col = args.collection || 'collection';
+      return {
+        label: isDone ? `Inspected ${col} schema` : `Reading ${col} structure...`,
+        icon: Sliders,
+        details: isDone ? 'Fields & relationships loaded' : 'Inspecting field types...',
+      };
+    }
+    case 'listGlobals':
+    case 'getGlobalSchema': {
+      const g = args.global || args.slug || 'site settings';
+      return {
+        label: isDone ? `Loaded ${g}` : `Checking ${g}...`,
+        icon: Settings,
+        details: isDone ? 'Global values loaded' : 'Reading singleton...',
+      };
+    }
+    default: {
+      const formatted = toolName
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str: string) => str.toUpperCase())
+        .trim();
+      return {
+        label: isDone ? `Executed ${formatted}` : `Running ${formatted}...`,
+        icon: Wrench,
+        details: isDone ? 'Action completed' : 'Processing...',
+      };
+    }
+  }
+}
+
+function AIToolExecutionsGroup({
+  toolParts,
+  isMessageComplete = false,
+}: {
+  toolParts: any[];
+  isMessageComplete?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toolSummaries = useMemo(() => {
+    return toolParts.map((tp) => {
+      const extracted = extractToolInvocation(tp, isMessageComplete);
+      return {
+        ...extracted,
+        ...getToolDisplayInfo(extracted),
+      };
+    });
+  }, [toolParts, isMessageComplete]);
+
+  const allDone = toolSummaries.every((s) => s.isDone);
+
+  const headerSummary = useMemo(() => {
+    if (!allDone) {
+      const active = toolSummaries.find((s) => !s.isDone);
+      return active?.label || 'Processing CMS actions...';
+    }
+    if (toolSummaries.length === 1) {
+      return toolSummaries[0]?.label || '1 action completed';
+    }
+    return `${toolSummaries.length} actions completed (${toolSummaries.map((s) => s.label.split(' ')[0]).join(', ')})`;
+  }, [allDone, toolSummaries]);
+
+  return (
+    <div className="dy-mb-2.5 dy-rounded-lg dy-border dy-border-border/60 dy-bg-muted/30 dy-overflow-hidden dy-text-xs dy-transition-all">
+      {/* Collapsible Header Pill */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="dy-w-full dy-px-3 dy-py-2 dy-flex dy-items-center dy-justify-between dy-gap-2 dy-text-left hover:dy-bg-muted/60 dy-transition-colors group"
+      >
+        <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+          <span
+            className={cn(
+              'dy-w-2 dy-h-2 dy-rounded-full dy-shrink-0',
+              allDone ? 'dy-bg-emerald-500' : 'dy-bg-primary dy-animate-pulse'
+            )}
+          />
+          <span className="dy-font-medium dy-truncate dy-text-foreground/90 group-hover:dy-text-foreground">
+            {headerSummary}
+          </span>
+        </div>
+
+        <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-[11px] dy-text-muted-foreground dy-shrink-0">
+          <span>{isOpen ? 'Hide' : 'Details'}</span>
+          {isOpen ? (
+            <ChevronDown className="dy-w-3.5 dy-h-3.5 dy-transition-transform" />
+          ) : (
+            <ChevronRight className="dy-w-3.5 dy-h-3.5 dy-transition-transform" />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded Breakdown */}
+      {isOpen && (
+        <div className="dy-px-3 dy-pb-3 dy-pt-1 dy-space-y-2 dy-border-t dy-border-border/40 dy-bg-background/40">
+          {toolSummaries.map((step, sIdx) => {
+            const Icon = step.icon;
+            return (
+              <div key={sIdx} className="dy-space-y-1.5 dy-pt-1">
+                <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+                  <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+                    <div className="dy-p-1 dy-rounded dy-bg-muted dy-text-muted-foreground">
+                      <Icon className="dy-w-3.5 dy-h-3.5" />
+                    </div>
+                    <div className="dy-min-w-0">
+                      <p className="dy-font-medium dy-truncate dy-text-foreground/90">
+                        {step.label}
+                      </p>
+                      {step.details && (
+                        <p className="dy-text-[10px] dy-text-muted-foreground dy-truncate">
+                          {step.details}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <span
+                    className={cn(
+                      'dy-text-[10px] dy-font-mono dy-px-1.5 dy-py-0.5 dy-rounded dy-shrink-0',
+                      step.isDone
+                        ? 'dy-bg-emerald-500/10 dy-text-emerald-600 dark:dy-text-emerald-400'
+                        : 'dy-bg-primary/10 dy-text-primary dy-animate-pulse'
+                    )}
+                  >
+                    {step.isDone ? 'Completed' : 'Running...'}
+                  </span>
+                </div>
+
+                {/* Sources cards if searchContent */}
+                {step.sources && step.sources.length > 0 && (
+                  <div className="dy-mt-1.5 dy-p-2 dy-bg-muted/40 dy-rounded-md dy-border dy-border-border/50 dy-space-y-1">
+                    <div className="dy-flex dy-items-center dy-justify-between dy-text-[10px] dy-font-medium dy-text-muted-foreground">
+                      <span>Retrieved Sources ({step.sources.length})</span>
+                      <span className="dy-opacity-70">RAG Semantic Match</span>
+                    </div>
+                    <div className="dy-grid dy-grid-cols-1 dy-gap-1">
+                      {step.sources.map((src: any, srcIdx: number) => (
+                        <a
+                          key={srcIdx}
+                          href={src.url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dy-flex dy-items-center dy-justify-between dy-p-1.5 dy-bg-background/80 hover:dy-bg-background dy-rounded dy-border dy-border-border/40 hover:dy-border-primary/50 dy-transition-colors group/src"
+                        >
+                          <div className="dy-min-w-0 dy-flex-1 dy-mr-2">
+                            <p className="dy-font-medium dy-truncate dy-text-[11px] group-hover/src:dy-text-primary dy-transition-colors">
+                              {src.title}
+                            </p>
+                            <p className="dy-text-[9px] dy-text-muted-foreground dy-truncate">
+                              {src.collection} &bull; {src.field}
+                            </p>
+                          </div>
+                          {src.score !== undefined && (
+                            <span className="dy-text-[9px] dy-font-mono dy-px-1 dy-py-0.5 dy-rounded dy-bg-primary/10 dy-text-primary dy-font-medium">
+                              {Math.round(src.score * 100)}%
+                            </span>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -246,7 +641,7 @@ export function DyrectedAIChatPanel({
     });
   }, [baseUrl, authHeaders, threadId]);
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     id: threadId || 'new',
     transport: chatTransport,
     messages: (threadMessagesData?.messages || []).map((m: any) => ({
@@ -255,6 +650,19 @@ export function DyrectedAIChatPanel({
       parts: [{ type: 'text' as const, text: m.content }],
     })),
   });
+
+  // Keep useChat synchronized when switching to an existing thread with history
+  useEffect(() => {
+    if (threadMessagesData?.messages && threadMessagesData.messages.length > 0) {
+      setMessages(
+        threadMessagesData.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          parts: [{ type: 'text' as const, text: m.content }],
+        }))
+      );
+    }
+  }, [threadMessagesData?.messages, setMessages]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
 
@@ -270,7 +678,34 @@ export function DyrectedAIChatPanel({
     }
   };
 
-  const threads = threadsData?.threads || [];
+  const threads = useMemo(() => threadsData?.threads || [], [threadsData?.threads]);
+
+  const [reindexSuccess, setReindexSuccess] = useState<string | null>(null);
+
+  const reindexMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${baseUrl}/api/ai/rag/reindex`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to reindex knowledge base');
+      }
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setReindexSuccess(`Indexed ${data.totalChunks || 0} chunks`);
+      setTimeout(() => setReindexSuccess(null), 3500);
+    },
+    onError: (err: any) => {
+      console.error('[dyrected/rag] Reindex error:', err);
+    },
+  });
 
   const activeTitle = useMemo(() => {
     if (!threadId) return 'Dyrected Assistant';
@@ -309,6 +744,28 @@ export function DyrectedAIChatPanel({
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-1">
+          <button
+            onClick={() => reindexMutation.mutate()}
+            disabled={reindexMutation.isPending}
+            title="Sync Knowledge (Reindex RAG vector embeddings)"
+            className={cn(
+              'dy-p-1.5 hover:dy-bg-muted dy-rounded-md dy-text-xs dy-font-medium dy-flex dy-items-center dy-gap-1 dy-transition-colors',
+              reindexMutation.isPending
+                ? 'dy-text-primary dy-animate-pulse'
+                : reindexSuccess
+                ? 'dy-text-emerald-500 font-medium'
+                : 'dy-text-muted-foreground hover:dy-text-foreground'
+            )}
+          >
+            <RefreshCw
+              className={cn(
+                'dy-w-3.5 dy-h-3.5',
+                reindexMutation.isPending && 'dy-animate-spin'
+              )}
+            />
+            <span>{reindexSuccess || (reindexMutation.isPending ? 'Syncing...' : 'Sync')}</span>
+          </button>
+
           <button
             onClick={() => setShowHistory((prev) => !prev)}
             title="Chat History"
@@ -504,31 +961,10 @@ export function DyrectedAIChatPanel({
                       <Message key={message.id} from={message.role as 'user' | 'assistant'}>
                         <MessageContent>
                           {toolParts.length > 0 && (
-                            <div className="dy-mb-2 dy-space-y-1.5">
-                              {toolParts.map((tp: any, idx: number) => {
-                                const inv = tp.toolInvocation || tp;
-                                const toolName = inv.toolName || inv.name || 'inspection tool';
-                                const isDone = inv.state === 'result' || inv.result !== undefined;
-                                return (
-                                  <div
-                                    key={idx}
-                                    className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-[11px] dy-font-mono dy-bg-muted/70 dy-text-muted-foreground dy-px-2.5 dy-py-0.5 dy-rounded-md dy-border dy-border-border/50"
-                                  >
-                                    <span
-                                      className={cn(
-                                        'dy-w-1.5 dy-h-1.5 dy-rounded-full',
-                                        isDone
-                                          ? 'dy-bg-emerald-500'
-                                          : 'dy-bg-primary/70 dy-animate-pulse'
-                                      )}
-                                    />
-                                    <span>
-                                      {isDone ? `Executed ${toolName}` : `Running ${toolName}...`}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            <AIToolExecutionsGroup
+                              toolParts={toolParts}
+                              isMessageComplete={Boolean(messageText)}
+                            />
                           )}
                           {messageText ? (
                             <MessageResponse>{messageText}</MessageResponse>
