@@ -10,6 +10,7 @@ import {
   History,
   ChevronLeft,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Trash2,
   X,
@@ -28,6 +29,8 @@ import {
   Edit3,
   AlertTriangle,
   Brain,
+  Eye,
+  Code,
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -551,6 +554,27 @@ function getToolDisplayInfo(item: ReturnType<typeof extractToolInvocation>) {
   }
 }
 
+function isHtmlContent(str: string): boolean {
+  if (typeof str !== 'string') return false;
+  return /<[a-z][\s\S]*>/i.test(str);
+}
+
+function cleanHtmlToText(html: string): string {
+  if (typeof html !== 'string') return '';
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .trim();
+}
+
 function AIActionProposalCard({
   action,
   baseUrl,
@@ -563,6 +587,8 @@ function AIActionProposalCard({
   const queryClient = useQueryClient();
   const [actionStatus, setActionStatus] = useState<string>(action.status || 'pending');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [viewModes, setViewModes] = useState<Record<string, 'visual' | 'code'>>({});
 
   // Synchronize fresh action status from server on mount / refresh
   useEffect(() => {
@@ -638,17 +664,35 @@ function AIActionProposalCard({
     if (!action.proposedData || typeof action.proposedData !== 'object') return [];
     return Object.entries(action.proposedData).map(([key, newVal]) => {
       const beforeVal = action.beforeSnapshot ? action.beforeSnapshot[key] : undefined;
+      const rawBefore = beforeVal !== undefined ? (typeof beforeVal === 'string' ? beforeVal : JSON.stringify(beforeVal, null, 2)) : null;
+      const rawAfter = typeof newVal === 'string' ? newVal : JSON.stringify(newVal, null, 2);
+      const hasHtml = Boolean((rawBefore && isHtmlContent(rawBefore)) || (rawAfter && isHtmlContent(rawAfter)));
+
       return {
         key,
-        before: beforeVal !== undefined ? JSON.stringify(beforeVal, null, 2).replace(/^"|"$/g, '') : null,
-        after: JSON.stringify(newVal, null, 2).replace(/^"|"$/g, ''),
+        rawBefore,
+        rawAfter,
+        cleanBefore: rawBefore ? cleanHtmlToText(rawBefore) : null,
+        cleanAfter: cleanHtmlToText(rawAfter),
+        hasHtml,
+        isLong: (rawBefore?.length || 0) > 120 || rawAfter.length > 120,
       };
     });
   }, [action.proposedData, action.beforeSnapshot]);
 
+  const hasLongContent = diffEntries.length > 3 || diffEntries.some((d) => d.isLong);
+  const displayedEntries = isExpanded || !hasLongContent ? diffEntries : diffEntries.slice(0, 2);
+
   const isPending = actionStatus === 'pending';
   const isExecuted = actionStatus === 'executed';
   const isRejected = actionStatus === 'rejected';
+
+  const toggleViewMode = (key: string) => {
+    setViewModes((prev) => ({
+      ...prev,
+      [key]: prev[key] === 'code' ? 'visual' : 'code',
+    }));
+  };
 
   return (
     <div
@@ -657,7 +701,7 @@ function AIActionProposalCard({
         isRejected && 'dy-opacity-60'
       )}
     >
-      {/* Minimal Header Bar with Integrated Action Buttons */}
+      {/* Minimal Header Bar with Integrated Top Quick-Action Controls */}
       <div className="dy-px-3 dy-py-2 dy-flex dy-items-center dy-justify-between dy-gap-2 dy-border-b dy-border-border/40">
         <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
           <span className="dy-text-muted-foreground">
@@ -725,30 +769,99 @@ function AIActionProposalCard({
         </div>
       </div>
 
-      {/* Clean Single-Line Diff Body */}
-      <div className="dy-px-3 dy-py-2 dy-space-y-1 dy-font-mono dy-text-[11px]">
+      {/* Clean Diff Body with User-Friendly HTML and Expansion Handling */}
+      <div className="dy-px-3 dy-py-2 dy-space-y-2 dy-text-[11px]">
         {action.type === 'deleteDocument' ? (
           <div className="dy-text-destructive/90 dy-flex dy-items-center dy-gap-1.5 dy-font-sans dy-text-xs">
             <AlertTriangle className="dy-w-3.5 dy-h-3.5 dy-shrink-0" />
             <span>Document will be permanently removed upon approval.</span>
           </div>
         ) : (
-          diffEntries.map(({ key, before, after }) => (
-            <div key={key} className="dy-flex dy-items-baseline dy-gap-2 dy-flex-wrap">
-              <span className="dy-text-muted-foreground dy-min-w-[70px]">{key}:</span>
-              {before !== null && (
-                <>
-                  <span className="dy-line-through dy-text-destructive/80 dy-opacity-80">
-                    {before || '""'}
-                  </span>
-                  <span className="dy-text-muted-foreground/60">&rarr;</span>
-                </>
-              )}
-              <span className="dy-font-semibold dy-text-emerald-600 dark:dy-text-emerald-400">
-                {after}
-              </span>
-            </div>
-          ))
+          <div className="dy-space-y-2">
+            {displayedEntries.map((entry) => {
+              const currentMode = viewModes[entry.key] || 'visual';
+              const isHtmlMode = entry.hasHtml && currentMode === 'visual';
+              const beforeText = isHtmlMode ? entry.cleanBefore : entry.rawBefore;
+              const afterText = isHtmlMode ? entry.cleanAfter : entry.rawAfter;
+
+              return (
+                <div key={entry.key} className="dy-space-y-1">
+                  <div className="dy-flex dy-items-center dy-justify-between">
+                    <span className="dy-font-mono dy-text-muted-foreground dy-font-medium">{entry.key}:</span>
+                    {entry.hasHtml && (
+                      <button
+                        type="button"
+                        onClick={() => toggleViewMode(entry.key)}
+                        className="dy-text-[10px] dy-text-primary hover:dy-underline dy-flex dy-items-center dy-gap-1"
+                      >
+                        {currentMode === 'visual' ? (
+                          <>
+                            <Code className="dy-w-3 dy-h-3" />
+                            <span>View Source</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="dy-w-3 dy-h-3" />
+                            <span>View Formatted</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {entry.isLong ? (
+                    <div className="dy-p-2 dy-rounded dy-bg-background/80 dy-border dy-border-border/40 dy-space-y-1.5 dy-font-sans">
+                      {beforeText && (
+                        <div className="dy-text-destructive/85 dy-line-through dy-text-[11px] dy-max-h-24 dy-overflow-y-auto dy-whitespace-pre-wrap">
+                          {beforeText}
+                        </div>
+                      )}
+                      <div className="dy-text-emerald-600 dark:dy-text-emerald-400 dy-font-medium dy-text-[11px] dy-max-h-32 dy-overflow-y-auto dy-whitespace-pre-wrap">
+                        {afterText}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="dy-flex dy-items-baseline dy-gap-2 dy-flex-wrap dy-font-mono">
+                      {beforeText !== null && (
+                        <>
+                          <span className="dy-line-through dy-text-destructive/80 dy-opacity-80">
+                            {beforeText || '""'}
+                          </span>
+                          <span className="dy-text-muted-foreground/60">&rarr;</span>
+                        </>
+                      )}
+                      <span className="dy-font-semibold dy-text-emerald-600 dark:dy-text-emerald-400">
+                        {afterText}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Truncation / Expand button */}
+            {hasLongContent && (
+              <div className="dy-pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="dy-text-[11px] dy-font-medium dy-text-primary hover:dy-underline dy-flex dy-items-center dy-gap-1"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="dy-w-3.5 dy-h-3.5" />
+                      <span>Show less</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="dy-w-3.5 dy-h-3.5" />
+                      <span>Show full diff ({diffEntries.length} field{diffEntries.length === 1 ? '' : 's'})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Error notification if failed */}
@@ -756,6 +869,39 @@ function AIActionProposalCard({
           <div className="dy-pt-1 dy-text-destructive dy-text-[11px] dy-flex dy-items-center dy-gap-1 font-sans">
             <AlertCircle className="dy-w-3 dy-h-3 dy-shrink-0" />
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Bottom Action Bar for Long / Expanded Diffs */}
+        {isPending && (hasLongContent || isExpanded) && (
+          <div className="dy-pt-2 dy-mt-2 dy-border-t dy-border-border/40 dy-flex dy-items-center dy-gap-2">
+            <button
+              type="button"
+              disabled={executeMutation.isPending || rejectMutation.isPending}
+              onClick={() => executeMutation.mutate()}
+              className="dy-flex-1 dy-px-3 dy-py-1.5 dy-rounded-md dy-bg-emerald-600 hover:dy-bg-emerald-700 active:dy-scale-[0.99] dy-text-white dy-font-medium dy-text-xs dy-flex dy-items-center dy-justify-center dy-gap-1.5 dy-transition-all disabled:dy-opacity-50"
+            >
+              {executeMutation.isPending ? (
+                <>
+                  <RefreshCw className="dy-w-3.5 dy-h-3.5 dy-animate-spin" />
+                  <span>Applying Changes...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="dy-w-3.5 dy-h-3.5" />
+                  <span>Approve & Apply</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              disabled={executeMutation.isPending || rejectMutation.isPending}
+              onClick={() => rejectMutation.mutate()}
+              className="dy-px-3 dy-py-1.5 dy-rounded-md dy-border dy-border-border/80 hover:dy-bg-muted dy-text-muted-foreground hover:dy-text-foreground dy-transition-colors disabled:dy-opacity-50"
+            >
+              Discard
+            </button>
           </div>
         )}
       </div>

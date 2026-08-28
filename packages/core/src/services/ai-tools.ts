@@ -4,12 +4,7 @@ import type { DatabaseAdapter, DyrectedConfig, AuthenticatedUser } from '../type
 import type {
   AIToolContext,
   CollectionSummaryResult,
-  CollectionSchemaResult,
   GlobalSummaryResult,
-  GlobalSchemaResult,
-  QueryCollectionResult,
-  GetDocumentResult,
-  AggregateCollectionResult,
   AIAction,
 } from '../types/ai.js';
 import { isAICollection, AI_ACTIONS_COLLECTION } from '../types/ai.js';
@@ -55,6 +50,30 @@ function validatePayloadAgainstFields(
   return { valid: true };
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000, toolName = 'tool'): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Tool "${toolName}" timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+function getAvailableCollectionSlugs(config: DyrectedConfig): string {
+  return (config.collections || [])
+    .filter((c) => !isAICollection(c.slug) && !c.slug.startsWith('_'))
+    .map((c) => c.slug)
+    .join(', ');
+}
+
+function getAvailableGlobalSlugs(config: DyrectedConfig): string {
+  return (config.globals || []).map((g) => g.slug).join(', ');
+}
+
 export function createDyrectedAITools({
   db,
   config,
@@ -72,16 +91,22 @@ export function createDyrectedAITools({
     listCollections: tool({
       description: 'List all content collections available in this Dyrected CMS project',
       inputSchema: z.object({}),
-      execute: async (): Promise<{ collections: CollectionSummaryResult[] }> => {
-        const collections: CollectionSummaryResult[] = (config.collections || [])
-          .filter((col) => !isAICollection(col.slug) && !col.slug.startsWith('_'))
-          .map((col) => ({
-            slug: col.slug,
-            label: col.labels?.singular || col.labels?.plural || col.slug,
-            auth: !!col.auth,
-            timestamps: col.timestamps !== false,
-          }));
-        return { collections };
+      execute: async () => {
+        return withTimeout(
+          (async () => {
+            const collections: CollectionSummaryResult[] = (config.collections || [])
+              .filter((col) => !isAICollection(col.slug) && !col.slug.startsWith('_'))
+              .map((col) => ({
+                slug: col.slug,
+                label: col.labels?.singular || col.labels?.plural || col.slug,
+                auth: !!col.auth,
+                timestamps: col.timestamps !== false,
+              }));
+            return { collections };
+          })(),
+          10000,
+          'listCollections'
+        );
       },
     }),
 
@@ -94,44 +119,64 @@ export function createDyrectedAITools({
         collection,
       }: {
         collection: string;
-      }): Promise<CollectionSchemaResult | { error: string }> => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is private or internal.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+      }) => {
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is private or internal.`,
+                suggestion: `Choose from available public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}]. Please re-try with a valid collection.`,
+                recoverable: true,
+              };
+            }
 
-        const fields =
-          col.fields?.map((f: any) => ({
-            name: f.name,
-            type: f.type,
-            label: f.label,
-            required: !!f.required,
-            unique: !!f.unique,
-            relationTo: f.relationTo,
-            options: f.options,
-          })) || [];
+            const fields =
+              col.fields?.map((f: any) => ({
+                name: f.name,
+                type: f.type,
+                label: f.label,
+                required: !!f.required,
+                unique: !!f.unique,
+                relationTo: f.relationTo,
+                options: f.options,
+              })) || [];
 
-        return {
-          slug: col.slug,
-          label: col.labels?.singular || col.labels?.plural || col.slug,
-          auth: !!col.auth,
-          fields,
-        };
+            return {
+              slug: col.slug,
+              label: col.labels?.singular || col.labels?.plural || col.slug,
+              auth: !!col.auth,
+              fields,
+            };
+          })(),
+          10000,
+          'getCollectionSchema'
+        );
       },
     }),
 
     listGlobals: tool({
       description: 'List all singleton global configurations (e.g. site-settings, navigation, homepage) in this project',
       inputSchema: z.object({}),
-      execute: async (): Promise<{ globals: GlobalSummaryResult[] }> => {
-        const globals: GlobalSummaryResult[] = (config.globals || []).map((g) => ({
-          slug: g.slug,
-          label: g.label || g.slug,
-        }));
-        return { globals };
+      execute: async () => {
+        return withTimeout(
+          (async () => {
+            const globals: GlobalSummaryResult[] = (config.globals || []).map((g) => ({
+              slug: g.slug,
+              label: g.label || g.slug,
+            }));
+            return { globals };
+          })(),
+          10000,
+          'listGlobals'
+        );
       },
     }),
 
@@ -144,33 +189,43 @@ export function createDyrectedAITools({
         global: globalSlug,
       }: {
         global: string;
-      }): Promise<GlobalSchemaResult | { error: string }> => {
-        const g = config.globals?.find((item) => item.slug === globalSlug);
-        if (!g) {
-          return { error: `Global "${globalSlug}" not found.` };
-        }
+      }) => {
+        return withTimeout(
+          (async () => {
+            const g = config.globals?.find((item) => item.slug === globalSlug);
+            if (!g) {
+              return {
+                error: `Global "${globalSlug}" not found.`,
+                suggestion: `Available globals in this project are: [${getAvailableGlobalSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        let data: Record<string, unknown> | null = null;
-        try {
-          data = await db.getGlobal({ slug: globalSlug });
-        } catch {
-          // ignore if getGlobal is not supported or returns null
-        }
+            let data: Record<string, unknown> | null = null;
+            try {
+              data = await db.getGlobal({ slug: globalSlug });
+            } catch {
+              // ignore if getGlobal returns null
+            }
 
-        const fields =
-          g.fields?.map((f: any) => ({
-            name: f.name,
-            type: f.type,
-            label: f.label,
-            required: !!f.required,
-          })) || [];
+            const fields =
+              g.fields?.map((f: any) => ({
+                name: f.name,
+                type: f.type,
+                label: f.label,
+                required: !!f.required,
+              })) || [];
 
-        return {
-          slug: g.slug,
-          label: g.label || g.slug,
-          fields,
-          data,
-        };
+            return {
+              slug: g.slug,
+              label: g.label || g.slug,
+              fields,
+              data,
+            };
+          })(),
+          10000,
+          'getGlobalSchema'
+        );
       },
     }),
 
@@ -199,54 +254,75 @@ export function createDyrectedAITools({
         sort?: string;
         limit?: number;
         page?: number;
-      }): Promise<QueryCollectionResult | { error: string }> => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is private or internal.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+      }) => {
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is private or internal.`,
+                suggestion: `Query public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" does not exist in this project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}]. Use getCollectionSchema() to inspect valid fields.`,
+                recoverable: true,
+              };
+            }
 
-        // Access check
-        const canRead = await isAccessAllowed(config, col.access?.read, {
-          req: { user, siteId: projectId } as any,
-          user,
-        });
-        if (!canRead) {
-          return { error: `Access denied: you do not have permission to read collection "${collection}".` };
-        }
+            // Access check
+            const canRead = await isAccessAllowed(config, col.access?.read, {
+              req: { user, siteId: projectId } as any,
+              user,
+            });
+            if (!canRead) {
+              return {
+                error: `Access denied: user lacks read permission for collection "${collection}".`,
+                recoverable: false,
+              };
+            }
 
-        try {
-          const result = await db.find({
-            collection,
-            where: where || {},
-            sort,
-            limit,
-            page,
-          });
+            try {
+              const result = await db.find({
+                collection,
+                where: where || {},
+                sort,
+                limit,
+                page,
+              });
 
-          // Redact sensitive password/salt fields if auth collection
-          const sanitizedDocs = (result.docs || []).map((doc: any) => {
-            const copy = { ...doc };
-            delete copy.password;
-            delete copy.salt;
-            delete copy.hash;
-            delete copy.resetPasswordToken;
-            return copy;
-          });
+              // Redact sensitive password/salt fields if auth collection
+              const sanitizedDocs = (result.docs || []).map((doc: any) => {
+                const copy = { ...doc };
+                delete copy.password;
+                delete copy.salt;
+                delete copy.hash;
+                delete copy.resetPasswordToken;
+                return copy;
+              });
 
-          return {
-            collection,
-            docs: sanitizedDocs,
-            total: result.total ?? sanitizedDocs.length,
-            totalPages: result.totalPages ?? 1,
-            page: result.page ?? page,
-            limit: result.limit ?? limit,
-          };
-        } catch (err: any) {
-          return { error: `Failed to query collection "${collection}": ${err.message}` };
-        }
+              return {
+                collection,
+                docs: sanitizedDocs,
+                total: result.total ?? sanitizedDocs.length,
+                totalPages: result.totalPages ?? 1,
+                page: result.page ?? page,
+                limit: result.limit ?? limit,
+              };
+            } catch (err: any) {
+              return {
+                error: `Failed to query collection "${collection}": ${err.message}`,
+                suggestion: 'Verify field names match the collection schema using getCollectionSchema().',
+                recoverable: true,
+              };
+            }
+          })(),
+          10000,
+          'queryCollection'
+        );
       },
     }),
 
@@ -262,44 +338,68 @@ export function createDyrectedAITools({
       }: {
         collection: string;
         id: string;
-      }): Promise<GetDocumentResult | { error: string }> => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is private or internal.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+      }) => {
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is private or internal.`,
+                suggestion: `Retrieve documents from public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" not found.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        // Access check
-        const canRead = await isAccessAllowed(config, col.access?.read, {
-          req: { user, siteId: projectId } as any,
-          user,
-        });
-        if (!canRead) {
-          return { error: `Access denied: you do not have permission to read document "${id}" in "${collection}".` };
-        }
+            // Access check
+            const canRead = await isAccessAllowed(config, col.access?.read, {
+              req: { user, siteId: projectId } as any,
+              user,
+            });
+            if (!canRead) {
+              return {
+                error: `Access denied: you do not have permission to read document "${id}" in "${collection}".`,
+                recoverable: false,
+              };
+            }
 
-        try {
-          const doc = await db.findOne({
-            collection,
-            id,
-          });
+            try {
+              const doc = await db.findOne({
+                collection,
+                id,
+              });
 
-          if (!doc) {
-            return { error: `Document "${id}" not found in collection "${collection}".` };
-          }
+              if (!doc) {
+                return {
+                  error: `Document "${id}" not found in collection "${collection}".`,
+                  suggestion: `Check available IDs using queryCollection("${collection}").`,
+                  recoverable: true,
+                };
+              }
 
-          const copy = { ...doc };
-          delete copy.password;
-          delete copy.salt;
-          delete copy.hash;
-          delete copy.resetPasswordToken;
+              const copy = { ...doc };
+              delete copy.password;
+              delete copy.salt;
+              delete copy.hash;
+              delete copy.resetPasswordToken;
 
-          return { collection, doc: copy };
-        } catch (err: any) {
-          return { error: `Failed to fetch document "${id}": ${err.message}` };
-        }
+              return { collection, doc: copy };
+            } catch (err: any) {
+              return {
+                error: `Failed to fetch document "${id}": ${err.message}`,
+                recoverable: true,
+              };
+            }
+          })(),
+          10000,
+          'getDocument'
+        );
       },
     }),
 
@@ -334,35 +434,56 @@ export function createDyrectedAITools({
         collection: string;
         aggregates: Record<string, any>;
         groupBy?: string;
-      }): Promise<AggregateCollectionResult | { error: string }> => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is private or internal.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+      }) => {
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is private or internal.`,
+                suggestion: `Aggregate public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" not found.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        // Access check
-        const canRead = await isAccessAllowed(config, col.access?.read, {
-          req: { user, siteId: projectId } as any,
-          user,
-        });
-        if (!canRead) {
-          return { error: `Access denied: you do not have permission to aggregate collection "${collection}".` };
-        }
+            // Access check
+            const canRead = await isAccessAllowed(config, col.access?.read, {
+              req: { user, siteId: projectId } as any,
+              user,
+            });
+            if (!canRead) {
+              return {
+                error: `Access denied: you do not have permission to aggregate collection "${collection}".`,
+                recoverable: false,
+              };
+            }
 
-        try {
-          const result = await db.aggregate({
-            collection,
-            aggregates,
-            groupBy,
-          });
+            try {
+              const result = await db.aggregate({
+                collection,
+                aggregates,
+                groupBy,
+              });
 
-          return { collection, result };
-        } catch (err: any) {
-          return { error: `Failed to compute aggregates on "${collection}": ${err.message}` };
-        }
+              return { collection, result };
+            } catch (err: any) {
+              return {
+                error: `Failed to compute aggregates on "${collection}": ${err.message}`,
+                suggestion: 'Verify field names match schema with getCollectionSchema().',
+                recoverable: true,
+              };
+            }
+          })(),
+          10000,
+          'aggregateCollection'
+        );
       },
     }),
 
@@ -401,27 +522,34 @@ export function createDyrectedAITools({
         limit?: number;
         minScore?: number;
       }) => {
-        try {
-          const result = await RAGService.search({
-            db,
-            config,
-            query,
-            projectId,
-            collections,
-            limit,
-            minScore,
-            user,
-          });
+        return withTimeout(
+          (async () => {
+            try {
+              const result = await RAGService.search({
+                db,
+                config,
+                query,
+                projectId,
+                collections,
+                limit,
+                minScore,
+                user,
+              });
 
-          return result;
-        } catch (err: any) {
-          return {
-            query,
-            resultsCount: 0,
-            sources: [],
-            error: `Semantic search failed: ${err.message}`,
-          };
-        }
+              return result;
+            } catch (err: any) {
+              return {
+                query,
+                resultsCount: 0,
+                sources: [],
+                error: `Semantic search failed: ${err.message}`,
+                recoverable: true,
+              };
+            }
+          })(),
+          10000,
+          'searchContent'
+        );
       },
     }),
 
@@ -443,64 +571,88 @@ export function createDyrectedAITools({
         data: Record<string, any>;
         summary: string;
       }) => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is internal and cannot be modified.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is internal and cannot be modified.`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        // Access check: create permission
-        const canCreate = await isAccessAllowed(config, col.access?.create, {
-          req: { user, siteId: projectId } as any,
-          user,
-          data,
-        });
-        if (!canCreate) {
-          return { error: `Access denied: you do not have permission to create records in "${collection}".` };
-        }
+            // Access check: create permission
+            const canCreate = await isAccessAllowed(config, col.access?.create, {
+              req: { user, siteId: projectId } as any,
+              user,
+              data,
+            });
+            if (!canCreate) {
+              return {
+                error: `Access denied: you do not have permission to create records in "${collection}".`,
+                recoverable: false,
+              };
+            }
 
-        // Dry-run field schema validation
-        const fields = col.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
-        const validation = validatePayloadAgainstFields(fields, data, false);
-        if (!validation.valid) {
-          return { error: `Schema validation failed: ${validation.error}` };
-        }
+            // Dry-run field schema validation
+            const fields = col.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
+            const validation = validatePayloadAgainstFields(fields, data, false);
+            if (!validation.valid) {
+              return {
+                error: `Schema validation failed: ${validation.error}`,
+                suggestion: `Check collection schema with getCollectionSchema("${collection}").`,
+                recoverable: true,
+              };
+            }
 
-        const actionId = generateActionId();
-        const actionRecord: AIAction = {
-          id: actionId,
-          projectId,
-          userId: user?.id ? String(user.id) : undefined,
-          type: 'createDocument',
-          targetCollection: collection,
-          summary,
-          beforeSnapshot: null,
-          proposedData: data,
-          status: 'pending',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
-          createdAt: new Date(),
-        };
+            const actionId = generateActionId();
+            const actionRecord: AIAction = {
+              id: actionId,
+              projectId,
+              userId: user?.id ? String(user.id) : undefined,
+              type: 'createDocument',
+              targetCollection: collection,
+              summary,
+              beforeSnapshot: null,
+              proposedData: data,
+              status: 'pending',
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 mins
+              createdAt: new Date(),
+            };
 
-        try {
-          await db.create({
-            collection: AI_ACTIONS_COLLECTION,
-            data: actionRecord,
-          });
-        } catch (err: any) {
-          return { error: `Failed to persist action proposal: ${err.message}` };
-        }
+            try {
+              await db.create({
+                collection: AI_ACTIONS_COLLECTION,
+                data: actionRecord,
+              });
+            } catch (err: any) {
+              return {
+                error: `Failed to persist action proposal: ${err.message}`,
+                recoverable: true,
+              };
+            }
 
-        return {
-          actionId,
-          type: 'createDocument',
-          collection,
-          summary,
-          proposedData: data,
-          status: 'pending',
-          requiresApproval: true,
-        };
+            return {
+              actionId,
+              type: 'createDocument',
+              collection,
+              summary,
+              proposedData: data,
+              status: 'pending',
+              requiresApproval: true,
+            };
+          })(),
+          10000,
+          'proposeCreateDocument'
+        );
       },
     }),
 
@@ -524,74 +676,102 @@ export function createDyrectedAITools({
         data: Record<string, any>;
         summary: string;
       }) => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is internal and cannot be modified.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is internal and cannot be modified.`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        // Fetch current document state for snapshot & access verification
-        const existingDoc = await db.findOne({ collection, id });
-        if (!existingDoc) {
-          return { error: `Document "${id}" not found in collection "${collection}".` };
-        }
+            // Fetch current document state for snapshot & access verification
+            const existingDoc = await db.findOne({ collection, id });
+            if (!existingDoc) {
+              return {
+                error: `Document "${id}" not found in collection "${collection}".`,
+                suggestion: `Search existing records first with queryCollection("${collection}").`,
+                recoverable: true,
+              };
+            }
 
-        // Access check: update permission
-        const canUpdate = await isAccessAllowed(config, col.access?.update, {
-          req: { user, siteId: projectId } as any,
-          user,
-          data,
-          doc: existingDoc,
-        });
-        if (!canUpdate) {
-          return { error: `Access denied: you do not have permission to update document "${id}" in "${collection}".` };
-        }
+            // Access check: update permission
+            const canUpdate = await isAccessAllowed(config, col.access?.update, {
+              req: { user, siteId: projectId } as any,
+              user,
+              data,
+              doc: existingDoc,
+            });
+            if (!canUpdate) {
+              return {
+                error: `Access denied: you do not have permission to update document "${id}" in "${collection}".`,
+                recoverable: false,
+              };
+            }
 
-        // Dry-run field schema validation (partial)
-        const fields = col.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
-        const validation = validatePayloadAgainstFields(fields, data, true);
-        if (!validation.valid) {
-          return { error: `Schema validation failed: ${validation.error}` };
-        }
+            // Dry-run field schema validation (partial)
+            const fields = col.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
+            const validation = validatePayloadAgainstFields(fields, data, true);
+            if (!validation.valid) {
+              return {
+                error: `Schema validation failed: ${validation.error}`,
+                suggestion: `Check collection schema with getCollectionSchema("${collection}").`,
+                recoverable: true,
+              };
+            }
 
-        const actionId = generateActionId();
-        const actionRecord: AIAction = {
-          id: actionId,
-          projectId,
-          userId: user?.id ? String(user.id) : undefined,
-          type: 'updateDocument',
-          targetCollection: collection,
-          documentId: id,
-          summary,
-          beforeSnapshot: existingDoc,
-          proposedData: data,
-          status: 'pending',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-          createdAt: new Date(),
-        };
+            const actionId = generateActionId();
+            const actionRecord: AIAction = {
+              id: actionId,
+              projectId,
+              userId: user?.id ? String(user.id) : undefined,
+              type: 'updateDocument',
+              targetCollection: collection,
+              documentId: id,
+              summary,
+              beforeSnapshot: existingDoc,
+              proposedData: data,
+              status: 'pending',
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+              createdAt: new Date(),
+            };
 
-        try {
-          await db.create({
-            collection: AI_ACTIONS_COLLECTION,
-            data: actionRecord,
-          });
-        } catch (err: any) {
-          return { error: `Failed to persist action proposal: ${err.message}` };
-        }
+            try {
+              await db.create({
+                collection: AI_ACTIONS_COLLECTION,
+                data: actionRecord,
+              });
+            } catch (err: any) {
+              return {
+                error: `Failed to persist action proposal: ${err.message}`,
+                recoverable: true,
+              };
+            }
 
-        return {
-          actionId,
-          type: 'updateDocument',
-          collection,
-          documentId: id,
-          summary,
-          beforeSnapshot: existingDoc,
-          proposedData: data,
-          status: 'pending',
-          requiresApproval: true,
-        };
+            return {
+              actionId,
+              type: 'updateDocument',
+              collection,
+              documentId: id,
+              summary,
+              beforeSnapshot: existingDoc,
+              proposedData: data,
+              status: 'pending',
+              requiresApproval: true,
+            };
+          })(),
+          10000,
+          'proposeUpdateDocument'
+        );
       },
     }),
 
@@ -615,65 +795,89 @@ export function createDyrectedAITools({
         summary: string;
         permanent?: boolean;
       }) => {
-        if (isAICollection(collection) || collection.startsWith('_')) {
-          return { error: `Collection "${collection}" is internal and cannot be deleted.` };
-        }
-        const col = config.collections?.find((c) => c.slug === collection);
-        if (!col) {
-          return { error: `Collection "${collection}" not found.` };
-        }
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is internal and cannot be deleted.`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col) {
+              return {
+                error: `Collection "${collection}" not found.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        const existingDoc = await db.findOne({ collection, id });
-        if (!existingDoc) {
-          return { error: `Document "${id}" not found in collection "${collection}".` };
-        }
+            const existingDoc = await db.findOne({ collection, id });
+            if (!existingDoc) {
+              return {
+                error: `Document "${id}" not found in collection "${collection}".`,
+                suggestion: `Search existing records with queryCollection("${collection}").`,
+                recoverable: true,
+              };
+            }
 
-        // Access check: delete permission
-        const canDelete = await isAccessAllowed(config, col.access?.delete, {
-          req: { user, siteId: projectId } as any,
-          user,
-          doc: existingDoc,
-        });
-        if (!canDelete) {
-          return { error: `Access denied: you do not have permission to delete document "${id}" in "${collection}".` };
-        }
+            // Access check: delete permission
+            const canDelete = await isAccessAllowed(config, col.access?.delete, {
+              req: { user, siteId: projectId } as any,
+              user,
+              doc: existingDoc,
+            });
+            if (!canDelete) {
+              return {
+                error: `Access denied: you do not have permission to delete document "${id}" in "${collection}".`,
+                recoverable: false,
+              };
+            }
 
-        const actionId = generateActionId();
-        const actionRecord: AIAction = {
-          id: actionId,
-          projectId,
-          userId: user?.id ? String(user.id) : undefined,
-          type: 'deleteDocument',
-          targetCollection: collection,
-          documentId: id,
-          summary,
-          beforeSnapshot: existingDoc,
-          proposedData: { permanent },
-          status: 'pending',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-          createdAt: new Date(),
-        };
+            const actionId = generateActionId();
+            const actionRecord: AIAction = {
+              id: actionId,
+              projectId,
+              userId: user?.id ? String(user.id) : undefined,
+              type: 'deleteDocument',
+              targetCollection: collection,
+              documentId: id,
+              summary,
+              beforeSnapshot: existingDoc,
+              proposedData: { permanent },
+              status: 'pending',
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+              createdAt: new Date(),
+            };
 
-        try {
-          await db.create({
-            collection: AI_ACTIONS_COLLECTION,
-            data: actionRecord,
-          });
-        } catch (err: any) {
-          return { error: `Failed to persist action proposal: ${err.message}` };
-        }
+            try {
+              await db.create({
+                collection: AI_ACTIONS_COLLECTION,
+                data: actionRecord,
+              });
+            } catch (err: any) {
+              return {
+                error: `Failed to persist action proposal: ${err.message}`,
+                recoverable: true,
+              };
+            }
 
-        return {
-          actionId,
-          type: 'deleteDocument',
-          collection,
-          documentId: id,
-          summary,
-          beforeSnapshot: existingDoc,
-          proposedData: { permanent },
-          status: 'pending',
-          requiresApproval: true,
-        };
+            return {
+              actionId,
+              type: 'deleteDocument',
+              collection,
+              documentId: id,
+              summary,
+              beforeSnapshot: existingDoc,
+              proposedData: { permanent },
+              status: 'pending',
+              requiresApproval: true,
+            };
+          })(),
+          10000,
+          'proposeDeleteDocument'
+        );
       },
     }),
 
@@ -694,60 +898,77 @@ export function createDyrectedAITools({
         data: Record<string, any>;
         summary: string;
       }) => {
-        const g = config.globals?.find((item) => item.slug === globalSlug);
-        if (!g) {
-          return { error: `Global "${globalSlug}" not found.` };
-        }
+        return withTimeout(
+          (async () => {
+            const g = config.globals?.find((item) => item.slug === globalSlug);
+            if (!g) {
+              return {
+                error: `Global "${globalSlug}" not found.`,
+                suggestion: `Available globals in this project are: [${getAvailableGlobalSlugs(config)}].`,
+                recoverable: true,
+              };
+            }
 
-        // Fetch current global snapshot
-        let existingGlobal: Record<string, unknown> | null = null;
-        try {
-          existingGlobal = await db.getGlobal({ slug: globalSlug });
-        } catch {
-          // ignore
-        }
+            // Fetch current global snapshot
+            let existingGlobal: Record<string, unknown> | null = null;
+            try {
+              existingGlobal = await db.getGlobal({ slug: globalSlug });
+            } catch {
+              // ignore
+            }
 
-        // Dry-run field validation
-        const fields = g.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
-        const validation = validatePayloadAgainstFields(fields, data, true);
-        if (!validation.valid) {
-          return { error: `Schema validation failed: ${validation.error}` };
-        }
+            // Dry-run field validation
+            const fields = g.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
+            const validation = validatePayloadAgainstFields(fields, data, true);
+            if (!validation.valid) {
+              return {
+                error: `Schema validation failed: ${validation.error}`,
+                suggestion: `Inspect global fields with getGlobalSchema("${globalSlug}").`,
+                recoverable: true,
+              };
+            }
 
-        const actionId = generateActionId();
-        const actionRecord: AIAction = {
-          id: actionId,
-          projectId,
-          userId: user?.id ? String(user.id) : undefined,
-          type: 'updateGlobal',
-          targetGlobal: globalSlug,
-          summary,
-          beforeSnapshot: existingGlobal,
-          proposedData: data,
-          status: 'pending',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-          createdAt: new Date(),
-        };
+            const actionId = generateActionId();
+            const actionRecord: AIAction = {
+              id: actionId,
+              projectId,
+              userId: user?.id ? String(user.id) : undefined,
+              type: 'updateGlobal',
+              targetGlobal: globalSlug,
+              summary,
+              beforeSnapshot: existingGlobal,
+              proposedData: data,
+              status: 'pending',
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+              createdAt: new Date(),
+            };
 
-        try {
-          await db.create({
-            collection: AI_ACTIONS_COLLECTION,
-            data: actionRecord,
-          });
-        } catch (err: any) {
-          return { error: `Failed to persist action proposal: ${err.message}` };
-        }
+            try {
+              await db.create({
+                collection: AI_ACTIONS_COLLECTION,
+                data: actionRecord,
+              });
+            } catch (err: any) {
+              return {
+                error: `Failed to persist action proposal: ${err.message}`,
+                recoverable: true,
+              };
+            }
 
-        return {
-          actionId,
-          type: 'updateGlobal',
-          global: globalSlug,
-          summary,
-          beforeSnapshot: existingGlobal,
-          proposedData: data,
-          status: 'pending',
-          requiresApproval: true,
-        };
+            return {
+              actionId,
+              type: 'updateGlobal',
+              global: globalSlug,
+              summary,
+              beforeSnapshot: existingGlobal,
+              proposedData: data,
+              status: 'pending',
+              requiresApproval: true,
+            };
+          })(),
+          10000,
+          'proposeUpdateGlobal'
+        );
       },
     }),
   };
@@ -761,7 +982,11 @@ export function createDyrectedAITools({
         description: toolDef.description,
         inputSchema: schema,
         execute: async (args: any) => {
-          return toolDef.execute(args, context);
+          return withTimeout(
+            Promise.resolve(toolDef.execute(args, context)),
+            10000,
+            toolName
+          );
         },
       });
     }

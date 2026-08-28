@@ -5,6 +5,7 @@ import type { DatabaseAdapter } from "../types/adapters.js";
 import type { DyrectedConfig, AuthenticatedUser } from "../types/index.js";
 import type { DyrectedAIContext, AIThread, AIMessage } from "../types/ai.js";
 import { createDyrectedAITools } from "./ai-tools.js";
+import { aiLogger } from "../utils/ai-logger.js";
 
 export function getAIModel(config?: DyrectedConfig): LanguageModel {
   const ai = config?.ai;
@@ -559,8 +560,11 @@ export class AIAgent {
   async createStreamResponse(
     threadId: string,
     userMessage: string,
-    clientMessages?: any[]
+    clientMessages?: any[],
+    abortSignal?: AbortSignal,
+    requestId?: string
   ): Promise<Response> {
+    const startTime = Date.now();
     const context = await this.getContext();
     const systemPrompt = buildDyrectedSystemPrompt(context);
     const history = await this.getMessages(threadId);
@@ -605,11 +609,13 @@ export class AIAgent {
       system: systemPrompt,
       messages,
       tools,
+      abortSignal,
       stopWhen: stepCountIs(maxSteps),
       maxRetries,
       temperature: 0.7,
       maxOutputTokens: 4096,
       onFinish: async (event) => {
+        const latencyMs = Date.now() - startTime;
         try {
           const parts: any[] = [];
           if (event.steps && Array.isArray(event.steps)) {
@@ -647,11 +653,34 @@ export class AIAgent {
             {
               tokens: event.usage?.totalTokens,
               finishReason: event.finishReason,
+              latencyMs,
             },
             parts.length > 0 ? parts : undefined
           );
+
+          aiLogger.info(
+            {
+              requestId,
+              projectId: this.projectId,
+              userId: this.userId,
+              threadId,
+              latencyMs,
+              usage: event.usage,
+              finishReason: event.finishReason,
+            },
+            'AI chat stream completed'
+          );
         } catch (err) {
-          console.error("[dyrected/ai] Failed to persist assistant message:", err);
+          aiLogger.error(
+            {
+              requestId,
+              projectId: this.projectId,
+              userId: this.userId,
+              threadId,
+              err,
+            },
+            'Failed to persist assistant message'
+          );
         }
       },
     });

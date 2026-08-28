@@ -10,6 +10,7 @@ import { PreviewController } from "./controllers/preview.controller.js";
 import { AuditController } from "./controllers/audit.controller.js";
 import { AIController } from "./controllers/ai.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
+import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig } from "./utils/admin-auth.js";
@@ -714,18 +715,20 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   // 2c. AI Routes
   const aiController = new AIController(config);
-  app.post("/api/ai/chat", optionalAuth(config), (c) => aiController.chat(c));
-  app.post("/api/ai/threads", optionalAuth(config), (c) => aiController.createThread(c));
-  app.get("/api/ai/threads", optionalAuth(config), (c) => aiController.listThreads(c));
-  app.delete("/api/ai/threads", optionalAuth(config), (c) => aiController.clearThreads(c));
-  app.get("/api/ai/threads/:threadId", optionalAuth(config), (c) => aiController.getThread(c));
-  app.delete("/api/ai/threads/:threadId", optionalAuth(config), (c) => aiController.deleteThread(c));
-  app.post("/api/ai/threads/:threadId/messages", optionalAuth(config), (c) => aiController.postMessage(c));
-  app.post("/api/ai/rag/reindex", optionalAuth(config), (c) => aiController.reindex(c));
-  app.post("/api/ai/rag/search", optionalAuth(config), (c) => aiController.searchRAG(c));
-  app.get("/api/ai/actions/:actionId", optionalAuth(config), (c) => aiController.getAction(c));
-  app.post("/api/ai/actions/:actionId/execute", optionalAuth(config), (c) => aiController.executeAction(c));
-  app.post("/api/ai/actions/:actionId/reject", optionalAuth(config), (c) => aiController.rejectAction(c));
+  app.use("/api/ai/*", optionalAuth(config), aiRateLimit(config));
+
+  app.post("/api/ai/chat", (c) => aiController.chat(c));
+  app.post("/api/ai/threads", (c) => aiController.createThread(c));
+  app.get("/api/ai/threads", (c) => aiController.listThreads(c));
+  app.delete("/api/ai/threads", (c) => aiController.clearThreads(c));
+  app.get("/api/ai/threads/:threadId", (c) => aiController.getThread(c));
+  app.delete("/api/ai/threads/:threadId", (c) => aiController.deleteThread(c));
+  app.post("/api/ai/threads/:threadId/messages", (c) => aiController.postMessage(c));
+  app.post("/api/ai/rag/reindex", (c) => aiController.reindex(c));
+  app.post("/api/ai/rag/search", (c) => aiController.searchRAG(c));
+  app.get("/api/ai/actions/:actionId", (c) => aiController.getAction(c));
+  app.post("/api/ai/actions/:actionId/execute", (c) => aiController.executeAction(c));
+  app.post("/api/ai/actions/:actionId/reject", (c) => aiController.rejectAction(c));
 
   // 3. Auth Routes — for collections with auth: true
   for (const collection of config.collections) {

@@ -75,10 +75,17 @@ export class AIController {
         .catch(console.error);
     }
 
+    const requestId =
+      (c.get("requestId" as any) as string) ||
+      c.req.header("X-Request-Id") ||
+      `req_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+
     return agent.createStreamResponse(
       targetThreadId,
       content,
       Array.isArray(body.messages) ? body.messages : undefined,
+      c.req.raw?.signal,
+      requestId,
     );
   }
 
@@ -282,12 +289,20 @@ export class AIController {
       throw new HTTPException(404, { message: `Action "${actionId}" not found` });
     }
 
+    if (action.status === "executing") {
+      throw new HTTPException(409, { message: "Action is currently being executed by another process. Please wait." });
+    }
+
     if (action.status === "executed") {
       return c.json({ success: true, message: "Action has already been executed", action });
     }
 
     if (action.status === "rejected") {
       throw new HTTPException(400, { message: "Action was previously rejected and cannot be executed" });
+    }
+
+    if (action.status !== "pending") {
+      throw new HTTPException(400, { message: `Action cannot be executed in status "${action.status}".` });
     }
 
     if (action.expiresAt && new Date(action.expiresAt) < new Date()) {
@@ -326,6 +341,13 @@ export class AIController {
         });
       }
     }
+
+    // Acquire atomic execution lock to prevent double-clicks
+    await db.update({
+      collection: AI_ACTIONS_COLLECTION,
+      id: actionId,
+      data: { status: "executing" },
+    });
 
     let snapshotAfter: any = null;
     let rollbackPayload: any = null;

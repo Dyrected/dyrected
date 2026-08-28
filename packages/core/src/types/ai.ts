@@ -114,6 +114,8 @@ export interface RAGSearchResult {
 }
 
 export interface AIConfig {
+  /** Master switch to enable/disable AI endpoints. Defaults to true. */
+  enabled?: boolean;
   /** AI Provider to use. Defaults to 'google' or auto-detects from environment variables. */
   provider?: 'google' | 'agentrouter' | 'openrouter' | 'openai' | 'custom';
   /** Custom base URL for OpenAI-compatible gateways (e.g. https://agentrouter.org/v1). */
@@ -130,6 +132,11 @@ export interface AIConfig {
   maxSteps?: number;
   /** Number of automatic retry attempts on transient rate limits / network errors. Defaults to 3. */
   maxRetries?: number;
+  /** Rate limiting options per user and per project. */
+  rateLimit?: {
+    userMax?: number;
+    projectMax?: number;
+  };
   /** Global RAG (Retrieval-Augmented Generation) configuration options. */
   rag?: GlobalRAGConfig;
   /** Conversation compaction options. */
