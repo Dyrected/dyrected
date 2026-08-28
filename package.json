@@ -9,8 +9,8 @@
     "lint": "turbo lint",
     "version:packages": "changeset version && node scripts/sync-changelog.mjs",
     "sync:changelog": "node scripts/sync-changelog.mjs",
-    "release": "pnpm build:packages && changeset publish",
-    "release:snapshot": "pnpm build:packages && changeset publish --no-git-tag"
+    "release": "pnpm build:packages && node scripts/publish-packages.mjs --tag latest",
+    "release:snapshot": "pnpm build:packages && node scripts/publish-packages.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

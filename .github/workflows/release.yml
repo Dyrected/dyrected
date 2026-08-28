@@ -98,8 +98,9 @@ jobs:
           # Create snapshot version
           pnpm changeset version --snapshot "${TAG_NAME}"
           
-          # Publish snapshot to npm under the PR tag
-          pnpm changeset publish --tag "${TAG_NAME}" --no-git-tag
+          # Build updated packages and publish directly via native npm (OIDC enabled)
+          pnpm build:packages
+          node scripts/publish-packages.mjs --tag "${TAG_NAME}"
         env:
           NPM_CONFIG_PROVENANCE: "true"
 
