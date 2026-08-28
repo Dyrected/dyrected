@@ -272,6 +272,184 @@ export function generateOpenApi(config: DyrectedConfig) {
     },
   };
 
+  // AI & Assistant Endpoints
+  spec.paths["/api/ai/chat"] = {
+    post: {
+      tags: ["AI"],
+      summary: "Send prompt and stream AI assistant response",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                content: { type: "string", description: "User prompt message" },
+                prompt: { type: "string", description: "Alias for content" },
+                threadId: { type: "string", description: "Existing conversation thread ID" },
+                messages: { type: "array", items: { type: "object" }, description: "Conversation history" },
+              },
+              required: [],
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "Server-Sent Events (SSE) AI message stream",
+          content: { "text/event-stream": { schema: { type: "string" } } },
+        },
+      },
+    },
+  };
+  spec.paths["/api/ai/threads"] = {
+    get: {
+      tags: ["AI"],
+      summary: "List conversation threads",
+      parameters: [
+        { name: "limit", in: "query", schema: { type: "integer", default: 20 } },
+      ],
+      responses: { 200: { description: "Array of conversation threads" } },
+    },
+    post: {
+      tags: ["AI"],
+      summary: "Create a new conversation thread",
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: { title: { type: "string" } },
+            },
+          },
+        },
+      },
+      responses: { 201: { description: "Created conversation thread" } },
+    },
+    delete: {
+      tags: ["AI"],
+      summary: "Clear all conversation threads",
+      responses: { 200: { description: "Count of deleted threads" } },
+    },
+  };
+  spec.paths["/api/ai/threads/{threadId}"] = {
+    get: {
+      tags: ["AI"],
+      summary: "Get conversation thread and historical messages",
+      parameters: [
+        { name: "threadId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { 200: { description: "Thread details and messages" } },
+    },
+    delete: {
+      tags: ["AI"],
+      summary: "Delete a specific conversation thread",
+      parameters: [
+        { name: "threadId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { 200: { description: "Deletion success status" } },
+    },
+  };
+  spec.paths["/api/ai/threads/{threadId}/messages"] = {
+    post: {
+      tags: ["AI"],
+      summary: "Post a message to an existing thread and stream reply",
+      parameters: [
+        { name: "threadId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: { content: { type: "string" } },
+              required: ["content"],
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "Server-Sent Events (SSE) AI message stream",
+          content: { "text/event-stream": { schema: { type: "string" } } },
+        },
+      },
+    },
+  };
+  spec.paths["/api/ai/actions/{actionId}"] = {
+    get: {
+      tags: ["AI"],
+      summary: "Get an AI mutation action proposal",
+      parameters: [
+        { name: "actionId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { 200: { description: "AI Action details and diff payload" } },
+    },
+  };
+  spec.paths["/api/ai/actions/{actionId}/execute"] = {
+    post: {
+      tags: ["AI"],
+      summary: "Approve and execute an AI mutation proposal",
+      parameters: [
+        { name: "actionId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { 200: { description: "Execution result" } },
+    },
+  };
+  spec.paths["/api/ai/actions/{actionId}/reject"] = {
+    post: {
+      tags: ["AI"],
+      summary: "Reject an AI mutation proposal",
+      parameters: [
+        { name: "actionId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { 200: { description: "Rejection result" } },
+    },
+  };
+  spec.paths["/api/ai/rag/reindex"] = {
+    post: {
+      tags: ["AI"],
+      summary: "Trigger vector reindexing for semantic search",
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                collection: { type: "string" },
+                force: { type: "boolean" },
+              },
+            },
+          },
+        },
+      },
+      responses: { 200: { description: "Reindexing results and chunk counts" } },
+    },
+  };
+  spec.paths["/api/ai/rag/search"] = {
+    post: {
+      tags: ["AI"],
+      summary: "Perform semantic vector search against indexed content",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                query: { type: "string" },
+                limit: { type: "integer", default: 5 },
+              },
+              required: ["query"],
+            },
+          },
+        },
+      },
+      responses: { 200: { description: "Semantic search results" } },
+    },
+  };
+
   // 1. Generate Schemas for Collections
   for (const collection of config.collections) {
     spec.components.schemas[collection.slug] = collectionToSchema(collection);

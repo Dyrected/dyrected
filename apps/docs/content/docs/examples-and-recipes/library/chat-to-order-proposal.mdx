@@ -1,0 +1,120 @@
+---
+title: Chat-to-Order AI Proposals
+description: How to convert unstructured customer chat transcripts from WhatsApp or Telegram into structured, schema-validated database orders with human review.
+---
+
+Commercial print shops, creative agencies, and ecommerce stores often receive customer orders and quote requests inside messy WhatsApp, Telegram, or email chats. Operators typically spend hours manually re-typing items, quantities, and customer details into order forms.
+
+In this recipe, you will build an automated workflow where pasting an unstructured customer conversation into Dyrected AI automatically parses the request, looks up live pricing rules, and generates a visual **Order Proposal** ready for one-click manager approval.
+
+## 1. Defining the collections
+
+Define the `Customers`, `PricingRules`, and `Orders` collections in your project. Notice how `Orders` includes payment tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+
+```ts
+// src/collections/Orders.ts
+import {
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+```
+
+```ts
+// src/collections/PricingRules.ts
+import { defineCollection, defineTextField, defineNumberField } from "@dyrected/core";
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+```
+
+## 2. Configuring the AI System Prompt
+
+In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { Orders } from "./src/collections/Orders";
+import { PricingRules } from "./src/collections/PricingRules";
+
+export default defineConfig({
+  collections: [Orders, PricingRules],
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  ai: {
+    provider: "agentrouter",
+    model: "deepseek-v4-flash",
+    systemPrompt: `
+    You are the Operations Assistant for PrintOS.
+    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
+    1. Extract customer name, phone or handle, product specifications, and quantity.
+    2. Query the 'pricing-rules' collection to find the unit rate.
+    3. Calculate Subtotal = (Quantity * Unit Rate).
+    4. Calculate a 70% required deposit and the remaining balance due.
+    5. Generate a unique order reference (e.g. PO-2026-XXXX).
+    6. Propose a new document in the 'orders' collection.
+    `,
+  },
+});
+```
+
+## 3. Testing the workflow in the Admin Assistant
+
+1. Open your Dyrected Admin dashboard at `/admin`.
+2. Click the floating **AI Assistant** drawer on the right.
+3. Paste a sample WhatsApp conversation:
+
+```text
+Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
+Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
+```
+
+## 4. What happens automatically
+
+1. **Information Extraction:** The assistant extracts:
+   - `customerName`: "Grace"
+   - `customerContact`: "08029998877"
+   - `itemDescription`: "1,000 full-colour A5 flyers"
+   - `quantity`: `1000`
+2. **Database Lookup:** The assistant calls `queryCollection` against `pricing-rules` for `a5-flyer` (e.g. ₦45 per flyer).
+3. **Financial Math:**
+   - `subtotal`: ₦45,000
+   - `depositPaid`: ₦0
+   - `balanceDue`: ₦45,000
+4. **Interactive Diff Proposal:** The assistant renders the **Action Proposal Card** in the conversation with all fields pre-populated.
+5. **One-Click Approval:** The shop manager clicks **[Approve & Apply]**, and the order is immediately saved to PostgreSQL with zero manual data entry.

@@ -1,0 +1,101 @@
+---
+title: Custom Business Logic Tools
+description: How to extend Dyrected AI with custom server-side functions and Zod schemas for external APIs, booking calendars, and custom quoting logic.
+---
+
+While Dyrected AI provides built-in tools for querying and mutating collections, your business often requires custom logic: calling payment gateways, checking live room availability, querying external shipping APIs, or performing specialized math calculations.
+
+In this recipe, you will define custom server-side tools in `config.ai.tools` using Zod schemas.
+
+## The custom tool architecture
+
+When you register a tool in `config.ai.tools`, Dyrected automatically converts your Zod parameters into JSON schemas and presents them to the LLM. When the model invokes your tool, Dyrected calls your `execute` function on the server with full access to your database adapter and current user session.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Editor: "Check if we have consultation slots open tomorrow" │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ LLM decides to call: checkConsultationSlots({ date: ... })  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Your execute({ date }, { db, user, config }) runs on server │
+│ - Queries database or external API                          │
+│ - Returns structured JSON payload                           │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Assistant uses the result to answer the editor accurately   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 1. Defining a custom tool with Zod
+
+Here is how you define a custom consultation availability tool in `dyrected.config.ts`:
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { z } from "zod";
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  ai: {
+    provider: "agentrouter",
+    model: "deepseek-v4-flash",
+    tools: {
+      checkConsultationSlots: {
+        description: "Check available 1-on-1 coaching slots for a given date in YYYY-MM-DD format",
+        parameters: z.object({
+          date: z.string().describe("Target date in YYYY-MM-DD format, e.g. 2026-09-01"),
+        }),
+        execute: async ({ date }, { db }) => {
+          // 1. Query existing bookings from the database
+          const existingBookings = await db.find({
+            collection: "appointments",
+            where: {
+              bookingDate: { equals: date },
+              status: { notEquals: "cancelled" },
+            },
+          });
+
+          const bookedHours = new Set(existingBookings.docs.map((doc: any) => doc.timeSlot));
+          const allSlots = ["09:00 AM", "11:30 AM", "02:00 PM", "04:30 PM"];
+          const available = allSlots.filter((slot) => !bookedHours.has(slot));
+
+          return {
+            date,
+            totalSlots: allSlots.length,
+            availableSlots: available,
+            isFullyBooked: available.length === 0,
+          };
+        },
+      },
+    },
+  },
+});
+```
+
+## 2. Tool context parameters
+
+Every tool's `execute(input, context)` function receives a rich execution context:
+
+| Context Field | Type | Description |
+| --- | --- | --- |
+| `context.db` | `DatabaseAdapter` | Live database adapter for running queries and aggregations. |
+| `context.config` | `DyrectedConfig` | Your full project configuration. |
+| `context.user` | `AuthenticatedUser \| undefined` | The active editor or API user making the request. |
+| `context.projectId` | `string` | Current project identifier. |
+
+## 3. Testing in the Assistant
+
+In the Admin assistant drawer, ask:
+> *"Do we have any open coaching slots on 2026-09-01?"*
+
+The assistant invokes `checkConsultationSlots`, parses the returned list of available slots, and provides a clear breakdown in the conversation.

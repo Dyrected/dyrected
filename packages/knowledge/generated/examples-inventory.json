@@ -1,5 +1,40 @@
 [
   {
+    "id": "/deliver-content/ai-agent-api#example-1",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-2",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-3",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-4",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-5",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deliver-content/displaying-content/overview#example-1",
     "page": "/deliver-content/displaying-content/overview",
     "language": "tsx",
@@ -1428,6 +1463,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/ai-assistant#example-1",
+    "page": "/editor-experience/ai-assistant",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
     "id": "/editor-experience/audit-history#example-1",
     "page": "/editor-experience/audit-history",
     "language": "ts",
@@ -2723,6 +2765,34 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-1",
+    "page": "/examples-and-recipes/library/chat-to-order-proposal",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-2",
+    "page": "/examples-and-recipes/library/chat-to-order-proposal",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-3",
+    "page": "/examples-and-recipes/library/chat-to-order-proposal",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-4",
+    "page": "/examples-and-recipes/library/chat-to-order-proposal",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
     "id": "/examples-and-recipes/library/conditional-admin-field#example-1",
     "page": "/examples-and-recipes/library/conditional-admin-field",
     "language": "ts",
@@ -2735,6 +2805,20 @@
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/custom-ai-tools#example-1",
+    "page": "/examples-and-recipes/library/custom-ai-tools",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/examples-and-recipes/library/custom-ai-tools#example-2",
+    "page": "/examples-and-recipes/library/custom-ai-tools",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/examples-and-recipes/library/custom-page-field-editor#example-1",
@@ -3470,6 +3554,41 @@
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-1",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-2",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-3",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-4",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-5",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/configuration/collections#example-1",
