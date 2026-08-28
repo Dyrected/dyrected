@@ -419,7 +419,7 @@ export class AIController {
               db,
               config: this.config,
               collection: action.targetCollection!,
-              document: snapshotAfter,
+              doc: snapshotAfter as Record<string, unknown>,
               projectId,
             }).catch((e: unknown) => console.error("[dyrected/ai] RAG index after mutation failed:", e));
           })
