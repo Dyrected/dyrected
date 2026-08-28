@@ -35,7 +35,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@dyrected/core": "workspace:^"
+    "@dyrected/core": "workspace:^",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

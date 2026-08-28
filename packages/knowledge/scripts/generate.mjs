@@ -72,6 +72,8 @@ const recipeDocsPathMap = {
   "kanban-pipeline-view": "/docs/examples-and-recipes/library/kanban-pipeline-view",
   "calendar-schedule-view": "/docs/examples-and-recipes/library/calendar-schedule-view",
   "operational-metrics": "/docs/examples-and-recipes/library/operational-metrics",
+  "chat-to-order-proposal": "/docs/examples-and-recipes/library/chat-to-order-proposal",
+  "custom-ai-tools": "/docs/examples-and-recipes/library/custom-ai-tools",
 };
 
 function fail(message) {

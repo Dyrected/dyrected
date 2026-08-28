@@ -2842,6 +2842,41 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-1",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-2",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-3",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-4",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-5",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
     "id": "/examples-and-recipes/library/archive-instead-of-delete#example-1",
     "page": "/examples-and-recipes/library/archive-instead-of-delete",
     "language": "ts",
@@ -2873,29 +2908,8 @@
     "id": "/examples-and-recipes/library/chat-to-order-proposal#example-1",
     "page": "/examples-and-recipes/library/chat-to-order-proposal",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-2",
-    "page": "/examples-and-recipes/library/chat-to-order-proposal",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-3",
-    "page": "/examples-and-recipes/library/chat-to-order-proposal",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-4",
-    "page": "/examples-and-recipes/library/chat-to-order-proposal",
-    "language": "text",
-    "classification": "illustrative",
-    "validation": "Output, prose, or non-executable illustration"
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
     "id": "/examples-and-recipes/library/conditional-admin-field#example-1",
@@ -2914,16 +2928,9 @@
   {
     "id": "/examples-and-recipes/library/custom-ai-tools#example-1",
     "page": "/examples-and-recipes/library/custom-ai-tools",
-    "language": "",
-    "classification": "illustrative",
-    "validation": "Output, prose, or non-executable illustration"
-  },
-  {
-    "id": "/examples-and-recipes/library/custom-ai-tools#example-2",
-    "page": "/examples-and-recipes/library/custom-ai-tools",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
     "id": "/examples-and-recipes/library/custom-page-field-editor#example-1",

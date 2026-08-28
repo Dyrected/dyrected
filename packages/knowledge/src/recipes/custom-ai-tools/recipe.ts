@@ -1,33 +1,3 @@
----
-title: Custom Business Logic Tools
-description: How to extend Dyrected AI with custom server-side functions and Zod schemas for external APIs, booking calendars, and custom quoting logic.
----
-
-{/* GENERATED:RECIPE:START */}
-Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.
-
-## Use this when
-
-- add custom tool to ai assistant
-- connect external api to ai
-- custom server functions for ai
-- zod schema ai tools
-
-## Dyrected concepts
-
-`ai.tools`, `defineConfig`
-
-**Additional packages:** No additional packages.
-
-## Decisions and cautions
-
-Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
-
-## Complete recipe
-
-This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
-
-```ts
 import { defineCollection, defineTextField, defineDateField } from "@dyrected/core";
 import type { DyrectedConfig } from "@dyrected/core";
 import { z } from "zod";
@@ -76,5 +46,3 @@ export const config: DyrectedConfig = {
     },
   },
 };
-```
-{/* GENERATED:RECIPE:END */}

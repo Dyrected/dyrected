@@ -1,33 +1,3 @@
----
-title: Chat-to-Order AI Proposals
-description: How to convert unstructured customer chat transcripts from WhatsApp or Telegram into structured, schema-validated database orders with human review.
----
-
-{/* GENERATED:RECIPE:START */}
-Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.
-
-## Use this when
-
-- convert chat to order
-- parse whatsapp conversation to quote
-- telegram bot order creation
-- automate deposit calculation from chat
-
-## Dyrected concepts
-
-`ai.systemPrompt`, `ai.provider`, `defineCollection`
-
-**Additional packages:** No additional packages.
-
-## Decisions and cautions
-
-Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
-
-## Complete recipe
-
-This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
-
-```ts
 import {
   defineCollection,
   defineTextField,
@@ -81,5 +51,3 @@ export const config: DyrectedConfig = {
     systemPrompt: "Parse chat transcripts, calculate 70% deposit requirements, and propose order records.",
   },
 };
-```
-{/* GENERATED:RECIPE:END */}

@@ -7867,6 +7867,160 @@ Because the full example is still in progress, treat this as the planned coverag
 
 ---
 
+## Chat-to-Order AI Pipeline
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/chat-to-order
+
+Commercial print shops, creative agencies, custom fabricators, and ecommerce businesses frequently receive order requests through unstructured channels: WhatsApp, Telegram, direct messages, and email. Operators often spend hours manually deciphering requirements, calculating quotes, checking pricing charts, and re-typing details into forms.
+
+In this guide, you will build an automated pipeline where pasting an unstructured conversation into Dyrected AI automatically parses the request, queries live database pricing rules, computes deposit math, and presents a visual **Order Proposal** for one-click manager approval.
+
+---
+
+## What this example demonstrates
+
+1. **Unstructured Data Ingestion:** Extracting names, contact numbers, line items, and quantities from messy conversation transcripts.
+2. **Dynamic Pricing Lookups:** Querying the `pricing-rules` collection in real time to calculate unit rates.
+3. **Financial Math Automation:** Computing a required 70% deposit and remaining balance due according to your business rules.
+4. **Human-in-the-Loop Approval:** Rendering an interactive **Action Proposal Card** with a visual diff so managers review and approve before any database mutation occurs.
+
+---
+
+## 1. Defining the collections
+
+Define the `Orders` and `PricingRules` collections. Notice how `Orders` includes financial tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+
+```ts
+// src/collections/Orders.ts
+
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+```
+
+```ts
+// src/collections/PricingRules.ts
+
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+```
+
+---
+
+## 2. Configuring the AI System Prompt
+
+In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
+
+```ts
+// dyrected.config.ts
+
+
+
+
+
+export default defineConfig({
+  collections: [Orders, PricingRules],
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  ai: {
+    systemPrompt: `
+    You are the Operations Assistant for PrintOS.
+    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
+    1. Extract customer name, phone or handle, product specifications, and quantity.
+    2. Query the 'pricing-rules' collection to find the unit rate.
+    3. Calculate Subtotal = (Quantity * Unit Rate).
+    4. Calculate a 70% required deposit and the remaining balance due.
+    5. Generate a unique order reference (e.g. PO-2026-XXXX).
+    6. Propose a new document in the 'orders' collection.
+    `,
+  },
+});
+```
+
+---
+
+## 3. Testing the workflow in the Admin Assistant
+
+1. Open your Dyrected Admin dashboard at `/admin`.
+2. Click the floating **AI Assistant** drawer on the right.
+3. Paste a sample customer chat transcript:
+
+```text
+Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
+Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
+```
+
+---
+
+## 4. What happens automatically
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Assistant parses customer: Grace (08029998877)           │
+├─────────────────────────────────────────────────────────────┤
+│ 2. Queries 'pricing-rules' -> finds ₦45 per A5 flyer        │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Computes 1,000 * ₦45 = ₦45,000 Subtotal                  │
+│    Calculates ₦31,500 (70% Deposit) + ₦13,500 (Balance)     │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Renders Interactive Proposal Card in the Drawer          │
+├─────────────────────────────────────────────────────────────┤
+│ 5. Manager clicks [Approve & Apply] -> Stored in Database   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+1. **Entity Extraction:** The model extracts the customer's name, contact information, product specifications, and quantity.
+2. **Pricing Lookup:** The model invokes `queryCollection` against `pricing-rules` for `a5-flyer`.
+3. **Financial Math:** The assistant computes `subtotal`, required `depositPaid`, and remaining `balanceDue`.
+4. **Interactive Action Card:** The assistant renders the **Action Proposal Card** with a visual schema diff showing all proposed fields.
+5. **One-Click Execution:** The shop manager clicks **[Approve & Apply]**, and the order document is immediately saved to PostgreSQL with zero manual data entry.
+
+---
+
+## Related docs
+
+- [AI Configuration Guide](https://docs.dyrected.com/docs/cloud/model-content/configuration/ai)
+- [Admin AI Assistant UI](https://docs.dyrected.com/docs/cloud/editor-experience/ai-assistant)
+- [AI Agent API & Telegram Webhooks](https://docs.dyrected.com/docs/cloud/deliver-content/ai-agent-api)
+- [Chat to Order Recipe](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/chat-to-order-proposal)
+
+---
+
 ## Ecommerce
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/ecommerce
@@ -8006,8 +8160,10 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Generate a slug from a title](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
+- [Chat-to-order AI proposals](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/chat-to-order-proposal) — Problem: Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation. Summary: Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
+- [Custom business logic AI tools](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-ai-tools) — Problem: The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations. Summary: Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
@@ -8160,27 +8316,36 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/chat-to-order-proposal
 
-Commercial print shops, creative agencies, and ecommerce stores often receive customer orders and quote requests inside messy WhatsApp, Telegram, or email chats. Operators typically spend hours manually re-typing items, quantities, and customer details into order forms.
+Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.
 
-In this recipe, you will build an automated workflow where pasting an unstructured customer conversation into Dyrected AI automatically parses the request, looks up live pricing rules, and generates a visual **Order Proposal** ready for one-click manager approval.
+## Use this when
+
+- convert chat to order
+- parse whatsapp conversation to quote
+- telegram bot order creation
+- automate deposit calculation from chat
+
+## Dyrected concepts
+
+`ai.systemPrompt`, `ai.provider`, `defineCollection`
+
+**Additional packages:** No additional packages.
 
 ## Decisions and cautions
 
-- Always require manager approval for financial document creation proposals.
-- Ensure pricing rules in the database are current so the AI uses accurate unit rates.
-- Keep the `balanceDue` calculation guarded with fallback math if pricing rules are not found.
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
 
-## 1. Defining the collections
+## Complete recipe
 
-Define the `Customers`, `PricingRules`, and `Orders` collections in your project. Notice how `Orders` includes payment tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-// src/collections/Orders.ts
 
   defineCollection,
   defineTextField,
   defineNumberField,
   defineSelectField,
+  defineConfig,
 } from "@dyrected/core";
 
 export const Orders = defineCollection({
@@ -8192,9 +8357,9 @@ export const Orders = defineCollection({
     defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
     defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
     defineNumberField({ name: "quantity", label: "Quantity", required: true }),
-    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
-    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
-    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due", required: true }),
     defineSelectField({
       name: "status",
       label: "Order Status",
@@ -8208,79 +8373,27 @@ export const Orders = defineCollection({
     }),
   ],
 });
-```
-
-```ts
-// src/collections/PricingRules.ts
-
 
 export const PricingRules = defineCollection({
   slug: "pricing-rules",
   labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
   fields: [
     defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
-    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate", required: true }),
     defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
   ],
 });
-```
-
-## 2. Configuring the AI System Prompt
-
-In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
-
-```ts
-// dyrected.config.ts
 
 
 
-
-
-export default defineConfig({
+export const config: DyrectedConfig = {
   collections: [Orders, PricingRules],
-  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  globals: [],
   ai: {
-    provider: "agentrouter",
-    model: "deepseek-v4-flash",
-    systemPrompt: `
-    You are the Operations Assistant for PrintOS.
-    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
-    1. Extract customer name, phone or handle, product specifications, and quantity.
-    2. Query the 'pricing-rules' collection to find the unit rate.
-    3. Calculate Subtotal = (Quantity * Unit Rate).
-    4. Calculate a 70% required deposit and the remaining balance due.
-    5. Generate a unique order reference (e.g. PO-2026-XXXX).
-    6. Propose a new document in the 'orders' collection.
-    `,
+    systemPrompt: "Parse chat transcripts, calculate 70% deposit requirements, and propose order records.",
   },
-});
+};
 ```
-
-## 3. Testing the workflow in the Admin Assistant
-
-1. Open your Dyrected Admin dashboard at `/admin`.
-2. Click the floating **AI Assistant** drawer on the right.
-3. Paste a sample WhatsApp conversation:
-
-```text
-Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
-Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
-```
-
-## 4. What happens automatically
-
-1. **Information Extraction:** The assistant extracts:
-   - `customerName`: "Grace"
-   - `customerContact`: "08029998877"
-   - `itemDescription`: "1,000 full-colour A5 flyers"
-   - `quantity`: `1000`
-2. **Database Lookup:** The assistant calls `queryCollection` against `pricing-rules` for `a5-flyer` (e.g. ₦45 per flyer).
-3. **Financial Math:**
-   - `subtotal`: ₦45,000
-   - `depositPaid`: ₦0
-   - `balanceDue`: ₦45,000
-4. **Interactive Diff Proposal:** The assistant renders the **Action Proposal Card** in the conversation with all fields pre-populated.
-5. **One-Click Approval:** The shop manager clicks **[Approve & Apply]**, and the order is immediately saved to PostgreSQL with zero manual data entry.
 
 ---
 
@@ -8336,58 +8449,48 @@ export const Orders = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-ai-tools
 
-While Dyrected AI provides built-in tools for querying and mutating collections, your business often requires custom logic: calling payment gateways, checking live room availability, querying external shipping APIs, or performing specialized math calculations.
+Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.
 
-In this recipe, you will define custom server-side tools in `config.ai.tools` using Zod schemas.
+## Use this when
+
+- add custom tool to ai assistant
+- connect external api to ai
+- custom server functions for ai
+- zod schema ai tools
+
+## Dyrected concepts
+
+`ai.tools`, `defineConfig`
+
+**Additional packages:** No additional packages.
 
 ## Decisions and cautions
 
-- Always validate inputs using specific Zod field types and constraints.
-- Custom tool execution occurs on the server with user context, so enforce tenant permissions if necessary.
-- Return structured JSON payloads rather than plain strings so the model can format responses cleanly.
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
 
-## The custom tool architecture
+## Complete recipe
 
-When you register a tool in `config.ai.tools`, Dyrected automatically converts your Zod parameters into JSON schemas and presents them to the LLM. When the model invokes your tool, Dyrected calls your `execute` function on the server with full access to your database adapter and current user session.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Editor: "Check if we have consultation slots open tomorrow" │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ LLM decides to call: checkConsultationSlots({ date: ... })  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Your execute({ date }, { db, user, config }) runs on server │
-│ - Queries database or external API                          │
-│ - Returns structured JSON payload                           │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Assistant uses the result to answer the editor accurately   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 1. Defining a custom tool with Zod
-
-Here is how you define a custom consultation availability tool in `dyrected.config.ts`:
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-// dyrected.config.ts
 
 
 
 
-export default defineConfig({
-  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+export const Appointments = defineCollection({
+  slug: "appointments",
+  labels: { singular: "Appointment", plural: "Appointments" },
+  fields: [
+    defineTextField({ name: "clientName", label: "Client Name", required: true }),
+    defineDateField({ name: "bookingDate", label: "Date", required: true }),
+    defineTextField({ name: "timeSlot", label: "Time Slot", required: true }),
+  ],
+});
+
+export const config: DyrectedConfig = {
+  collections: [Appointments],
+  globals: [],
   ai: {
-    provider: "agentrouter",
-    model: "deepseek-v4-flash",
     tools: {
       checkConsultationSlots: {
         description: "Check available 1-on-1 coaching slots for a given date in YYYY-MM-DD format",
@@ -8395,7 +8498,6 @@ export default defineConfig({
           date: z.string().describe("Target date in YYYY-MM-DD format, e.g. 2026-09-01"),
         }),
         execute: async ({ date }, { db }) => {
-          // 1. Query existing bookings from the database
           const existingBookings = await db.find({
             collection: "appointments",
             where: {
@@ -8418,26 +8520,8 @@ export default defineConfig({
       },
     },
   },
-});
+};
 ```
-
-## 2. Tool context parameters
-
-Every tool's `execute(input, context)` function receives a rich execution context:
-
-| Context Field | Type | Description |
-| --- | --- | --- |
-| `context.db` | `DatabaseAdapter` | Live database adapter for running queries and aggregations. |
-| `context.config` | `DyrectedConfig` | Your full project configuration. |
-| `context.user` | `AuthenticatedUser \| undefined` | The active editor or API user making the request. |
-| `context.projectId` | `string` | Current project identifier. |
-
-## 3. Testing in the Assistant
-
-In the Admin assistant drawer, ask:
-> *"Do we have any open coaching slots on 2026-09-01?"*
-
-The assistant invokes `checkConsultationSlots`, parses the returned list of available slots, and provides a clear breakdown in the conversation.
 
 ---
 
@@ -39627,6 +39711,160 @@ Because the full example is still in progress, treat this as the planned coverag
 
 ---
 
+## Chat-to-Order AI Pipeline
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/examples/chat-to-order
+
+Commercial print shops, creative agencies, custom fabricators, and ecommerce businesses frequently receive order requests through unstructured channels: WhatsApp, Telegram, direct messages, and email. Operators often spend hours manually deciphering requirements, calculating quotes, checking pricing charts, and re-typing details into forms.
+
+In this guide, you will build an automated pipeline where pasting an unstructured conversation into Dyrected AI automatically parses the request, queries live database pricing rules, computes deposit math, and presents a visual **Order Proposal** for one-click manager approval.
+
+---
+
+## What this example demonstrates
+
+1. **Unstructured Data Ingestion:** Extracting names, contact numbers, line items, and quantities from messy conversation transcripts.
+2. **Dynamic Pricing Lookups:** Querying the `pricing-rules` collection in real time to calculate unit rates.
+3. **Financial Math Automation:** Computing a required 70% deposit and remaining balance due according to your business rules.
+4. **Human-in-the-Loop Approval:** Rendering an interactive **Action Proposal Card** with a visual diff so managers review and approve before any database mutation occurs.
+
+---
+
+## 1. Defining the collections
+
+Define the `Orders` and `PricingRules` collections. Notice how `Orders` includes financial tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+
+```ts
+// src/collections/Orders.ts
+
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+```
+
+```ts
+// src/collections/PricingRules.ts
+
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+```
+
+---
+
+## 2. Configuring the AI System Prompt
+
+In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
+
+```ts
+// dyrected.config.ts
+
+
+
+
+
+export default defineConfig({
+  collections: [Orders, PricingRules],
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  ai: {
+    systemPrompt: `
+    You are the Operations Assistant for PrintOS.
+    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
+    1. Extract customer name, phone or handle, product specifications, and quantity.
+    2. Query the 'pricing-rules' collection to find the unit rate.
+    3. Calculate Subtotal = (Quantity * Unit Rate).
+    4. Calculate a 70% required deposit and the remaining balance due.
+    5. Generate a unique order reference (e.g. PO-2026-XXXX).
+    6. Propose a new document in the 'orders' collection.
+    `,
+  },
+});
+```
+
+---
+
+## 3. Testing the workflow in the Admin Assistant
+
+1. Open your Dyrected Admin dashboard at `/admin`.
+2. Click the floating **AI Assistant** drawer on the right.
+3. Paste a sample customer chat transcript:
+
+```text
+Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
+Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
+```
+
+---
+
+## 4. What happens automatically
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Assistant parses customer: Grace (08029998877)           │
+├─────────────────────────────────────────────────────────────┤
+│ 2. Queries 'pricing-rules' -> finds ₦45 per A5 flyer        │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Computes 1,000 * ₦45 = ₦45,000 Subtotal                  │
+│    Calculates ₦31,500 (70% Deposit) + ₦13,500 (Balance)     │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Renders Interactive Proposal Card in the Drawer          │
+├─────────────────────────────────────────────────────────────┤
+│ 5. Manager clicks [Approve & Apply] -> Stored in Database   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+1. **Entity Extraction:** The model extracts the customer's name, contact information, product specifications, and quantity.
+2. **Pricing Lookup:** The model invokes `queryCollection` against `pricing-rules` for `a5-flyer`.
+3. **Financial Math:** The assistant computes `subtotal`, required `depositPaid`, and remaining `balanceDue`.
+4. **Interactive Action Card:** The assistant renders the **Action Proposal Card** with a visual schema diff showing all proposed fields.
+5. **One-Click Execution:** The shop manager clicks **[Approve & Apply]**, and the order document is immediately saved to PostgreSQL with zero manual data entry.
+
+---
+
+## Related docs
+
+- [AI Configuration Guide](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai)
+- [Admin AI Assistant UI](https://docs.dyrected.com/docs/self-hosted/editor-experience/ai-assistant)
+- [AI Agent API & Telegram Webhooks](https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api)
+- [Chat to Order Recipe](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal)
+
+---
+
 ## Ecommerce
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/examples/ecommerce
@@ -39766,8 +40004,10 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Generate a slug from a title](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/auto-slug) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
+- [Chat-to-order AI proposals](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal) — Problem: Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation. Summary: Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/cross-field-validation) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
+- [Custom business logic AI tools](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-ai-tools) — Problem: The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations. Summary: Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
@@ -39985,27 +40225,36 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal
 
-Commercial print shops, creative agencies, and ecommerce stores often receive customer orders and quote requests inside messy WhatsApp, Telegram, or email chats. Operators typically spend hours manually re-typing items, quantities, and customer details into order forms.
+Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.
 
-In this recipe, you will build an automated workflow where pasting an unstructured customer conversation into Dyrected AI automatically parses the request, looks up live pricing rules, and generates a visual **Order Proposal** ready for one-click manager approval.
+## Use this when
+
+- convert chat to order
+- parse whatsapp conversation to quote
+- telegram bot order creation
+- automate deposit calculation from chat
+
+## Dyrected concepts
+
+`ai.systemPrompt`, `ai.provider`, `defineCollection`
+
+**Additional packages:** No additional packages.
 
 ## Decisions and cautions
 
-- Always require manager approval for financial document creation proposals.
-- Ensure pricing rules in the database are current so the AI uses accurate unit rates.
-- Keep the `balanceDue` calculation guarded with fallback math if pricing rules are not found.
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
 
-## 1. Defining the collections
+## Complete recipe
 
-Define the `Customers`, `PricingRules`, and `Orders` collections in your project. Notice how `Orders` includes payment tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-// src/collections/Orders.ts
 
   defineCollection,
   defineTextField,
   defineNumberField,
   defineSelectField,
+  defineConfig,
 } from "@dyrected/core";
 
 export const Orders = defineCollection({
@@ -40017,9 +40266,9 @@ export const Orders = defineCollection({
     defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
     defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
     defineNumberField({ name: "quantity", label: "Quantity", required: true }),
-    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
-    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
-    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due", required: true }),
     defineSelectField({
       name: "status",
       label: "Order Status",
@@ -40033,79 +40282,27 @@ export const Orders = defineCollection({
     }),
   ],
 });
-```
-
-```ts
-// src/collections/PricingRules.ts
-
 
 export const PricingRules = defineCollection({
   slug: "pricing-rules",
   labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
   fields: [
     defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
-    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate", required: true }),
     defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
   ],
 });
-```
-
-## 2. Configuring the AI System Prompt
-
-In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
-
-```ts
-// dyrected.config.ts
 
 
 
-
-
-export default defineConfig({
+export const config: DyrectedConfig = {
   collections: [Orders, PricingRules],
-  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  globals: [],
   ai: {
-    provider: "agentrouter",
-    model: "deepseek-v4-flash",
-    systemPrompt: `
-    You are the Operations Assistant for PrintOS.
-    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
-    1. Extract customer name, phone or handle, product specifications, and quantity.
-    2. Query the 'pricing-rules' collection to find the unit rate.
-    3. Calculate Subtotal = (Quantity * Unit Rate).
-    4. Calculate a 70% required deposit and the remaining balance due.
-    5. Generate a unique order reference (e.g. PO-2026-XXXX).
-    6. Propose a new document in the 'orders' collection.
-    `,
+    systemPrompt: "Parse chat transcripts, calculate 70% deposit requirements, and propose order records.",
   },
-});
+};
 ```
-
-## 3. Testing the workflow in the Admin Assistant
-
-1. Open your Dyrected Admin dashboard at `/admin`.
-2. Click the floating **AI Assistant** drawer on the right.
-3. Paste a sample WhatsApp conversation:
-
-```text
-Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
-Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
-```
-
-## 4. What happens automatically
-
-1. **Information Extraction:** The assistant extracts:
-   - `customerName`: "Grace"
-   - `customerContact`: "08029998877"
-   - `itemDescription`: "1,000 full-colour A5 flyers"
-   - `quantity`: `1000`
-2. **Database Lookup:** The assistant calls `queryCollection` against `pricing-rules` for `a5-flyer` (e.g. ₦45 per flyer).
-3. **Financial Math:**
-   - `subtotal`: ₦45,000
-   - `depositPaid`: ₦0
-   - `balanceDue`: ₦45,000
-4. **Interactive Diff Proposal:** The assistant renders the **Action Proposal Card** in the conversation with all fields pre-populated.
-5. **One-Click Approval:** The shop manager clicks **[Approve & Apply]**, and the order is immediately saved to PostgreSQL with zero manual data entry.
 
 ---
 
@@ -40237,58 +40434,48 @@ export const Events = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-ai-tools
 
-While Dyrected AI provides built-in tools for querying and mutating collections, your business often requires custom logic: calling payment gateways, checking live room availability, querying external shipping APIs, or performing specialized math calculations.
+Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.
 
-In this recipe, you will define custom server-side tools in `config.ai.tools` using Zod schemas.
+## Use this when
+
+- add custom tool to ai assistant
+- connect external api to ai
+- custom server functions for ai
+- zod schema ai tools
+
+## Dyrected concepts
+
+`ai.tools`, `defineConfig`
+
+**Additional packages:** No additional packages.
 
 ## Decisions and cautions
 
-- Always validate inputs using specific Zod field types and constraints.
-- Custom tool execution occurs on the server with user context, so enforce tenant permissions if necessary.
-- Return structured JSON payloads rather than plain strings so the model can format responses cleanly.
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
 
-## The custom tool architecture
+## Complete recipe
 
-When you register a tool in `config.ai.tools`, Dyrected automatically converts your Zod parameters into JSON schemas and presents them to the LLM. When the model invokes your tool, Dyrected calls your `execute` function on the server with full access to your database adapter and current user session.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Editor: "Check if we have consultation slots open tomorrow" │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ LLM decides to call: checkConsultationSlots({ date: ... })  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Your execute({ date }, { db, user, config }) runs on server │
-│ - Queries database or external API                          │
-│ - Returns structured JSON payload                           │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Assistant uses the result to answer the editor accurately   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 1. Defining a custom tool with Zod
-
-Here is how you define a custom consultation availability tool in `dyrected.config.ts`:
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-// dyrected.config.ts
 
 
 
 
-export default defineConfig({
-  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+export const Appointments = defineCollection({
+  slug: "appointments",
+  labels: { singular: "Appointment", plural: "Appointments" },
+  fields: [
+    defineTextField({ name: "clientName", label: "Client Name", required: true }),
+    defineDateField({ name: "bookingDate", label: "Date", required: true }),
+    defineTextField({ name: "timeSlot", label: "Time Slot", required: true }),
+  ],
+});
+
+export const config: DyrectedConfig = {
+  collections: [Appointments],
+  globals: [],
   ai: {
-    provider: "agentrouter",
-    model: "deepseek-v4-flash",
     tools: {
       checkConsultationSlots: {
         description: "Check available 1-on-1 coaching slots for a given date in YYYY-MM-DD format",
@@ -40296,7 +40483,6 @@ export default defineConfig({
           date: z.string().describe("Target date in YYYY-MM-DD format, e.g. 2026-09-01"),
         }),
         execute: async ({ date }, { db }) => {
-          // 1. Query existing bookings from the database
           const existingBookings = await db.find({
             collection: "appointments",
             where: {
@@ -40319,26 +40505,8 @@ export default defineConfig({
       },
     },
   },
-});
+};
 ```
-
-## 2. Tool context parameters
-
-Every tool's `execute(input, context)` function receives a rich execution context:
-
-| Context Field | Type | Description |
-| --- | --- | --- |
-| `context.db` | `DatabaseAdapter` | Live database adapter for running queries and aggregations. |
-| `context.config` | `DyrectedConfig` | Your full project configuration. |
-| `context.user` | `AuthenticatedUser \| undefined` | The active editor or API user making the request. |
-| `context.projectId` | `string` | Current project identifier. |
-
-## 3. Testing in the Assistant
-
-In the Admin assistant drawer, ask:
-> *"Do we have any open coaching slots on 2026-09-01?"*
-
-The assistant invokes `checkConsultationSlots`, parses the returned list of available slots, and provides a clear breakdown in the conversation.
 
 ---
 

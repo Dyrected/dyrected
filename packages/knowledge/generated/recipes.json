@@ -123,6 +123,36 @@
     "snippetStatus": "validated"
   },
   {
+    "id": "chat-to-order-proposal",
+    "title": "Chat-to-order AI proposals",
+    "description": "Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.",
+    "problem": "Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation.",
+    "summary": "Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.",
+    "category": "integrations",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses Dyrected AI system prompts and collection tools.",
+    "intents": [
+      "convert chat to order",
+      "parse whatsapp conversation to quote",
+      "telegram bot order creation",
+      "automate deposit calculation from chat"
+    ],
+    "concepts": [
+      "ai.systemPrompt",
+      "ai.provider",
+      "defineCollection"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/configuration/ai",
+      "/docs/editor-experience/ai-assistant",
+      "/docs/deliver-content/ai-agent-api"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineNumberField,\n  defineSelectField,\n  defineConfig,\n} from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  labels: { singular: \"Customer Order\", plural: \"Customer Orders\" },\n  fields: [\n    defineTextField({ name: \"orderNumber\", label: \"Reference #\", required: true }),\n    defineTextField({ name: \"customerName\", label: \"Customer Name\", required: true }),\n    defineTextField({ name: \"customerContact\", label: \"Phone / Handle\", required: true }),\n    defineTextField({ name: \"itemDescription\", label: \"Item Details\", required: true }),\n    defineNumberField({ name: \"quantity\", label: \"Quantity\", required: true }),\n    defineNumberField({ name: \"subtotal\", label: \"Subtotal\", required: true }),\n    defineNumberField({ name: \"depositPaid\", label: \"Deposit Paid\", defaultValue: 0 }),\n    defineNumberField({ name: \"balanceDue\", label: \"Balance Due\", required: true }),\n    defineSelectField({\n      name: \"status\",\n      label: \"Order Status\",\n      options: [\n        { label: \"Quote Sent\", value: \"quote\" },\n        { label: \"Deposit Confirmed\", value: \"depositPaid\" },\n        { label: \"In Production\", value: \"inProduction\" },\n        { label: \"Completed\", value: \"completed\" },\n      ],\n      defaultValue: \"quote\",\n    }),\n  ],\n});\n\nexport const PricingRules = defineCollection({\n  slug: \"pricing-rules\",\n  labels: { singular: \"Pricing Rule\", plural: \"Pricing Rules\" },\n  fields: [\n    defineTextField({ name: \"itemSlug\", label: \"Item Identifier\", required: true }),\n    defineNumberField({ name: \"unitPrice\", label: \"Unit Rate\", required: true }),\n    defineNumberField({ name: \"minimumOrder\", label: \"Minimum Quantity\", defaultValue: 100 }),\n  ],\n});\n\nimport type { DyrectedConfig } from \"@dyrected/core\";\n\nexport const config: DyrectedConfig = {\n  collections: [Orders, PricingRules],\n  globals: [],\n  ai: {\n    systemPrompt: \"Parse chat transcripts, calculate 70% deposit requirements, and propose order records.\",\n  },\n};",
+    "docsPath": "/docs/examples-and-recipes/library/chat-to-order-proposal",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "conditional-admin-field",
     "title": "Show an Admin field only when it is relevant",
     "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
@@ -180,6 +210,34 @@
     "requires": [],
     "source": "import { defineCollection, defineDateTimeField, defineTextField } from \"@dyrected/core\";\n\nexport const Events = defineCollection({\n  slug: \"events\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc }) => {\n        const startsAt = data.startsAt ?? doc?.startsAt;\n        const endsAt = data.endsAt ?? doc?.endsAt;\n\n        const start = startsAt ? new Date(startsAt) : undefined;\n        const end = endsAt ? new Date(endsAt) : undefined;\n\n        if (start && Number.isNaN(start.getTime())) {\n          throw new Error(\"The event start time must be a valid date.\");\n        }\n        if (end && Number.isNaN(end.getTime())) {\n          throw new Error(\"The event end time must be a valid date.\");\n        }\n        if (start && end && end <= start) {\n          throw new Error(\"The event end time must be after its start time.\");\n        }\n\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineDateTimeField({\n      name: \"startsAt\",\n      label: \"Starts at\",\n      required: true,\n    }),\n    defineDateTimeField({\n      name: \"endsAt\",\n      label: \"Ends at\",\n      required: true,\n    }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/cross-field-validation",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "custom-ai-tools",
+    "title": "Custom business logic AI tools",
+    "description": "Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.",
+    "problem": "The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations.",
+    "summary": "Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.",
+    "category": "integrations",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses config.ai.tools and Zod schemas.",
+    "intents": [
+      "add custom tool to ai assistant",
+      "connect external api to ai",
+      "custom server functions for ai",
+      "zod schema ai tools"
+    ],
+    "concepts": [
+      "ai.tools",
+      "defineConfig"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/configuration/ai",
+      "/docs/deliver-content/ai-agent-api"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineTextField, defineDateField } from \"@dyrected/core\";\nimport type { DyrectedConfig } from \"@dyrected/core\";\nimport { z } from \"zod\";\n\nexport const Appointments = defineCollection({\n  slug: \"appointments\",\n  labels: { singular: \"Appointment\", plural: \"Appointments\" },\n  fields: [\n    defineTextField({ name: \"clientName\", label: \"Client Name\", required: true }),\n    defineDateField({ name: \"bookingDate\", label: \"Date\", required: true }),\n    defineTextField({ name: \"timeSlot\", label: \"Time Slot\", required: true }),\n  ],\n});\n\nexport const config: DyrectedConfig = {\n  collections: [Appointments],\n  globals: [],\n  ai: {\n    tools: {\n      checkConsultationSlots: {\n        description: \"Check available 1-on-1 coaching slots for a given date in YYYY-MM-DD format\",\n        parameters: z.object({\n          date: z.string().describe(\"Target date in YYYY-MM-DD format, e.g. 2026-09-01\"),\n        }),\n        execute: async ({ date }, { db }) => {\n          const existingBookings = await db.find({\n            collection: \"appointments\",\n            where: {\n              bookingDate: { equals: date },\n              status: { notEquals: \"cancelled\" },\n            },\n          });\n\n          const bookedHours = new Set(existingBookings.docs.map((doc: any) => doc.timeSlot));\n          const allSlots = [\"09:00 AM\", \"11:30 AM\", \"02:00 PM\", \"04:30 PM\"];\n          const available = allSlots.filter((slot) => !bookedHours.has(slot));\n\n          return {\n            date,\n            totalSlots: allSlots.length,\n            availableSlots: available,\n            isFullyBooked: available.length === 0,\n          };\n        },\n      },\n    },\n  },\n};",
+    "docsPath": "/docs/examples-and-recipes/library/custom-ai-tools",
     "snippetStatus": "validated"
   },
   {

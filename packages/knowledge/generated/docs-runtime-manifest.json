@@ -1620,6 +1620,21 @@
     "status": "classified"
   },
   {
+    "id": "examples-and-recipes--examples--chat-to-order",
+    "relativePath": "examples-and-recipes/examples/chat-to-order",
+    "title": "Chat-to-Order AI Pipeline",
+    "description": "Convert unstructured customer conversations from WhatsApp or Telegram into validated database orders with human review and live pricing math.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "examples-and-recipes/examples",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/examples/chat-to-order.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/examples/chat-to-order",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/chat-to-order",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/examples/chat-to-order",
+    "status": "classified"
+  },
+  {
     "id": "examples-and-recipes--examples--ecommerce",
     "relativePath": "examples-and-recipes/examples/ecommerce",
     "title": "Ecommerce",
