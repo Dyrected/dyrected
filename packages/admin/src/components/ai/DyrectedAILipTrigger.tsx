@@ -29,11 +29,10 @@ import {
   Edit3,
   AlertTriangle,
   Brain,
-  Eye,
-  Code,
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { diffWords } from 'diff';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Conversation,
@@ -575,6 +574,100 @@ function cleanHtmlToText(html: string): string {
     .trim();
 }
 
+function WordDiffViewer({
+  before,
+  after,
+}: {
+  before: string | null;
+  after: string;
+}) {
+  const parts = useMemo<Array<{ value: string; added?: boolean; removed?: boolean }>>(() => {
+    if (!before) {
+      return [{ value: after, added: true, removed: false }];
+    }
+    return diffWords(before, after);
+  }, [before, after]);
+
+  return (
+    <div className="dy-font-sans dy-text-[11.5px] dy-leading-relaxed dy-p-2.5 dy-rounded-md dy-bg-background/80 dy-border dy-border-border/40 dy-max-h-60 dy-overflow-y-auto dy-whitespace-pre-wrap dy-select-text">
+      {parts.map((part, index) => {
+        if (part.added) {
+          return (
+            <ins
+              key={index}
+              className="dy-bg-emerald-500/15 dy-text-emerald-800 dark:dy-text-emerald-300 dy-no-underline dy-px-1 dy-py-0.5 dy-rounded-sm dy-font-medium"
+            >
+              {part.value}
+            </ins>
+          );
+        }
+        if (part.removed) {
+          return (
+            <del
+              key={index}
+              className="dy-bg-destructive/10 dy-text-muted-foreground/75 dy-line-through dy-px-1 dy-py-0.5 dy-rounded-sm dy-opacity-70"
+            >
+              {part.value}
+            </del>
+          );
+        }
+        return (
+          <span key={index} className="dy-text-foreground">
+            {part.value}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function InlineDiffViewer({
+  before,
+  after,
+}: {
+  before: string | null;
+  after: string;
+}) {
+  const parts = useMemo<Array<{ value: string; added?: boolean; removed?: boolean }>>(() => {
+    if (!before) {
+      return [{ value: after, added: true, removed: false }];
+    }
+    return diffWords(before, after);
+  }, [before, after]);
+
+  return (
+    <span className="dy-font-mono dy-text-[11px] dy-inline-flex dy-items-baseline dy-gap-1 dy-flex-wrap">
+      {parts.map((part, index) => {
+        if (part.added) {
+          return (
+            <ins
+              key={index}
+              className="dy-bg-emerald-500/15 dy-text-emerald-800 dark:dy-text-emerald-300 dy-no-underline dy-px-1 dy-rounded-sm dy-font-semibold"
+            >
+              {part.value}
+            </ins>
+          );
+        }
+        if (part.removed) {
+          return (
+            <del
+              key={index}
+              className="dy-bg-destructive/10 dy-text-muted-foreground/75 dy-line-through dy-px-1 dy-rounded-sm"
+            >
+              {part.value}
+            </del>
+          );
+        }
+        return (
+          <span key={index} className="dy-text-foreground">
+            {part.value}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 function AIActionProposalCard({
   action,
   baseUrl,
@@ -588,7 +681,7 @@ function AIActionProposalCard({
   const [actionStatus, setActionStatus] = useState<string>(action.status || 'pending');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [viewModes, setViewModes] = useState<Record<string, 'visual' | 'code'>>({});
+  const [viewModes, setViewModes] = useState<Record<string, 'diff' | 'draft' | 'source'>>({});
 
   // Synchronize fresh action status from server on mount / refresh
   useEffect(() => {
@@ -675,7 +768,7 @@ function AIActionProposalCard({
         cleanBefore: rawBefore ? cleanHtmlToText(rawBefore) : null,
         cleanAfter: cleanHtmlToText(rawAfter),
         hasHtml,
-        isLong: (rawBefore?.length || 0) > 120 || rawAfter.length > 120,
+        isLong: (rawBefore?.length || 0) > 100 || rawAfter.length > 100,
       };
     });
   }, [action.proposedData, action.beforeSnapshot]);
@@ -687,10 +780,10 @@ function AIActionProposalCard({
   const isExecuted = actionStatus === 'executed';
   const isRejected = actionStatus === 'rejected';
 
-  const toggleViewMode = (key: string) => {
+  const setViewModeForField = (key: string, mode: 'diff' | 'draft' | 'source') => {
     setViewModes((prev) => ({
       ...prev,
-      [key]: prev[key] === 'code' ? 'visual' : 'code',
+      [key]: mode,
     }));
   };
 
@@ -701,19 +794,19 @@ function AIActionProposalCard({
         isRejected && 'dy-opacity-60'
       )}
     >
-      {/* Minimal Header Bar with Integrated Top Quick-Action Controls */}
+      {/* Minimal Monochrome Header Bar */}
       <div className="dy-px-3 dy-py-2 dy-flex dy-items-center dy-justify-between dy-gap-2 dy-border-b dy-border-border/40">
         <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
           <span className="dy-text-muted-foreground">
             {action.type === 'deleteDocument' ? (
               <Trash2 className="dy-w-3.5 dy-h-3.5 dy-text-destructive" />
             ) : action.type === 'createDocument' ? (
-              <Plus className="dy-w-3.5 dy-h-3.5 dy-text-emerald-500" />
+              <Plus className="dy-w-3.5 dy-h-3.5" />
             ) : (
-              <Edit3 className="dy-w-3.5 dy-h-3.5 dy-text-primary" />
+              <Edit3 className="dy-w-3.5 dy-h-3.5" />
             )}
           </span>
-          <span className="dy-font-mono dy-font-semibold dy-text-[11px] dy-text-foreground dy-truncate">
+          <span className="dy-font-mono dy-font-medium dy-text-[11px] dy-text-foreground dy-truncate">
             {action.type === 'createDocument'
               ? `create ${targetName}`
               : action.type === 'deleteDocument'
@@ -724,7 +817,7 @@ function AIActionProposalCard({
           </span>
         </div>
 
-        {/* Right-aligned Minimal Controls */}
+        {/* Right-aligned Action Controls */}
         <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0">
           {isPending && (
             <>
@@ -755,8 +848,8 @@ function AIActionProposalCard({
           )}
 
           {isExecuted && (
-            <span className="dy-px-2 dy-py-0.5 dy-rounded dy-bg-emerald-500/10 dy-text-emerald-600 dark:dy-text-emerald-400 dy-text-[10px] dy-font-medium dy-flex dy-items-center dy-gap-1">
-              <Check className="dy-w-3 dy-h-3" />
+            <span className="dy-px-2 dy-py-0.5 dy-rounded dy-bg-muted dy-text-muted-foreground dy-text-[10px] dy-font-medium dy-flex dy-items-center dy-gap-1">
+              <Check className="dy-w-3 dy-h-3 dy-text-emerald-500" />
               <span>Applied</span>
             </span>
           )}
@@ -769,71 +862,76 @@ function AIActionProposalCard({
         </div>
       </div>
 
-      {/* Clean Diff Body with User-Friendly HTML and Expansion Handling */}
-      <div className="dy-px-3 dy-py-2 dy-space-y-2 dy-text-[11px]">
+      {/* Clean Diff Body with Word-Level Diffing */}
+      <div className="dy-px-3 dy-py-2 dy-space-y-2.5 dy-text-[11px]">
         {action.type === 'deleteDocument' ? (
           <div className="dy-text-destructive/90 dy-flex dy-items-center dy-gap-1.5 dy-font-sans dy-text-xs">
             <AlertTriangle className="dy-w-3.5 dy-h-3.5 dy-shrink-0" />
             <span>Document will be permanently removed upon approval.</span>
           </div>
         ) : (
-          <div className="dy-space-y-2">
+          <div className="dy-space-y-2.5">
             {displayedEntries.map((entry) => {
-              const currentMode = viewModes[entry.key] || 'visual';
-              const isHtmlMode = entry.hasHtml && currentMode === 'visual';
-              const beforeText = isHtmlMode ? entry.cleanBefore : entry.rawBefore;
-              const afterText = isHtmlMode ? entry.cleanAfter : entry.rawAfter;
+              const currentMode = viewModes[entry.key] || 'diff';
+              const textBefore = entry.hasHtml ? entry.cleanBefore : entry.rawBefore;
+              const textAfter = entry.hasHtml ? entry.cleanAfter : entry.rawAfter;
 
               return (
                 <div key={entry.key} className="dy-space-y-1">
                   <div className="dy-flex dy-items-center dy-justify-between">
                     <span className="dy-font-mono dy-text-muted-foreground dy-font-medium">{entry.key}:</span>
-                    {entry.hasHtml && (
-                      <button
-                        type="button"
-                        onClick={() => toggleViewMode(entry.key)}
-                        className="dy-text-[10px] dy-text-primary hover:dy-underline dy-flex dy-items-center dy-gap-1"
-                      >
-                        {currentMode === 'visual' ? (
-                          <>
-                            <Code className="dy-w-3 dy-h-3" />
-                            <span>View Source</span>
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="dy-w-3 dy-h-3" />
-                            <span>View Formatted</span>
-                          </>
+                    {entry.isLong && (
+                      <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-[10px] dy-text-muted-foreground">
+                        <button
+                          type="button"
+                          onClick={() => setViewModeForField(entry.key, 'diff')}
+                          className={cn(
+                            'dy-px-1.5 dy-py-0.5 dy-rounded hover:dy-text-foreground dy-transition-colors',
+                            currentMode === 'diff' && 'dy-bg-muted dy-text-foreground dy-font-medium'
+                          )}
+                        >
+                          Diff
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewModeForField(entry.key, 'draft')}
+                          className={cn(
+                            'dy-px-1.5 dy-py-0.5 dy-rounded hover:dy-text-foreground dy-transition-colors',
+                            currentMode === 'draft' && 'dy-bg-muted dy-text-foreground dy-font-medium'
+                          )}
+                        >
+                          Draft
+                        </button>
+                        {entry.hasHtml && (
+                          <button
+                            type="button"
+                            onClick={() => setViewModeForField(entry.key, 'source')}
+                            className={cn(
+                              'dy-px-1.5 dy-py-0.5 dy-rounded hover:dy-text-foreground dy-transition-colors',
+                              currentMode === 'source' && 'dy-bg-muted dy-text-foreground dy-font-medium'
+                            )}
+                          >
+                            Source
+                          </button>
                         )}
-                      </button>
+                      </div>
                     )}
                   </div>
 
                   {entry.isLong ? (
-                    <div className="dy-p-2 dy-rounded dy-bg-background/80 dy-border dy-border-border/40 dy-space-y-1.5 dy-font-sans">
-                      {beforeText && (
-                        <div className="dy-text-destructive/85 dy-line-through dy-text-[11px] dy-max-h-24 dy-overflow-y-auto dy-whitespace-pre-wrap">
-                          {beforeText}
-                        </div>
-                      )}
-                      <div className="dy-text-emerald-600 dark:dy-text-emerald-400 dy-font-medium dy-text-[11px] dy-max-h-32 dy-overflow-y-auto dy-whitespace-pre-wrap">
-                        {afterText}
+                    currentMode === 'draft' ? (
+                      <div className="dy-font-sans dy-text-[11.5px] dy-leading-relaxed dy-p-2.5 dy-rounded-md dy-bg-background/80 dy-border dy-border-border/40 dy-max-h-60 dy-overflow-y-auto dy-whitespace-pre-wrap dy-text-foreground">
+                        {textAfter}
                       </div>
-                    </div>
+                    ) : currentMode === 'source' ? (
+                      <pre className="dy-font-mono dy-text-[10.5px] dy-leading-relaxed dy-p-2.5 dy-rounded-md dy-bg-muted/40 dy-border dy-border-border/40 dy-max-h-60 dy-overflow-y-auto dy-whitespace-pre-wrap dy-text-muted-foreground">
+                        {entry.rawAfter}
+                      </pre>
+                    ) : (
+                      <WordDiffViewer before={textBefore} after={textAfter} />
+                    )
                   ) : (
-                    <div className="dy-flex dy-items-baseline dy-gap-2 dy-flex-wrap dy-font-mono">
-                      {beforeText !== null && (
-                        <>
-                          <span className="dy-line-through dy-text-destructive/80 dy-opacity-80">
-                            {beforeText || '""'}
-                          </span>
-                          <span className="dy-text-muted-foreground/60">&rarr;</span>
-                        </>
-                      )}
-                      <span className="dy-font-semibold dy-text-emerald-600 dark:dy-text-emerald-400">
-                        {afterText}
-                      </span>
-                    </div>
+                    <InlineDiffViewer before={textBefore} after={textAfter} />
                   )}
                 </div>
               );
@@ -845,7 +943,7 @@ function AIActionProposalCard({
                 <button
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="dy-text-[11px] dy-font-medium dy-text-primary hover:dy-underline dy-flex dy-items-center dy-gap-1"
+                  className="dy-text-[11px] dy-font-medium dy-text-muted-foreground hover:dy-text-foreground dy-flex dy-items-center dy-gap-1 dy-transition-colors"
                 >
                   {isExpanded ? (
                     <>
