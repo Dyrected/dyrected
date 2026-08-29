@@ -12,7 +12,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 
 ## Documentation
 
-- [AI Agent API](https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api): How to use the programmatic AIAgent class to stream responses, handle chat threads, and process webhooks from Telegram, WhatsApp, or custom frontends.
+- [AI Agent & Custom Streaming](https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api): Learn how to use Dyrected's AIAgent class to stream AI responses, persist multi-turn chat threads, and process external webhooks across Next.js and Nuxt.
 - [Overview](https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/overview): Render the content you fetch with Dyrected's framework components for React, Vue, Next, and Nuxt.
 - [Rendering Media](https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/rendering-media): Display images, videos, audio, and files easily on your public website.
 - [AI Endpoints](https://docs.dyrected.com/docs/self-hosted/deliver-content/rest-api/ai-endpoints): Complete REST API reference for Dyrected AI streaming chat, conversation threads, mutation action approval, and RAG vector indexing.

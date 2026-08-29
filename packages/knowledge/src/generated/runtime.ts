@@ -5,8 +5,8 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
   {
     "id": "deliver-content--ai-agent-api",
     "relativePath": "deliver-content/ai-agent-api",
-    "title": "AI Agent API",
-    "description": "How to use the programmatic AIAgent class to stream responses, handle chat threads, and process webhooks from Telegram, WhatsApp, or custom frontends.",
+    "title": "AI Agent & Custom Streaming",
+    "description": "Learn how to use Dyrected's AIAgent class to stream AI responses, persist multi-turn chat threads, and process external webhooks across Next.js and Nuxt.",
     "runtime": "shared",
     "runtimeGroup": "",
     "runtimeNotes": "",

@@ -10,40 +10,44 @@ Use the Cloud docs when you want managed content infrastructure. Use the self-ho
 
 This runtime framing is derived from the July 29, 2026 product-boundary and docs-architecture specs and should be human-reviewed before being treated as final product positioning.
 
-## AI Agent API
+## AI Agent & Custom Streaming
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api
 
-In addition to the embedded Admin panel assistant, Dyrected exports a fully-typed `AIAgent` service from `@dyrected/core`. You can use `AIAgent` inside your server endpoints, background jobs, customer-facing chat widgets, or external webhooks (such as Telegram bots or WhatsApp Business webhooks).
+In addition to the built-in Admin assistant, Dyrected exports a fully-typed `AIAgent` service directly from `@dyrected/core`. You can use `AIAgent` to power customer-facing chat widgets, real-time quote calculators, background workflows, or external bots on Telegram and WhatsApp.
 
-By the end of this page, you will know how to instantiate `AIAgent`, handle Server-Sent Events (SSE) streaming, manage conversation threads, and process incoming webhook requests.
+By the end of this guide, you will understand how `AIAgent` coordinates your content schema and database, and you will have a complete, runnable chat endpoint ready for production.
 
-## The AIAgent architecture
+---
 
-`AIAgent` combines your database adapter, your `dyrected.config.ts` schema definitions, and your LLM provider into a single service.
+## The AIAgent mental model
+
+`AIAgent` unifies your database adapter, schema collections, custom tools, and conversation history under one service boundary.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Your Server Route / Webhook              │
-│                 (Next.js, Express, Hono, Node)              │
+│             Your Application Route or Webhook               │
+│               (Next.js, Nuxt, Remix, Hono)                  │
 └──────────────────────────────┬──────────────────────────────┘
                                │
-                      new AIAgent({ db, config })
+                new AIAgent({ db, config, ... })
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                       Dyrected AIAgent                      │
-│  - System Prompt Generation                                 │
-│  - Schema Grounding & Collection Discovery                  │
-│  - Built-in Mutation & Query Tools                          │
-│  - Custom Business Logic Tools (config.ai.tools)            │
-│  - Database History Logging (_dyrected_ai_*)                │
+│                      Dyrected AIAgent                       │
+│  • Grounding: Builds system prompt from your collections    │
+│  • Tools: Automatically binds query and mutation tools      │
+│  • Custom Tools: Executes your config.ai.tools functions   │
+│  • Memory: Persists turns to _dyrected_ai_messages in DB    │
+│  • Streaming: Emits tokens & handles UI protocol streams    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Instantiating AIAgent on the server
+---
 
-To initialize the agent, import `AIAgent` from `@dyrected/core` and pass your initialized database adapter and configuration:
+## 1. Initializing AIAgent
+
+To use the agent in any server handler or script, instantiate `AIAgent` with your database adapter and configuration:
 
 ```ts
 
@@ -53,15 +57,26 @@ const agent = new AIAgent({
   db: config.db,
   config,
   projectId: "default",
-  userId: "usr_12345",
+  userId: "usr_alex",
   userName: "Alex Johnson",
-  userRole: "editor",
+  userRole: "customer",
 });
 ```
 
-## Creating a streaming chat endpoint (Next.js App Router)
+---
 
-Here is a complete, runnable Next.js route handler (`app/api/ai/chat/route.ts`) that accepts user messages and returns a real-time Server-Sent Events (SSE) stream compatible with `@ai-sdk/react`'s `useChat`:
+## 2. Creating a streaming chat endpoint
+
+The recommended way to expose AI streaming to your frontend is a server endpoint that returns a UI-compatible stream.
+
+`AIAgent` provides two streaming methods:
+- `createStreamResponse(threadId, userMessage, clientMessages?, signal?)`: Returns a web-standard `Response` formatted for UI streaming hooks like `useChat`.
+- `streamReply(threadId, userMessage)`: An async generator that emits raw text chunks and automatically commits both the user prompt and assistant response to your database.
+
+<Tabs items={['Next.js (App Router)', 'Nuxt (Nitro)']}>
+<Tab value="Next.js (App Router)">
+
+Create an API route in `app/api/ai/chat/route.ts`:
 
 ```ts
 // app/api/ai/chat/route.ts
@@ -69,71 +84,223 @@ Here is a complete, runnable Next.js route handler (`app/api/ai/chat/route.ts`) 
 
 
 
-export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const { messages, threadId, prompt } = body;
+export const dynamic = "force-dynamic";
 
-  const content =
-    prompt ||
-    (Array.isArray(messages) && messages.length > 0
-      ? messages[messages.length - 1].content
-      : "");
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { messages = [], threadId } = body;
 
-  if (!content || typeof content !== "string") {
-    return NextResponse.json({ error: "Message content is required" }, { status: 400 });
+    const lastMessage = messages[messages.length - 1];
+    const userMessage =
+      typeof lastMessage?.content === "string"
+        ? lastMessage.content
+        : lastMessage?.parts?.[0]?.text || "";
+
+    if (!userMessage.trim()) {
+      return NextResponse.json({ error: "Message content is required" }, { status: 400 });
+    }
+
+    const agent = new AIAgent({
+      db: config.db,
+      config,
+      projectId: "default",
+      userId: threadId || "anonymous",
+      userName: "Website Visitor",
+      userRole: "customer",
+    });
+
+    // 1. Retrieve the existing thread or create one with your session ID
+    const thread = await agent.getOrCreateThread(
+      threadId,
+      userMessage.slice(0, 40) || "Customer Inquiry"
+    );
+
+    // 2. Stream the response directly (automatically saves history to DB)
+    return agent.createStreamResponse(
+      thread.id,
+      userMessage,
+      messages,
+      req.signal
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Failed to generate AI response", details: error?.message },
+      { status: 500 }
+    );
+  }
+}
+```
+
+</Tab>
+<Tab value="Nuxt (Nitro)">
+
+Create a server handler in `server/api/ai/chat.post.ts`:
+
+```ts
+// server/api/ai/chat.post.ts
+
+
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event).catch(() => ({}));
+  const { messages = [], threadId } = body;
+
+  const lastMessage = messages[messages.length - 1];
+  const userMessage =
+    typeof lastMessage?.content === "string"
+      ? lastMessage.content
+      : lastMessage?.parts?.[0]?.text || "";
+
+  if (!userMessage.trim()) {
+    throw createError({ statusCode: 400, message: "Message content is required" });
   }
 
-  // 1. Initialize the agent with your database and schema
   const agent = new AIAgent({
     db: config.db,
     config,
     projectId: "default",
-    userId: "usr_editor_1",
-    userName: "Editorial Staff",
+    userId: threadId || "anonymous",
+    userName: "Website Visitor",
+    userRole: "customer",
   });
 
-  // 2. Resume an existing thread or create a new one
-  let activeThreadId = threadId;
-  if (!activeThreadId) {
-    const thread = await agent.createThread(content.slice(0, 40));
-    activeThreadId = thread.id;
+  // 1. Retrieve the existing thread or create one with your session ID
+  const thread = await agent.getOrCreateThread(
+    threadId,
+    userMessage.slice(0, 40) || "Customer Inquiry"
+  );
+
+  // 2. Stream the response directly using Web Standards Response
+  const response = await agent.createStreamResponse(
+    thread.id,
+    userMessage,
+    messages
+  );
+
+  return sendWebResponse(event, response);
+});
+```
+
+</Tab>
+</Tabs>
+
+---
+
+## 3. Streaming raw tokens with custom streams
+
+If you are building a custom client widget or want direct control over raw streaming tokens, use `agent.streamReply()`. 
+
+`streamReply` automatically commits the user message, streams tokens chunk-by-chunk, and persists the finished assistant reply when the generator completes.
+
+<Tabs items={['Next.js (App Router)', 'Nuxt (Nitro)']}>
+<Tab value="Next.js (App Router)">
+
+```ts
+// app/api/ai/stream/route.ts
+
+
+
+
+export async function POST(req: NextRequest) {
+  const { message, threadId = `session-${Date.now()}` } = await req.json();
+
+  if (!message) {
+    return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  // 3. Persist the user message in the database
-  await agent.persistUserMessage(activeThreadId, content);
+  const agent = new AIAgent({
+    db: config.db,
+    config,
+    projectId: "default",
+    userId: threadId,
+  });
 
-  // 4. Return the streaming response
-  return agent.createStreamResponse(activeThreadId, content, messages);
+  // Ensure thread exists in Postgres / SQLite
+  await agent.getOrCreateThread(threadId, message.slice(0, 30));
+
+  const encoder = new TextEncoder();
+  const generator = agent.streamReply(threadId, message);
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of generator) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Thread-Id": threadId,
+    },
+  });
 }
 ```
 
-## Managing conversation threads
-
-The `AIAgent` service provides methods to manage conversation history stored in your database:
+</Tab>
+<Tab value="Nuxt (Nitro)">
 
 ```ts
-// Create a new thread with a title
-const thread = await agent.createThread("Q3 Marketing Campaign");
+// server/api/ai/stream.post.ts
 
-// List all active threads for the project
-const threads = await agent.listThreads(50, 0);
 
-// Retrieve all messages for a specific thread
-const history = await agent.getMessages(thread.id);
 
-// Generate a smart 3-5 word title from the first prompt
-const smartTitle = await agent.generateTitle("Can you draft a post about leadership burnout?");
-await agent.updateThreadTitle(thread.id, smartTitle);
+export default defineEventHandler(async (event) => {
+  const { message, threadId = `session-${Date.now()}` } = await readBody(event);
 
-// Delete a conversation thread and its messages
-await agent.deleteThread(thread.id);
+  if (!message) {
+    throw createError({ statusCode: 400, message: "Message is required" });
+  }
+
+  const agent = new AIAgent({
+    db: config.db,
+    config,
+    projectId: "default",
+    userId: threadId,
+  });
+
+  await agent.getOrCreateThread(threadId, message.slice(0, 30));
+
+  setResponseHeader(event, "Content-Type", "text/plain; charset=utf-8");
+  setResponseHeader(event, "X-Thread-Id", threadId);
+
+  const encoder = new TextEncoder();
+  const generator = agent.streamReply(threadId, message);
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of generator) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+
+  return sendWebResponse(event, new Response(readable));
+});
 ```
 
-## Ingesting Telegram or WhatsApp webhooks
+</Tab>
+</Tabs>
 
-Because `AIAgent` runs anywhere in Node.js, you can attach it directly to external webhooks to process incoming customer messages and convert them into structured CMS records.
+---
 
-Here is an example Telegram Bot webhook handler:
+## 4. Ingesting Telegram or WhatsApp webhooks
+
+Because `AIAgent.getOrCreateThread()` supports explicit external session IDs, connecting messaging bots to persistent customer threads is straightforward.
+
+Here is a complete Telegram webhook handler:
 
 ```ts
 // app/api/telegram/webhook/route.ts
@@ -141,54 +308,77 @@ Here is an example Telegram Bot webhook handler:
 
 
 
-export async function POST(req: Request) {
-  const update = await req.json();
+export async function POST(req: NextRequest) {
+  const update = await req.json().catch(() => null);
   const message = update?.message;
 
   if (!message?.text) {
     return NextResponse.json({ ok: true });
   }
 
-  const chatId = message.chat.id;
+  const chatId = String(message.chat.id);
   const senderName = message.from.first_name || "Customer";
-  const telegramHandle = message.from.username ? `@${message.from.username}` : `tg_${chatId}`;
+  const threadId = `tg-${chatId}`;
 
   const agent = new AIAgent({
     db: config.db,
     config,
     projectId: "default",
-    userId: `tg_${chatId}`,
+    userId: threadId,
     userName: senderName,
+    userRole: "customer",
   });
 
-  const prompt = `
-  Telegram message from ${senderName} (${telegramHandle}): "${message.text}".
-  If the user asks for a service quote or order:
-  - Query our services and pricing collections.
-  - Create a draft order proposal for the 'orders' collection.
-  - Return a concise, friendly reply with the quote breakdown.
-  `;
+  // 1. Maintain a persistent conversation thread keyed to the Telegram chat ID
+  await agent.getOrCreateThread(threadId, `Telegram: ${senderName}`);
 
-  const thread = await agent.createThread(`Telegram: ${senderName}`);
-  const result = await agent.streamReply(thread.id, prompt);
-
+  // 2. Stream and collect the reply
+  const result = agent.streamReply(threadId, message.text);
   let finalReply = "";
+
   for await (const chunk of result) {
     finalReply += chunk;
   }
 
-  // Send reply back to Telegram Bot API
-  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: finalReply || "We received your request and our team is preparing your quote!",
-    }),
-  });
+  // 3. Send response back to Telegram
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (botToken) {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: finalReply || "Thanks for your message! Our team will get back to you shortly.",
+      }),
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
+```
+
+---
+
+## 5. Managing conversation threads programmatically
+
+You can inspect, list, and clear conversation history in your database with the built-in thread management methods:
+
+```ts
+// 1. Get or create a thread with a custom or auto-generated ID
+const thread = await agent.getOrCreateThread("custom-thread-id", "Product Inquiries");
+
+// 2. Fetch all recorded messages for this thread (chronological order)
+const messages = await agent.getMessages(thread.id);
+
+// 3. Generate a concise 3-5 word title using AI
+const smartTitle = await agent.generateTitle("I need 500 business cards printed on 350gsm cardstock");
+await agent.updateThreadTitle(thread.id, smartTitle);
+
+// 4. List the most recent threads for the project
+const threads = await agent.listThreads(20);
+
+// 5. Delete a thread and all associated messages
+await agent.deleteThread(thread.id);
 ```
 
 ---

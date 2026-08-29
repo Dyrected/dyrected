@@ -293,9 +293,9 @@ export class AIAgent {
     });
   }
 
-  async createThread(title?: string): Promise<AIThread> {
+  async createThread(title?: string, id?: string): Promise<AIThread> {
     const thread: AIThread = {
-      id: generateId(),
+      id: id || generateId(),
       projectId: this.projectId,
       userId: this.userId,
       title: title || "New Conversation",
@@ -304,6 +304,17 @@ export class AIAgent {
     };
     await this.db.create({ collection: "_dyrected_ai_threads", data: thread });
     return thread;
+  }
+
+  async getOrCreateThread(threadId?: string, title?: string): Promise<AIThread> {
+    if (threadId) {
+      const existing = await this.getThread(threadId);
+      if (existing) {
+        return existing;
+      }
+      return this.createThread(title, threadId);
+    }
+    return this.createThread(title);
   }
 
   async listThreads(limit = 50): Promise<AIThread[]> {
@@ -416,12 +427,18 @@ export class AIAgent {
   ): AsyncGenerator<string, { text: string; usage?: any; finishReason: string }, void> {
     const context = await this.getContext();
     const systemPrompt = buildDyrectedSystemPrompt(context);
-    const history = await this.getMessages(threadId);
+    let history = await this.getMessages(threadId);
 
-    const messages = [
-      ...history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-      { role: "user" as const, content: userMessage },
-    ];
+    const lastMsg = history[history.length - 1];
+    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== userMessage) {
+      await this.persistUserMessage(threadId, userMessage);
+      history = await this.getMessages(threadId);
+    }
+
+    const messages = history.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
 
     const model = getAIModel(this.config);
     const tools = createDyrectedAITools({
@@ -472,7 +489,13 @@ export class AIAgent {
     const startTime = Date.now();
     const context = await this.getContext();
     const systemPrompt = buildDyrectedSystemPrompt(context);
-    const history = await this.getMessages(threadId);
+    let history = await this.getMessages(threadId);
+
+    const lastMsg = history[history.length - 1];
+    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== userMessage) {
+      await this.persistUserMessage(threadId, userMessage);
+      history = await this.getMessages(threadId);
+    }
 
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> =
       Array.isArray(clientMessages) && clientMessages.length > 1

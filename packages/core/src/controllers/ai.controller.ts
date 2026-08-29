@@ -43,7 +43,7 @@ export class AIController {
     const agent = this.getAgent(c);
     const body = await c.req.json().catch(() => ({}));
 
-    let threadId = typeof body.threadId === "string" ? body.threadId : undefined;
+    const threadId = typeof body.threadId === "string" ? body.threadId : undefined;
     let content = body.content || body.prompt;
 
     if (!content && Array.isArray(body.messages) && body.messages.length > 0) {
@@ -57,13 +57,8 @@ export class AIController {
 
     content = content.trim();
 
-    let thread = threadId ? await agent.getThread(threadId) : null;
-    if (!thread) {
-      thread = await agent.createThread();
-      threadId = thread.id;
-    }
-
-    const targetThreadId = threadId || thread.id;
+    const thread = await agent.getOrCreateThread(threadId);
+    const targetThreadId = thread.id;
     await agent.persistUserMessage(targetThreadId, content);
 
     if (!thread.title || thread.title === "New Conversation" || thread.title === "Conversation") {
