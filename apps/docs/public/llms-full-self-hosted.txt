@@ -10,6 +10,379 @@ Use the Cloud docs when you want managed content infrastructure. Use the self-ho
 
 This runtime framing is derived from the July 29, 2026 product-boundary and docs-architecture specs and should be human-reviewed before being treated as final product positioning.
 
+## AI Agent & Custom Streaming
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api
+
+In addition to the built-in Admin assistant, Dyrected exports a fully-typed `AIAgent` service directly from `@dyrected/core`. You can use `AIAgent` to power customer-facing chat widgets, real-time quote calculators, background workflows, or external bots on Telegram and WhatsApp.
+
+By the end of this guide, you will understand how `AIAgent` coordinates your content schema and database, and you will have a complete, runnable chat endpoint ready for production.
+
+---
+
+## The AIAgent mental model
+
+`AIAgent` unifies your database adapter, schema collections, custom tools, and conversation history under one service boundary.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│             Your Application Route or Webhook               │
+│               (Next.js, Nuxt, Remix, Hono)                  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                new AIAgent({ db, config, ... })
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Dyrected AIAgent                       │
+│  • Grounding: Builds system prompt from your collections    │
+│  • Tools: Automatically binds query and mutation tools      │
+│  • Custom Tools: Executes your config.ai.tools functions   │
+│  • Memory: Persists turns to _dyrected_ai_messages in DB    │
+│  • Streaming: Emits tokens & handles UI protocol streams    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 1. Initializing AIAgent
+
+To use the agent in any server handler or script, instantiate `AIAgent` with your database adapter and configuration:
+
+```ts
+
+
+
+const agent = new AIAgent({
+  db: config.db,
+  config,
+  projectId: "default",
+  userId: "usr_alex",
+  userName: "Alex Johnson",
+  userRole: "customer",
+});
+```
+
+---
+
+## 2. Creating a streaming chat endpoint
+
+The recommended way to expose AI streaming to your frontend is a server endpoint that returns a UI-compatible stream.
+
+`AIAgent` provides two streaming methods:
+- `createStreamResponse(threadId, userMessage, clientMessages?, signal?)`: Returns a web-standard `Response` formatted for UI streaming hooks like `useChat`.
+- `streamReply(threadId, userMessage)`: An async generator that emits raw text chunks and automatically commits both the user prompt and assistant response to your database.
+
+<Tabs items={['Next.js (App Router)', 'Nuxt (Nitro)']}>
+<Tab value="Next.js (App Router)">
+
+Create an API route in `app/api/ai/chat/route.ts`:
+
+```ts
+// app/api/ai/chat/route.ts
+
+
+
+
+export const dynamic = "force-dynamic";
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { messages = [], threadId } = body;
+
+    const lastMessage = messages[messages.length - 1];
+    const userMessage =
+      typeof lastMessage?.content === "string"
+        ? lastMessage.content
+        : lastMessage?.parts?.[0]?.text || "";
+
+    if (!userMessage.trim()) {
+      return NextResponse.json({ error: "Message content is required" }, { status: 400 });
+    }
+
+    const agent = new AIAgent({
+      db: config.db,
+      config,
+      projectId: "default",
+      userId: threadId || "anonymous",
+      userName: "Website Visitor",
+      userRole: "customer",
+    });
+
+    // 1. Retrieve the existing thread or create one with your session ID
+    const thread = await agent.getOrCreateThread(
+      threadId,
+      userMessage.slice(0, 40) || "Customer Inquiry"
+    );
+
+    // 2. Stream the response directly (automatically saves history to DB)
+    return agent.createStreamResponse(
+      thread.id,
+      userMessage,
+      messages,
+      req.signal
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Failed to generate AI response", details: error?.message },
+      { status: 500 }
+    );
+  }
+}
+```
+
+</Tab>
+<Tab value="Nuxt (Nitro)">
+
+Create a server handler in `server/api/ai/chat.post.ts`:
+
+```ts
+// server/api/ai/chat.post.ts
+
+
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event).catch(() => ({}));
+  const { messages = [], threadId } = body;
+
+  const lastMessage = messages[messages.length - 1];
+  const userMessage =
+    typeof lastMessage?.content === "string"
+      ? lastMessage.content
+      : lastMessage?.parts?.[0]?.text || "";
+
+  if (!userMessage.trim()) {
+    throw createError({ statusCode: 400, message: "Message content is required" });
+  }
+
+  const agent = new AIAgent({
+    db: config.db,
+    config,
+    projectId: "default",
+    userId: threadId || "anonymous",
+    userName: "Website Visitor",
+    userRole: "customer",
+  });
+
+  // 1. Retrieve the existing thread or create one with your session ID
+  const thread = await agent.getOrCreateThread(
+    threadId,
+    userMessage.slice(0, 40) || "Customer Inquiry"
+  );
+
+  // 2. Stream the response directly using Web Standards Response
+  const response = await agent.createStreamResponse(
+    thread.id,
+    userMessage,
+    messages
+  );
+
+  return sendWebResponse(event, response);
+});
+```
+
+</Tab>
+</Tabs>
+
+---
+
+## 3. Streaming raw tokens with custom streams
+
+If you are building a custom client widget or want direct control over raw streaming tokens, use `agent.streamReply()`. 
+
+`streamReply` automatically commits the user message, streams tokens chunk-by-chunk, and persists the finished assistant reply when the generator completes.
+
+<Tabs items={['Next.js (App Router)', 'Nuxt (Nitro)']}>
+<Tab value="Next.js (App Router)">
+
+```ts
+// app/api/ai/stream/route.ts
+
+
+
+
+export async function POST(req: NextRequest) {
+  const { message, threadId = `session-${Date.now()}` } = await req.json();
+
+  if (!message) {
+    return NextResponse.json({ error: "Message is required" }, { status: 400 });
+  }
+
+  const agent = new AIAgent({
+    db: config.db,
+    config,
+    projectId: "default",
+    userId: threadId,
+  });
+
+  // Ensure thread exists in Postgres / SQLite
+  await agent.getOrCreateThread(threadId, message.slice(0, 30));
+
+  const encoder = new TextEncoder();
+  const generator = agent.streamReply(threadId, message);
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of generator) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Thread-Id": threadId,
+    },
+  });
+}
+```
+
+</Tab>
+<Tab value="Nuxt (Nitro)">
+
+```ts
+// server/api/ai/stream.post.ts
+
+
+
+export default defineEventHandler(async (event) => {
+  const { message, threadId = `session-${Date.now()}` } = await readBody(event);
+
+  if (!message) {
+    throw createError({ statusCode: 400, message: "Message is required" });
+  }
+
+  const agent = new AIAgent({
+    db: config.db,
+    config,
+    projectId: "default",
+    userId: threadId,
+  });
+
+  await agent.getOrCreateThread(threadId, message.slice(0, 30));
+
+  setResponseHeader(event, "Content-Type", "text/plain; charset=utf-8");
+  setResponseHeader(event, "X-Thread-Id", threadId);
+
+  const encoder = new TextEncoder();
+  const generator = agent.streamReply(threadId, message);
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of generator) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+
+  return sendWebResponse(event, new Response(readable));
+});
+```
+
+</Tab>
+</Tabs>
+
+---
+
+## 4. Ingesting Telegram or WhatsApp webhooks
+
+Because `AIAgent.getOrCreateThread()` supports explicit external session IDs, connecting messaging bots to persistent customer threads is straightforward.
+
+Here is a complete Telegram webhook handler:
+
+```ts
+// app/api/telegram/webhook/route.ts
+
+
+
+
+export async function POST(req: NextRequest) {
+  const update = await req.json().catch(() => null);
+  const message = update?.message;
+
+  if (!message?.text) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const chatId = String(message.chat.id);
+  const senderName = message.from.first_name || "Customer";
+  const threadId = `tg-${chatId}`;
+
+  const agent = new AIAgent({
+    db: config.db,
+    config,
+    projectId: "default",
+    userId: threadId,
+    userName: senderName,
+    userRole: "customer",
+  });
+
+  // 1. Maintain a persistent conversation thread keyed to the Telegram chat ID
+  await agent.getOrCreateThread(threadId, `Telegram: ${senderName}`);
+
+  // 2. Stream and collect the reply
+  const result = agent.streamReply(threadId, message.text);
+  let finalReply = "";
+
+  for await (const chunk of result) {
+    finalReply += chunk;
+  }
+
+  // 3. Send response back to Telegram
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (botToken) {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: finalReply || "Thanks for your message! Our team will get back to you shortly.",
+      }),
+    });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+```
+
+---
+
+## 5. Managing conversation threads programmatically
+
+You can inspect, list, and clear conversation history in your database with the built-in thread management methods:
+
+```ts
+// 1. Get or create a thread with a custom or auto-generated ID
+const thread = await agent.getOrCreateThread("custom-thread-id", "Product Inquiries");
+
+// 2. Fetch all recorded messages for this thread (chronological order)
+const messages = await agent.getMessages(thread.id);
+
+// 3. Generate a concise 3-5 word title using AI
+const smartTitle = await agent.generateTitle("I need 500 business cards printed on 350gsm cardstock");
+await agent.updateThreadTitle(thread.id, smartTitle);
+
+// 4. List the most recent threads for the project
+const threads = await agent.listThreads(20);
+
+// 5. Delete a thread and all associated messages
+await agent.deleteThread(thread.id);
+```
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/overview
@@ -197,6 +570,260 @@ If you want to quickly prototype and want the structured, opinionated styling of
 
 ---
 
+## AI Endpoints
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deliver-content/rest-api/ai-endpoints
+
+When you enable AI in `dyrected.config.ts`, Dyrected automatically exposes standard HTTP REST endpoints under `/api/ai/*`. You can use these endpoints from any frontend (React, Vue, mobile apps, or curl) to stream chat responses, manage conversation threads, approve mutation proposals, and trigger semantic search indexing.
+
+By the end of this page, you will know the request and response shapes for each AI endpoint and how to stream responses via Server-Sent Events (SSE).
+
+## Authentication & Headers
+
+All AI endpoints use standard Dyrected authentication. Include your authorization header or session cookie:
+
+```http
+Authorization: Bearer <your-auth-token>
+Content-Type: application/json
+```
+
+---
+
+## 1. Chat Streaming
+
+### `POST /api/ai/chat`
+Sends a prompt to the AI agent and returns a real-time Server-Sent Events (SSE) stream compatible with `@ai-sdk/react`'s `useChat`. If `threadId` is omitted, Dyrected automatically creates a new conversation thread.
+
+#### Request Body
+```json
+{
+  "threadId": "thr_01j7abc123",
+  "content": "Can you draft a 3-paragraph summary of our coaching services?",
+  "messages": [
+    { "role": "user", "content": "Can you draft a 3-paragraph summary of our coaching services?" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `content` or `prompt` | `string` | Yes | The user prompt to process. |
+| `threadId` | `string` | No | ID of an existing conversation thread. If omitted, a new thread is created. |
+| `messages` | `Array` | No | Full conversation history array in `@ai-sdk` format. |
+
+#### Response (Stream)
+Returns a chunked `text/event-stream` stream containing token text, tool invocations, reasoning blocks, and proposal cards.
+
+```bash
+curl -N -X POST "http://localhost:3000/api/ai/chat" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Calculate a quote for 500 flyers"}'
+```
+
+---
+
+## 2. Conversation Threads
+
+### `GET /api/ai/threads`
+Lists recent conversation threads for the current user and project.
+
+#### Query Parameters
+- `limit` (optional, default `20`): Number of threads to return.
+
+#### Response `200 OK`
+```json
+{
+  "threads": [
+    {
+      "id": "thr_01j7abc123",
+      "title": "Quote for 500 Flyers",
+      "createdAt": "2026-08-28T14:30:00.000Z",
+      "updatedAt": "2026-08-28T14:32:10.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `POST /api/ai/threads`
+Creates an empty conversation thread with an optional custom title.
+
+#### Request Body
+```json
+{
+  "title": "Q3 Content Planning"
+}
+```
+
+#### Response `201 Created`
+```json
+{
+  "thread": {
+    "id": "thr_01j7xyz890",
+    "title": "Q3 Content Planning",
+    "createdAt": "2026-08-28T15:00:00.000Z",
+    "updatedAt": "2026-08-28T15:00:00.000Z"
+  }
+}
+```
+
+---
+
+### `GET /api/ai/threads/:threadId`
+Retrieves thread metadata along with its full historical messages.
+
+#### Response `200 OK`
+```json
+{
+  "thread": {
+    "id": "thr_01j7abc123",
+    "title": "Quote for 500 Flyers"
+  },
+  "messages": [
+    {
+      "id": "msg_01j7abc456",
+      "role": "user",
+      "content": "Calculate a quote for 500 flyers",
+      "createdAt": "2026-08-28T14:30:00.000Z"
+    },
+    {
+      "id": "msg_01j7abc789",
+      "role": "assistant",
+      "content": "The quote for 500 A5 flyers on 250gsm gloss is ₦45,000.",
+      "parts": [
+        { "type": "text", "text": "The quote for 500 A5 flyers on 250gsm gloss is ₦45,000." }
+      ],
+      "createdAt": "2026-08-28T14:30:05.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `DELETE /api/ai/threads/:threadId`
+Deletes a conversation thread and all of its associated messages.
+
+#### Response `200 OK`
+```json
+{
+  "success": true
+}
+```
+
+---
+
+### `DELETE /api/ai/threads`
+Deletes all conversation threads and message history for the active user/project.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "count": 14
+}
+```
+
+---
+
+## 3. Human-in-the-Loop Proposal Actions
+
+When the AI generates a content mutation (e.g. creating an order or rewriting an article), it creates an `AIAction` with a unique `actionId`. Editors approve or reject this action through these REST endpoints.
+
+### `POST /api/ai/actions/:actionId/apply`
+Approves and executes the proposed database change.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "action": {
+    "id": "act_mtcrwg94_8d3jozp",
+    "type": "create",
+    "collection": "orders",
+    "status": "applied",
+    "appliedAt": "2026-08-28T15:10:00.000Z"
+  }
+}
+```
+
+---
+
+### `POST /api/ai/actions/:actionId/reject`
+Rejects and dismisses the proposed database change without modifying any records.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "action": {
+    "id": "act_mtcrwg94_8d3jozp",
+    "status": "rejected"
+  }
+}
+```
+
+---
+
+## 4. Semantic Search & RAG
+
+### `POST /api/ai/rag/reindex`
+Triggers vector embedding reindexing for one or all collections.
+
+#### Request Body
+```json
+{
+  "collection": "blog-articles",
+  "force": false
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "collections": [
+    {
+      "collection": "blog-articles",
+      "indexedChunks": 48,
+      "durationMs": 320
+    }
+  ],
+  "totalChunks": 48
+}
+```
+
+---
+
+### `POST /api/ai/rag/search`
+Runs a semantic vector similarity search against your indexed project content.
+
+#### Request Body
+```json
+{
+  "query": "executive leadership coaching techniques",
+  "limit": 5
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "results": [
+    {
+      "collection": "services",
+      "documentId": "8tf7wa",
+      "score": 0.89,
+      "content": "1-on-1 Executive Coaching for C-Suite Leaders focusing on strategic clarity..."
+    }
+  ]
+}
+```
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/deliver-content/rest-api/overview
@@ -303,6 +930,18 @@ The table below is generated from a representative maximal configuration so it c
 
 | Method | Path | Summary | Authentication |
 | --- | --- | --- | --- |
+| GET | `/api/ai/actions/{actionId}` | Get an AI mutation action proposal | Required |
+| POST | `/api/ai/actions/{actionId}/execute` | Approve and execute an AI mutation proposal | Required |
+| POST | `/api/ai/actions/{actionId}/reject` | Reject an AI mutation proposal | Required |
+| POST | `/api/ai/chat` | Send prompt and stream AI assistant response | Required |
+| POST | `/api/ai/rag/reindex` | Trigger vector reindexing for semantic search | Required |
+| POST | `/api/ai/rag/search` | Perform semantic vector search against indexed content | Required |
+| DELETE | `/api/ai/threads` | Clear all conversation threads | Required |
+| GET | `/api/ai/threads` | List conversation threads | Required |
+| POST | `/api/ai/threads` | Create a new conversation thread | Required |
+| DELETE | `/api/ai/threads/{threadId}` | Delete a specific conversation thread | Required |
+| GET | `/api/ai/threads/{threadId}` | Get conversation thread and historical messages | Required |
+| POST | `/api/ai/threads/{threadId}/messages` | Post a message to an existing thread and stream reply | Required |
 | GET | `/api/audit` | Get audit entries across all readable audited collections | Required |
 | GET | `/api/collections/guest-responses` | Find Guest Responses | Required |
 | POST | `/api/collections/guest-responses` | Create Guest response | Required |
@@ -6121,6 +6760,77 @@ None of this is styling configuration; it's schema and content discipline. But i
 ## Recommended path
 
 Rely on the built-in keyboard, focus, and ARIA behavior as your baseline — it's there because of the primitives the admin is built on, and you don't need to do anything to get it. Put your effort into the content side you control: an alt-text field on every upload collection, clear labels and descriptions on fields, and real structure in rich text.
+
+---
+
+## AI Editorial Assistant
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/ai-assistant
+
+The Dyrected Admin panel includes an embedded AI assistant that acts as a real-time editorial partner for your team. Editors can brainstorm ideas, rewrite copy, query collection statistics, and generate structured content without leaving their active editing tab.
+
+By the end of this page, you will understand how to access the assistant drawer, how live reasoning and streaming work, and how the human-in-the-loop proposal system protects your live database.
+
+## Accessing the assistant drawer
+
+The assistant is accessible from anywhere in the admin panel via the floating **Lip Trigger** button located on the right side of the screen.
+
+- **Click to Open:** Click the floating sparkles trigger on the edge of your screen to slide open the assistant panel.
+- **Keyboard Navigation:** Press `Escape` to close the panel or `Enter` (with `Shift+Enter` for multi-line breaks) to send messages.
+- **Deep Linking:** You can link directly to a specific conversation thread by appending `?aiThread=<threadId>` or `?aiThread=new` to any admin URL.
+
+## The review and proposal workflow
+
+Safety is central to Dyrected AI. The assistant cannot directly overwrite your database records behind your back. Instead, all content creation and updates go through a visual **Human-in-the-Loop Proposal** workflow:
+
+```
+┌────────────────────────────────────────────────────────┐
+│ Editor: "Rewrite this headline to be punchier"         │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│ Assistant streams explanation & generates proposal card │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│ Visual Word Diff Card:                                 │
+│ [- "Old boring headline" -] [+ "New Punchy Headline" +]│
+│                                                        │
+│ [ Reject ]                     [ Approve & Apply ]     │
+└────────────────────────────────────────────────────────┘
+```
+
+### 1. Requesting Changes
+When an editor asks for an edit (e.g., *"Make this introductory paragraph more engaging"* or *"Create a draft service for Executive Coaching"*), the assistant drafts the content and invokes a mutation proposal tool (`proposeUpdateDocument`, `proposeCreateDocument`, or `proposeUpdateGlobal`).
+
+### 2. Inspecting the Visual Diff
+The assistant renders an **AI Action Proposal Card** directly in the conversation.
+- **Green Highlights:** Added words and fields.
+- **Red Strikethroughs:** Removed words.
+- **Clean Formatting:** HTML and rich text fields are cleanly rendered so editors see the exact readable copy.
+
+### 3. Approving or Rejecting
+- Click **[Approve & Apply]** to commit the changes directly to the database. The active form updates immediately.
+- Click **[Reject]** to dismiss the proposal without modifying any records.
+
+## Live streaming and reasoning transparency
+
+While the assistant generates answers, the UI provides real-time visual feedback:
+
+- **Live Streaming Caret:** An animated blinking indicator follows text as it is generated token-by-token.
+- **Reasoning Process Accordion:** When using reasoning models (such as DeepSeek or OpenAI o-series), internal thoughts are neatly collected in a collapsible **Reasoning Process** accordion, keeping the main chat clean.
+- **Tool Execution Breakdown:** When the AI searches documents, queries collection counts, or performs vector similarity lookups, an expandable **Actions** pill displays each executed database operation.
+- **Stop Generation:** If an answer is running too long or you want to revise your prompt, click the red **[Stop]** button to abort streaming immediately.
+
+## Conversation history and threads
+
+Every conversation is automatically stored in your database under the `_dyrected_ai_threads` and `_dyrected_ai_messages` system tables.
+
+- **Resume Past Threads:** Click the **History** icon in the panel header to switch between previous conversations.
+- **Smart Auto-Titling:** After your first prompt, Dyrected automatically generates a concise 3–5 word title for the conversation.
+- **Thread Management:** Rename threads, clear all conversation history, or delete individual conversations on demand.
 
 ---
 
@@ -12249,6 +12959,160 @@ Because the full example is still in progress, treat this as the planned coverag
 
 ---
 
+## Chat-to-Order AI Pipeline
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/examples/chat-to-order
+
+Commercial print shops, creative agencies, custom fabricators, and ecommerce businesses frequently receive order requests through unstructured channels: WhatsApp, Telegram, direct messages, and email. Operators often spend hours manually deciphering requirements, calculating quotes, checking pricing charts, and re-typing details into forms.
+
+In this guide, you will build an automated pipeline where pasting an unstructured conversation into Dyrected AI automatically parses the request, queries live database pricing rules, computes deposit math, and presents a visual **Order Proposal** for one-click manager approval.
+
+---
+
+## What this example demonstrates
+
+1. **Unstructured Data Ingestion:** Extracting names, contact numbers, line items, and quantities from messy conversation transcripts.
+2. **Dynamic Pricing Lookups:** Querying the `pricing-rules` collection in real time to calculate unit rates.
+3. **Financial Math Automation:** Computing a required 70% deposit and remaining balance due according to your business rules.
+4. **Human-in-the-Loop Approval:** Rendering an interactive **Action Proposal Card** with a visual diff so managers review and approve before any database mutation occurs.
+
+---
+
+## 1. Defining the collections
+
+Define the `Orders` and `PricingRules` collections. Notice how `Orders` includes financial tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+
+```ts
+// src/collections/Orders.ts
+
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+```
+
+```ts
+// src/collections/PricingRules.ts
+
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+```
+
+---
+
+## 2. Configuring the AI System Prompt
+
+In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
+
+```ts
+// dyrected.config.ts
+
+
+
+
+
+export default defineConfig({
+  collections: [Orders, PricingRules],
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  ai: {
+    systemPrompt: `
+    You are the Operations Assistant for PrintOS.
+    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
+    1. Extract customer name, phone or handle, product specifications, and quantity.
+    2. Query the 'pricing-rules' collection to find the unit rate.
+    3. Calculate Subtotal = (Quantity * Unit Rate).
+    4. Calculate a 70% required deposit and the remaining balance due.
+    5. Generate a unique order reference (e.g. PO-2026-XXXX).
+    6. Propose a new document in the 'orders' collection.
+    `,
+  },
+});
+```
+
+---
+
+## 3. Testing the workflow in the Admin Assistant
+
+1. Open your Dyrected Admin dashboard at `/admin`.
+2. Click the floating **AI Assistant** drawer on the right.
+3. Paste a sample customer chat transcript:
+
+```text
+Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
+Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
+```
+
+---
+
+## 4. What happens automatically
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Assistant parses customer: Grace (08029998877)           │
+├─────────────────────────────────────────────────────────────┤
+│ 2. Queries 'pricing-rules' -> finds ₦45 per A5 flyer        │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Computes 1,000 * ₦45 = ₦45,000 Subtotal                  │
+│    Calculates ₦31,500 (70% Deposit) + ₦13,500 (Balance)     │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Renders Interactive Proposal Card in the Drawer          │
+├─────────────────────────────────────────────────────────────┤
+│ 5. Manager clicks [Approve & Apply] -> Stored in Database   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+1. **Entity Extraction:** The model extracts the customer's name, contact information, product specifications, and quantity.
+2. **Pricing Lookup:** The model invokes `queryCollection` against `pricing-rules` for `a5-flyer`.
+3. **Financial Math:** The assistant computes `subtotal`, required `depositPaid`, and remaining `balanceDue`.
+4. **Interactive Action Card:** The assistant renders the **Action Proposal Card** with a visual schema diff showing all proposed fields.
+5. **One-Click Execution:** The shop manager clicks **[Approve & Apply]**, and the order document is immediately saved to PostgreSQL with zero manual data entry.
+
+---
+
+## Related docs
+
+- [AI Configuration Guide](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai)
+- [Admin AI Assistant UI](https://docs.dyrected.com/docs/self-hosted/editor-experience/ai-assistant)
+- [AI Agent API & Telegram Webhooks](https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api)
+- [Chat to Order Recipe](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal)
+
+---
+
 ## Ecommerce
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/examples/ecommerce
@@ -12388,8 +13252,10 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Generate a slug from a title](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/auto-slug) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
+- [Chat-to-order AI proposals](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal) — Problem: Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation. Summary: Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/cross-field-validation) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
+- [Custom business logic AI tools](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-ai-tools) — Problem: The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations. Summary: Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
@@ -12603,6 +13469,91 @@ export const Posts = defineCollection({
 
 ---
 
+## Chat-to-Order AI Proposals
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal
+
+Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.
+
+## Use this when
+
+- convert chat to order
+- parse whatsapp conversation to quote
+- telegram bot order creation
+- automate deposit calculation from chat
+
+## Dyrected concepts
+
+`ai.systemPrompt`, `ai.provider`, `defineCollection`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+  defineConfig,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+
+
+
+export const config: DyrectedConfig = {
+  collections: [Orders, PricingRules],
+  globals: [],
+  ai: {
+    systemPrompt: "Parse chat transcripts, calculate 70% deposit requirements, and propose order records.",
+  },
+};
+```
+
+---
+
 ## Show an Admin field only when it is relevant
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/conditional-admin-field
@@ -12723,6 +13674,86 @@ export const Events = defineCollection({
     }),
   ],
 });
+```
+
+---
+
+## Custom Business Logic Tools
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-ai-tools
+
+Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.
+
+## Use this when
+
+- add custom tool to ai assistant
+- connect external api to ai
+- custom server functions for ai
+- zod schema ai tools
+
+## Dyrected concepts
+
+`ai.tools`, `defineConfig`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+
+
+
+export const Appointments = defineCollection({
+  slug: "appointments",
+  labels: { singular: "Appointment", plural: "Appointments" },
+  fields: [
+    defineTextField({ name: "clientName", label: "Client Name", required: true }),
+    defineDateField({ name: "bookingDate", label: "Date", required: true }),
+    defineTextField({ name: "timeSlot", label: "Time Slot", required: true }),
+  ],
+});
+
+export const config: DyrectedConfig = {
+  collections: [Appointments],
+  globals: [],
+  ai: {
+    tools: {
+      checkConsultationSlots: {
+        description: "Check available 1-on-1 coaching slots for a given date in YYYY-MM-DD format",
+        parameters: z.object({
+          date: z.string().describe("Target date in YYYY-MM-DD format, e.g. 2026-09-01"),
+        }),
+        execute: async ({ date }, { db }) => {
+          const existingBookings = await db.find({
+            collection: "appointments",
+            where: {
+              bookingDate: { equals: date },
+              status: { notEquals: "cancelled" },
+            },
+          });
+
+          const bookedHours = new Set(existingBookings.docs.map((doc: any) => doc.timeSlot));
+          const allSlots = ["09:00 AM", "11:30 AM", "02:00 PM", "04:30 PM"];
+          const available = allSlots.filter((slot) => !bookedHours.has(slot));
+
+          return {
+            date,
+            totalSlots: allSlots.length,
+            availableSlots: available,
+            isFullyBooked: available.length === 0,
+          };
+        },
+      },
+    },
+  },
+};
 ```
 
 ---
@@ -14480,11 +15511,11 @@ Use this page when you know your frontend framework, but you are not sure which 
 
 The practical choice is not "which package has the most features?" It is: **where does the Dyrected backend live, and how much framework glue do you want?**
 
-- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
-- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
-- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
-- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
-- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/guides/nextjs/package-reference).
+- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/guides/nuxt/package-reference).
+- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/self-hosted/guides/react/package-reference).
+- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/self-hosted/guides/vue/package-reference).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/self-hosted/guides/sdk).
 
 ## The package map
 
@@ -14687,7 +15718,7 @@ In production, remember two things:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package)
 - [Displaying content in Next.js](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
@@ -14845,8 +15876,8 @@ For remote API mode:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
-- [Vue package reference](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package)
+- [Vue package reference](https://docs.dyrected.com/docs/self-hosted/guides/vue/package-reference)
 - [Displaying content in Nuxt](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
 - [Deployment](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/production/deployment)
@@ -14859,7 +15890,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/react/package-r
 
 `@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
 
-If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) instead.
+If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/guides/nextjs/package-reference) instead.
 
 ## What the package gives you
 
@@ -14974,8 +16005,8 @@ export function AdminPage() {
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
-- [SDK](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package)
+- [SDK](https://docs.dyrected.com/docs/self-hosted/guides/sdk)
 - [Displaying content in React](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
@@ -14990,7 +16021,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/sdk
 
 If your framework already has a higher-level package, prefer that package first and drop to the SDK when you need lower-level control.
 
-For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package).
 
 ## Install the package
 
@@ -15059,7 +16090,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/vue/package-ref
 
 `@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
 
-If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/guides/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
 
 ## What the package gives you
 
@@ -15178,8 +16209,8 @@ For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.c
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
-- [Nuxt package reference](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package)
+- [Nuxt package reference](https://docs.dyrected.com/docs/self-hosted/guides/nuxt/package-reference)
 - [Displaying content in Vue](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
@@ -15385,6 +16416,168 @@ Documenting localization as if it already exists would invent product behavior. 
 ## Current status
 
 `ready-for-sme-review`
+
+---
+
+## Configuring AI
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai
+
+Dyrected includes a schema-aware AI engine that works directly with your collections, globals, and database records. Instead of writing separate prompt orchestration code or brittle parsing scripts, you declare your AI configuration in `dyrected.config.ts`. The assistant automatically understands your project's field types, relationship rules, and singleton structures.
+
+By the end of this page, you will know how to choose an AI provider, set global brand voice directives, attach collection-specific instructions, and configure rate limits.
+
+## The mental model: schema-grounded intelligence
+
+Most AI integrations require feeding extensive JSON schema dumps into every prompt. Dyrected takes a different approach:
+
+- **Built-in Schema Awareness:** The AI engine automatically generates a structured inventory of your collections, fields, and globals at initialization.
+- **Human-in-the-Loop Mutations:** The assistant never blindly updates records in the database. When asked to rewrite, generate, or modify content, it produces visual diff proposals that editors review and approve with one click.
+- **Dual-Mode Communication:** By default, the assistant speaks like a warm, practical editorial colleague. If a developer explicitly asks for technical details or schemas, it transitions into technical mode.
+
+## Enabling AI in your configuration
+
+Add the `ai` key to your `dyrected.config.ts`. Here is a complete, runnable setup using AgentRouter:
+
+```ts
+// dyrected.config.ts
+
+
+
+export const Services = defineCollection({
+  slug: "services",
+  labels: { singular: "Service", plural: "Services" },
+  ai: {
+    prompt: "Highlight tangible business outcomes and client ROI in all service descriptions.",
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Service Name", required: true }),
+    defineTextField({ name: "summary", label: "Brief Summary", required: true }),
+    defineNumberField({ name: "price", label: "Base Price (NGN)", required: true }),
+  ],
+});
+
+export default defineConfig({
+  collections: [Services],
+  db: postgresAdapter({
+    url: process.env.DATABASE_URL || "postgres://localhost:5432/my_app",
+  }),
+  ai: {
+    provider: "agentrouter",
+    model: "deepseek-v4-flash",
+    systemPrompt:
+      "You are the operations assistant for Acme Growth Coaching. Write in a warm, encouraging, and non-technical editorial voice. When asked to rewrite or edit content, immediately propose clean updates.",
+    rateLimit: {
+      userMax: 60,
+      projectMax: 600,
+    },
+  },
+});
+```
+
+Once saved, the admin panel renders the floating Lip Trigger assistant drawer, and the `@dyrected/core` `AIAgent` service becomes available to your server routes.
+
+## Choosing your AI provider and environment variables
+
+Dyrected is completely provider-agnostic. You can use whichever LLM provider fits your team's workflow, budget, or data residency requirements.
+
+### Automatic Provider Detection
+
+If you don't want to specify a provider explicitly, Dyrected **automatically detects** your provider based on which API key is present in your environment:
+
+| If your `.env` contains | Dyrected automatically routes to | Default Fallback Model |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` |
+| `GEMINI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini | `gemini-2.0-flash` |
+| `OPENROUTER_API_KEY` | OpenRouter | `anthropic/claude-3-haiku` |
+| `AGENTROUTER_API_KEY` | AgentRouter | `claude-3-haiku-20240307` |
+
+### Explicit Provider Configuration
+
+If you want to pin a specific model, change base URLs (e.g. for custom proxies or local models), or specify custom API key names, configure the `ai` block in `dyrected.config.ts`:
+
+```ts
+// Example: Using OpenAI with GPT-4o
+ai: {
+  provider: "openai",
+  model: "gpt-4o",
+  apiKey: process.env.OPENAI_API_KEY,
+}
+
+// Example: Using Google Gemini
+ai: {
+  provider: "google",
+  model: "gemini-2.5-flash",
+  apiKey: process.env.GEMINI_API_KEY,
+}
+
+// Example: Using OpenRouter or a custom OpenAI-compatible endpoint
+ai: {
+  provider: "openrouter",
+  model: "meta-llama/llama-3.3-70b-instruct",
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+}
+```
+
+## Setting brand voice directives
+
+The `ai.systemPrompt` property sets high-level instructions that apply across your entire project. This prompt is injected into the assistant's system instructions under `BRAND VOICE & DIRECTIVES`:
+
+```ts
+ai: {
+  provider: "agentrouter",
+  model: "deepseek-v4-flash",
+  systemPrompt: `
+  You are the Lead Editorial Assistant for Future You Coaching.
+  - Tone: Warm, authoritative, actionable, and conversational.
+  - Audience: Mid-career professionals and executives seeking leadership clarity.
+  - Rule: Never show raw HTML code blocks or database IDs in chat messages.
+  `,
+}
+```
+
+## Collection-level editorial prompts
+
+When an assistant works on a specific collection, general instructions may not be enough. You can attach targeted guidelines to individual collections using `collection.ai.prompt`:
+
+```ts
+export const BlogArticles = defineCollection({
+  slug: "blog-articles",
+  ai: {
+    prompt: `
+    When writing or editing blog articles:
+    - Keep intros under 3 sentences with a compelling hook.
+    - Break long sections into concise subheadings with bulleted takeaways.
+    - Write excerpts optimized for LinkedIn and newsletter sharing.
+    `,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Article Title", required: true }),
+    defineTextField({ name: "excerpt", label: "Social Excerpt", required: true }),
+    defineTextField({ name: "body", label: "Article Body", required: true }),
+  ],
+});
+```
+
+When an editor asks the assistant to work on blog posts, Dyrected merges your global `ai.systemPrompt` with the collection's specific prompt.
+
+## Rate limiting and safety controls
+
+To protect your API budget and prevent abuse, configure rate limiting directly in `config.ai.rateLimit`:
+
+```ts
+ai: {
+  provider: "agentrouter",
+  model: "deepseek-v4-flash",
+  rateLimit: {
+    userMax: 30,       // Max requests per user per minute
+    projectMax: 300,   // Max requests project-wide per minute
+  },
+}
+```
+
+If a user or project exceeds these limits, Dyrected returns a polite `429 Too Many Requests` error with the retry interval.
 
 ---
 
@@ -15903,6 +17096,16 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
+   * Optional custom AI assistant instructions and RAG indexing options for this collection.
+   */
+  ai?: {
+    /** Specific editorial guidelines, brand voice, or instructions for this collection. */
+    prompt?: string;
+    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
+    rag?: import("./ai.js").CollectionRAGConfig;
+  };
+
+  /**
    * Custom detail view layout configuration for the Admin UI.
    */
   detail?: DetailSchema<TDoc> | false;
@@ -15969,6 +17172,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
+| <code>ai</code> (optional) | Optional custom AI assistant instructions and RAG indexing options for this collection. |
 | <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
@@ -16438,6 +17642,14 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   };
 
   /**
+   * Optional custom AI assistant instructions for this global singleton.
+   */
+  ai?: {
+    /** Specific guidelines, context, or instructions when interacting with this global. */
+    prompt?: string;
+  };
+
+  /**
    * Initial data to seed this global with the first time it is fetched and
    * found to be empty.
    */
@@ -16460,6 +17672,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>access</code> (optional) | Access control for reading and updating this global. |
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
+| <code>ai</code> (optional) | Optional custom AI assistant instructions for this global singleton. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
 | <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
@@ -16945,6 +18158,11 @@ export interface DyrectedConfig<
     admin?: AdminConfig;
     adminAuth?: AdminAuthConfig;
   }>;
+
+  /**
+   * AI Assistant and LLM tools configuration.
+   */
+  ai?: AIConfig;
 }
 ```
 
@@ -16967,6 +18185,7 @@ export interface DyrectedConfig<
 | <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
 | <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
 | <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
+| <code>ai</code> (optional) | AI Assistant and LLM tools configuration. |
 
 ---
 

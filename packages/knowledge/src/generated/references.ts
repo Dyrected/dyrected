@@ -553,7 +553,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "Use this contract when you want the exact shape of a collection config.\n\nMost collection work comes down to a small set of top-level options: giving\nthe collection a stable slug, defining its fields, deciding how it should\nappear in the Admin UI, and choosing whether it also handles access, hooks,\nauth, uploads, workflows, or other optional behavior.\n\nPass your document's TypeScript type as the generic parameter `TDoc` to get\nfully typed hooks and access functions.\n\nSee: [Collections documentation](https://dyrected.com/docs/model-content/configuration/collections)",
-    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   *\n   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the\n   * underlying database table or collection name. Treat it as part of the\n   * long-term data contract rather than a cosmetic label.\n   *\n   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or\n   * `'contact-submissions'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to one specific site in a multi-tenant setup.\n   *\n   * Use this when the collection should belong to a single site rather than\n   * the whole installation. When set, only requests bearing a matching\n   * `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * setup and accessible regardless of the `X-Site-Id` header.\n   *\n   * Use this for content that should stay common across sites, such as shared\n   * taxonomies, reusable assets, or centrally managed reference data.\n   */\n  shared?: boolean;\n\n  /**\n   * Human-readable names for documents in this collection, shown in the Admin UI.\n   *\n   * Use this when the slug is technical or when you want the dashboard to read\n   * more naturally. For example, `slug: 'people'` might use\n   * `labels: { singular: 'Person', plural: 'People' }`.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#labels Collections labels}\n   */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true` or an auth config object, this collection is an auth collection. It gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   *\n   * Turn this on when each document should behave like an account that can log\n   * in, hold credentials, and participate in user flows. Typical examples are\n   * `users`, `admins`, `members`, or `customers`.\n   *\n   * Pass an object when you want to tune built-in account lockout behavior for\n   * repeated failed logins.\n   *\n   * @see {@link https://dyrected.com/docs/editor-experience/editor-accounts Authentication overview}\n   */\n  auth?: boolean | AuthConfig;\n\n  /**\n   * If `true` or a config object, this collection supports file uploads.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   *\n   * Turn this on when each document in the collection should represent a\n   * stored file, such as an image, PDF, video, or downloadable asset.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/media/overview Upload overview}\n   */\n  upload?: boolean | UploadConfig;\n\n  /**\n   * Field definitions that make up the document schema for this collection.\n   *\n   * This is the main schema contract for every document in the collection. It\n   * decides what editors can fill in, how data is validated, how records are\n   * stored, and what the API and SDK return.\n   *\n   * In practice, fields are where you model the actual content structure of the\n   * collection: simple values such as text and dates, relationships to other\n   * collections, nested objects and arrays, and flexible `blocks` fields for\n   * reusable page sections or long-form layouts.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/fields/overview Fields overview}\n   * @see {@link https://dyrected.com/docs/model-content/fields/blocks Blocks and page sections}\n   */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds the built-in system fields\n   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.\n   * Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty.\n   *\n   * Use this for starter records, demo content, or sensible defaults that\n   * should appear automatically before editors create anything themselves.\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   *\n   * Turn this on when you need accountability around changes, such as knowing\n   * who changed what, inspecting before-and-after state, or supporting\n   * compliance and operational review.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   *\n   * Use this when content moves through stages such as draft, review, and\n   * published, or when teams need an approval process before changes go live.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * If `true`, enables zero-config draft and publish functionality.\n   * Documents start as drafts, editors can save working drafts without affecting\n   * live content, and any authorized editor can publish or unpublish entries.\n   */\n  drafts?: boolean;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value can be a function, a Jexl string, a\n   * boolean, or a named policy reference. Returning `true` allows access and\n   * `false` denies it. Returning a `where`-style object grants access only to\n   * matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,\n   *   create: ({ user }) => !!user,\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview Access control overview}\n   */\n  access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n    /**\n     * Controls who can read this collection's audit log (`GET /:slug/__audit`),\n     * for collections with `audit` enabled. Falls back to the `read` rule when\n     * omitted, so the audit trail is visible to whoever can read the documents.\n     * Set it explicitly to gate the audit log separately — for example, admins\n     * only, even on a collection anyone can read.\n     */\n    readAudit?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the Hooks reference for the full lifecycle diagram.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks Hooks overview}\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections Collection hooks}\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHookEntry[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHookEntry<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHookEntry<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only:\n     * webhooks, cache busting, and notifications. Return value is ignored.\n     *\n     * Errors are isolated: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /** Runs before a document is deleted. Throw to cancel the deletion. */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are isolated: caught, logged, and discarded. The deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /**\n   * Admin UI configuration for this collection.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#admin-options Admin options}\n   */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /**\n     * Slug of the view to render by default when navigating to `/collections/:slug`.\n     * If not specified, defaults to the view with `default: true` or the all-records table view.\n     */\n    defaultView?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  };\n\n  /**\n   * Custom detail view layout configuration for the Admin UI.\n   */\n  detail?: DetailSchema<TDoc> | false;\n\n  /**\n   * Slug of the operational view to render by default when navigating to `/collections/:slug`.\n   *\n   * When set:\n   * 1. Navigating to `/collections/:slug` automatically redirects to `/collections/:slug/views/:defaultView`.\n   * 2. The main collection link in the sidebar directly opens this default view.\n   * 3. The sidebar submenu cleanly lists only your defined views without showing a generic `All [Collection]` item.\n   *\n   * @example\n   * ```ts\n   * export const GuestResponses = defineCollection({\n   *   slug: \"guest-responses\",\n   *   defaultView: \"attending-guests\",\n   *   views: [attendingGuests, seatingMatrix],\n   *   fields: [...],\n   * });\n   * ```\n   */\n  defaultView?: string;\n\n  /**\n   * Tailored operational workspaces for this collection (`table`, `spreadsheet`, `kanban`, `calendar`, `cards`, `gantt`).\n   * Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.\n   *\n   * @example\n   * ```ts\n   * views: [\n   *   defineView({\n   *     slug: \"attending-guests\",\n   *     label: \"Attending Guests\",\n   *     icon: \"UserCheck\",\n   *     layout: \"table\",\n   *     groupBy: \"tableNumber\",\n   *     filter: { attending: { equals: true } },\n   *     columns: [\"name\", \"email\", \"guestCount\", \"checkedIn\"],\n   *   }),\n   * ]\n   * ```\n   *\n   * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}\n   */\n  views?: ViewConfig[];\n}",
+    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   *\n   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the\n   * underlying database table or collection name. Treat it as part of the\n   * long-term data contract rather than a cosmetic label.\n   *\n   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or\n   * `'contact-submissions'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to one specific site in a multi-tenant setup.\n   *\n   * Use this when the collection should belong to a single site rather than\n   * the whole installation. When set, only requests bearing a matching\n   * `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * setup and accessible regardless of the `X-Site-Id` header.\n   *\n   * Use this for content that should stay common across sites, such as shared\n   * taxonomies, reusable assets, or centrally managed reference data.\n   */\n  shared?: boolean;\n\n  /**\n   * Human-readable names for documents in this collection, shown in the Admin UI.\n   *\n   * Use this when the slug is technical or when you want the dashboard to read\n   * more naturally. For example, `slug: 'people'` might use\n   * `labels: { singular: 'Person', plural: 'People' }`.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#labels Collections labels}\n   */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true` or an auth config object, this collection is an auth collection. It gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   *\n   * Turn this on when each document should behave like an account that can log\n   * in, hold credentials, and participate in user flows. Typical examples are\n   * `users`, `admins`, `members`, or `customers`.\n   *\n   * Pass an object when you want to tune built-in account lockout behavior for\n   * repeated failed logins.\n   *\n   * @see {@link https://dyrected.com/docs/editor-experience/editor-accounts Authentication overview}\n   */\n  auth?: boolean | AuthConfig;\n\n  /**\n   * If `true` or a config object, this collection supports file uploads.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   *\n   * Turn this on when each document in the collection should represent a\n   * stored file, such as an image, PDF, video, or downloadable asset.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/media/overview Upload overview}\n   */\n  upload?: boolean | UploadConfig;\n\n  /**\n   * Field definitions that make up the document schema for this collection.\n   *\n   * This is the main schema contract for every document in the collection. It\n   * decides what editors can fill in, how data is validated, how records are\n   * stored, and what the API and SDK return.\n   *\n   * In practice, fields are where you model the actual content structure of the\n   * collection: simple values such as text and dates, relationships to other\n   * collections, nested objects and arrays, and flexible `blocks` fields for\n   * reusable page sections or long-form layouts.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/fields/overview Fields overview}\n   * @see {@link https://dyrected.com/docs/model-content/fields/blocks Blocks and page sections}\n   */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds the built-in system fields\n   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.\n   * Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty.\n   *\n   * Use this for starter records, demo content, or sensible defaults that\n   * should appear automatically before editors create anything themselves.\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   *\n   * Turn this on when you need accountability around changes, such as knowing\n   * who changed what, inspecting before-and-after state, or supporting\n   * compliance and operational review.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   *\n   * Use this when content moves through stages such as draft, review, and\n   * published, or when teams need an approval process before changes go live.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * If `true`, enables zero-config draft and publish functionality.\n   * Documents start as drafts, editors can save working drafts without affecting\n   * live content, and any authorized editor can publish or unpublish entries.\n   */\n  drafts?: boolean;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value can be a function, a Jexl string, a\n   * boolean, or a named policy reference. Returning `true` allows access and\n   * `false` denies it. Returning a `where`-style object grants access only to\n   * matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,\n   *   create: ({ user }) => !!user,\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview Access control overview}\n   */\n  access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n    /**\n     * Controls who can read this collection's audit log (`GET /:slug/__audit`),\n     * for collections with `audit` enabled. Falls back to the `read` rule when\n     * omitted, so the audit trail is visible to whoever can read the documents.\n     * Set it explicitly to gate the audit log separately — for example, admins\n     * only, even on a collection anyone can read.\n     */\n    readAudit?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the Hooks reference for the full lifecycle diagram.\n   *\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks Hooks overview}\n   * @see {@link https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections Collection hooks}\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHookEntry[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHookEntry<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHookEntry<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only:\n     * webhooks, cache busting, and notifications. Return value is ignored.\n     *\n     * Errors are isolated: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /** Runs before a document is deleted. Throw to cancel the deletion. */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are isolated: caught, logged, and discarded. The deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /**\n   * Admin UI configuration for this collection.\n   *\n   * @see {@link https://dyrected.com/docs/model-content/configuration/collections#admin-options Admin options}\n   */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /**\n     * Slug of the view to render by default when navigating to `/collections/:slug`.\n     * If not specified, defaults to the view with `default: true` or the all-records table view.\n     */\n    defaultView?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  };\n\n  /**\n   * Optional custom AI assistant instructions and RAG indexing options for this collection.\n   */\n  ai?: {\n    /** Specific editorial guidelines, brand voice, or instructions for this collection. */\n    prompt?: string;\n    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */\n    rag?: import(\"./ai.js\").CollectionRAGConfig;\n  };\n\n  /**\n   * Custom detail view layout configuration for the Admin UI.\n   */\n  detail?: DetailSchema<TDoc> | false;\n\n  /**\n   * Slug of the operational view to render by default when navigating to `/collections/:slug`.\n   *\n   * When set:\n   * 1. Navigating to `/collections/:slug` automatically redirects to `/collections/:slug/views/:defaultView`.\n   * 2. The main collection link in the sidebar directly opens this default view.\n   * 3. The sidebar submenu cleanly lists only your defined views without showing a generic `All [Collection]` item.\n   *\n   * @example\n   * ```ts\n   * export const GuestResponses = defineCollection({\n   *   slug: \"guest-responses\",\n   *   defaultView: \"attending-guests\",\n   *   views: [attendingGuests, seatingMatrix],\n   *   fields: [...],\n   * });\n   * ```\n   */\n  defaultView?: string;\n\n  /**\n   * Tailored operational workspaces for this collection (`table`, `spreadsheet`, `kanban`, `calendar`, `cards`, `gantt`).\n   * Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.\n   *\n   * @example\n   * ```ts\n   * views: [\n   *   defineView({\n   *     slug: \"attending-guests\",\n   *     label: \"Attending Guests\",\n   *     icon: \"UserCheck\",\n   *     layout: \"table\",\n   *     groupBy: \"tableNumber\",\n   *     filter: { attending: { equals: true } },\n   *     columns: [\"name\", \"email\", \"guestCount\", \"checkedIn\"],\n   *   }),\n   * ]\n   * ```\n   *\n   * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}\n   */\n  views?: ViewConfig[];\n}",
     "members": [
       {
         "name": "slug",
@@ -629,6 +629,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "admin",
         "signature": "admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /** Short helper copy rendered under the collection title in the Admin list view. */\n    description?: string;\n\n    /**\n     * Field names included in backend free-text search for this collection.\n     * When omitted, Dyrected infers a conservative default from common text-like fields.\n     */\n    searchableFields?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /**\n     * Slug of the view to render by default when navigating to `/collections/:slug`.\n     * If not specified, defaults to the view with `default: true` or the all-records table view.\n     */\n    defaultView?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * Enables draft autosave in the Admin editor for workflow-enabled\n     * collections. Defaults to `true` when the collection uses `workflow` or\n     * `drafts: true`.\n     */\n    autosave?: boolean;\n\n    /**\n     * Debounce duration in milliseconds for Admin draft autosave.\n     * Defaults to `1500`.\n     */\n    autosaveDelayMs?: number;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  }",
         "description": "Admin UI configuration for this collection.\n\nSee: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options)"
+      },
+      {
+        "name": "ai",
+        "signature": "ai?: {\n    /** Specific editorial guidelines, brand voice, or instructions for this collection. */\n    prompt?: string;\n    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */\n    rag?: import(\"./ai.js\").CollectionRAGConfig;\n  }",
+        "description": "Optional custom AI assistant instructions and RAG indexing options for this collection."
       },
       {
         "name": "detail",
@@ -1949,7 +1954,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The root configuration object passed to `createDyrectedApp`.\n\nThis is the single source of truth for your entire Dyrected instance —\ncollections, globals, database adapter, storage, email, and more.",
-    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /**\n   * Runtime logger configuration. Accepts either logger options/destination or\n   * a fully-instantiated Pino logger.\n   */\n  logger?: DyrectedLoggerConfig;\n\n  /**\n   * Request logging, redaction, sampling, tracing, metrics, and transport\n   * configuration for the Dyrected server runtime.\n   */\n  observability?: DyrectedObservabilityConfig;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * App-level HTTP request rate limiting.\n   *\n   * Similar to Payload's `rateLimit` option, this counts requests by client IP\n   * over a rolling time window and returns `429` responses once the limit is\n   * exhausted.\n   */\n  rateLimit?: RateLimitConfig;\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
+    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /**\n   * Runtime logger configuration. Accepts either logger options/destination or\n   * a fully-instantiated Pino logger.\n   */\n  logger?: DyrectedLoggerConfig;\n\n  /**\n   * Request logging, redaction, sampling, tracing, metrics, and transport\n   * configuration for the Dyrected server runtime.\n   */\n  observability?: DyrectedObservabilityConfig;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * App-level HTTP request rate limiting.\n   *\n   * Similar to Payload's `rateLimit` option, this counts requests by client IP\n   * over a rolling time window and returns `429` responses once the limit is\n   * exhausted.\n   */\n  rateLimit?: RateLimitConfig;\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n\n  /**\n   * AI Assistant and LLM tools configuration.\n   */\n  ai?: AIConfig;\n}",
     "members": [
       {
         "name": "blocks",
@@ -2035,6 +2040,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "onSchemaFetch",
         "signature": "onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>",
         "description": "Callback to dynamically fetch additional collections and globals for a\ngiven site ID at request time. Used in multi-tenant deployments where each\nsite has its own schema stored in the database."
+      },
+      {
+        "name": "ai",
+        "signature": "ai?: AIConfig",
+        "description": "AI Assistant and LLM tools configuration."
       }
     ]
   },
@@ -2541,7 +2551,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "Defines a Dyrected global — a singleton document without pagination or IDs.\n\nGlobals are ideal for site-wide settings, feature flags, or any data where\nthere is always exactly one record, such as `site-settings`, `navigation`,\nor `theme`.\n\nPass your document's TypeScript type as the generic parameter `TDoc` to get\nfully typed hooks.",
-    "signature": "export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this global.\n   * Used as the URL segment (`/api/globals/:slug`) and the storage key.\n   */\n  slug: string;\n\n  /** Restricts this global to a specific site in a multi-tenant deployment. */\n  siteId?: string;\n\n  /**\n   * If `true`, this global is shared across all sites in a multi-tenant\n   * deployment.\n   */\n  shared?: boolean;\n\n  /** Human-readable label shown in the Admin UI sidebar. */\n  label?: string;\n\n  /** Field definitions for this global's document schema. */\n  fields: Field[];\n\n  /** Access control for reading and updating this global. */\n  access?: {\n    read?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Global-level lifecycle hooks.\n   * Globals support `beforeRead`, `afterRead`, `beforeChange`, and `afterChange`.\n   * There are no delete hooks since globals cannot be deleted.\n   */\n  hooks?: {\n    beforeRead?: GlobalBeforeReadHookEntry[];\n    afterRead?: GlobalAfterReadHookEntry<TDoc>[];\n    beforeChange?: GlobalBeforeChangeHookEntry<TDoc>[];\n    afterChange?: GlobalAfterChangeHook<TDoc>[];\n  };\n\n  /** Admin UI configuration for this global. */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this global in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Settings2'` or `'Palette'`.\n     */\n    icon?: AdminIconName;\n\n    /** Groups this global under a named section in the Admin sidebar. */\n    group?: string;\n\n    /** If `true`, this global is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n  };\n\n  /**\n   * Initial data to seed this global with the first time it is fetched and\n   * found to be empty.\n   */\n  initialData?: Partial<TDoc>;\n\n  /**\n   * Custom detail view layout configuration for the Admin UI.\n   */\n  detail?: DetailSchema<TDoc> | false;\n}",
+    "signature": "export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this global.\n   * Used as the URL segment (`/api/globals/:slug`) and the storage key.\n   */\n  slug: string;\n\n  /** Restricts this global to a specific site in a multi-tenant deployment. */\n  siteId?: string;\n\n  /**\n   * If `true`, this global is shared across all sites in a multi-tenant\n   * deployment.\n   */\n  shared?: boolean;\n\n  /** Human-readable label shown in the Admin UI sidebar. */\n  label?: string;\n\n  /** Field definitions for this global's document schema. */\n  fields: Field[];\n\n  /** Access control for reading and updating this global. */\n  access?: {\n    read?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Global-level lifecycle hooks.\n   * Globals support `beforeRead`, `afterRead`, `beforeChange`, and `afterChange`.\n   * There are no delete hooks since globals cannot be deleted.\n   */\n  hooks?: {\n    beforeRead?: GlobalBeforeReadHookEntry[];\n    afterRead?: GlobalAfterReadHookEntry<TDoc>[];\n    beforeChange?: GlobalBeforeChangeHookEntry<TDoc>[];\n    afterChange?: GlobalAfterChangeHook<TDoc>[];\n  };\n\n  /** Admin UI configuration for this global. */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this global in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Settings2'` or `'Palette'`.\n     */\n    icon?: AdminIconName;\n\n    /** Groups this global under a named section in the Admin sidebar. */\n    group?: string;\n\n    /** If `true`, this global is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n  };\n\n  /**\n   * Optional custom AI assistant instructions for this global singleton.\n   */\n  ai?: {\n    /** Specific guidelines, context, or instructions when interacting with this global. */\n    prompt?: string;\n  };\n\n  /**\n   * Initial data to seed this global with the first time it is fetched and\n   * found to be empty.\n   */\n  initialData?: Partial<TDoc>;\n\n  /**\n   * Custom detail view layout configuration for the Admin UI.\n   */\n  detail?: DetailSchema<TDoc> | false;\n}",
     "members": [
       {
         "name": "slug",
@@ -2582,6 +2592,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "admin",
         "signature": "admin?: {\n    /**\n     * Lucide icon displayed beside this global in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Settings2'` or `'Palette'`.\n     */\n    icon?: AdminIconName;\n\n    /** Groups this global under a named section in the Admin sidebar. */\n    group?: string;\n\n    /** If `true`, this global is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n  }",
         "description": "Admin UI configuration for this global."
+      },
+      {
+        "name": "ai",
+        "signature": "ai?: {\n    /** Specific guidelines, context, or instructions when interacting with this global. */\n    prompt?: string;\n  }",
+        "description": "Optional custom AI assistant instructions for this global singleton."
       },
       {
         "name": "initialData",
@@ -4403,6 +4418,216 @@ export const references: readonly ReferenceEntry[] = [
 ];
 
 export const endpoints: readonly EndpointReference[] = [
+  {
+    "id": "GET /api/ai/actions/{actionId}",
+    "method": "GET",
+    "path": "/api/ai/actions/{actionId}",
+    "summary": "Get an AI mutation action proposal",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "actionId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/actions/{actionId}/execute",
+    "method": "POST",
+    "path": "/api/ai/actions/{actionId}/execute",
+    "summary": "Approve and execute an AI mutation proposal",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "actionId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/actions/{actionId}/reject",
+    "method": "POST",
+    "path": "/api/ai/actions/{actionId}/reject",
+    "summary": "Reject an AI mutation proposal",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "actionId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/chat",
+    "method": "POST",
+    "path": "/api/ai/chat",
+    "summary": "Send prompt and stream AI assistant response",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/rag/reindex",
+    "method": "POST",
+    "path": "/api/ai/rag/reindex",
+    "summary": "Trigger vector reindexing for semantic search",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/rag/search",
+    "method": "POST",
+    "path": "/api/ai/rag/search",
+    "summary": "Perform semantic vector search against indexed content",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "DELETE /api/ai/threads",
+    "method": "DELETE",
+    "path": "/api/ai/threads",
+    "summary": "Clear all conversation threads",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/ai/threads",
+    "method": "GET",
+    "path": "/api/ai/threads",
+    "summary": "List conversation threads",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/threads",
+    "method": "POST",
+    "path": "/api/ai/threads",
+    "summary": "Create a new conversation thread",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "DELETE /api/ai/threads/{threadId}",
+    "method": "DELETE",
+    "path": "/api/ai/threads/{threadId}",
+    "summary": "Delete a specific conversation thread",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "threadId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/ai/threads/{threadId}",
+    "method": "GET",
+    "path": "/api/ai/threads/{threadId}",
+    "summary": "Get conversation thread and historical messages",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "threadId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/ai/threads/{threadId}/messages",
+    "method": "POST",
+    "path": "/api/ai/threads/{threadId}/messages",
+    "summary": "Post a message to an existing thread and stream reply",
+    "tags": [
+      "AI"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "threadId",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
   {
     "id": "GET /api/audit",
     "method": "GET",

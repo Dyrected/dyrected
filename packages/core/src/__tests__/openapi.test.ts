@@ -68,6 +68,15 @@ describe("OpenAPI generation", () => {
         "/api/collections/media/media/{filename}",
         "/api/globals/settings",
         "/api/media/{filename}",
+        "/api/ai/chat",
+        "/api/ai/threads",
+        "/api/ai/threads/{threadId}",
+        "/api/ai/threads/{threadId}/messages",
+        "/api/ai/actions/{actionId}",
+        "/api/ai/actions/{actionId}/execute",
+        "/api/ai/actions/{actionId}/reject",
+        "/api/ai/rag/reindex",
+        "/api/ai/rag/search",
       ]),
     );
 

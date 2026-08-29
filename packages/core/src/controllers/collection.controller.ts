@@ -38,6 +38,7 @@ import {
 } from "../workflows.js";
 import { getRequestLogger } from "../observability.js";
 import { evaluateDetailComputed } from "../detail.js";
+import { RAGService } from "../services/rag/rag.service.js";
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -629,6 +630,18 @@ export class CollectionController {
       { isolated: true },
     );
 
+    // Auto-index into RAG vector store in background
+    if (db && config) {
+      const siteId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index create failed:`, err?.message || err));
+    }
+
     // Run afterRead hooks on the returned doc
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
@@ -779,6 +792,18 @@ export class CollectionController {
       },
       { isolated: true },
     );
+
+    // Auto-index into RAG vector store in background
+    if (db && config) {
+      const siteId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index upload failed:`, err?.message || err));
+    }
 
     // Run afterRead hooks
     const responseDoc = this.collection.workflow
@@ -978,6 +1003,18 @@ export class CollectionController {
       },
       { isolated: true },
     );
+
+    // Auto-index into RAG vector store in background
+    if (db && config) {
+      const siteId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index update failed:`, err?.message || err));
+    }
 
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
@@ -1429,6 +1466,17 @@ export class CollectionController {
       },
       { isolated: true },
     );
+
+    // Remove vector chunks for deleted document in background
+    if (db) {
+      const siteId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+      RAGService.deleteDocumentChunks({
+        db,
+        collection: this.collection.slug,
+        documentId: id,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-delete chunks failed:`, err?.message || err));
+    }
 
     return c.json({ message: "Deleted" });
   }

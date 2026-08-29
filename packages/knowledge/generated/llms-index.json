@@ -82,6 +82,26 @@
       ]
     },
     {
+      "id": "chat-to-order-proposal",
+      "title": "Chat-to-order AI proposals",
+      "description": "Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.",
+      "problem": "Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation.",
+      "summary": "Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.",
+      "docsPath": "/docs/examples-and-recipes/library/chat-to-order-proposal",
+      "canonicalDocs": [
+        "/docs/model-content/configuration/ai",
+        "/docs/editor-experience/ai-assistant",
+        "/docs/deliver-content/ai-agent-api"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "convert chat to order",
+        "parse whatsapp conversation to quote",
+        "telegram bot order creation",
+        "automate deposit calculation from chat"
+      ]
+    },
+    {
       "id": "conditional-admin-field",
       "title": "Show an Admin field only when it is relevant",
       "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
@@ -119,6 +139,25 @@
         "make sure an end date is after the start date",
         "reject invalid form submissions",
         "validate multiple fields together"
+      ]
+    },
+    {
+      "id": "custom-ai-tools",
+      "title": "Custom business logic AI tools",
+      "description": "Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.",
+      "problem": "The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations.",
+      "summary": "Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.",
+      "docsPath": "/docs/examples-and-recipes/library/custom-ai-tools",
+      "canonicalDocs": [
+        "/docs/model-content/configuration/ai",
+        "/docs/deliver-content/ai-agent-api"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "add custom tool to ai assistant",
+        "connect external api to ai",
+        "custom server functions for ai",
+        "zod schema ai tools"
       ]
     },
     {
@@ -1801,6 +1840,66 @@
     }
   ],
   "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ai/actions/{actionId}",
+      "summary": "Get an AI mutation action proposal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/actions/{actionId}/execute",
+      "summary": "Approve and execute an AI mutation proposal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/actions/{actionId}/reject",
+      "summary": "Reject an AI mutation proposal"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/chat",
+      "summary": "Send prompt and stream AI assistant response"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/rag/reindex",
+      "summary": "Trigger vector reindexing for semantic search"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/rag/search",
+      "summary": "Perform semantic vector search against indexed content"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ai/threads",
+      "summary": "Clear all conversation threads"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/threads",
+      "summary": "List conversation threads"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/threads",
+      "summary": "Create a new conversation thread"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ai/threads/{threadId}",
+      "summary": "Delete a specific conversation thread"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/threads/{threadId}",
+      "summary": "Get conversation thread and historical messages"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/threads/{threadId}/messages",
+      "summary": "Post a message to an existing thread and stream reply"
+    },
     {
       "method": "GET",
       "path": "/api/audit",

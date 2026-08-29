@@ -3,6 +3,21 @@ import type { DocsRuntimeManifestEntry } from "../types.js";
 
 export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
   {
+    "id": "deliver-content--ai-agent-api",
+    "relativePath": "deliver-content/ai-agent-api",
+    "title": "AI Agent & Custom Streaming",
+    "description": "Learn how to use Dyrected's AIAgent class to stream AI responses, persist multi-turn chat threads, and process external webhooks across Next.js and Nuxt.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "deliver-content",
+    "sourceFile": "apps/docs/content/docs/deliver-content/ai-agent-api.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/deliver-content/ai-agent-api",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/deliver-content/ai-agent-api",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deliver-content/ai-agent-api",
+    "status": "classified"
+  },
+  {
     "id": "deliver-content--displaying-content--overview",
     "relativePath": "deliver-content/displaying-content/overview",
     "title": "Overview",
@@ -30,6 +45,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "urlCurrent": "https://docs.dyrected.com/docs/deliver-content/displaying-content/rendering-media",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/deliver-content/displaying-content/rendering-media",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/rendering-media",
+    "status": "classified"
+  },
+  {
+    "id": "deliver-content--rest-api--ai-endpoints",
+    "relativePath": "deliver-content/rest-api/ai-endpoints",
+    "title": "AI Endpoints",
+    "description": "Complete REST API reference for Dyrected AI streaming chat, conversation threads, mutation action approval, and RAG vector indexing.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "deliver-content/rest-api",
+    "sourceFile": "apps/docs/content/docs/deliver-content/rest-api/ai-endpoints.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/deliver-content/rest-api/ai-endpoints",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/deliver-content/rest-api/ai-endpoints",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deliver-content/rest-api/ai-endpoints",
     "status": "classified"
   },
   {
@@ -843,6 +873,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "editor-experience--ai-assistant",
+    "relativePath": "editor-experience/ai-assistant",
+    "title": "AI Editorial Assistant",
+    "description": "How the embedded AI assistant works in the Dyrected admin panel, including live streaming, reasoning accordions, and human-in-the-loop diff proposals.",
+    "runtime": "variant",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience",
+    "sourceFile": "apps/docs/content/docs/editor-experience/ai-assistant.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/ai-assistant",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/ai-assistant",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/ai-assistant",
+    "status": "classified"
+  },
+  {
     "id": "editor-experience--audit-history",
     "relativePath": "editor-experience/audit-history",
     "title": "Audit History",
@@ -1578,6 +1623,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "examples-and-recipes--examples--chat-to-order",
+    "relativePath": "examples-and-recipes/examples/chat-to-order",
+    "title": "Chat-to-Order AI Pipeline",
+    "description": "Convert unstructured customer conversations from WhatsApp or Telegram into validated database orders with human review and live pricing math.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "examples-and-recipes/examples",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/examples/chat-to-order.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/examples/chat-to-order",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/chat-to-order",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/examples/chat-to-order",
+    "status": "classified"
+  },
+  {
     "id": "examples-and-recipes--examples--ecommerce",
     "relativePath": "examples-and-recipes/examples/ecommerce",
     "title": "Ecommerce",
@@ -1698,6 +1758,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "examples-and-recipes--library--chat-to-order-proposal",
+    "relativePath": "examples-and-recipes/library/chat-to-order-proposal",
+    "title": "Chat-to-Order AI Proposals",
+    "description": "How to convert unstructured customer chat transcripts from WhatsApp or Telegram into structured, schema-validated database orders with human review.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/chat-to-order-proposal.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/chat-to-order-proposal",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/chat-to-order-proposal",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal",
+    "status": "classified"
+  },
+  {
     "id": "examples-and-recipes--library--conditional-admin-field",
     "relativePath": "examples-and-recipes/library/conditional-admin-field",
     "title": "Show an Admin field only when it is relevant",
@@ -1725,6 +1800,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/cross-field-validation",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/cross-field-validation",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/cross-field-validation",
+    "status": "classified"
+  },
+  {
+    "id": "examples-and-recipes--library--custom-ai-tools",
+    "relativePath": "examples-and-recipes/library/custom-ai-tools",
+    "title": "Custom Business Logic Tools",
+    "description": "How to extend Dyrected AI with custom server-side functions and Zod schemas for external APIs, booking calendars, and custom quoting logic.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/custom-ai-tools.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/custom-ai-tools",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-ai-tools",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-ai-tools",
     "status": "classified"
   },
   {
@@ -2670,6 +2760,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "urlCurrent": "https://docs.dyrected.com/docs/model-content/configuration/__localization",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/configuration/__localization",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/configuration/__localization",
+    "status": "classified"
+  },
+  {
+    "id": "model-content--configuration--ai",
+    "relativePath": "model-content/configuration/ai",
+    "title": "Configuring AI",
+    "description": "How to enable and configure schema-aware AI assistants, LLM providers, brand voice directives, and custom tools in dyrected.config.ts.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "model-content/configuration",
+    "sourceFile": "apps/docs/content/docs/model-content/configuration/ai.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/model-content/configuration/ai",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/configuration/ai",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai",
     "status": "classified"
   },
   {

@@ -410,6 +410,16 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
+   * Optional custom AI assistant instructions and RAG indexing options for this collection.
+   */
+  ai?: {
+    /** Specific editorial guidelines, brand voice, or instructions for this collection. */
+    prompt?: string;
+    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
+    rag?: import("./ai.js").CollectionRAGConfig;
+  };
+
+  /**
    * Custom detail view layout configuration for the Admin UI.
    */
   detail?: DetailSchema<TDoc> | false;
@@ -543,6 +553,14 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
+  };
+
+  /**
+   * Optional custom AI assistant instructions for this global singleton.
+   */
+  ai?: {
+    /** Specific guidelines, context, or instructions when interacting with this global. */
+    prompt?: string;
   };
 
   /**

@@ -1,0 +1,22 @@
+{
+  "id": "custom-ai-tools",
+  "title": "Custom business logic AI tools",
+  "description": "Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.",
+  "problem": "The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations.",
+  "summary": "Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.",
+  "category": "integrations",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses config.ai.tools and Zod schemas.",
+  "intents": [
+    "add custom tool to ai assistant",
+    "connect external api to ai",
+    "custom server functions for ai",
+    "zod schema ai tools"
+  ],
+  "concepts": ["ai.tools", "defineConfig"],
+  "canonicalDocs": [
+    "/docs/model-content/configuration/ai",
+    "/docs/deliver-content/ai-agent-api"
+  ],
+  "requires": []
+}

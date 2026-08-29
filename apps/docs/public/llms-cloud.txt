@@ -12,8 +12,10 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 
 ## Documentation
 
+- [AI Agent & Custom Streaming](https://docs.dyrected.com/docs/cloud/deliver-content/ai-agent-api): Learn how to use Dyrected's AIAgent class to stream AI responses, persist multi-turn chat threads, and process external webhooks across Next.js and Nuxt.
 - [Overview](https://docs.dyrected.com/docs/cloud/deliver-content/displaying-content/overview): Render the content you fetch with Dyrected's framework components for React, Vue, Next, and Nuxt.
 - [Rendering Media](https://docs.dyrected.com/docs/cloud/deliver-content/displaying-content/rendering-media): Display images, videos, audio, and files easily on your public website.
+- [AI Endpoints](https://docs.dyrected.com/docs/cloud/deliver-content/rest-api/ai-endpoints): Complete REST API reference for Dyrected AI streaming chat, conversation threads, mutation action approval, and RAG vector indexing.
 - [Overview](https://docs.dyrected.com/docs/cloud/deliver-content/rest-api/overview): Endpoint behavior, authentication, filtering, errors, OpenAPI access, and client code generation.
 - [Aggregating Statistics](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/aggregate): Compute counts, sums, averages, minimums, and maximums across a collection in a single database query without loading documents.
 - [Depth](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/depth): Control how far Dyrected follows relationships and returns related documents instead of bare IDs.
@@ -25,6 +27,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Cloud Operations](https://docs.dyrected.com/docs/cloud/deployment-and-operations/cloud/overview): Operate Dyrected Cloud projects with the right boundary for schema sync, credentials, usage, and managed content infrastructure.
 - [Document Locking](https://docs.dyrected.com/docs/cloud/editor-experience/__document-locking): How Dyrected handles two people editing the same document today, and how to avoid overwrites without a locking feature.
 - [Accessibility](https://docs.dyrected.com/docs/cloud/editor-experience/accessibility): The admin is built on accessible primitives, so keyboard and screen-reader support come for free — and the content choices that keep your own data accessible.
+- [AI Editorial Assistant](https://docs.dyrected.com/docs/cloud/editor-experience/ai-assistant): How the embedded AI assistant works in the Dyrected admin panel, including live streaming, reasoning accordions, and human-in-the-loop diff proposals.
 - [Audit History](https://docs.dyrected.com/docs/cloud/editor-experience/audit-history): Turn on audit logging with one flag to record every create, update, and delete on a collection — with a before-and-after snapshot and the acting user — then read that history from the SDK or the admin.
 - [CSV Import & Export](https://docs.dyrected.com/docs/cloud/editor-experience/csv-import-export): Bring records into a collection from a CSV with guided field mapping and validation, and export the whole collection back out to a file.
 - [Custom Admin Panel Location](https://docs.dyrected.com/docs/cloud/editor-experience/custom-admin-panel-location): Mount the embedded admin at whatever route you want by placing its component where your framework's router expects a page.
@@ -64,13 +67,16 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Frontend](https://docs.dyrected.com/docs/cloud/examples-and-recipes/ecommerce/__frontend)
 - [Ecommerce (Coming Soon)](https://docs.dyrected.com/docs/cloud/examples-and-recipes/ecommerce/overview): What to expect from the Dyrected ecommerce section while the public ecommerce docs are still being prepared.
 - [Booking](https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/booking): A coming-soon booking example focused on scheduling-friendly content models, validation, permissions, and editor-managed service flows.
+- [Chat-to-Order AI Pipeline](https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/chat-to-order): Convert unstructured customer conversations from WhatsApp or Telegram into validated database orders with human review and live pricing math.
 - [Ecommerce](https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/ecommerce): A coming-soon ecommerce example focused on product content, media, relationships, and the editorial patterns teams usually need before launch.
 - [Knowledge Base](https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/knowledge-base): A coming-soon knowledge-base example focused on article modeling, slugs, structured publishing, and content relationships for documentation-style sites.
 - [Overview](https://docs.dyrected.com/docs/cloud/examples-and-recipes/examples/overview): Browse the app-shaped Dyrected examples that are planned next, see what each one is meant to teach, and jump to the docs pages that already cover the underlying patterns.
 - [Examples & Recipes](https://docs.dyrected.com/docs/cloud/examples-and-recipes): Browse generated Dyrected recipes by runtime and choose examples that match where your CMS code runs.
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view): Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy): Use a reusable categories collection and a has-many relationship from content entries that need tagging.
+- [Chat-to-Order AI Proposals](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/chat-to-order-proposal): How to convert unstructured customer chat transcripts from WhatsApp or Telegram into structured, schema-validated database orders with human review.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field): Use a serializable Admin condition to reveal a field from the editor's current form values.
+- [Custom Business Logic Tools](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-ai-tools): How to extend Dyrected AI with custom server-side functions and Zod schemas for external APIs, booking calendars, and custom quoting logic.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor): Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker): Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell): Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
@@ -129,6 +135,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Concepts](https://docs.dyrected.com/docs/cloud/model-content/concepts): Learn the core Dyrected ideas before you start modeling content.
 - [I18n (Coming Soon)](https://docs.dyrected.com/docs/cloud/model-content/configuration/__i18n): Review status for Dyrected admin interface translation support in the current public configuration surface.
 - [Localization (Coming Soon)](https://docs.dyrected.com/docs/cloud/model-content/configuration/__localization): Review status for multilingual content configuration in the current public Dyrected surface.
+- [Configuring AI](https://docs.dyrected.com/docs/cloud/model-content/configuration/ai): How to enable and configure schema-aware AI assistants, LLM providers, brand voice directives, and custom tools in dyrected.config.ts.
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections): Use collections for repeatable content such as posts, products, users, and submissions.
 - [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals): Use globals for singleton content such as site settings, navigation, footer content, and SEO defaults.
 - [Overview](https://docs.dyrected.com/docs/cloud/model-content/configuration/overview): Learn what lives in `dyrected.config.ts` and how the root config shapes your content model, admin, and runtime.

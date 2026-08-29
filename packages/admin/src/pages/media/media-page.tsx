@@ -421,7 +421,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
               </div>
             )}
             <div className={cn(
-              "dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-8 sm:dy-grid-cols-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-5 xl:dy-grid-cols-5 2xl:dy-grid-cols-6",
+              "dy-grid dy-grid-cols-[repeat(auto-fill,minmax(180px,1fr))] dy-gap-4 dy-pb-8",
               showSearchRefreshing && "dy-opacity-80"
             )}>
               {mediaResponse?.map((item) => (

@@ -851,3 +851,11 @@ export * from "./utils/hooks.js";
 export * from "./utils/openapi.js";
 export * from "./workflows.js";
 export * from "./detail.js";
+export * from "./services/ai.service.js";
+export * from "./services/ai-tools.js";
+export * from "./services/rag/rag.service.js";
+export * from "./services/rag/normalizer.js";
+export * from "./services/rag/chunker.js";
+export * from "./services/rag/embedding.service.js";
+export { z } from "zod";
+

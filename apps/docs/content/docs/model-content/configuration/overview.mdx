@@ -415,6 +415,11 @@ export interface DyrectedConfig<
     admin?: AdminConfig;
     adminAuth?: AdminAuthConfig;
   }>;
+
+  /**
+   * AI Assistant and LLM tools configuration.
+   */
+  ai?: AIConfig;
 }
 ```
 
@@ -437,4 +442,5 @@ export interface DyrectedConfig<
 | <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
 | <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
 | <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
+| <code>ai</code> (optional) | AI Assistant and LLM tools configuration. |
 {/* GENERATED:REFERENCE-CONFIGURATION:END */}

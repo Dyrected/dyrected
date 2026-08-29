@@ -1,0 +1,160 @@
+---
+title: Configuring AI
+description: How to enable and configure schema-aware AI assistants, LLM providers, brand voice directives, and custom tools in dyrected.config.ts.
+---
+
+Dyrected includes a schema-aware AI engine that works directly with your collections, globals, and database records. Instead of writing separate prompt orchestration code or brittle parsing scripts, you declare your AI configuration in `dyrected.config.ts`. The assistant automatically understands your project's field types, relationship rules, and singleton structures.
+
+By the end of this page, you will know how to choose an AI provider, set global brand voice directives, attach collection-specific instructions, and configure rate limits.
+
+## The mental model: schema-grounded intelligence
+
+Most AI integrations require feeding extensive JSON schema dumps into every prompt. Dyrected takes a different approach:
+
+- **Built-in Schema Awareness:** The AI engine automatically generates a structured inventory of your collections, fields, and globals at initialization.
+- **Human-in-the-Loop Mutations:** The assistant never blindly updates records in the database. When asked to rewrite, generate, or modify content, it produces visual diff proposals that editors review and approve with one click.
+- **Dual-Mode Communication:** By default, the assistant speaks like a warm, practical editorial colleague. If a developer explicitly asks for technical details or schemas, it transitions into technical mode.
+
+## Enabling AI in your configuration
+
+Add the `ai` key to your `dyrected.config.ts`. Here is a complete, runnable setup using AgentRouter:
+
+```ts
+// dyrected.config.ts
+import { defineConfig, defineCollection, defineTextField, defineNumberField } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+
+export const Services = defineCollection({
+  slug: "services",
+  labels: { singular: "Service", plural: "Services" },
+  ai: {
+    prompt: "Highlight tangible business outcomes and client ROI in all service descriptions.",
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Service Name", required: true }),
+    defineTextField({ name: "summary", label: "Brief Summary", required: true }),
+    defineNumberField({ name: "price", label: "Base Price (NGN)", required: true }),
+  ],
+});
+
+export default defineConfig({
+  collections: [Services],
+  db: postgresAdapter({
+    url: process.env.DATABASE_URL || "postgres://localhost:5432/my_app",
+  }),
+  ai: {
+    provider: "agentrouter",
+    model: "deepseek-v4-flash",
+    systemPrompt:
+      "You are the operations assistant for Acme Growth Coaching. Write in a warm, encouraging, and non-technical editorial voice. When asked to rewrite or edit content, immediately propose clean updates.",
+    rateLimit: {
+      userMax: 60,
+      projectMax: 600,
+    },
+  },
+});
+```
+
+Once saved, the admin panel renders the floating Lip Trigger assistant drawer, and the `@dyrected/core` `AIAgent` service becomes available to your server routes.
+
+## Choosing your AI provider and environment variables
+
+Dyrected is completely provider-agnostic. You can use whichever LLM provider fits your team's workflow, budget, or data residency requirements.
+
+### Automatic Provider Detection
+
+If you don't want to specify a provider explicitly, Dyrected **automatically detects** your provider based on which API key is present in your environment:
+
+| If your `.env` contains | Dyrected automatically routes to | Default Fallback Model |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` |
+| `GEMINI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini | `gemini-2.0-flash` |
+| `OPENROUTER_API_KEY` | OpenRouter | `anthropic/claude-3-haiku` |
+| `AGENTROUTER_API_KEY` | AgentRouter | `claude-3-haiku-20240307` |
+
+### Explicit Provider Configuration
+
+If you want to pin a specific model, change base URLs (e.g. for custom proxies or local models), or specify custom API key names, configure the `ai` block in `dyrected.config.ts`:
+
+```ts
+// Example: Using OpenAI with GPT-4o
+ai: {
+  provider: "openai",
+  model: "gpt-4o",
+  apiKey: process.env.OPENAI_API_KEY,
+}
+
+// Example: Using Google Gemini
+ai: {
+  provider: "google",
+  model: "gemini-2.5-flash",
+  apiKey: process.env.GEMINI_API_KEY,
+}
+
+// Example: Using OpenRouter or a custom OpenAI-compatible endpoint
+ai: {
+  provider: "openrouter",
+  model: "meta-llama/llama-3.3-70b-instruct",
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+}
+```
+
+## Setting brand voice directives
+
+The `ai.systemPrompt` property sets high-level instructions that apply across your entire project. This prompt is injected into the assistant's system instructions under `BRAND VOICE & DIRECTIVES`:
+
+```ts
+ai: {
+  provider: "agentrouter",
+  model: "deepseek-v4-flash",
+  systemPrompt: `
+  You are the Lead Editorial Assistant for Future You Coaching.
+  - Tone: Warm, authoritative, actionable, and conversational.
+  - Audience: Mid-career professionals and executives seeking leadership clarity.
+  - Rule: Never show raw HTML code blocks or database IDs in chat messages.
+  `,
+}
+```
+
+## Collection-level editorial prompts
+
+When an assistant works on a specific collection, general instructions may not be enough. You can attach targeted guidelines to individual collections using `collection.ai.prompt`:
+
+```ts
+export const BlogArticles = defineCollection({
+  slug: "blog-articles",
+  ai: {
+    prompt: `
+    When writing or editing blog articles:
+    - Keep intros under 3 sentences with a compelling hook.
+    - Break long sections into concise subheadings with bulleted takeaways.
+    - Write excerpts optimized for LinkedIn and newsletter sharing.
+    `,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Article Title", required: true }),
+    defineTextField({ name: "excerpt", label: "Social Excerpt", required: true }),
+    defineTextField({ name: "body", label: "Article Body", required: true }),
+  ],
+});
+```
+
+When an editor asks the assistant to work on blog posts, Dyrected merges your global `ai.systemPrompt` with the collection's specific prompt.
+
+## Rate limiting and safety controls
+
+To protect your API budget and prevent abuse, configure rate limiting directly in `config.ai.rateLimit`:
+
+```ts
+ai: {
+  provider: "agentrouter",
+  model: "deepseek-v4-flash",
+  rateLimit: {
+    userMax: 30,       // Max requests per user per minute
+    projectMax: 300,   // Max requests project-wide per minute
+  },
+}
+```
+
+If a user or project exceeds these limits, Dyrected returns a polite `429 Too Many Requests` error with the retry interval.

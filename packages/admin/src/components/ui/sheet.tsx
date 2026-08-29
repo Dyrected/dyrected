@@ -52,12 +52,14 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-  VariantProps<typeof sheetVariants> { }
+  VariantProps<typeof sheetVariants> {
+  hideCloseButton?: boolean
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => {
+>(({ side = "right", hideCloseButton = false, className, children, ...props }, ref) => {
   const { resolvedTheme, themeClassName } = useAdminTheme()
 
   return (
@@ -70,10 +72,12 @@ const SheetContent = React.forwardRef<
           {...props}
         >
           {children}
-          <SheetPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-secondary">
-            <X className="dy-h-4 dy-w-4" />
-            <span className="dy-sr-only">Close</span>
-          </SheetPrimitive.Close>
+          {!hideCloseButton && (
+            <SheetPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-secondary">
+              <X className="dy-h-4 dy-w-4" />
+              <span className="dy-sr-only">Close</span>
+            </SheetPrimitive.Close>
+          )}
         </SheetPrimitive.Content>
       </div>
     </SheetPortal>

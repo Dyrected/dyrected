@@ -91,10 +91,6 @@ const hybridPages = {
     marker: "REFERENCE-DATABASE-ADAPTERS",
     headings: [],
   },
-  "deliver-content/rest-api/overview.mdx#openapi": {
-    marker: "REFERENCE-OPENAPI",
-    headings: [],
-  },
 };
 
 function walk(directory) {

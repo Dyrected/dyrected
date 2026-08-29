@@ -117,7 +117,7 @@ export function SkeletonTable({ columns = 5, rows = 8 }: { columns?: number; row
 export function SkeletonCardGrid({ items = 8, withCover = true }: { items?: number; withCover?: boolean }) {
   return (
     <div
-      className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3 xl:dy-grid-cols-4 dy-gap-4"
+      className="dy-grid dy-grid-cols-[repeat(auto-fill,minmax(280px,1fr))] dy-gap-4"
       aria-busy="true"
     >
       {Array.from({ length: items }, (_, i) => (

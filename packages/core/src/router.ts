@@ -8,7 +8,9 @@ import { AuthController } from "./controllers/auth.controller.js";
 import { AdminAuthController } from "./controllers/admin-auth.controller.js";
 import { PreviewController } from "./controllers/preview.controller.js";
 import { AuditController } from "./controllers/audit.controller.js";
+import { AIController } from "./controllers/ai.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
+import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig } from "./utils/admin-auth.js";
@@ -710,6 +712,23 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.get("/api/admin/auth/:provider/callback", (c) => adminAuthController.callback(c));
   app.post("/api/admin/auth/:provider/exchange", (c) => adminAuthController.exchange(c));
   app.post("/api/admin/logout", (c) => adminAuthController.logout(c));
+
+  // 2c. AI Routes
+  const aiController = new AIController(config);
+  app.use("/api/ai/*", optionalAuth(config), aiRateLimit(config));
+
+  app.post("/api/ai/chat", (c) => aiController.chat(c));
+  app.post("/api/ai/threads", (c) => aiController.createThread(c));
+  app.get("/api/ai/threads", (c) => aiController.listThreads(c));
+  app.delete("/api/ai/threads", (c) => aiController.clearThreads(c));
+  app.get("/api/ai/threads/:threadId", (c) => aiController.getThread(c));
+  app.delete("/api/ai/threads/:threadId", (c) => aiController.deleteThread(c));
+  app.post("/api/ai/threads/:threadId/messages", (c) => aiController.postMessage(c));
+  app.post("/api/ai/rag/reindex", (c) => aiController.reindex(c));
+  app.post("/api/ai/rag/search", (c) => aiController.searchRAG(c));
+  app.get("/api/ai/actions/:actionId", (c) => aiController.getAction(c));
+  app.post("/api/ai/actions/:actionId/execute", (c) => aiController.executeAction(c));
+  app.post("/api/ai/actions/:actionId/reject", (c) => aiController.rejectAction(c));
 
   // 3. Auth Routes — for collections with auth: true
   for (const collection of config.collections) {

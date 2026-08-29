@@ -497,7 +497,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="dy-grid dy-gap-3 sm:dy-grid-cols-3">
+      <div className="dy-grid dy-gap-3 dy-grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
         {creatableCollections.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

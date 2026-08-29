@@ -1,0 +1,80 @@
+---
+title: Custom Business Logic Tools
+description: How to extend Dyrected AI with custom server-side functions and Zod schemas for external APIs, booking calendars, and custom quoting logic.
+---
+
+{/* GENERATED:RECIPE:START */}
+Extend Dyrected AI with custom server-side functions and Zod schemas for booking calendars, pricing engines, and external APIs.
+
+## Use this when
+
+- add custom tool to ai assistant
+- connect external api to ai
+- custom server functions for ai
+- zod schema ai tools
+
+## Dyrected concepts
+
+`ai.tools`, `defineConfig`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField, defineDateField } from "@dyrected/core";
+import type { DyrectedConfig } from "@dyrected/core";
+import { z } from "zod";
+
+export const Appointments = defineCollection({
+  slug: "appointments",
+  labels: { singular: "Appointment", plural: "Appointments" },
+  fields: [
+    defineTextField({ name: "clientName", label: "Client Name", required: true }),
+    defineDateField({ name: "bookingDate", label: "Date", required: true }),
+    defineTextField({ name: "timeSlot", label: "Time Slot", required: true }),
+  ],
+});
+
+export const config: DyrectedConfig = {
+  collections: [Appointments],
+  globals: [],
+  ai: {
+    tools: {
+      checkConsultationSlots: {
+        description: "Check available 1-on-1 coaching slots for a given date in YYYY-MM-DD format",
+        parameters: z.object({
+          date: z.string().describe("Target date in YYYY-MM-DD format, e.g. 2026-09-01"),
+        }),
+        execute: async ({ date }, { db }) => {
+          const existingBookings = await db.find({
+            collection: "appointments",
+            where: {
+              bookingDate: { equals: date },
+              status: { notEquals: "cancelled" },
+            },
+          });
+
+          const bookedHours = new Set(existingBookings.docs.map((doc: any) => doc.timeSlot));
+          const allSlots = ["09:00 AM", "11:30 AM", "02:00 PM", "04:30 PM"];
+          const available = allSlots.filter((slot) => !bookedHours.has(slot));
+
+          return {
+            date,
+            totalSlots: allSlots.length,
+            availableSlots: available,
+            isFullyBooked: available.length === 0,
+          };
+        },
+      },
+    },
+  },
+};
+```
+{/* GENERATED:RECIPE:END */}
