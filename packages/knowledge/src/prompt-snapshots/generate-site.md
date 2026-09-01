@@ -376,10 +376,10 @@ Do not leave CMS-powered routes permanently stale.
 
 References:
 
-- https://docs.dyrected.com/docs/editor-experience/preview
-- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/overview
-- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/frontend
-- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/client-side
+- https://docs.dyrected.com/docs/cloud/editor-experience/preview
+- https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview
+- https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/frontend
+- https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/client-side
 
 ## Links, Media, and Rich Content
 

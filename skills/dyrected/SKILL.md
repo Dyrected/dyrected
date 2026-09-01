@@ -41,19 +41,21 @@ feature being implemented:
 
 - Documentation index: https://docs.dyrected.com/llms.txt
 - Documentation home: https://docs.dyrected.com
-- Existing-site agent workflow: https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt
-- Installation: https://docs.dyrected.com/docs/start-here/installation
-- CLI and schema synchronization: https://docs.dyrected.com/docs/reference/cli
-- Configuration: https://docs.dyrected.com/docs/model-content/configuration/overview
-- Collections: https://docs.dyrected.com/docs/model-content/configuration/collections
-- Globals: https://docs.dyrected.com/docs/model-content/configuration/globals
-- Fields: https://docs.dyrected.com/docs/model-content/fields/overview
-- Rich text: https://docs.dyrected.com/docs/model-content/fields/rich-text
-- Blocks: https://docs.dyrected.com/docs/model-content/fields/blocks
-- Admin: https://docs.dyrected.com/docs/editor-experience/overview
-- Preview: https://docs.dyrected.com/docs/editor-experience/preview
-- Storage adapters: https://docs.dyrected.com/docs/model-content/media/storage-adapters
-- SDK: https://docs.dyrected.com/docs/deliver-content/sdk-api/overview
+- Cloud concise index: https://docs.dyrected.com/llms-cloud.txt
+- Self-hosted concise index: https://docs.dyrected.com/llms-self-hosted.txt
+- Existing-site agent workflow: https://docs.dyrected.com/docs/cloud/guides/ai-and-coding-agents/using-the-dyrected-prompt
+- Installation: https://docs.dyrected.com/docs/cloud/start-here/installation
+- CLI and schema synchronization: https://docs.dyrected.com/docs/cloud/reference/cli
+- Configuration: https://docs.dyrected.com/docs/cloud/model-content/configuration/overview
+- Collections: https://docs.dyrected.com/docs/cloud/model-content/configuration/collections
+- Globals: https://docs.dyrected.com/docs/cloud/model-content/configuration/globals
+- Fields: https://docs.dyrected.com/docs/cloud/model-content/fields/overview
+- Rich text: https://docs.dyrected.com/docs/cloud/model-content/fields/rich-text
+- Blocks: https://docs.dyrected.com/docs/cloud/model-content/fields/blocks
+- Admin: https://docs.dyrected.com/docs/cloud/editor-experience/overview
+- Preview: https://docs.dyrected.com/docs/cloud/editor-experience/preview
+- Storage adapters: https://docs.dyrected.com/docs/cloud/model-content/media/storage-adapters
+- SDK: https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/overview
 
 Read the installed package version, public exports, and TypeScript types before
 using a Dyrected API. If the docs and installed package differ, explain the
