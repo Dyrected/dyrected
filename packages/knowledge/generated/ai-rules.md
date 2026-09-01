@@ -218,6 +218,29 @@ synchronizes. Completion requires a verified edit from Dyrected through the
 real frontend.
 <!-- GENERATED:INTEGRATION_CONTRACT:END -->
 
+## Core Architecture & Modeling Invariants
+
+1. **Marketing Site Default: Page Builder Architecture**
+   - When modeling marketing websites or content-driven applications, **always default to a `Pages` collection with an ordered `blocks` field** (`defineBlocksField({ name: "layout", blocks: [...] })`) rather than hardcoding section layouts in `page.tsx` or `pages/[slug].vue`.
+   - Define a cohesive block registry (`Hero`, `TwoColumnFeature`, `CardGrid`, `PricingTierGrid`, `Timeline`, `FinalCTA`, etc.) in `dyrected.config.ts`.
+   - Routes must query `getPageByPath(pathname, fallbackData)` or `client.collection('pages').findBySlug(slug)` and render through `<Blocks items={page.layout} path="layout" />` with `useDyPath` click-to-edit support.
+   - 100% preserve existing design, typography, spacing, and responsive styling.
+
+2. **Array Field Object Shape Contract (Crucial)**
+   - In Dyrected, `defineArrayField({ name: "checklist", fields: [defineTextField({ name: "item" })] })` **ALWAYS produces and expects an array of objects**, e.g.:
+     ```ts
+     checklist: [{ item: "First point" }, { item: "Second point" }]
+     ```
+   - **Never pass primitive arrays** (e.g. `checklist: ["First point", "Second point"]`) in fallback data, seed scripts, or SDK mutations, as CMS schema validation will drop them.
+   - In frontend components, always defensively normalize items: `const text = typeof item === 'string' ? item : item?.item || item?.text || '';`.
+
+3. **Type Safety Workflow**
+   - Immediately after creating or updating `dyrected.config.ts`, always run:
+     ```bash
+     npx dyrected generate:types
+     ```
+   - Import generated interfaces into seed scripts, page components, and block definitions to catch schema mismatches at compile time.
+
 ## API and Security Invariants
 
 - Import public APIs from `@dyrected/core`, `@dyrected/sdk`, and the documented
@@ -235,8 +258,8 @@ real frontend.
   be the only enforcement layer.
 - Enforce access and validation on the server. Admin visibility is not
   authorization.
-- Use serializable Jexl conditions, hooks, access rules, and preview expressions
-  when configuration must synchronize with Dyrected Cloud.
+- Use the type-safe `when` condition builder (or serializable Jexl strings) for
+  `admin.condition`, `admin.previewUrl`, `access.*`, and `admin.hooks.onChange`.
 - Keep API keys, database credentials, encryption keys, and storage credentials
   out of browser code.
 - Use `relationship` for a stored owning reference and `join` for a virtual
@@ -349,9 +372,12 @@ Promote it to a Collection when editors need to manage the items independently.
 
 ## Pages and Page Sections
 
-When the project contains public content pages, model each appropriate page as
-an entry in a Pages collection. Do not make each page a separate Global or a
-separate collection.
+When modeling marketing websites or content-driven applications:
+
+- **Always default to a `Pages` collection with an ordered `blocks` field** rather than hardcoding section composition in `page.tsx` or `pages/[slug].vue`.
+- **Define a cohesive block registry** (`Hero`, `TwoColumnFeature`, `CardGrid`, `PricingTierGrid`, `Timeline`, `FinalCTA`, etc.) in `dyrected.config.ts`.
+- **Dynamic Route Fetching**: Routes should fetch via `getPageByPath(pathname, fallbackData)` or `client.collection('pages').findBySlug(slug)` and render through `<Blocks items={page.layout} path="layout" />` with `useDyPath` click-to-edit support.
+- **Preserve Existing Layouts**: The block registry must 100% reflect the design, typography, spacing, and responsive behavior of the existing site.
 
 A page normally contains:
 
@@ -449,8 +475,23 @@ and other long-form content.
 
 Reference: https://docs.dyrected.com/docs/model-content/fields/rich-text
 
-Use arrays for real repeatable items such as steps, FAQs, links, features, or
-cards, not as a substitute for rich text.
+## Array Fields & Object Shape Contract (Crucial)
+
+- In Dyrected, `defineArrayField({ name: "checklist", fields: [defineTextField({ name: "item" })] })` **ALWAYS produces and expects an array of objects**, e.g.:
+
+  ```ts
+  checklist: [{ item: "First point" }, { item: "Second point" }]
+  ```
+
+- **Never pass primitive arrays** (e.g. `checklist: ["First point", "Second point"]`) in fallback data, seed scripts, or SDK mutations, as CMS schema validation will drop them.
+- When rendering in frontend components, always defensively normalize items to support live-preview edits and fallbacks:
+
+  ```tsx
+  const text = typeof item === 'string' ? item : item?.item || item?.text || '';
+  ```
+
+- Use arrays for real repeatable items such as steps, FAQs, links, features, or
+  cards, not as a substitute for rich text.
 
 ## Interactive Content
 
@@ -627,6 +668,18 @@ Grant the smallest permissions required by the approved editing plan.
 - Use serializable declarative conditions, hooks, and access values when the
   schema must synchronize to Dyrected Cloud.
 
+## Type Synchronization Workflow
+
+Immediately after creating or editing `dyrected.config.ts`, synchronize TypeScript types:
+
+```bash
+npx dyrected generate:types
+```
+
+- `npx dyrected generate:types` outputs `dyrected-types.ts` into your application source directory.
+- `npx dyrected sync:schema` also auto-runs type generation upon successful synchronization.
+- **Always import generated interfaces** into seed scripts, page components, and block definitions to catch schema mismatches (such as array shape errors) at compile time before committing code.
+
 ## Schema and Seed Safety
 
 Before changing a schema:
@@ -635,7 +688,7 @@ Before changing a schema:
 2. Identify persisted slugs, fields, blocks, variants, relationships, and URL
    patterns affected by the change.
 3. Add or evolve one related batch at a time.
-4. Generate types and validate the local schema.
+4. Generate types (`npx dyrected generate:types`) and validate the local schema.
 5. Review changes that could affect stored documents.
 6. Synchronize only after local validation passes.
 
