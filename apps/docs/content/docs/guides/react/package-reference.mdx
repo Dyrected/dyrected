@@ -8,7 +8,7 @@ runtimeNotes: React can consume a Cloud-backed or self-hosted Dyrected API; it d
 
 `@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
 
-If you are already in Next.js, prefer [`@dyrected/next`](/docs/guides/frameworks/nextjs/package-reference) instead.
+If you are already in Next.js, prefer [`@dyrected/next`](/docs/guides/nextjs/package-reference) instead.
 
 ## What the package gives you
 
@@ -62,13 +62,13 @@ From there, every component can read the shared client through `useDyrected()`.
 
 ## Fetch content in components
 
-Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](/docs/guides/frameworks/react/displaying-content-in-react).
+Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](/docs/guides/react/displaying-content-in-react).
 
 ## Add live preview when the page needs it
 
 Use `useLivePreview` when a route should update from the admin preview iframe. Keep the published fetch path as the main implementation, then make preview additive on top of it.
 
-For the guided flow, use [Adding a Visual Editor in React](/docs/guides/frameworks/react/adding-a-visual-editor-in-reactjs).
+For the guided flow, use [Adding a Visual Editor in React](/docs/guides/react/adding-a-visual-editor-in-reactjs).
 
 ## Embed the admin
 
@@ -123,8 +123,8 @@ export function AdminPage() {
 
 ## Related pages
 
-- [Choose a package](/docs/guides/frameworks/choose-a-package)
-- [SDK](/docs/guides/frameworks/sdk)
-- [Displaying content in React](/docs/guides/frameworks/react/displaying-content-in-react)
+- [Choose a package](/docs/guides/choose-a-package)
+- [SDK](/docs/guides/sdk)
+- [Displaying content in React](/docs/guides/react/displaying-content-in-react)
 - [Live preview](/docs/editor-experience/publishing/live-preview/overview)
 - [Admin](/docs/editor-experience/overview)
