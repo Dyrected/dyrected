@@ -1,4 +1,12 @@
 import { stringify, stringifyQuery } from "./utils/stringify.js";
+export {
+  when,
+  formatJexlValue,
+  MatchBuilder,
+  FieldConditionBuilder,
+  type WhenFunction,
+  type AccessConditions,
+} from "@dyrected/core";
 import type {
   AdminConfig,
   PublicAdminAuthConfig,
@@ -21,7 +29,6 @@ import type {
   LifecycleEvent,
   AggregateInput,
   InferAggregateResult,
-  when,
 } from "@dyrected/core";
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
@@ -42,7 +49,6 @@ type SchemaResponse = {
   };
 };
 
-export { when };
 export type {
   PaginatedResult,
   Media,

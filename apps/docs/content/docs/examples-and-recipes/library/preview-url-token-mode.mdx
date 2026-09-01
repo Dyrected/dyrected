@@ -33,13 +33,13 @@ Use this recipe only when its runtime matches the project you are documenting or
 This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-import { defineCollection, defineTextField } from "@dyrected/core";
+import { defineCollection, defineTextField, when } from "@dyrected/core";
 
 export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: when.then(when.fieldNotEmpty("slug"), when.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },

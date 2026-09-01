@@ -2135,6 +2135,13 @@
     "validation": "Inventoried vue example"
   },
   {
+    "id": "/editor-experience/form-and-field-hooks#example-3",
+    "page": "/editor-experience/form-and-field-hooks",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/list-view#example-1",
     "page": "/editor-experience/list-view",
     "language": "ts",
@@ -2929,6 +2936,13 @@
     "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-3",
     "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
     "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-4",
+    "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
+    "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
@@ -3531,11 +3545,18 @@
     "id": "/model-content/configuration/collections#example-9",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/configuration/collections#example-10",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-11",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",
@@ -3881,8 +3902,8 @@
     "id": "/model-content/content-rules/access-control/fields#example-1",
     "page": "/model-content/content-rules/access-control/fields",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/content-rules/access-control/fields#example-2",
@@ -4119,36 +4140,36 @@
     "id": "/model-content/content-rules/declarative-expressions#example-3",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-4",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-5",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-6",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-7",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-8",
@@ -4156,6 +4177,20 @@
     "language": "typescript",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/content-rules/declarative-expressions#example-9",
+    "page": "/model-content/content-rules/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/content-rules/declarative-expressions#example-10",
+    "page": "/model-content/content-rules/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/content-rules/hooks#example-1",

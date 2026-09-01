@@ -56,7 +56,7 @@
       "/docs/deployment-and-operations/server-runtime/hooks/collections"
     ],
     "requires": [],
-    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange:\n            \"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value\",\n        },\n      },\n    }),\n  ],\n});",
+    "source": "import { defineCollection, defineTextField, when } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange: when.then(\n            when.fieldEmpty(\"value\"),\n            when.then(when.fieldNotEmpty(\"siblingData.title\"), when.slugify(\"siblingData.title\"), \"value\"),\n            \"value\",\n          ),\n        },\n      },\n    }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/auto-slug",
     "snippetStatus": "validated"
   },
@@ -148,7 +148,7 @@
       "/docs/model-content/configuration/collections"
     ],
     "requires": [],
-    "source": "import { defineCollection, defineNumberField, defineTextField } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"couponCode\", label: \"Coupon code\" }),\n    defineNumberField({\n      name: \"discountPercent\",\n      label: \"Discount percentage\",\n      admin: { condition: \"couponCode != null && couponCode != ''\" },\n    }),\n  ],\n});",
+    "source": "import { defineCollection, defineNumberField, defineTextField, when } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"couponCode\", label: \"Coupon code\" }),\n    defineNumberField({\n      name: \"discountPercent\",\n      label: \"Discount percentage\",\n      admin: { condition: when.fieldNotEmpty(\"couponCode\") },\n    }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/conditional-admin-field",
     "snippetStatus": "validated"
   },
@@ -618,7 +618,7 @@
       "/docs/editor-experience/publishing/live-preview/overview"
     ],
     "requires": [],
-    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Docs = defineCollection({\n  slug: \"docs\",\n  admin: {\n    useAsTitle: \"title\",\n    previewUrl: \"slug ? '/docs/' + slug : null\",\n    previewMode: \"postMessage\",\n    urlPattern: \"/docs/{slug}\",\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});",
+    "source": "import { defineCollection, defineTextField, when } from \"@dyrected/core\";\n\nexport const Docs = defineCollection({\n  slug: \"docs\",\n  admin: {\n    useAsTitle: \"title\",\n    previewUrl: when.then(when.fieldNotEmpty(\"slug\"), when.concat(\"/docs/\", \"slug\"), null),\n    previewMode: \"postMessage\",\n    urlPattern: \"/docs/{slug}\",\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/preview-url-token-mode",
     "snippetStatus": "validated"
   },

@@ -749,31 +749,28 @@ When a collection is routable, the collection config and the frontend route need
 - `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
 - a real frontend route that can fetch and render the document
 
-`admin.previewUrl` can be either:
+`admin.previewUrl` can be configured using:
 
-- a Jexl string evaluated against the document, usually the best default
-- a function that returns the URL from the document data
+- the `when` condition builder (or serializable JEXL string), which is the recommended default
+- a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+Prefer the `when` builder (`when.concat`, `when.then`, or `when.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
-`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+`admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
-For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+### Dynamic Preview Routing Examples
 
-```ts
-previewUrl: "slug == 'home' ? '/' : '/' + slug";
-```
-
-Here is a typical blog-style example using Jexl:
+For single-prefix collections, use `when.concat`:
 
 ```ts
-import { defineCollection, defineTextField } from "@dyrected/core";
+import { defineCollection, defineTextField, when } from "@dyrected/sdk";
 
 export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
-    previewUrl: "'/blog/' + slug",
+    // Generates: '/blog/' + slug
+    previewUrl: when.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -781,6 +778,23 @@ export const Posts = defineCollection({
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
+```
+
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `when.then`:
+
+```ts
+// Routes 'home' to '/', and all other pages to '/slug'
+previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
+```
+
+For multi-branch category routing, use `when.match`:
+
+```ts
+previewUrl: when.match()
+  .case(when("slug").equals("home"), "/")
+  .case(when("category").equals("news"), when.concat("/news/", "slug"))
+  .case(when("category").equals("portal"), when.concat("/portals/", "slug"))
+  .otherwise(when.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:

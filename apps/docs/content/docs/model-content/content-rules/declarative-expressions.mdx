@@ -1,133 +1,222 @@
 ---
-title: Declarative Expressions & Helpers
-description: Learn how to write Cloud-safe Jexl expressions for field hooks, reactive form logic, and access control rules using Dyrected's built-in helper utility suite.
+title: Declarative Expressions & Conditions
+description: Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the when builder.
 ---
 
-When configuring field state, reactive form logic, or access control policies in Dyrected, you can write **declarative string expressions**.
+When configuring field visibility, live preview routing, access control policies, or reactive form transforms in Dyrected, you can write **declarative expressions**.
 
-Declarative string expressions are powered by Jexl. Because they are plain strings stored inside your schema files, they are 100% serializable. They survive `npx dyrected sync:schema` and run safely across both self-hosted servers and Dyrected Cloud.
+Dyrected provides the type-safe `when` builder (`@dyrected/sdk` or `@dyrected/core`) as the recommended standard for constructing these expressions. Because `when` compiles to pure serializable [JEXL](https://github.com/TomFrost/Jexl) strings, your logic remains 100% portable: it survives `npx dyrected sync:schema` and runs identically across self-hosted servers, headless API runtimes, and Dyrected Cloud.
 
-By the end of this guide, you will understand when to reach for declarative expressions, what context variables are in scope, and how to use Dyrected's built-in helper utilities.
+By the end of this guide, you will understand how to build reactive conditions with `when`, how to configure preview URLs and access rules, and how expressions work under the hood.
 
-## Choose the right hook shape for your goal
+---
 
-In Dyrected, you can write hook and policy logic in two ways:
+## Quickstart
 
-1. **Declarative string expressions** (`"slugify(siblingData.title)"`): Recommended for value derivations, format conversions, and access checks. They are stored directly in your schema, survive Cloud schema sync, and run anywhere.
-2. **Function hooks** (`({ siblingData }) => siblingData.title`): Best for self-hosted Node.js servers performing custom asynchronous side effects or calling external microservices. Function hooks cannot be serialized to Dyrected Cloud and are stripped during schema sync.
-
-When a field calculation, access check, or UI condition can be expressed as a string, use the declarative string form.
-
-## Basic Expression Syntax
-
-Declarative expressions support property lookups, ternary conditionals, mathematical operators, and built-in helper functions:
+Import the `when` builder from `@dyrected/sdk` (or `@dyrected/core`):
 
 ```typescript
-// Auto-derive a slug when empty, but preserve custom edits
-"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value"
+import { defineCollection, defineNumberField, defineTextField, when } from "@dyrected/sdk";
 
-// Role and document ownership check
-"user.role == 'admin' || user.id == doc.authorId"
-
-// Relative date check for scheduled content
-"isPast(doc.publishAt)"
+export const Products = defineCollection({
+  slug: "products",
+  admin: {
+    useAsTitle: "title",
+    // Preview URL routing: /products/slug
+    previewUrl: when.concat("/products/", "slug"),
+  },
+  access: {
+    // Only admins or the document creator can edit
+    update: when.any(when.access.isOwner("author"), when.access.isAdmin()),
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "couponCode", label: "Coupon Code" }),
+    defineNumberField({
+      name: "discountPercent",
+      label: "Discount Percentage",
+      // Reveals this field only when a coupon code is entered
+      admin: {
+        condition: when.fieldNotEmpty("couponCode"),
+      },
+    }),
+  ],
+});
 ```
 
-## Context Variables by Surface
+---
 
-Dyrected provides an explicit context object to each declarative expression based on where it is executed:
+## 1. Conditional Field & Block Visibility (`admin.condition`)
 
-| Surface | Available Context Variables | Common Use Case |
-| --- | --- | --- |
-| **Form Reactive Hooks** | `value`, `siblingData`, `data` | `admin.hooks.onChange` live form reactivity |
-| **Field & Collection Hooks** | `req`, `user`, `data`, `doc`, `operation`, `value` | `beforeChange`, `beforeRead` server-side evaluation |
-| **Access Control Policies** | `user`, `req`, `doc`, `data`, `id` | `access.read`, `access.update` permissions |
-| **Admin UI Field Conditions** | `data`, `siblingData`, `user`, `id` | `admin.condition` dynamic field visibility |
+Use `admin.condition` on any field or block to conditionally reveal it based on the editor's current form input or block variant.
 
-## Built-in Helper Function Reference
+### Match by Field Value
 
-Dyrected includes 30+ zero-dependency helper functions that are registered globally in all Jexl evaluation contexts.
-
-### String Helpers
-
-Use string helpers to clean, reformat, or inspect text fields:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `slugify(str)` | Transforms text into a URL-safe slug | `slugify("Hello World!")` | `"hello-world"` |
-| `lower(str)` | Converts text to lowercase | `lower("Dyrected")` | `"dyrected"` |
-| `upper(str)` | Converts text to uppercase | `upper("dyrected")` | `"DYRECTED"` |
-| `trim(str)` | Strips leading and trailing whitespace | `trim("  hello  ")` | `"hello"` |
-| `capitalize(str)` | Capitalizes the first letter of text | `capitalize("hELLO")` | `"Hello"` |
-| `truncate(str, len, ellipsis?)` | Truncates text with a custom suffix | `truncate(doc.body, 20)` | `"Long article body..."` |
-| `readingTime(str)` | Calculates reading time in minutes | `readingTime(doc.content)` | `3` |
-| `wordCount(str)` | Counts total words in a text string | `wordCount(doc.content)` | `450` |
-| `replace(str, search, replace)` | Replaces occurrences of a pattern | `replace(doc.title, "Draft", "Final")` | `"Final Title"` |
-| `startsWith(str, prefix)` | Checks if text starts with a prefix | `startsWith(doc.url, "https")` | `true` |
-| `endsWith(str, suffix)` | Checks if text ends with a suffix | `endsWith(doc.file, ".pdf")` | `true` |
-
-### Date & Time Helpers
-
-Use date helpers for scheduled publishing windows, expiration checks, and relative time calculations:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `now()` | Returns current ISO 8601 timestamp | `now()` | `"2026-07-27T00:00:00.000Z"` |
-| `today()` | Returns current date (YYYY-MM-DD) | `today()` | `"2026-07-27"` |
-| `formatDate(date, style?)` | Formats dates (`'short'`, `'iso'`, `'date'`, `'datetime'`, `'full'`) | `formatDate(doc.publishedAt, "short")` | `"Jul 27, 2026"` |
-| `addDays(date, days)` | Adds or subtracts days from a timestamp | `addDays(now(), 7)` | `"2026-08-03T00:00:00.000Z"` |
-| `diffDays(dateA, dateB)` | Calculates integer day difference between two dates | `diffDays(now(), doc.createdAt)` | `14` |
-| `isPast(date)` | Returns `true` if timestamp is in the past | `isPast(doc.publishAt)` | `true` |
-| `isFuture(date)` | Returns `true` if timestamp is in the future | `isFuture(doc.expireAt)` | `false` |
-
-### Array & Collection Helpers
-
-Use array helpers to inspect tags, user roles, or multi-select field lists:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `includes(arrOrStr, item)` | Checks array or substring membership | `includes(user.roles, "admin")` | `true` |
-| `join(arr, separator?)` | Joins array elements into a string | `join(siblingData.tags, ", ")` | `"news, tech"` |
-| `first(arr)` | Safely returns the first array element | `first(siblingData.images)` | `"{ id: 1, ... }"` |
-| `last(arr)` | Safely returns the last array element | `last(siblingData.history)` | `"{ step: 3, ... }"` |
-| `compact(arr)` | Removes empty, `null`, and `undefined` items | `compact(["a", null, "b"])` | `["a", "b"]` |
-| `unique(arr)` | Deduplicates array elements | `unique(["tag1", "tag1", "tag2"])` | `["tag1", "tag2"]` |
-| `length(val)` | Returns array length, string length, or key count | `length(siblingData.blocks)` | `4` |
-
-### Math & Logical Helpers
-
-Use math and logical helpers for numeric constraints, fallbacks, and safe nested property retrieval:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `round(num, decimals?)` | Rounds a number to specified decimal places | `round(siblingData.price * 1.15, 2)` | `29.99` |
-| `clamp(num, min, max)` | Constrains a number between upper and lower bounds | `clamp(siblingData.rating, 1, 5)` | `5` |
-| `default(val, fallback)` | Provides a fallback for `null`, `undefined`, or `""` | `default(siblingData.title, "Untitled")` | `"Untitled"` |
-| `coalesce(...args)` | Returns the first non-empty value | `coalesce(doc.shortTitle, doc.title, "Draft")` | `"Draft"` |
-| `isEmpty(val)` | Returns `true` for empty arrays, objects, strings, or `null` | `isEmpty(siblingData.items)` | `true` |
-| `get(obj, path, fallback?)` | Safely retrieves nested object properties | `get(siblingData, "author.name", "Guest")` | `"Guest"` |
-
-## Practical Working Examples
-
-### 1. Auto-generating a URL Slug from a Title
-The following collection configuration auto-generates a clean slug when `slug` is empty, but preserves manual edits once the user types into the field:
+Check if a field equals a specific value or is non-empty:
 
 ```typescript
-import { defineCollection, defineTextField } from "@dyrected/core";
+import { defineNumberField, defineTextField, when } from "@dyrected/sdk";
 
-export const Pages = defineCollection({
-  slug: "pages",
+// Show field when 'hasCustomTax' is checked
+export const CustomTaxField = defineNumberField({
+  name: "taxRate",
+  label: "Tax Rate (%)",
+  admin: {
+    condition: when("hasCustomTax").isTrue(),
+  },
+});
+
+// Show field when category is in a set of allowed values
+export const DeliveryDateField = defineTextField({
+  name: "deliveryWindow",
+  label: "Delivery Window",
+  admin: {
+    condition: when("category").in("furniture", "appliances", "perishables"),
+  },
+});
+```
+
+### Match Block Variants
+
+In layout builders and polymorphic blocks, reveal fields only when a specific block layout variant is selected:
+
+```typescript
+import { defineMediaField, when } from "@dyrected/sdk";
+
+export const AvatarField = defineMediaField({
+  name: "avatar",
+  label: "Author Avatar",
+  admin: {
+    // Only visible when the editor selects the 'card' or 'split' variant
+    condition: when.variant("card", "split"),
+  },
+});
+```
+
+### Compound Conditions (`when.all`, `when.any`, `when.not`)
+
+Combine multiple conditions using boolean combinators:
+
+```typescript
+// Visible if status is draft AND current user has editor/admin role
+admin: {
+  condition: when.all(
+    when("status").equals("draft"),
+    when.userRole("admin", "editor")
+  ),
+}
+
+// Visible if stock is below 10 OR promoted is true
+admin: {
+  condition: when.any(
+    when("stock").lessThan(10),
+    when("isPromoted").isTrue()
+  ),
+}
+```
+
+---
+
+## 2. Live Preview URLs & Dynamic Routing (`admin.previewUrl`)
+
+The `admin.previewUrl` setting determines the frontend route loaded in the live preview panel and the external view button.
+
+### Path Concatenation (`when.concat`)
+
+Safely combine static path prefixes with dynamic field identifiers:
+
+```typescript
+import { defineCollection, when } from "@dyrected/sdk";
+
+export const Articles = defineCollection({
+  slug: "articles",
+  admin: {
+    // Generates: '/news/' + slug
+    previewUrl: when.concat("/news/", "slug"),
+  },
+  fields: [ ... ],
+});
+```
+
+### Fallback Routing (`when.then`)
+
+Handle root homepages or custom path overrides with ternary expressions:
+
+```typescript
+// If slug is 'home', route to '/'; otherwise route to '/' + slug
+admin: {
+  previewUrl: when.then(
+    when("slug").equals("home"),
+    "/",
+    when.concat("/", "slug")
+  ),
+}
+```
+
+### Multi-Branch Routing (`when.match`)
+
+When a collection supports multiple categories or localized routes, chain branches with `when.match()`:
+
+```typescript
+admin: {
+  previewUrl: when.match()
+    .case(when("slug").equals("home"), "/")
+    .case(when.fieldNotEmpty("customPath"), "customPath")
+    .case(when("category").equals("news"), when.concat("/news/", "slug"))
+    .case(when("category").equals("portal"), when.concat("/country-portals/", "slug"))
+    .otherwise(when.concat("/", "slug")),
+}
+```
+
+---
+
+## 3. Declarative Access Control (`collection.access`)
+
+Define declarative Row-Level Security (RLS) policies evaluated against `{ doc, user }`:
+
+```typescript
+import { defineCollection, when } from "@dyrected/sdk";
+
+export const Documents = defineCollection({
+  slug: "documents",
+  access: {
+    // Public can read published docs; admins can read everything
+    read: when.access.isPublishedOrAdmin(),
+
+    // Document authors or admins can edit
+    update: when.any(when.access.isOwner("authorId"), when.access.isAdmin()),
+
+    // Only superadmins can delete
+    delete: when.access.hasRole("superadmin"),
+  },
+  fields: [ ... ],
+});
+```
+
+---
+
+## 4. Reactive Field Transforms (`admin.hooks.onChange`)
+
+Automatically transform values live in the browser as the editor types:
+
+```typescript
+import { defineCollection, defineTextField, when } from "@dyrected/sdk";
+
+export const Posts = defineCollection({
+  slug: "posts",
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
     defineTextField({
       name: "slug",
       label: "Slug",
-      required: true,
-      unique: true,
       admin: {
         hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
+          // Auto-slugify title if slug is empty, but preserve manual edits
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.slugify("siblingData.title"),
+            "value"
+          ),
         },
       },
     }),
@@ -135,147 +224,83 @@ export const Pages = defineCollection({
 });
 ```
 
-### 2. Scheduled Publishing Access Rule
-Restrict public document access so non-admin users cannot read articles until `publishAt` is in the past:
+---
+
+## `when` API Cheatsheet
+
+| Helper | Description | Output |
+| :--- | :--- | :--- |
+| `when('field').equals(val)` | Equality check | `field == "val"` |
+| `when('field').notEquals(val)` | Inequality check | `field != "val"` |
+| `when('field').in('a', 'b')` | Set membership | `field in ["a", "b"]` |
+| `when('field').isTrue()` | Boolean true check | `field == true` |
+| `when.fieldNotEmpty('field')` | Non-empty string / non-null check | `field != null && field != ''` |
+| `when.fieldEmpty('field')` | Empty or null check | `field == null \|\| field == ''` |
+| `when('price').greaterThan(10)` | Numerical greater than | `price > 10` |
+| `when('price').between(10, 50)` | Numerical range | `price >= 10 && price <= 50` |
+| `when.variant('card', 'hero')` | Block variant matching | `variant in ['card', 'hero']` |
+| `when.all(c1, c2)` | Logical AND | `c1 && c2` |
+| `when.any(c1, c2)` | Logical OR | `c1 \|\| c2` |
+| `when.then(cond, ifTrue, ifFalse)`| Ternary expression | `cond ? ifTrue : ifFalse` |
+| `when.match().case().otherwise()` | Multi-branch switch | `c1 ? v1 : c2 ? v2 : v3` |
+| `when.concat('/path/', 'slug')` | Safe string concatenation | `'/path/' + slug` |
+| `when.slugify('title')` | JEXL slugify transform | `slugify(title)` |
+| `when.access.isOwner('author')` | Document ownership match | `author == user.id \|\| author.id == user.id` |
+| `when.access.isAdmin()` | Admin role check | `user.role == 'admin' \|\| ('admin' in user.roles)` |
+| `when.access.isPublishedOrAdmin()`| Published or admin read rule | `status == 'published' \|\| user.role == 'admin'` |
+
+---
+
+## Under the Hood: JEXL Specification & Raw Strings
+
+The `when` builder produces serializable [JEXL (Javascript Expression Language)](https://github.com/TomFrost/Jexl) strings. 
+
+Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests.
+
+### Raw JEXL String Escape Hatch
+
+If you have legacy schemas or generate conditions dynamically, you can pass raw JEXL strings directly:
 
 ```typescript
-import { defineCollection } from "@dyrected/core";
-
-export const Articles = defineCollection({
-  slug: "articles",
-  access: {
-    read: "includes(user.roles, 'admin') || (doc.status == 'published' && isPast(doc.publishAt))",
-  },
+export const Orders = defineCollection({
+  slug: "orders",
   fields: [
-    /* ... fields */
-  ],
-});
-```
-
-### 3. Dynamic Field Visibility
-Only display a discount percentage input when the selected customer tier is either `'vip'` or `'partner'`:
-
-```typescript
-import { defineNumberField } from "@dyrected/core";
-
-export const discountField = defineNumberField({
-  name: "discountPercentage",
-  label: "Discount %",
-  admin: {
-    condition: "includes(['vip', 'partner'], siblingData.customerTier)",
-  },
-});
-```
-
-### 4. Auto-calculating Reading Time & Excerpt
-Automatically compute estimated article reading time and generate a truncated SEO summary whenever the document content changes:
-
-```typescript
-import { defineCollection, defineRichTextField, defineNumberField, defineTextField } from "@dyrected/core";
-
-export const BlogPosts = defineCollection({
-  slug: "blog-posts",
-  fields: [
-    defineRichTextField({ name: "content", label: "Article Content" }),
     defineNumberField({
-      name: "readingTimeMinutes",
-      label: "Reading Time (mins)",
+      name: "discount",
+      label: "Discount",
+      // Raw JEXL string equivalent
       admin: {
-        readOnly: true,
-        hooks: {
-          onChange: "readingTime(siblingData.content)",
-        },
-      },
-    }),
-    defineTextField({
-      name: "seoExcerpt",
-      label: "SEO Excerpt",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? truncate(siblingData.content, 150) : value",
-        },
+        condition: "couponCode != null && couponCode != ''",
       },
     }),
   ],
 });
 ```
 
-### 5. Formatting Author Full Names & User Handles
-Combine first and last name fields into a display name and auto-lowercase social handles:
+### Context Variables by Surface
 
-```typescript
-import { defineCollection, defineTextField } from "@dyrected/core";
+Dyrected provides the following context variables based on where the expression is evaluated:
 
-export const Authors = defineCollection({
-  slug: "authors",
-  fields: [
-    defineTextField({ name: "firstName", label: "First Name" }),
-    defineTextField({ name: "lastName", label: "Last Name" }),
-    defineTextField({
-      name: "displayName",
-      label: "Display Name",
-      admin: {
-        hooks: {
-          onChange: "trim(coalesce(join(compact([siblingData.firstName, siblingData.lastName]), ' '), value))",
-        },
-      },
-    }),
-    defineTextField({
-      name: "twitterHandle",
-      label: "Twitter Handle",
-      admin: {
-        hooks: {
-          onChange: "lower(trim(value))",
-        },
-      },
-    }),
-  ],
-});
-```
+| Surface | In-Scope Variables | Common Use Case |
+| :--- | :--- | :--- |
+| **`admin.condition`** | `data`, `siblingData`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`admin.previewUrl`** | `doc`, `entry`, `siteUrl`, all root fields | Frontend preview routing |
+| **`access.*`** | `user`, `doc`, `data`, `id`, `req` | Row-Level Security permissions |
+| **`admin.hooks.onChange`** | `value`, `siblingData`, `data` | Real-time form reactivity |
 
-### 6. Default Expiration Date Window
-Set an automatic 30-day expiration window when creating new promotion codes if no custom expiration date is provided:
+### Global Built-in JEXL Functions
 
-```typescript
-import { defineCollection, defineDateTimeField, defineTextField } from "@dyrected/core";
+Dyrected includes 30+ built-in helper functions available in all JEXL evaluation contexts:
 
-export const Promotions = defineCollection({
-  slug: "promotions",
-  fields: [
-    defineTextField({ name: "code", label: "Promo Code", required: true }),
-    defineDateTimeField({
-      name: "expiresAt",
-      label: "Expiration Date",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? addDays(now(), 30) : value",
-        },
-      },
-    }),
-  ],
-});
-```
+* **Strings**: `slugify(str)`, `lower(str)`, `upper(str)`, `trim(str)`, `capitalize(str)`, `truncate(str, length)`, `wordCount(str)`, `readingTime(str)`, `startsWith(str, prefix)`, `endsWith(str, suffix)`.
+* **Dates**: `now()`, `today()`, `formatDate(date, style)`, `addDays(date, n)`, `diffDays(d1, d2)`, `isPast(date)`, `isFuture(date)`.
+* **Arrays**: `includes(arr, item)`, `join(arr, delim)`, `first(arr)`, `last(arr)`, `compact(arr)`, `unique(arr)`, `length(val)`.
+* **Math & Logic**: `round(num, decimals)`, `clamp(num, min, max)`, `default(val, fallback)`, `coalesce(...vals)`, `isEmpty(val)`, `get(obj, path, fallback)`.
 
-### 7. Safe Deep Property Retrieval & Owner Access Policies
-Allow users to update documents if they are either an admin or the owner specified in a deeply nested metadata field:
-
-```typescript
-import { defineCollection } from "@dyrected/core";
-
-export const Projects = defineCollection({
-  slug: "projects",
-  access: {
-    update: "includes(user.roles, 'admin') || user.id == get(doc, 'metadata.ownerId')",
-  },
-  fields: [
-    /* ... fields */
-  ],
-});
-```
+---
 
 ## Recommended Next Steps
 
-- Learn how declarative string hooks sync to Dyrected Cloud in [Cloud-safe hooks](/docs/model-content/content-rules/cloud-safe-hooks).
+- Learn how field conditions isolate block editing in [Block Fields](/docs/model-content/fields/blocks).
 - Explore role and ownership access control patterns in [Collections Access Control](/docs/model-content/content-rules/access-control/collections).
-- See how custom form components consume field state in [Form & Field Hooks](/docs/editor-experience/form-and-field-hooks).
-
+- Wire Click-to-Edit annotations with `useDyPath` in [Live Preview Client-Side](/docs/editor-experience/publishing/live-preview/client-side).

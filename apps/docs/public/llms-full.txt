@@ -2475,16 +2475,18 @@ displayField("deliveryNotes", {
 
 ### 5. Progressive conditional disclosure with `visible`
 
-Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+Clean dashboards omit irrelevant data. Use the `when` builder (or a serializable JEXL expression) to conditionally hide entire sections or fields when they do not apply to the current record.
 
 ```ts
+
+
 // Hide the entire fulfillment card if the guest didn't place an order
 displaySection("Order & Fulfillment", [
   // ... fields
 ], {
   span: 12,
   icon: "Package",
-  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+  visible: when.any(when.fieldIsTrue("wantsAsoebi"), when.fieldIsTrue("wantsAsoOke")),
 }),
 ```
 
@@ -3925,14 +3927,37 @@ This is the right API for:
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
 
-## Built-in Declarative Jexl Helpers
+## Declarative Field Transforms & `when` Helpers
 
-Dyrected provides a zero-dependency helper utility suite for declarative `admin.hooks.onChange`, field conditions, and access control rules:
+For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `when` builder:
+
+```typescript
+
+
+defineTextField({
+  name: "slug",
+  label: "Slug",
+  admin: {
+    hooks: {
+      // Auto-generates slug from title when empty
+      onChange: when.then(
+        when.fieldEmpty("value"),
+        when.slugify("siblingData.title"),
+        "value"
+      ),
+    },
+  },
+});
+```
+
+### Global JEXL Runtime Functions
+
+The `when` builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
 
 ### String Helpers
-- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`).
-- `lower(str)` / `upper(str)`: Converts string casing.
-- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word.
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `when.slugify(field)`.
+- `lower(str)` / `upper(str)`: Converts string casing. Available via `when.lower(field)` and `when.upper(field)`.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `when.trim(field)`.
 - `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
 - `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
 - `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.
@@ -5108,20 +5133,30 @@ const { data: page, isLive } = useLivePreview({
 
 ## Click-to-edit with `useDyPath`
 
-Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. Call `useDyPath()` once at the top of your component to get a path annotator helper (`dy`), then call `dy('fieldName')` directly on your elements:
 
 ```tsx
 // React / Next.js
 
 
-function Hero({ heading, subheading }: any) {
-  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+function Hero({ heading, subheading, cta, items }: any) {
+  // Call useDyPath() once at the top of the component
+  const dy = useDyPath();
+
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading && <p {...dySubheading}>{subheading}</p>}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading && <p {...dy("subheading")}>{subheading}</p>}
+      {cta && <button {...dy("cta")}>{cta}</button>}
+
+      
+      <ul>
+        {items?.map((item: any, idx: number) => (
+          <li key={idx} {...dy(`items.${idx}.title`)}>
+            {item.title}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -5130,15 +5165,28 @@ function Hero({ heading, subheading }: any) {
 ```vue
 <!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>();
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+defineProps<{
+  heading: string;
+  subheading?: string;
+  cta?: string;
+  items?: Array<{ title: string }>;
+}>();
+
+// Call useDyPath() once in setup
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
+    <button v-if="cta" v-bind="dy('cta')">{{ cta }}</button>
+
+    <ul>
+      <li v-for="(item, idx) in items" :key="idx" v-bind="dy(`items.${idx}.title`)">
+        {{ item.title }}
+      </li>
+    </ul>
   </section>
 </template>
 ```
@@ -7676,7 +7724,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: "couponCode != null && couponCode != ''" },
+      admin: { condition: when.fieldNotEmpty("couponCode") },
     }),
   ],
 });
@@ -8594,7 +8642,7 @@ export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: when.then(when.fieldNotEmpty("slug"), when.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
@@ -9594,9 +9642,11 @@ It does not yet:
 For routable content, set `admin.previewUrl` on the collection so Dyrected knows which frontend route to open:
 
 ```ts
+
+
 admin: {
   useAsTitle: "title",
-  previewUrl: "slug == 'home' ? '/' : '/' + slug",
+  previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
 }
 ```
 
@@ -9650,13 +9700,33 @@ This keeps the first preview integration small: fetch the document normally on t
 
 Click-to-edit only works reliably when the frontend renders fields through the path-aware helpers Dyrected already exposes.
 
-For block content, that usually means rendering through `Blocks` and passing the real field path:
+For block content, that means rendering through `Blocks` and using `useDyPath()` inside the block component:
 
 ```tsx
+// app/components/blocks/HeroBlock.tsx
+"use client";
+
+
+
+export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
+  // Call useDyPath() once at the top of your component
+  const dy = useDyPath();
+
+  return (
+    <section>
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
+    </section>
+  );
+}
+```
+
+```tsx
+// app/[slug]/page.tsx
 <Blocks items={page.layout} path="layout" components={{ hero: HeroBlock }} />
 ```
 
-That path is what lets the preview surface map a click in the frontend back to the matching field in the editor.
+Those paths are what let the preview surface map a click in the frontend back to the matching field in the editor.
 
 </Step>
 <Step>
@@ -10832,6 +10902,7 @@ When you need live preview or rendering helpers, the Next package is still the e
 - `useLivePreview`
 - `Blocks`
 - `useDyPath`
+- `useDyPathHelper`
 - `DyrectedImage`
 - `DyrectedMedia`
 - `DyrectedIcon`
@@ -11145,14 +11216,13 @@ For block content, that usually means rendering through `<DyrectedBlocks>` and u
 <script setup lang="ts">
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -12408,13 +12478,12 @@ For block content, that usually means rendering through `Blocks` and using `useD
 
 
 export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+  const dy = useDyPath();
 
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading ? <p {...dySubheading}>{subheading}</p> : null}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
     </section>
   );
 }
@@ -13581,16 +13650,17 @@ For block content, that usually means rendering through `<Blocks>` and using `us
 
 ```vue
 <script setup lang="ts">
+
+
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -15522,22 +15592,18 @@ When a collection is routable, the collection config and the frontend route need
 - `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
 - a real frontend route that can fetch and render the document
 
-`admin.previewUrl` can be either:
+`admin.previewUrl` can be configured using:
 
-- a Jexl string evaluated against the document, usually the best default
-- a function that returns the URL from the document data
+- the `when` condition builder (or serializable JEXL string), which is the recommended default
+- a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+Prefer the `when` builder (`when.concat`, `when.then`, or `when.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
-`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+`admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
-For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+### Dynamic Preview Routing Examples
 
-```ts
-previewUrl: "slug == 'home' ? '/' : '/' + slug";
-```
-
-Here is a typical blog-style example using Jexl:
+For single-prefix collections, use `when.concat`:
 
 ```ts
 
@@ -15546,7 +15612,8 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
-    previewUrl: "'/blog/' + slug",
+    // Generates: '/blog/' + slug
+    previewUrl: when.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -15554,6 +15621,23 @@ export const Posts = defineCollection({
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
+```
+
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `when.then`:
+
+```ts
+// Routes 'home' to '/', and all other pages to '/slug'
+previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
+```
+
+For multi-branch category routing, use `when.match`:
+
+```ts
+previewUrl: when.match()
+  .case(when("slug").equals("home"), "/")
+  .case(when("category").equals("news"), when.concat("/news/", "slug"))
+  .case(when("category").equals("portal"), when.concat("/portals/", "slug"))
+  .otherwise(when.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:
@@ -17093,17 +17177,19 @@ Field rules are enforced in two places at once:
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/overview) for the shared model, then use this page for the field-specific behavior.For Cloud, prefer Jexl strings, `false`, and string-backed named policies. Those shapes can be enforced by the hosted backend and reflected in the admin form after schema sync.
 ## The shape
 
-Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use the `when` builder (or a serializable JEXL expression) for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
-{
-  name: 'internalNotes',
-  type: 'textarea',
+
+
+defineTextareaField({
+  name: "internalNotes",
+  label: "Internal Notes",
   access: {
-    read: "'admin' in user.roles",
-    update: "'admin' in user.roles",
+    read: when.access.isAdmin(),
+    update: when.access.isAdmin(),
   },
-}
+});
 ```
 
 Omit a rule (or set it to `true`) to leave the field fully available.<Note>
@@ -17739,285 +17825,311 @@ That is why `afterChange`, delete hooks, `field.afterRead`, and `admin.hooks.opt
 
 ---
 
-## Declarative Expressions & Helpers
+## Declarative Expressions & Conditions
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/content-rules/declarative-expressions
 
-When configuring field state, reactive form logic, or access control policies in Dyrected, you can write **declarative string expressions**.
+When configuring field visibility, live preview routing, access control policies, or reactive form transforms in Dyrected, you can write **declarative expressions**.
 
-Declarative string expressions are powered by Jexl. Because they are plain strings stored inside your schema files, they are 100% serializable. They survive `npx dyrected sync:schema` and run safely across both self-hosted servers and Dyrected Cloud.
+Dyrected provides the type-safe `when` builder (`@dyrected/sdk` or `@dyrected/core`) as the recommended standard for constructing these expressions. Because `when` compiles to pure serializable [JEXL](https://github.com/TomFrost/Jexl) strings, your logic remains 100% portable: it survives `npx dyrected sync:schema` and runs identically across self-hosted servers, headless API runtimes, and Dyrected Cloud.
 
-By the end of this guide, you will understand when to reach for declarative expressions, what context variables are in scope, and how to use Dyrected's built-in helper utilities.
+By the end of this guide, you will understand how to build reactive conditions with `when`, how to configure preview URLs and access rules, and how expressions work under the hood.
 
-## Choose the right hook shape for your goal
+---
 
-In Dyrected, you can write hook and policy logic in two ways:
+## Quickstart
 
-1. **Declarative string expressions** (`"slugify(siblingData.title)"`): Recommended for value derivations, format conversions, and access checks. They are stored directly in your schema, survive Cloud schema sync, and run anywhere.
-2. **Function hooks** (`({ siblingData }) => siblingData.title`): Best for self-hosted Node.js servers performing custom asynchronous side effects or calling external microservices. Function hooks cannot be serialized to Dyrected Cloud and are stripped during schema sync.
-
-When a field calculation, access check, or UI condition can be expressed as a string, use the declarative string form.
-
-## Basic Expression Syntax
-
-Declarative expressions support property lookups, ternary conditionals, mathematical operators, and built-in helper functions:
-
-```typescript
-// Auto-derive a slug when empty, but preserve custom edits
-"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value"
-
-// Role and document ownership check
-"user.role == 'admin' || user.id == doc.authorId"
-
-// Relative date check for scheduled content
-"isPast(doc.publishAt)"
-```
-
-## Context Variables by Surface
-
-Dyrected provides an explicit context object to each declarative expression based on where it is executed:
-
-| Surface | Available Context Variables | Common Use Case |
-| --- | --- | --- |
-| **Form Reactive Hooks** | `value`, `siblingData`, `data` | `admin.hooks.onChange` live form reactivity |
-| **Field & Collection Hooks** | `req`, `user`, `data`, `doc`, `operation`, `value` | `beforeChange`, `beforeRead` server-side evaluation |
-| **Access Control Policies** | `user`, `req`, `doc`, `data`, `id` | `access.read`, `access.update` permissions |
-| **Admin UI Field Conditions** | `data`, `siblingData`, `user`, `id` | `admin.condition` dynamic field visibility |
-
-## Built-in Helper Function Reference
-
-Dyrected includes 30+ zero-dependency helper functions that are registered globally in all Jexl evaluation contexts.
-
-### String Helpers
-
-Use string helpers to clean, reformat, or inspect text fields:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `slugify(str)` | Transforms text into a URL-safe slug | `slugify("Hello World!")` | `"hello-world"` |
-| `lower(str)` | Converts text to lowercase | `lower("Dyrected")` | `"dyrected"` |
-| `upper(str)` | Converts text to uppercase | `upper("dyrected")` | `"DYRECTED"` |
-| `trim(str)` | Strips leading and trailing whitespace | `trim("  hello  ")` | `"hello"` |
-| `capitalize(str)` | Capitalizes the first letter of text | `capitalize("hELLO")` | `"Hello"` |
-| `truncate(str, len, ellipsis?)` | Truncates text with a custom suffix | `truncate(doc.body, 20)` | `"Long article body..."` |
-| `readingTime(str)` | Calculates reading time in minutes | `readingTime(doc.content)` | `3` |
-| `wordCount(str)` | Counts total words in a text string | `wordCount(doc.content)` | `450` |
-| `replace(str, search, replace)` | Replaces occurrences of a pattern | `replace(doc.title, "Draft", "Final")` | `"Final Title"` |
-| `startsWith(str, prefix)` | Checks if text starts with a prefix | `startsWith(doc.url, "https")` | `true` |
-| `endsWith(str, suffix)` | Checks if text ends with a suffix | `endsWith(doc.file, ".pdf")` | `true` |
-
-### Date & Time Helpers
-
-Use date helpers for scheduled publishing windows, expiration checks, and relative time calculations:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `now()` | Returns current ISO 8601 timestamp | `now()` | `"2026-07-27T00:00:00.000Z"` |
-| `today()` | Returns current date (YYYY-MM-DD) | `today()` | `"2026-07-27"` |
-| `formatDate(date, style?)` | Formats dates (`'short'`, `'iso'`, `'date'`, `'datetime'`, `'full'`) | `formatDate(doc.publishedAt, "short")` | `"Jul 27, 2026"` |
-| `addDays(date, days)` | Adds or subtracts days from a timestamp | `addDays(now(), 7)` | `"2026-08-03T00:00:00.000Z"` |
-| `diffDays(dateA, dateB)` | Calculates integer day difference between two dates | `diffDays(now(), doc.createdAt)` | `14` |
-| `isPast(date)` | Returns `true` if timestamp is in the past | `isPast(doc.publishAt)` | `true` |
-| `isFuture(date)` | Returns `true` if timestamp is in the future | `isFuture(doc.expireAt)` | `false` |
-
-### Array & Collection Helpers
-
-Use array helpers to inspect tags, user roles, or multi-select field lists:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `includes(arrOrStr, item)` | Checks array or substring membership | `includes(user.roles, "admin")` | `true` |
-| `join(arr, separator?)` | Joins array elements into a string | `join(siblingData.tags, ", ")` | `"news, tech"` |
-| `first(arr)` | Safely returns the first array element | `first(siblingData.images)` | `"{ id: 1, ... }"` |
-| `last(arr)` | Safely returns the last array element | `last(siblingData.history)` | `"{ step: 3, ... }"` |
-| `compact(arr)` | Removes empty, `null`, and `undefined` items | `compact(["a", null, "b"])` | `["a", "b"]` |
-| `unique(arr)` | Deduplicates array elements | `unique(["tag1", "tag1", "tag2"])` | `["tag1", "tag2"]` |
-| `length(val)` | Returns array length, string length, or key count | `length(siblingData.blocks)` | `4` |
-
-### Math & Logical Helpers
-
-Use math and logical helpers for numeric constraints, fallbacks, and safe nested property retrieval:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `round(num, decimals?)` | Rounds a number to specified decimal places | `round(siblingData.price * 1.15, 2)` | `29.99` |
-| `clamp(num, min, max)` | Constrains a number between upper and lower bounds | `clamp(siblingData.rating, 1, 5)` | `5` |
-| `default(val, fallback)` | Provides a fallback for `null`, `undefined`, or `""` | `default(siblingData.title, "Untitled")` | `"Untitled"` |
-| `coalesce(...args)` | Returns the first non-empty value | `coalesce(doc.shortTitle, doc.title, "Draft")` | `"Draft"` |
-| `isEmpty(val)` | Returns `true` for empty arrays, objects, strings, or `null` | `isEmpty(siblingData.items)` | `true` |
-| `get(obj, path, fallback?)` | Safely retrieves nested object properties | `get(siblingData, "author.name", "Guest")` | `"Guest"` |
-
-## Practical Working Examples
-
-### 1. Auto-generating a URL Slug from a Title
-The following collection configuration auto-generates a clean slug when `slug` is empty, but preserves manual edits once the user types into the field:
+Import the `when` builder from `@dyrected/sdk` (or `@dyrected/core`):
 
 ```typescript
 
 
-export const Pages = defineCollection({
-  slug: "pages",
+export const Products = defineCollection({
+  slug: "products",
+  admin: {
+    useAsTitle: "title",
+    // Preview URL routing: /products/slug
+    previewUrl: when.concat("/products/", "slug"),
+  },
+  access: {
+    // Only admins or the document creator can edit
+    update: when.any(when.access.isOwner("author"), when.access.isAdmin()),
+  },
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
-    defineTextField({
-      name: "slug",
-      label: "Slug",
-      required: true,
-      unique: true,
+    defineTextField({ name: "couponCode", label: "Coupon Code" }),
+    defineNumberField({
+      name: "discountPercent",
+      label: "Discount Percentage",
+      // Reveals this field only when a coupon code is entered
       admin: {
-        hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
-        },
+        condition: when.fieldNotEmpty("couponCode"),
       },
     }),
   ],
 });
 ```
 
-### 2. Scheduled Publishing Access Rule
-Restrict public document access so non-admin users cannot read articles until `publishAt` is in the past:
+---
+
+## 1. Conditional Field & Block Visibility (`admin.condition`)
+
+Use `admin.condition` on any field or block to conditionally reveal it based on the editor's current form input or block variant.
+
+### Match by Field Value
+
+Check if a field equals a specific value or is non-empty:
+
+```typescript
+
+
+// Show field when 'hasCustomTax' is checked
+export const CustomTaxField = defineNumberField({
+  name: "taxRate",
+  label: "Tax Rate (%)",
+  admin: {
+    condition: when("hasCustomTax").isTrue(),
+  },
+});
+
+// Show field when category is in a set of allowed values
+export const DeliveryDateField = defineTextField({
+  name: "deliveryWindow",
+  label: "Delivery Window",
+  admin: {
+    condition: when("category").in("furniture", "appliances", "perishables"),
+  },
+});
+```
+
+### Match Block Variants
+
+In layout builders and polymorphic blocks, reveal fields only when a specific block layout variant is selected:
+
+```typescript
+
+
+export const AvatarField = defineMediaField({
+  name: "avatar",
+  label: "Author Avatar",
+  admin: {
+    // Only visible when the editor selects the 'card' or 'split' variant
+    condition: when.variant("card", "split"),
+  },
+});
+```
+
+### Compound Conditions (`when.all`, `when.any`, `when.not`)
+
+Combine multiple conditions using boolean combinators:
+
+```typescript
+// Visible if status is draft AND current user has editor/admin role
+admin: {
+  condition: when.all(
+    when("status").equals("draft"),
+    when.userRole("admin", "editor")
+  ),
+}
+
+// Visible if stock is below 10 OR promoted is true
+admin: {
+  condition: when.any(
+    when("stock").lessThan(10),
+    when("isPromoted").isTrue()
+  ),
+}
+```
+
+---
+
+## 2. Live Preview URLs & Dynamic Routing (`admin.previewUrl`)
+
+The `admin.previewUrl` setting determines the frontend route loaded in the live preview panel and the external view button.
+
+### Path Concatenation (`when.concat`)
+
+Safely combine static path prefixes with dynamic field identifiers:
 
 ```typescript
 
 
 export const Articles = defineCollection({
   slug: "articles",
-  access: {
-    read: "includes(user.roles, 'admin') || (doc.status == 'published' && isPast(doc.publishAt))",
-  },
-  fields: [
-    /* ... fields */
-  ],
-});
-```
-
-### 3. Dynamic Field Visibility
-Only display a discount percentage input when the selected customer tier is either `'vip'` or `'partner'`:
-
-```typescript
-
-
-export const discountField = defineNumberField({
-  name: "discountPercentage",
-  label: "Discount %",
   admin: {
-    condition: "includes(['vip', 'partner'], siblingData.customerTier)",
+    // Generates: '/news/' + slug
+    previewUrl: when.concat("/news/", "slug"),
   },
+  fields: [ ... ],
 });
 ```
 
-### 4. Auto-calculating Reading Time & Excerpt
-Automatically compute estimated article reading time and generate a truncated SEO summary whenever the document content changes:
+### Fallback Routing (`when.then`)
+
+Handle root homepages or custom path overrides with ternary expressions:
+
+```typescript
+// If slug is 'home', route to '/'; otherwise route to '/' + slug
+admin: {
+  previewUrl: when.then(
+    when("slug").equals("home"),
+    "/",
+    when.concat("/", "slug")
+  ),
+}
+```
+
+### Multi-Branch Routing (`when.match`)
+
+When a collection supports multiple categories or localized routes, chain branches with `when.match()`:
+
+```typescript
+admin: {
+  previewUrl: when.match()
+    .case(when("slug").equals("home"), "/")
+    .case(when.fieldNotEmpty("customPath"), "customPath")
+    .case(when("category").equals("news"), when.concat("/news/", "slug"))
+    .case(when("category").equals("portal"), when.concat("/country-portals/", "slug"))
+    .otherwise(when.concat("/", "slug")),
+}
+```
+
+---
+
+## 3. Declarative Access Control (`collection.access`)
+
+Define declarative Row-Level Security (RLS) policies evaluated against `{ doc, user }`:
 
 ```typescript
 
 
-export const BlogPosts = defineCollection({
-  slug: "blog-posts",
-  fields: [
-    defineRichTextField({ name: "content", label: "Article Content" }),
-    defineNumberField({
-      name: "readingTimeMinutes",
-      label: "Reading Time (mins)",
-      admin: {
-        readOnly: true,
-        hooks: {
-          onChange: "readingTime(siblingData.content)",
-        },
-      },
-    }),
-    defineTextField({
-      name: "seoExcerpt",
-      label: "SEO Excerpt",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? truncate(siblingData.content, 150) : value",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 5. Formatting Author Full Names & User Handles
-Combine first and last name fields into a display name and auto-lowercase social handles:
-
-```typescript
-
-
-export const Authors = defineCollection({
-  slug: "authors",
-  fields: [
-    defineTextField({ name: "firstName", label: "First Name" }),
-    defineTextField({ name: "lastName", label: "Last Name" }),
-    defineTextField({
-      name: "displayName",
-      label: "Display Name",
-      admin: {
-        hooks: {
-          onChange: "trim(coalesce(join(compact([siblingData.firstName, siblingData.lastName]), ' '), value))",
-        },
-      },
-    }),
-    defineTextField({
-      name: "twitterHandle",
-      label: "Twitter Handle",
-      admin: {
-        hooks: {
-          onChange: "lower(trim(value))",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 6. Default Expiration Date Window
-Set an automatic 30-day expiration window when creating new promotion codes if no custom expiration date is provided:
-
-```typescript
-
-
-export const Promotions = defineCollection({
-  slug: "promotions",
-  fields: [
-    defineTextField({ name: "code", label: "Promo Code", required: true }),
-    defineDateTimeField({
-      name: "expiresAt",
-      label: "Expiration Date",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? addDays(now(), 30) : value",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 7. Safe Deep Property Retrieval & Owner Access Policies
-Allow users to update documents if they are either an admin or the owner specified in a deeply nested metadata field:
-
-```typescript
-
-
-export const Projects = defineCollection({
-  slug: "projects",
+export const Documents = defineCollection({
+  slug: "documents",
   access: {
-    update: "includes(user.roles, 'admin') || user.id == get(doc, 'metadata.ownerId')",
+    // Public can read published docs; admins can read everything
+    read: when.access.isPublishedOrAdmin(),
+
+    // Document authors or admins can edit
+    update: when.any(when.access.isOwner("authorId"), when.access.isAdmin()),
+
+    // Only superadmins can delete
+    delete: when.access.hasRole("superadmin"),
   },
+  fields: [ ... ],
+});
+```
+
+---
+
+## 4. Reactive Field Transforms (`admin.hooks.onChange`)
+
+Automatically transform values live in the browser as the editor types:
+
+```typescript
+
+
+export const Posts = defineCollection({
+  slug: "posts",
   fields: [
-    /* ... fields */
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      admin: {
+        hooks: {
+          // Auto-slugify title if slug is empty, but preserve manual edits
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
   ],
 });
 ```
+
+---
+
+## `when` API Cheatsheet
+
+| Helper | Description | Output |
+| :--- | :--- | :--- |
+| `when('field').equals(val)` | Equality check | `field == "val"` |
+| `when('field').notEquals(val)` | Inequality check | `field != "val"` |
+| `when('field').in('a', 'b')` | Set membership | `field in ["a", "b"]` |
+| `when('field').isTrue()` | Boolean true check | `field == true` |
+| `when.fieldNotEmpty('field')` | Non-empty string / non-null check | `field != null && field != ''` |
+| `when.fieldEmpty('field')` | Empty or null check | `field == null \|\| field == ''` |
+| `when('price').greaterThan(10)` | Numerical greater than | `price > 10` |
+| `when('price').between(10, 50)` | Numerical range | `price >= 10 && price <= 50` |
+| `when.variant('card', 'hero')` | Block variant matching | `variant in ['card', 'hero']` |
+| `when.all(c1, c2)` | Logical AND | `c1 && c2` |
+| `when.any(c1, c2)` | Logical OR | `c1 \|\| c2` |
+| `when.then(cond, ifTrue, ifFalse)`| Ternary expression | `cond ? ifTrue : ifFalse` |
+| `when.match().case().otherwise()` | Multi-branch switch | `c1 ? v1 : c2 ? v2 : v3` |
+| `when.concat('/path/', 'slug')` | Safe string concatenation | `'/path/' + slug` |
+| `when.slugify('title')` | JEXL slugify transform | `slugify(title)` |
+| `when.access.isOwner('author')` | Document ownership match | `author == user.id \|\| author.id == user.id` |
+| `when.access.isAdmin()` | Admin role check | `user.role == 'admin' \|\| ('admin' in user.roles)` |
+| `when.access.isPublishedOrAdmin()`| Published or admin read rule | `status == 'published' \|\| user.role == 'admin'` |
+
+---
+
+## Under the Hood: JEXL Specification & Raw Strings
+
+The `when` builder produces serializable [JEXL (Javascript Expression Language)](https://github.com/TomFrost/Jexl) strings. 
+
+Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests.
+
+### Raw JEXL String Escape Hatch
+
+If you have legacy schemas or generate conditions dynamically, you can pass raw JEXL strings directly:
+
+```typescript
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [
+    defineNumberField({
+      name: "discount",
+      label: "Discount",
+      // Raw JEXL string equivalent
+      admin: {
+        condition: "couponCode != null && couponCode != ''",
+      },
+    }),
+  ],
+});
+```
+
+### Context Variables by Surface
+
+Dyrected provides the following context variables based on where the expression is evaluated:
+
+| Surface | In-Scope Variables | Common Use Case |
+| :--- | :--- | :--- |
+| **`admin.condition`** | `data`, `siblingData`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`admin.previewUrl`** | `doc`, `entry`, `siteUrl`, all root fields | Frontend preview routing |
+| **`access.*`** | `user`, `doc`, `data`, `id`, `req` | Row-Level Security permissions |
+| **`admin.hooks.onChange`** | `value`, `siblingData`, `data` | Real-time form reactivity |
+
+### Global Built-in JEXL Functions
+
+Dyrected includes 30+ built-in helper functions available in all JEXL evaluation contexts:
+
+* **Strings**: `slugify(str)`, `lower(str)`, `upper(str)`, `trim(str)`, `capitalize(str)`, `truncate(str, length)`, `wordCount(str)`, `readingTime(str)`, `startsWith(str, prefix)`, `endsWith(str, suffix)`.
+* **Dates**: `now()`, `today()`, `formatDate(date, style)`, `addDays(date, n)`, `diffDays(d1, d2)`, `isPast(date)`, `isFuture(date)`.
+* **Arrays**: `includes(arr, item)`, `join(arr, delim)`, `first(arr)`, `last(arr)`, `compact(arr)`, `unique(arr)`, `length(val)`.
+* **Math & Logic**: `round(num, decimals)`, `clamp(num, min, max)`, `default(val, fallback)`, `coalesce(...vals)`, `isEmpty(val)`, `get(obj, path, fallback)`.
+
+---
 
 ## Recommended Next Steps
 
-- Learn how declarative string hooks sync to Dyrected Cloud in [Cloud-safe hooks](https://docs.dyrected.com/docs/cloud/model-content/content-rules/cloud-safe-hooks).
+- Learn how field conditions isolate block editing in [Block Fields](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks).
 - Explore role and ownership access control patterns in [Collections Access Control](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/collections).
-- See how custom form components consume field state in [Form & Field Hooks](https://docs.dyrected.com/docs/cloud/editor-experience/form-and-field-hooks).
+- Wire Click-to-Edit annotations with `useDyPath` in [Live Preview Client-Side](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/client-side).
 
 ---
 
@@ -18854,9 +18966,11 @@ The first variant is the default. Like block slugs, keep variant slugs stable on
 
 ### Showing a field only for some variants
 
-Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Because the selected variant lives on the block row under the reserved `variant` key, any sibling field can read it in an `admin.condition`:
+Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Use the `when` builder to declare clean variant visibility in your field's `admin.condition`:
 
 ```ts
+
+
 defineBlock({
   slug: "testimonial",
   labels: { singular: "Testimonial", plural: "Testimonials" },
@@ -18870,13 +18984,13 @@ defineBlock({
       name: "avatar",
       label: "Avatar",
       relationTo: "media",
-      admin: { condition: "variant == 'card'" },
+      admin: { condition: when.variant("card") },
     }),
   ],
 });
 ```
 
-Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+Now the avatar picker appears only while the card variant is selected. The `when.variant("card")` condition generates a serializable expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can also match multiple variants with `when.variant("card", "split")` or everything except a variant with `when.notVariant("quote")`.
 
 <Note>
 Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
@@ -33288,16 +33402,18 @@ displayField("deliveryNotes", {
 
 ### 5. Progressive conditional disclosure with `visible`
 
-Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+Clean dashboards omit irrelevant data. Use the `when` builder (or a serializable JEXL expression) to conditionally hide entire sections or fields when they do not apply to the current record.
 
 ```ts
+
+
 // Hide the entire fulfillment card if the guest didn't place an order
 displaySection("Order & Fulfillment", [
   // ... fields
 ], {
   span: 12,
   icon: "Package",
-  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+  visible: when.any(when.fieldIsTrue("wantsAsoebi"), when.fieldIsTrue("wantsAsoOke")),
 }),
 ```
 
@@ -34681,14 +34797,37 @@ This is the right API for:
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
 
-## Built-in Declarative Jexl Helpers
+## Declarative Field Transforms & `when` Helpers
 
-Dyrected provides a zero-dependency helper utility suite for declarative `admin.hooks.onChange`, field conditions, and access control rules:
+For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `when` builder:
+
+```typescript
+
+
+defineTextField({
+  name: "slug",
+  label: "Slug",
+  admin: {
+    hooks: {
+      // Auto-generates slug from title when empty
+      onChange: when.then(
+        when.fieldEmpty("value"),
+        when.slugify("siblingData.title"),
+        "value"
+      ),
+    },
+  },
+});
+```
+
+### Global JEXL Runtime Functions
+
+The `when` builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
 
 ### String Helpers
-- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`).
-- `lower(str)` / `upper(str)`: Converts string casing.
-- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word.
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `when.slugify(field)`.
+- `lower(str)` / `upper(str)`: Converts string casing. Available via `when.lower(field)` and `when.upper(field)`.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `when.trim(field)`.
 - `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
 - `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
 - `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.
@@ -35915,20 +36054,30 @@ const { data: page, isLive } = useLivePreview({
 
 ## Click-to-edit with `useDyPath`
 
-Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. Call `useDyPath()` once at the top of your component to get a path annotator helper (`dy`), then call `dy('fieldName')` directly on your elements:
 
 ```tsx
 // React / Next.js
 
 
-function Hero({ heading, subheading }: any) {
-  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+function Hero({ heading, subheading, cta, items }: any) {
+  // Call useDyPath() once at the top of the component
+  const dy = useDyPath();
+
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading && <p {...dySubheading}>{subheading}</p>}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading && <p {...dy("subheading")}>{subheading}</p>}
+      {cta && <button {...dy("cta")}>{cta}</button>}
+
+      
+      <ul>
+        {items?.map((item: any, idx: number) => (
+          <li key={idx} {...dy(`items.${idx}.title`)}>
+            {item.title}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -35937,15 +36086,28 @@ function Hero({ heading, subheading }: any) {
 ```vue
 <!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>();
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+defineProps<{
+  heading: string;
+  subheading?: string;
+  cta?: string;
+  items?: Array<{ title: string }>;
+}>();
+
+// Call useDyPath() once in setup
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
+    <button v-if="cta" v-bind="dy('cta')">{{ cta }}</button>
+
+    <ul>
+      <li v-for="(item, idx) in items" :key="idx" v-bind="dy(`items.${idx}.title`)">
+        {{ item.title }}
+      </li>
+    </ul>
   </section>
 </template>
 ```
@@ -38445,8 +38607,11 @@ export const Posts = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.then(when.fieldNotEmpty("siblingData.title"), when.slugify("siblingData.title"), "value"),
+            "value",
+          ),
         },
       },
     }),
@@ -38556,7 +38721,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: "couponCode != null && couponCode != ''" },
+      admin: { condition: when.fieldNotEmpty("couponCode") },
     }),
   ],
 });
@@ -39484,7 +39649,7 @@ export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: when.then(when.fieldNotEmpty("slug"), when.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
@@ -40585,6 +40750,7 @@ When you need live preview or rendering helpers, the Next package is still the e
 - `useLivePreview`
 - `Blocks`
 - `useDyPath`
+- `useDyPathHelper`
 - `DyrectedImage`
 - `DyrectedMedia`
 - `DyrectedIcon`
@@ -42051,22 +42217,18 @@ When a collection is routable, the collection config and the frontend route need
 - `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
 - a real frontend route that can fetch and render the document
 
-`admin.previewUrl` can be either:
+`admin.previewUrl` can be configured using:
 
-- a Jexl string evaluated against the document, usually the best default
-- a function that returns the URL from the document data
+- the `when` condition builder (or serializable JEXL string), which is the recommended default
+- a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+Prefer the `when` builder (`when.concat`, `when.then`, or `when.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
-`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+`admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
-For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+### Dynamic Preview Routing Examples
 
-```ts
-previewUrl: "slug == 'home' ? '/' : '/' + slug";
-```
-
-Here is a typical blog-style example using Jexl:
+For single-prefix collections, use `when.concat`:
 
 ```ts
 
@@ -42075,7 +42237,8 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
-    previewUrl: "'/blog/' + slug",
+    // Generates: '/blog/' + slug
+    previewUrl: when.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -42083,6 +42246,23 @@ export const Posts = defineCollection({
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
+```
+
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `when.then`:
+
+```ts
+// Routes 'home' to '/', and all other pages to '/slug'
+previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
+```
+
+For multi-branch category routing, use `when.match`:
+
+```ts
+previewUrl: when.match()
+  .case(when("slug").equals("home"), "/")
+  .case(when("category").equals("news"), when.concat("/news/", "slug"))
+  .case(when("category").equals("portal"), when.concat("/portals/", "slug"))
+  .otherwise(when.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:
@@ -43238,17 +43418,19 @@ Field rules are enforced in two places at once:
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) for the shared model, then use this page for the field-specific behavior.For self-hosted Dyrected, field access can also use function rules when a field decision needs local runtime code. Use Jexl strings when the same behavior should stay visible in the admin form.
 ## The shape
 
-Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use the `when` builder (or a serializable JEXL expression) for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
-{
-  name: 'internalNotes',
-  type: 'textarea',
+
+
+defineTextareaField({
+  name: "internalNotes",
+  label: "Internal Notes",
   access: {
-    read: "'admin' in user.roles",
-    update: "'admin' in user.roles",
+    read: when.access.isAdmin(),
+    update: when.access.isAdmin(),
   },
-}
+});
 ```
 
 Omit a rule (or set it to `true`) to leave the field fully available.<Note>
@@ -43957,9 +44139,11 @@ The first variant is the default. Like block slugs, keep variant slugs stable on
 
 ### Showing a field only for some variants
 
-Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Because the selected variant lives on the block row under the reserved `variant` key, any sibling field can read it in an `admin.condition`:
+Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Use the `when` builder to declare clean variant visibility in your field's `admin.condition`:
 
 ```ts
+
+
 defineBlock({
   slug: "testimonial",
   labels: { singular: "Testimonial", plural: "Testimonials" },
@@ -43973,13 +44157,13 @@ defineBlock({
       name: "avatar",
       label: "Avatar",
       relationTo: "media",
-      admin: { condition: "variant == 'card'" },
+      admin: { condition: when.variant("card") },
     }),
   ],
 });
 ```
 
-Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+Now the avatar picker appears only while the card variant is selected. The `when.variant("card")` condition generates a serializable expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can also match multiple variants with `when.variant("card", "split")` or everything except a variant with `when.notVariant("quote")`.
 
 <Note>
 Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.

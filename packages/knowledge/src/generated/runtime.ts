@@ -2810,8 +2810,8 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
   {
     "id": "model-content--content-rules--declarative-expressions",
     "relativePath": "model-content/content-rules/declarative-expressions",
-    "title": "Declarative Expressions & Helpers",
-    "description": "Learn how to write Cloud-safe Jexl expressions for field hooks, reactive form logic, and access control rules using Dyrected's built-in helper utility suite.",
+    "title": "Declarative Expressions & Conditions",
+    "description": "Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the when builder.",
     "runtime": "cloud",
     "runtimeGroup": "",
     "runtimeNotes": "",
