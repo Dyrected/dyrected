@@ -38,19 +38,19 @@ feature being implemented:
 - Documentation home: https://docs.dyrected.com
 - Cloud concise index: https://docs.dyrected.com/llms-cloud.txt
 - Self-hosted concise index: https://docs.dyrected.com/llms-self-hosted.txt
-- Existing-site agent workflow: https://docs.dyrected.com/docs/cloud/guides/ai-and-coding-agents/using-the-dyrected-prompt
-- Installation: https://docs.dyrected.com/docs/cloud/start-here/installation
-- CLI and schema synchronization: https://docs.dyrected.com/docs/cloud/reference/cli
-- Configuration: https://docs.dyrected.com/docs/cloud/model-content/configuration/overview
-- Collections: https://docs.dyrected.com/docs/cloud/model-content/configuration/collections
-- Globals: https://docs.dyrected.com/docs/cloud/model-content/configuration/globals
-- Fields: https://docs.dyrected.com/docs/cloud/model-content/fields/overview
-- Rich text: https://docs.dyrected.com/docs/cloud/model-content/fields/rich-text
-- Blocks: https://docs.dyrected.com/docs/cloud/model-content/fields/blocks
-- Admin: https://docs.dyrected.com/docs/cloud/editor-experience/overview
-- Preview: https://docs.dyrected.com/docs/cloud/editor-experience/preview
-- Storage adapters: https://docs.dyrected.com/docs/cloud/model-content/media/storage-adapters
-- SDK: https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/overview
+- Existing-site agent workflow: https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt
+- Installation: https://docs.dyrected.com/docs/start-here/installation
+- CLI and schema synchronization: https://docs.dyrected.com/docs/reference/cli
+- Configuration: https://docs.dyrected.com/docs/model-content/configuration/overview
+- Collections: https://docs.dyrected.com/docs/model-content/configuration/collections
+- Globals: https://docs.dyrected.com/docs/model-content/configuration/globals
+- Fields: https://docs.dyrected.com/docs/model-content/fields/overview
+- Rich text: https://docs.dyrected.com/docs/model-content/fields/rich-text
+- Blocks: https://docs.dyrected.com/docs/model-content/fields/blocks
+- Admin: https://docs.dyrected.com/docs/editor-experience/overview
+- Preview: https://docs.dyrected.com/docs/editor-experience/preview
+- Storage adapters: https://docs.dyrected.com/docs/model-content/media/storage-adapters
+- SDK: https://docs.dyrected.com/docs/deliver-content/sdk-api/overview
 
 Read the installed package version, public exports, and TypeScript types before
 using a Dyrected API. If the docs and installed package differ, explain the
@@ -157,8 +157,9 @@ structured editable content.
 - Use a small explicit adapter when Dyrected data shapes differ from existing
   component props.
 - Keep state, event handlers, calculations, validation behaviour,
-  authentication, submissions, dashboards, analytics, and user data in
-  application code unless explicitly approved.
+  authentication, dashboards, analytics, and private user data in
+  application code unless explicitly approved (incoming form submissions,
+  leads, and contact requests may be stored in an approved collection).
 - Pass only serializable data across server/client boundaries. Resolve icons,
   components, functions, classes, and other executable values inside the
   appropriate code boundary.
@@ -237,8 +238,10 @@ real frontend.
   be the only enforcement layer.
 - Enforce access and validation on the server. Admin visibility is not
   authorization.
-- Use serializable Jexl conditions, hooks, access rules, and preview expressions
-  when configuration must synchronize with Dyrected Cloud.
+- Use the type-safe `when` condition builder (or serializable Jexl strings) for
+  `admin.condition`, `admin.previewUrl`, `access.*`, and `admin.hooks.onChange`
+  when configuration synchronizes with Dyrected Cloud. JavaScript/TypeScript
+  functions are supported in self-hosted runtimes only.
 - Keep API keys, database credentials, encryption keys, and storage credentials
   out of browser code.
 - Use `relationship` for a stored owning reference and `join` for a virtual
@@ -778,10 +781,10 @@ Do not leave CMS-powered routes permanently stale.
 
 References:
 
-- https://docs.dyrected.com/docs/cloud/editor-experience/preview
-- https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview
-- https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/frontend
-- https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/client-side
+- https://docs.dyrected.com/docs/editor-experience/preview
+- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/overview
+- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/frontend
+- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/client-side
 
 ## Links, Media, and Rich Content
 

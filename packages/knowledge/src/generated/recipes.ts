@@ -621,7 +621,7 @@ export const recipes: readonly Recipe[] = [
       "/docs/editor-experience/publishing/live-preview/overview"
     ],
     "requires": [],
-    "source": "import { defineCollection, defineTextField, when } from \"@dyrected/core\";\n\nexport const Docs = defineCollection({\n  slug: \"docs\",\n  admin: {\n    useAsTitle: \"title\",\n    previewUrl: when.then(when.fieldNotEmpty(\"slug\"), when.concat(\"/docs/\", \"slug\"), null),\n    previewMode: \"postMessage\",\n    urlPattern: \"/docs/{slug}\",\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});",
+    "source": "import { defineCollection, defineTextField, when } from \"@dyrected/core\";\n\nexport const Docs = defineCollection({\n  slug: \"docs\",\n  admin: {\n    useAsTitle: \"title\",\n    previewUrl: when.then(\"slug\", when.concat(\"/docs/\", \"slug\"), null),\n    previewMode: \"postMessage\",\n    urlPattern: \"/docs/{slug}\",\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/preview-url-token-mode",
     "snippetStatus": "validated"
   },

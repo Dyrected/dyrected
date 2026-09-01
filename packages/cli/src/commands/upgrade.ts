@@ -3,6 +3,7 @@ import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
 import { execFileSync } from "child_process";
+import { buildAiRules } from "@dyrected/knowledge";
 import { detectPackageManager } from "../utils/detect.js";
 
 type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
@@ -298,6 +299,16 @@ export function registerUpgrade(program: Command) {
       try {
         for (const workspacePackage of packages) {
           await upgradePackage(workspacePackage, packageManager, latestVersions);
+
+          try {
+            const aiRulesPath = path.resolve(workspacePackage.cwd, ".dyrected/ai-rules.md");
+            await fs.outputFile(aiRulesPath, buildAiRules());
+            console.log(
+              chalk.green(
+                `✔  Updated AI rules in ${path.relative(cwd, aiRulesPath) || ".dyrected/ai-rules.md"}`,
+              ),
+            );
+          } catch {}
         }
         console.log(
           chalk.green(

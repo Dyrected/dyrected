@@ -25,8 +25,10 @@ rules, generated package facts, and behavior-tested recipes.
   be the only enforcement layer.
 - Enforce access and validation on the server. Admin visibility is not
   authorization.
-- Use serializable Jexl conditions, hooks, access rules, and preview expressions
-  when configuration must synchronize with Dyrected Cloud.
+- Use the type-safe `when` condition builder (or serializable Jexl strings) for
+  `admin.condition`, `admin.previewUrl`, `access.*`, and `admin.hooks.onChange`
+  when configuration synchronizes with Dyrected Cloud. JavaScript/TypeScript
+  functions are supported in self-hosted runtimes only.
 - Keep API keys, database credentials, encryption keys, and storage credentials
   out of browser code.
 - Use `relationship` for a stored owning reference and `join` for a virtual

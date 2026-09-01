@@ -39,7 +39,7 @@ export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: when.then(when.fieldNotEmpty("slug"), when.concat("/docs/", "slug"), null),
+    previewUrl: when.then("slug", when.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
