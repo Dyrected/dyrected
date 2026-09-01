@@ -21,6 +21,7 @@ import type {
   LifecycleEvent,
   AggregateInput,
   InferAggregateResult,
+  when,
 } from "@dyrected/core";
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
@@ -41,7 +42,7 @@ type SchemaResponse = {
   };
 };
 
-
+export { when };
 export type {
   PaginatedResult,
   Media,

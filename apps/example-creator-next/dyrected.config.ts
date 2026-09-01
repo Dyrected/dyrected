@@ -1155,7 +1155,9 @@ const GuestResponses = defineCollection({
       label: "Asoebi Fulfillment",
       icon: "Shirt",
       layout: "kanban",
-      filter: { asoebi: { equals: true } },
+      filter: {
+        OR: [{ asoebi: { equals: true } }, { asoebiSize: { in: ["M", "L", "XL", "XXL"] } }],
+      },
       groupBy: "asoebiStatus",
       columns: ["name", "asoebiSize", "asoebiQuantity"],
       actions: [markPaidAction, markCollectedAction],

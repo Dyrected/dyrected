@@ -10,8 +10,8 @@ export { DyrectedProvider, useDyrected, useLivePreview } from "@dyrected/react";
 export { DyrectedIcon, DyrectedRichText } from "@dyrected/react";
 export type { DyrectedIconProps, DyrectedRichTextProps } from "@dyrected/react";
 // Live-preview click-to-edit helpers
-export { Blocks, DyPathProvider, useDyPath } from "@dyrected/react";
-export type { BlocksProps, BlocksItem } from "@dyrected/react";
+export { Blocks, DyPathProvider, useDyPath, useDyPathHelper } from "@dyrected/react";
+export type { BlocksProps, BlocksItem, DyPathFn } from "@dyrected/react";
 export type { DyrectedImageProps, DyrectedMediaProps } from "@dyrected/react";
 export type {
   DyrectedAdminProps,

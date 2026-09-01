@@ -12,7 +12,10 @@ import {
 import { JoinField } from "./fields/join-field"
 import { cn } from "../../lib/utils"
 import jexl from 'jexl'
+import { registerJexlHelpers } from "@dyrected/core"
 import type { Field as FieldSchema } from "@dyrected/sdk"
+
+registerJexlHelpers(jexl)
 import { joinFieldPath } from "../../controllers/form"
 import { FieldRenderer } from "./field-renderer"
 import { BlockBuilder } from "./fields/block-builder"
@@ -112,6 +115,23 @@ function FormValidationFieldShell({
   )
 }
 
+function getAncestorData(formValues: unknown, basePath?: string): Record<string, unknown>[] {
+  if (!basePath || typeof formValues !== "object" || !formValues) return []
+  const parts = basePath.split(".")
+  const ancestors: Record<string, unknown>[] = []
+  let curr: any = formValues
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i]
+    if (curr && typeof curr === "object") {
+      curr = curr[part]
+      if (curr && typeof curr === "object" && !Array.isArray(curr)) {
+        ancestors.push(curr)
+      }
+    }
+  }
+  return ancestors
+}
+
 /**
  * FormFieldRenderer (Field Orchestrator)
  * 
@@ -128,18 +148,54 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
 
   const formValues = useWatch({ control })
   const siblingData = useWatch({ control, name: (basePath || undefined) as string }) || {}
-  const conditionData = basePath
-    ? { ...formValues, ...siblingData, ...(documentId ? { id: documentId } : {}) }
-    : { ...formValues, ...(documentId ? { id: documentId } : {}) }
+  const ancestors = React.useMemo(() => getAncestorData(formValues, basePath), [formValues, basePath])
+  const ancestorMerged = React.useMemo(() => Object.assign({}, ...ancestors), [ancestors])
+
+  const resolvedVariant =
+    (siblingData as Record<string, unknown>)?._variant ??
+    (siblingData as Record<string, unknown>)?.variant ??
+    ancestorMerged?._variant ??
+    ancestorMerged?.variant ??
+    formValues?._variant ??
+    formValues?.variant
+
+  const resolvedBlock =
+    (siblingData as Record<string, unknown>)?._block ??
+    (siblingData as Record<string, unknown>)?.block ??
+    ancestorMerged?._block ??
+    ancestorMerged?.block ??
+    formValues?._block ??
+    formValues?.block
+
+  const normalizedSiblingData = React.useMemo(() => ({
+    ...siblingData,
+    ...(resolvedVariant !== undefined ? { variant: resolvedVariant, _variant: resolvedVariant } : {}),
+    ...(resolvedBlock !== undefined ? { block: resolvedBlock, _block: resolvedBlock } : {}),
+  }), [siblingData, resolvedVariant, resolvedBlock])
+
+  const conditionData = React.useMemo(() => {
+    return basePath
+      ? { ...formValues, ...ancestorMerged, ...normalizedSiblingData, ...(documentId ? { id: documentId } : {}) }
+      : { ...formValues, ...(documentId ? { id: documentId } : {}) }
+  }, [basePath, formValues, ancestorMerged, normalizedSiblingData, documentId])
+
   const conditionContext = React.useMemo(
     () => ({
       ...conditionData,
-      data: formValues,
-      siblingData,
+      data: {
+        ...formValues,
+        ...(resolvedVariant !== undefined ? { variant: resolvedVariant, _variant: resolvedVariant } : {}),
+        ...(resolvedBlock !== undefined ? { block: resolvedBlock, _block: resolvedBlock } : {}),
+      },
+      siblingData: normalizedSiblingData,
+      parentData: ancestorMerged,
+      blockData: ancestors[0] || normalizedSiblingData,
+      ...(resolvedVariant !== undefined ? { variant: resolvedVariant, _variant: resolvedVariant } : {}),
+      ...(resolvedBlock !== undefined ? { block: resolvedBlock, _block: resolvedBlock } : {}),
       user,
       ...(documentId ? { id: documentId } : {}),
     }),
-    [conditionData, documentId, formValues, siblingData, user],
+    [conditionData, formValues, normalizedSiblingData, ancestorMerged, ancestors, resolvedVariant, resolvedBlock, user, documentId],
   )
 
   const condition = schema.admin?.condition
@@ -274,7 +330,36 @@ function FormFieldRendererInner({
 
   const formValues = useWatch({ control })
   const siblingData = useWatch({ control, name: (basePath || undefined) as string }) || {}
-  const conditionData = basePath ? { ...formValues, ...siblingData } : formValues
+  const ancestors = React.useMemo(() => getAncestorData(formValues, basePath), [formValues, basePath])
+  const ancestorMerged = React.useMemo(() => Object.assign({}, ...ancestors), [ancestors])
+
+  const resolvedVariant =
+    (siblingData as Record<string, unknown>)?._variant ??
+    (siblingData as Record<string, unknown>)?.variant ??
+    ancestorMerged?._variant ??
+    ancestorMerged?.variant ??
+    formValues?._variant ??
+    formValues?.variant
+
+  const resolvedBlock =
+    (siblingData as Record<string, unknown>)?._block ??
+    (siblingData as Record<string, unknown>)?.block ??
+    ancestorMerged?._block ??
+    ancestorMerged?.block ??
+    formValues?._block ??
+    formValues?.block
+
+  const normalizedSiblingData = React.useMemo(() => ({
+    ...siblingData,
+    ...(resolvedVariant !== undefined ? { variant: resolvedVariant, _variant: resolvedVariant } : {}),
+    ...(resolvedBlock !== undefined ? { block: resolvedBlock, _block: resolvedBlock } : {}),
+  }), [siblingData, resolvedVariant, resolvedBlock])
+
+  const conditionData = React.useMemo(() => {
+    return basePath
+      ? { ...formValues, ...ancestorMerged, ...normalizedSiblingData, ...(documentId ? { id: documentId } : {}) }
+      : { ...formValues, ...(documentId ? { id: documentId } : {}) }
+  }, [basePath, formValues, ancestorMerged, normalizedSiblingData, documentId])
 
   // Password fields should be hidden completely if the user does not have update access
   if (schema.name === "password" && !canUpdate) {
