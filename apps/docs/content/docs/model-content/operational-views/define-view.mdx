@@ -45,6 +45,30 @@ export const attendingGuests = defineView({
 
 Dyrected synthesizes a table with search, sorting, and faceted filters. Layout defaults to `table` if you omit it.
 
+### Compound filters with `OR` and `AND`
+
+To create specialized views matching multiple conditions or alternative criteria, use compound `OR` or `AND` clauses in your `filter`:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const pendingLogistics = defineView({
+  slug: "pending-logistics",
+  label: "Pending Logistics",
+  icon: "Package",
+  layout: "table",
+  filter: {
+    OR: [
+      { asoebiPaymentStatus: { equals: "pending" } },
+      { asoebiOrderStatus: { equals: "unfulfilled" } },
+    ],
+  },
+  columns: ["name", "asoebiPaymentStatus", "asoebiOrderStatus", "asoebiAmountPaid"],
+});
+```
+
+Logical operators are case-insensitive (`OR` / `or`, `AND` / `and`) and can be combined with field-level filters.
+
 ## Kanban board view
 
 Kanban views require a `groupBy` field to determine which field values represent the board's columns:

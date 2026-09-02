@@ -47,7 +47,7 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal. When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 import { defineAction, defineNumberField, defineTextField } from "@dyrected/core";
@@ -55,13 +55,14 @@ import { defineAction, defineNumberField, defineTextField } from "@dyrected/core
 export const assignTableAction = defineAction({
   name: "assignTable",
   label: "Assign Table",
+  submitLabel: "Save Seating", // Customizes modal button (defaults to "Run")
   icon: "Table2",
   type: "row",
   fields: [
     defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
-    defineTextField({ name: "notes", label: "Seating Notes" }),
+    defineTextField({ name: "seatingNotes", label: "Seating Notes" }),
   ],
-  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.seatingNotes" },
 });
 ```
 
@@ -77,6 +78,7 @@ import { defineAction } from "@dyrected/core";
 export const markSelectedPaidAction = defineAction({
   name: "markSelectedPaid",
   label: "Mark Paid",
+  submitLabel: "Confirm Payment",
   type: "bulk",
   mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
 });
@@ -84,6 +86,7 @@ export const markSelectedPaidAction = defineAction({
 export const sendReminderAction = defineAction({
   name: "sendReminder",
   label: "Send Reminders",
+  submitLabel: "Send Message",
   icon: "BellRing",
   type: "header",
   confirm: "Send a payment reminder to all guests with pending requests?",
@@ -103,6 +106,7 @@ import { defineAction } from "@dyrected/core";
 export const chargeGuestAction = defineAction({
   name: "chargeGuest",
   label: "Charge Outfit",
+  submitLabel: "Process Charge",
   icon: "CreditCard",
   type: "row",
   handler: async ({ doc, input }) => {
@@ -125,10 +129,11 @@ The data returned from `handler` automatically merges into the document through 
 | --- | --- | --- |
 | `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
 | `label` | `string` **required** | Button text displayed to editors. |
+| `submitLabel` | `string` | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
 | `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
 | `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
+| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document. |
 | `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
 | `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
 
