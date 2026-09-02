@@ -765,6 +765,20 @@
   {
     "id": "/deployment-and-operations/infrastructure/database/migrations#example-3",
     "page": "/deployment-and-operations/infrastructure/database/migrations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/database/migrations#example-4",
+    "page": "/deployment-and-operations/infrastructure/database/migrations",
+    "language": "sql",
+    "classification": "syntax-checked",
+    "validation": "Inventoried sql example"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/database/migrations#example-5",
+    "page": "/deployment-and-operations/infrastructure/database/migrations",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
@@ -5580,6 +5594,20 @@
   },
   {
     "id": "/model-content/operational-views/define-view#example-5",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-6",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-7",
     "page": "/model-content/operational-views/define-view",
     "language": "ts",
     "classification": "illustrative",

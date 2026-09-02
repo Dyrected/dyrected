@@ -112,6 +112,30 @@ export const tastingSchedule = defineView({
 });
 ```
 
+## Adding view-specific component slots
+
+If you want a custom widget, header banner, or toolbar extension on a **specific view** rather than across the whole collection, declare `components` directly inside `defineView`:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+  components: {
+    beforeViewHeader: ["fulfillment-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["fulfillment-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order: collection banners render first, followed by view-specific extensions.
+
 ## Setting a default view
 
 To make a view the default landing page for a collection, set `defaultView` on the collection config pointing to the view's `slug`:
@@ -153,7 +177,7 @@ All options are optional except `slug` and `label`:
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
 | `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
-| `filter` | `Record<string, unknown> \| string` | Base filter applied before toolbar filters. Object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
+| `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
 | `startDateField` / `endDateField` | `string` | Start and end dates for timeline bars. | Required for `"gantt"` |
@@ -163,6 +187,7 @@ All options are optional except `slug` and `label`:
 | `features` | `ViewActionFeatures` | Toggles for built-in buttons: `view`, `edit`, `duplicate`, `delete`, `exportSelected`. | To hide built-ins (e.g. `delete: false`) |
 | `actionOrder` | `string[]` | Explicit button order mixing custom action names and built-in verbs. | When button order conveys workflow priority |
 | `metrics` | `ViewMetric[]` | KPI summary cards displayed above the view. See [Metrics](/docs/model-content/operational-views/metrics). | For high-level aggregations and counts |
+| `components` | `ViewComponentSlots` | Custom component slots rendered around this operational view (`beforeViewHeader`, `afterViewHeader`, `beforeViewContent`, `afterViewContent`). | When you need custom widgets scoped to this view only |
 | `access` | `AccessConfig` | Role-based permissions controlling who can see or act on this view. | When a view is role-restricted |
 
 ## Defaults and fallbacks

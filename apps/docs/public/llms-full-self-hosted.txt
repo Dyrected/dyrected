@@ -2674,13 +2674,57 @@ Keep `renameTo` until you've confirmed every production document has been writte
 
 ## Defaults and backfilling
 
-`defaultValue` fills in a value when a document doesn't have one, which makes it the natural partner to a rename and a safe way to introduce a new required field:
+`defaultValue` ensures documents always have a value when a field is omitted. When creating new documents via the SDK, API, or admin forms, Dyrected applies the `defaultValue` automatically before writing to the database:
 
 ```ts
-defineSelectField({ name: 'status', label: 'Status', options: ['draft', 'published'], defaultValue: 'draft' })
+defineSelectField({
+  name: 'status',
+  label: 'Status',
+  options: ['pending', 'active', 'archived'],
+  defaultValue: 'pending',
+})
 ```
 
-Some field types also fall back to a sensible empty value when nothing is set — booleans default to `false` and array fields default to an empty list — so existing documents read predictably even before they're rewritten.
+Some field types also fall back to sensible empty defaults when omitted — booleans default to `false` and array fields default to an empty list.
+
+### Backfilling defaults on existing collections
+
+When you add a new `defaultValue` to an existing collection that already contains historical records, a subtle schema/data drift occurs:
+
+1. **In-memory reads** surface the default value when loading documents.
+2. **Database grouping and filtering** (such as operational view Kanban columns, grouped tables, or raw SQL queries) query the physical database directly, where historical rows still store `NULL`. Consequently, historical records may appear in an "Unassigned" bucket rather than their expected default status column.
+
+To align historical records with your new default, run a one-time backfill migration:
+
+```ts
+// scripts/backfill-status-defaults.ts
+
+
+async function main() {
+  const { docs } = await client.collection("orders").find({
+    where: { status: { equals: null } },
+    limit: 1000,
+  });
+
+  for (const doc of docs) {
+    await client.collection("orders").update(doc.id, {
+      status: "pending",
+    });
+  }
+  console.log(`Backfilled status default on ${docs.length} orders.`);
+}
+
+main();
+```
+
+Or execute a direct SQL query against your database adapter:
+
+```sql
+-- PostgreSQL
+UPDATE collection_orders
+SET data = jsonb_set(data, '{status}', '"pending"')
+WHERE data->>'status' IS NULL;
+```
 
 ## Promoting a field on an existing collection
 
@@ -6519,6 +6563,13 @@ export const kanbanPipeline = defineView({
 ```
 
 When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order (collection banners render first, followed by view-specific widgets). Register the components under `components.collectionView` or `components.collectionList` in `<DyrectedAdmin />`.
+
+### Collection-wide vs. View-specific slots
+
+| Scope | Where to declare | Use case |
+| --- | --- | --- |
+| **Collection-wide** | `collection.admin.components` | Notices, banners, or actions that should appear across **all views** in this collection (e.g. an "Archived collection" banner). |
+| **View-specific** | `defineView({ components: { ... } })` | Widgets that **only make sense for a single view layout** (e.g. a Kanban legend, a Calendar date switcher). |
 
 
 ## What your component receives
@@ -21308,7 +21359,7 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal. When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 
@@ -21316,13 +21367,14 @@ If an action requires user input (like selecting a seat or entering notes), decl
 export const assignTableAction = defineAction({
   name: "assignTable",
   label: "Assign Table",
+  submitLabel: "Save Seating", // Customizes modal button (defaults to "Run")
   icon: "Table2",
   type: "row",
   fields: [
     defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
-    defineTextField({ name: "notes", label: "Seating Notes" }),
+    defineTextField({ name: "seatingNotes", label: "Seating Notes" }),
   ],
-  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.seatingNotes" },
 });
 ```
 
@@ -21338,6 +21390,7 @@ Define actions that operate across multiple selected documents or view-wide:
 export const markSelectedPaidAction = defineAction({
   name: "markSelectedPaid",
   label: "Mark Paid",
+  submitLabel: "Confirm Payment",
   type: "bulk",
   mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
 });
@@ -21345,6 +21398,7 @@ export const markSelectedPaidAction = defineAction({
 export const sendReminderAction = defineAction({
   name: "sendReminder",
   label: "Send Reminders",
+  submitLabel: "Send Message",
   icon: "BellRing",
   type: "header",
   confirm: "Send a payment reminder to all guests with pending requests?",
@@ -21360,6 +21414,7 @@ In self-hosted projects where Dyrected runs inside your Node.js server, you can 
 export const chargeGuestAction = defineAction({
   name: "chargeGuest",
   label: "Charge Outfit",
+  submitLabel: "Process Charge",
   icon: "CreditCard",
   type: "row",
   handler: async ({ doc, input }) => {
@@ -21373,20 +21428,18 @@ export const chargeGuestAction = defineAction({
 ```
 
 The data returned from `handler` automatically merges into the document through the collection's validation and hook pipeline.
-## Configuration options
-
-| Option | Type | Description |
-| --- | --- | --- |
-| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
-| `label` | `string` **required** | Button text displayed to editors. |
-| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
-| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
-| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
-| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. || Self-Hosted Option | Type | Description |
-| --- | --- | --- |
-| `handler` | `(ctx) => Promise<Partial<Doc>>` | Custom async TypeScript handler for server-side workflows and third-party API integration. |
+## Configuration options| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
+| `handler`     | `(ctx) => Promise<Partial<Doc>>`  | Custom async TypeScript handler for server-side workflows and third-party API integration.                                               |
 ## Button placement and ordering
 
 - **Row actions (`type: "row"`)**: Surface on table rows, kanban cards, calendar detail sheets, and gallery card tiles.
@@ -21394,6 +21447,7 @@ The data returned from `handler` automatically merges into the document through 
 - **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
 
 To customize the order and visibility of built-in vs custom buttons on a view:
+
 ```ts
 defineView({
   slug: "attending-guests",
@@ -21459,6 +21513,30 @@ export const attendingGuests = defineView({
 
 Dyrected synthesizes a table with search, sorting, and faceted filters. Layout defaults to `table` if you omit it.
 
+### Compound filters with `OR` and `AND`
+
+To create specialized views matching multiple conditions or alternative criteria, use compound `OR` or `AND` clauses in your `filter`:
+
+```ts
+
+
+export const pendingLogistics = defineView({
+  slug: "pending-logistics",
+  label: "Pending Logistics",
+  icon: "Package",
+  layout: "table",
+  filter: {
+    OR: [
+      { asoebiPaymentStatus: { equals: "pending" } },
+      { asoebiOrderStatus: { equals: "unfulfilled" } },
+    ],
+  },
+  columns: ["name", "asoebiPaymentStatus", "asoebiOrderStatus", "asoebiAmountPaid"],
+});
+```
+
+Logical operators are case-insensitive (`OR` / `or`, `AND` / `and`) and can be combined with field-level filters.
+
 ## Kanban board view
 
 Kanban views require a `groupBy` field to determine which field values represent the board's columns:
@@ -21502,6 +21580,30 @@ export const tastingSchedule = defineView({
 });
 ```
 
+## Adding view-specific component slots
+
+If you want a custom widget, header banner, or toolbar extension on a **specific view** rather than across the whole collection, declare `components` directly inside `defineView`:
+
+```ts
+
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+  components: {
+    beforeViewHeader: ["fulfillment-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["fulfillment-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order: collection banners render first, followed by view-specific extensions.
+
 ## Setting a default view
 
 To make a view the default landing page for a collection, set `defaultView` on the collection config pointing to the view's `slug`:
@@ -21543,7 +21645,7 @@ All options are optional except `slug` and `label`:
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
 | `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
-| `filter` | `Record<string, unknown> \| string` | Base filter applied before toolbar filters. Object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
+| `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
 | `startDateField` / `endDateField` | `string` | Start and end dates for timeline bars. | Required for `"gantt"` |
@@ -21553,6 +21655,7 @@ All options are optional except `slug` and `label`:
 | `features` | `ViewActionFeatures` | Toggles for built-in buttons: `view`, `edit`, `duplicate`, `delete`, `exportSelected`. | To hide built-ins (e.g. `delete: false`) |
 | `actionOrder` | `string[]` | Explicit button order mixing custom action names and built-in verbs. | When button order conveys workflow priority |
 | `metrics` | `ViewMetric[]` | KPI summary cards displayed above the view. See [Metrics](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/metrics). | For high-level aggregations and counts |
+| `components` | `ViewComponentSlots` | Custom component slots rendered around this operational view (`beforeViewHeader`, `afterViewHeader`, `beforeViewContent`, `afterViewContent`). | When you need custom widgets scoped to this view only |
 | `access` | `AccessConfig` | Role-based permissions controlling who can see or act on this view. | When a view is role-restricted |
 
 ## Defaults and fallbacks
@@ -22473,6 +22576,8 @@ You can inject custom React components into operational views using slot keys:
 - `afterViewHeader`: Injected between the header and metrics.
 - `beforeViewContent`: Injected above the active layout grid/table.
 - `afterViewContent`: Injected below the active layout.
+
+Slots can be declared collection-wide under `admin.components` (rendered across all views in that collection) or view-specifically inside `defineView({ components: { ... } })` (rendered on that single view only). When both are present, collection-wide slots render first. For registration details and slot props, see [List view components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view).
 
 ## Next steps
 

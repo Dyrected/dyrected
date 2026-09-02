@@ -125,23 +125,36 @@ The data returned from `handler` automatically merges into the document through 
 
 ## Configuration options
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
-| `label` | `string` **required** | Button text displayed to editors. |
-| `submitLabel` | `string` | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
-| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
-| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
-| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document. |
-| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
+<CloudOnly>
+
+| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
+
+</CloudOnly>
 
 <SelfHostedOnly>
 
-| Self-Hosted Option | Type | Description |
-| --- | --- | --- |
-| `handler` | `(ctx) => Promise<Partial<Doc>>` | Custom async TypeScript handler for server-side workflows and third-party API integration. |
+| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
+| `handler`     | `(ctx) => Promise<Partial<Doc>>`  | Custom async TypeScript handler for server-side workflows and third-party API integration.                                               |
 
 </SelfHostedOnly>
 
@@ -152,6 +165,7 @@ The data returned from `handler` automatically merges into the document through 
 - **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
 
 To customize the order and visibility of built-in vs custom buttons on a view:
+
 ```ts
 defineView({
   slug: "attending-guests",

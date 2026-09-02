@@ -93,6 +93,13 @@ export const kanbanPipeline = defineView({
 
 When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order (collection banners render first, followed by view-specific widgets). Register the components under `components.collectionView` or `components.collectionList` in `<DyrectedAdmin />`.
 
+### Collection-wide vs. View-specific slots
+
+| Scope | Where to declare | Use case |
+| --- | --- | --- |
+| **Collection-wide** | `collection.admin.components` | Notices, banners, or actions that should appear across **all views** in this collection (e.g. an "Archived collection" banner). |
+| **View-specific** | `defineView({ components: { ... } })` | Widgets that **only make sense for a single view layout** (e.g. a Kanban legend, a Calendar date switcher). |
+
 
 ## What your component receives
 
