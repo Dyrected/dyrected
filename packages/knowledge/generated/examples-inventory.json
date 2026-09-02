@@ -1528,6 +1528,13 @@
   {
     "id": "/editor-experience/custom-components/list-view#example-3",
     "page": "/editor-experience/custom-components/list-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/list-view#example-4",
+    "page": "/editor-experience/custom-components/list-view",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
@@ -3523,9 +3530,9 @@
   {
     "id": "/model-content/configuration/collections#example-6",
     "page": "/model-content/configuration/collections",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/model-content/configuration/collections#example-7",
@@ -3545,8 +3552,8 @@
     "id": "/model-content/configuration/collections#example-9",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/configuration/collections#example-10",
@@ -3557,6 +3564,13 @@
   },
   {
     "id": "/model-content/configuration/collections#example-11",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-12",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",

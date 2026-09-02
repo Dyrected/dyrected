@@ -57,7 +57,9 @@ export type WhereOperator =
 export type WhereClause = {
   [field: string]: WhereOperator | any;
   OR?: WhereClause[];
+  or?: WhereClause[];
   AND?: WhereClause[];
+  and?: WhereClause[];
 };
 
 /** Compile-time exhaustiveness guard. Any unhandled operator becomes a type error. */

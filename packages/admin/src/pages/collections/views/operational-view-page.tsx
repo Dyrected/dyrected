@@ -203,7 +203,16 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   }
 
   const renderSlot = (slot: string) => {
-    const viewKeys = (collectionViewComponents as any)?.[slot] as string[] | undefined
+    const collectionDirectKeys = (schema.admin as any)?.components?.[slot] as string[] | undefined
+    const collectionViewKeys = (collectionViewComponents as any)?.[slot] as string[] | undefined
+    const viewKeys = (view as any)?.components?.[slot] as string[] | undefined
+
+    const mergedViewKeys = [
+      ...(collectionViewKeys ?? []),
+      ...(collectionDirectKeys ?? []),
+      ...(viewKeys ?? []),
+    ]
+
     const legacyKeys = getLegacyKeysForSlot(slot)
     return (
       <>
@@ -212,13 +221,12 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
             slot={`collectionView.${slot}__legacy`}
             componentKeys={legacyKeys}
             registry={legacyRegistry}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             componentProps={legacySlotProps as any}
           />
         ) : null}
         <AdminComponentSlot
           slot={`collectionView.${slot}`}
-          componentKeys={viewKeys}
+          componentKeys={mergedViewKeys.length ? mergedViewKeys : undefined}
           registry={slotRegistry}
           componentProps={slotProps}
         />

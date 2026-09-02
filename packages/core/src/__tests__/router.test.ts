@@ -34,6 +34,10 @@ describe("Dynamic Router", async () => {
               duplicate: false,
             },
             actionOrder: ["view"],
+            components: {
+              beforeViewHeader: ["custom-header-banner"],
+              afterViewContent: ["custom-footer-stats"],
+            },
           }),
         ],
         fields: [
@@ -77,6 +81,10 @@ describe("Dynamic Router", async () => {
         duplicate: false,
       },
       actionOrder: ["view"],
+      components: {
+        beforeViewHeader: ["custom-header-banner"],
+        afterViewContent: ["custom-footer-stats"],
+      },
     });
     expect(data.globals[0].slug).toBe("settings");
     expect(data.globals[0].admin.icon).toBe("Settings2");

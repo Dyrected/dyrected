@@ -13,6 +13,7 @@ interface ActionConfirmDialogProps {
   open: boolean
   label: string
   confirm?: string
+  submitLabel?: string
   isRunning: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -22,7 +23,7 @@ interface ActionConfirmDialogProps {
  * Confirmation modal shown when an action declares `confirm`.
  * Confirming runs the action immediately.
  */
-export function ActionConfirmDialog({ open, label, confirm, isRunning, onConfirm, onCancel }: ActionConfirmDialogProps) {
+export function ActionConfirmDialog({ open, label, confirm, submitLabel, isRunning, onConfirm, onCancel }: ActionConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? onCancel() : undefined)}>
       <DialogContent className="dy-sm:max-w-md">
@@ -36,7 +37,7 @@ export function ActionConfirmDialog({ open, label, confirm, isRunning, onConfirm
           </Button>
           <Button size="sm" onClick={onConfirm} disabled={isRunning}>
             {isRunning && <Loader2 className="dy-mr-1 dy-h-3.5 dy-w-3.5 dy-animate-spin" />}
-            Confirm
+            {submitLabel || "Confirm"}
           </Button>
         </DialogFooter>
       </DialogContent>

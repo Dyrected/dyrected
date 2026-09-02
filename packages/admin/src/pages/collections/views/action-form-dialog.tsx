@@ -18,6 +18,7 @@ interface ActionFormDialogProps {
   open: boolean
   label: string
   confirm?: string
+  submitLabel?: string
   fields?: any[]
   collection?: string
   schemas?: unknown
@@ -37,6 +38,7 @@ export function ActionFormDialog({
   open,
   label,
   confirm,
+  submitLabel,
   fields,
   collection = "",
   schemas,
@@ -54,14 +56,15 @@ export function ActionFormDialog({
           <DialogTitle>{label}</DialogTitle>
           {confirm && <DialogDescription>{confirm}</DialogDescription>}
         </DialogHeader>
-        {/* Keyed by the field set so each staged action starts a fresh draft. */}
+        {/* Keyed by the field set and doc id so each staged action starts with the targeted doc's current values. */}
         <ActionForm
-          key={formKey(fields)}
+          key={`${formKey(fields)}::${doc?.id ?? "new"}`}
           fields={fields}
           collection={collection}
           schemas={schemas}
           doc={doc}
           docs={docs}
+          submitLabel={submitLabel}
           isRunning={isRunning}
           onSubmit={onSubmit}
           onCancel={onCancel}
@@ -75,10 +78,14 @@ function formKey(fields?: any[]): string {
   return (fields ?? []).map((field) => field.name).join(",")
 }
 
-function buildDefaults(fields?: any[]): Record<string, unknown> {
+function buildDefaults(fields?: any[], doc?: Record<string, any>): Record<string, unknown> {
   const defaults: Record<string, unknown> = {}
   for (const field of fields ?? []) {
-    defaults[field.name] = field.defaultValue ?? (field.type === "boolean" ? false : "")
+    if (doc && doc[field.name] !== undefined && doc[field.name] !== null) {
+      defaults[field.name] = doc[field.name]
+    } else {
+      defaults[field.name] = field.defaultValue ?? (field.type === "boolean" ? false : "")
+    }
   }
   return defaults
 }
@@ -89,11 +96,12 @@ function ActionForm({
   schemas,
   doc,
   docs,
+  submitLabel,
   isRunning,
   onSubmit,
   onCancel,
-}: Pick<ActionFormDialogProps, "fields" | "collection" | "schemas" | "doc" | "docs" | "isRunning" | "onSubmit" | "onCancel">) {
-  const [values, setValues] = React.useState<Record<string, unknown>>(() => buildDefaults(fields))
+}: Pick<ActionFormDialogProps, "fields" | "collection" | "schemas" | "doc" | "docs" | "submitLabel" | "isRunning" | "onSubmit" | "onCancel">) {
+  const [values, setValues] = React.useState<Record<string, unknown>>(() => buildDefaults(fields, doc))
 
   const setValue = (name: string, value: unknown) => {
     setValues((prev) => ({ ...prev, [name]: value }))
@@ -125,7 +133,7 @@ function ActionForm({
         </Button>
         <Button type="submit" size="sm" disabled={isRunning}>
           {isRunning && <Loader2 className="dy-mr-1 dy-h-3.5 dy-w-3.5 dy-animate-spin" />}
-          Run
+          {submitLabel || "Run"}
         </Button>
       </DialogFooter>
     </form>

@@ -1,6 +1,13 @@
 import type { Field } from "./schema-core.js";
 import type { AccessRule } from "./access.js";
 import type { AggregateOperation } from "./aggregate.js";
+import type { CollectionViewComponentSlots } from "./admin.js";
+import type { WhereClause } from "../utils/parse-where.js";
+
+/**
+ * Custom component slots rendered around an operational view's content.
+ */
+export type ViewComponentSlots = CollectionViewComponentSlots;
 
 /**
  * Supported layout engines for operational views in the Dyrected Admin UI:
@@ -136,7 +143,7 @@ export interface ViewConfig {
   /** Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`. */
   layout?: ViewLayout;
   /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */
-  filter?: Record<string, any> | string;
+  filter?: WhereClause | string;
   /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */
   groupBy?: string;
   /** Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`. */
@@ -172,6 +179,8 @@ export interface ActionConfig<TDoc extends Record<string, unknown> = Record<stri
   name: string;
   /** Button label displayed in the UI. */
   label: string;
+  /** Optional custom label for the modal submit button (defaults to "Run" or "Confirm"). */
+  submitLabel?: string;
   /** Lucide icon name for the button (e.g. `"UserCheck"`, `"CheckCircle"`). */
   icon?: string;
   /** Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`. */
@@ -265,6 +274,8 @@ export interface DefineViewOptions {
   actionOrder?: string[];
   /** KPI summary cards rendered in the hero row above the view. */
   metrics?: ViewMetric[];
+  /** Custom component slots rendered around this operational view. */
+  components?: ViewComponentSlots;
   /** Role-based access rules controlling who can see or use this view. */
   access?: AccessConfig;
 }

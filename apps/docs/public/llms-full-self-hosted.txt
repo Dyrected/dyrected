@@ -6495,6 +6495,32 @@ The registry key is the slot-key name you declared (`"posts-header"`), not the c
   declared the same way on its `admin.components`.
 </Callout>
 
+## View-specific component slots (`defineView`)
+
+If a collection has multiple operational views (such as a Kanban pipeline, a Calendar schedule, and a standard Table), you might only want a custom widget on a **single view** rather than all of them.
+
+You can declare component slots directly inside [`defineView`](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/define-view):
+
+```ts
+
+
+export const kanbanPipeline = defineView({
+  slug: "pipeline",
+  label: "Pipeline",
+  layout: "kanban",
+  groupBy: "status",
+  components: {
+    beforeViewHeader: ["kanban-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["kanban-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order (collection banners render first, followed by view-specific widgets). Register the components under `components.collectionView` or `components.collectionList` in `<DyrectedAdmin />`.
+
+
 ## What your component receives
 
 List slot components get everything about the current list — the data, its loading and pagination state, the user's permissions, and links — so they can render summaries, actions, or context without re-fetching:
@@ -15955,9 +15981,31 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
+   * table or cards view navigates directly to the editing form with Live Preview.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array using display helpers (`displaySection`, `displayField`, `displayTabs`, etc.) for a
+   * custom operational dashboard layout.
+   *
+   * @default false
+   * @example
+   * ```ts
+   * // Enable automatic summary detail view
+   * detail: true
+   *
+   * // Or define a custom operational detail view
+   * detail: [
+   *   displaySection("Customer Overview", [
+   *     displayField("name", { span: 8 }),
+   *     displayField("status", { span: 4, display: "badge" }),
+   *   ]),
+   * ]
+   * ```
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 
   /**
    * Slug of the operational view to render by default when navigating to `/collections/:slug`.
@@ -16021,7 +16069,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, collections are **Edit-First** (&#96;detail: false&#96;). Clicking a record in the table or cards view navigates directly to the editing form with Live Preview.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array using display helpers (&#96;displaySection&#96;, &#96;displayField&#96;, &#96;displayTabs&#96;, etc.) for a custom operational dashboard layout. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
 
@@ -16510,9 +16558,17 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, globals are **Edit-First** (`detail: false`). Clicking the global in the
+   * sidebar navigates directly to the editing form.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array for a custom operational dashboard layout.
+   *
+   * @default false
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 }
 ```
 
@@ -16527,7 +16583,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, globals are **Edit-First** (&#96;detail: false&#96;). Clicking the global in the sidebar navigates directly to the editing form.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array for a custom operational dashboard layout. |
 
 
 ## Global options in practice

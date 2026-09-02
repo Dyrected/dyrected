@@ -545,6 +545,8 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
+    data = DefaultsService.apply(this.collection.fields, data);
+
     if (this.collection.workflow) {
       data = initializeWorkflowDocument(data, this.collection.workflow);
     }
