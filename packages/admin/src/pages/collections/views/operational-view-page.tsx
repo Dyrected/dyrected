@@ -173,7 +173,13 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   const legacyListComponents = schema.admin?.components as unknown as
     | { beforeList?: string[]; beforeListTable?: string[]; afterListTable?: string[]; afterList?: string[] }
     | undefined
-  const slotRegistry = components?.collectionView
+  const slotRegistry = useMemo(
+    () => ({
+      ...(components?.collectionList as any),
+      ...(components?.collectionView as any),
+    }),
+    [components?.collectionList, components?.collectionView],
+  )
   const legacyRegistry = components?.collectionList
 
   const getLegacyKeysForSlot = (slot: string): string[] | undefined => {
