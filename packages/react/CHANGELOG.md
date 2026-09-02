@@ -1,5 +1,20 @@
 # @dyrected/react
 
+## 2.10.1
+
+### Patch Changes
+
+- 2720377: - Added type-safe `when` declarative condition and expression builder to `@dyrected/sdk` and `@dyrected/core`.
+  - Added framework parity for `useDyPath()` and `useDyPathHelper()` in `@dyrected/vue` and auto-imported in `@dyrected/nuxt`.
+  - Enhanced CLI `upgrade` command to automatically refresh `.dyrected/ai-rules.md` with the latest canonical rules when upgrading packages.
+  - Added Marketing Site Page Builder Architecture, Array Field Object Shape Contract, and Type Synchronization Workflow to `@dyrected/knowledge` prompt templates and AI rules.
+  - Added `/docs/[...slug]` legacy catch-all redirect route in documentation.
+- Updated dependencies [558341d]
+- Updated dependencies [2720377]
+  - @dyrected/core@2.10.1
+  - @dyrected/admin@2.10.1
+  - @dyrected/sdk@2.10.1
+
 ## 2.10.0
 
 ### Patch Changes
