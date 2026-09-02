@@ -169,3 +169,25 @@ export function getSiteUrl(configuredSiteUrl?: string): string {
   }
   return configuredSiteUrl || (typeof window !== "undefined" ? window.location.origin : "");
 }
+
+/**
+ * Determines whether a collection or global schema has Detail View enabled.
+ *
+ * Detail views are opt-in (`false` by default). They are enabled when:
+ * - `detail: true` (automatic summary layout)
+ * - `detail: [...]` (custom array of display items)
+ * - `detail: { ... }` (custom detail layout object)
+ */
+export function hasDetailView(schema: any): boolean {
+  if (!schema || schema.detail === false || schema.detail === undefined || schema.detail === null) {
+    return false;
+  }
+  if (schema.detail === true) {
+    return true;
+  }
+  if (Array.isArray(schema.detail)) {
+    return schema.detail.length > 0;
+  }
+  return typeof schema.detail === "object";
+}
+
