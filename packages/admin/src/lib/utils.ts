@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
+import type { ImageTransformOptions } from "@dyrected/core";
 
 /**
  * tailwind-merge only understands Tailwind v4-style prefixed utilities
@@ -47,7 +48,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param baseUrl - The Dyrected backend base URL, used to build the origin for relative paths.
  * @returns A fully-qualified URL string, or `""` if the value cannot be resolved.
  */
-export function getMediaUrl(val: string | any, baseUrl: string) {
+export function getMediaUrl(val: string | any, baseUrl: string = "") {
   if (!val) {
     return "";
   }
@@ -136,6 +137,88 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
 
   // If it is a filename without a leading slash (like "default/Screenshot.jpg"), prepend "/media/"
   return prependBase(`/api/media/${targetUrl}`);
+}
+
+/**
+ * Injects dynamic Cloudinary transformation parameters into a Cloudinary asset URL.
+ */
+export function buildCloudinaryTransformUrl(url: string, options: ImageTransformOptions): string {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/image/upload/")) {
+    return url;
+  }
+  const parts: string[] = [];
+  if (options.width) parts.push(`w_${options.width}`);
+  if (options.height) parts.push(`h_${options.height}`);
+  if (options.aspectRatio) parts.push(`ar_${options.aspectRatio}`);
+  if (options.crop) {
+    const cropVal = options.crop === "cover" ? "fill" : options.crop === "contain" ? "fit" : options.crop;
+    parts.push(`c_${cropVal}`);
+  } else if (options.width || options.height) {
+    parts.push("c_fill");
+  }
+  if (options.focalPoint) {
+    parts.push("g_xy_center");
+    parts.push(`x_${Math.round(options.focalPoint.x * 100) / 100}`);
+    parts.push(`y_${Math.round(options.focalPoint.y * 100) / 100}`);
+  } else if (options.gravity) {
+    const grav = options.gravity === "focal" ? "auto:focal" : options.gravity;
+    parts.push(`g_${grav}`);
+  }
+  if (options.format) parts.push(`f_${options.format}`);
+  if (options.quality) parts.push(`q_${options.quality}`);
+  if (options.blur) parts.push(`e_blur:${options.blur}`);
+  if (options.rotate) parts.push(`a_${options.rotate}`);
+  if (options.dpr) parts.push(`dpr_${options.dpr}`);
+
+  if (parts.length === 0) return url;
+
+  const transformString = parts.join(",");
+  return url.replace("/image/upload/", `/image/upload/${transformString}/`);
+}
+
+/**
+ * Returns a media asset URL with dynamic transformations applied on the fly.
+ */
+export function getTransformedMediaUrl(
+  val: any,
+  transform?: string | ImageTransformOptions,
+  baseUrl?: string
+): string {
+  if (!val) return "";
+
+  // 1. If transform is a string preset name (e.g. 'thumbnail')
+  if (typeof transform === "string") {
+    // Check legacy doc.sizes first
+    if (typeof val === "object" && val !== null && val.sizes?.[transform]?.url) {
+      return val.sizes[transform].url;
+    }
+    transform = { key: transform };
+  }
+
+  const rawUrl = getMediaUrl(val, baseUrl);
+  if (!rawUrl) return "";
+
+  if (!transform) return rawUrl;
+
+  // Cloudinary direct URL transformation
+  if (rawUrl.includes("res.cloudinary.com") && rawUrl.includes("/image/upload/")) {
+    return buildCloudinaryTransformUrl(rawUrl, transform);
+  }
+
+  // API endpoint query parameter transformation
+  try {
+    const parsed = new URL(rawUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    if (transform.key) parsed.searchParams.set("key", transform.key);
+    if (transform.width) parsed.searchParams.set("width", String(transform.width));
+    if (transform.height) parsed.searchParams.set("height", String(transform.height));
+    if (transform.crop) parsed.searchParams.set("crop", transform.crop);
+    if (transform.format) parsed.searchParams.set("format", transform.format);
+    if (transform.quality) parsed.searchParams.set("quality", String(transform.quality));
+
+    return rawUrl.startsWith("http") ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return rawUrl;
+  }
 }
 
 /**

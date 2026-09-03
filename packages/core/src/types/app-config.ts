@@ -4,6 +4,7 @@ import type { AccessPolicyResolver } from "./access.js";
 import type {
   DatabaseAdapter,
   ImageService,
+  ImageTransformOptions,
   StorageAdapter,
 } from "./adapters.js";
 import type { AuthenticatedUser } from "./request.js";
@@ -163,6 +164,16 @@ export interface DyrectedConfig<
    * @see ImageService
    */
   image?: ImageService;
+
+  /**
+   * Media management, dynamic transformations, and transformation preset configurations.
+   */
+  media?: {
+    /** Whether to restrict dynamic transformations to registered preset keys in production. */
+    restrictTransforms?: boolean;
+    /** Named transformation presets available via `?key=name`. */
+    presets?: Record<string, ImageTransformOptions>;
+  };
 
   /**
    * Runtime logger configuration. Accepts either logger options/destination or
