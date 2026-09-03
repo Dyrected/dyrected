@@ -1,6 +1,5 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import React from "react"
 import { DyrectedProvider } from "../dyrected-provider"
 import { useDyrected } from "../dyrected-context"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"

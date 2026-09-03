@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { FileDown, FileUp, Loader2, Plus } from "lucide-react"
+import { useIsFetching, useQueryClient } from "@tanstack/react-query"
+import { FileDown, FileUp, Loader2, Plus, RefreshCw } from "lucide-react"
 
 import { Button } from "../../../components/ui/button"
 import { useDyrected } from "../../../providers/dyrected-context"
-import { getSiteUrl } from "../../../lib/utils"
+import { cn, getSiteUrl } from "../../../lib/utils"
 import { resolvePreviewUrl } from "../../../lib/preview-url"
 import { AdminComponentSlot } from "../../../components/admin-component-slot"
 import type { CollectionViewSlotProps } from "../../../types/admin-components"
@@ -53,6 +54,7 @@ export interface OperationalViewPageProps {
  */
 export function OperationalViewPage({ slug, schema, view, schemas }: OperationalViewPageProps) {
   const { client, components, user } = useDyrected()
+  const queryClient = useQueryClient()
   const authoredLayout = view.layout ?? "table"
 
   // Only tabular views can switch between table and spreadsheet.
@@ -68,6 +70,21 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   const customActions = useMemo(() => (view.actions ?? []) as SerializedAction[], [view.actions])
 
   const metrics = useViewMetrics({ slug, viewSlug: view.slug, metrics: view.metrics })
+  const isViewFetching = useIsFetching({ queryKey: ["operational-view", slug] }) > 0
+  const isMetricsFetching = useIsFetching({ queryKey: ["operational-view-metrics", slug] }) > 0
+  const isGroupsFetching = useIsFetching({ queryKey: ["table-group", slug] }) > 0
+  const isFetchingData = isViewFetching || isMetricsFetching || isGroupsFetching || metrics.isFetching
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["operational-view", slug] }),
+      queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] }),
+      queryClient.invalidateQueries({ queryKey: ["table-group", slug] }),
+      queryClient.invalidateQueries({ queryKey: ["table-group-distinct", slug] }),
+      queryClient.invalidateQueries({ queryKey: ["table-group-relations"] }),
+    ])
+  }, [queryClient, slug])
+
   const actionRunner = useViewActions({ slug, viewSlug: view.slug })
 
   const canCreate = useMemo(() => evaluateAccess(schema?.access?.create, user), [schema, user])
@@ -132,6 +149,13 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   const [isImportOpen, setIsImportOpen] = useState(false)
 
   const mobileMenuItems: HeaderMenuItem[] = [
+    {
+      key: "refresh",
+      label: isFetchingData ? "Refreshing data…" : "Refresh data",
+      icon: RefreshCw,
+      disabled: isFetchingData,
+      onSelect: () => void handleRefresh(),
+    },
     ...headerActions.map((action) => ({
       key: `header:${action.name}`,
       label: action.label,
@@ -264,6 +288,20 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         <div className="dy-flex dy-w-full dy-items-center dy-gap-2 sm:dy-w-auto sm:dy-justify-end">
           {isTabular && <ViewModeSwitcher mode={viewMode.mode} onChange={viewMode.setMode} />}
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleRefresh()}
+            disabled={isFetchingData}
+            className="dy-h-8 dy-gap-1.5 dy-px-2.5 dy-text-xs"
+            title="Refresh view data"
+          >
+            <RefreshCw className={cn("dy-h-3.5 dy-w-3.5", isFetchingData && "dy-animate-spin")} />
+            <span className="dy-hidden md:dy-inline">
+              {isFetchingData ? "Refreshing…" : "Refresh"}
+            </span>
+          </Button>
+
           {headerActions.length > 0 && (
             <div className="dy-hidden sm:dy-flex sm:dy-items-center sm:dy-gap-2">
               {headerActions.map((action) => {
@@ -324,7 +362,16 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
       {renderSlot("afterViewHeader")}
 
-      <MetricCards metrics={metrics.data ?? []} isLoading={metrics.isLoading} />
+      {(() => {
+        const metricsList = metrics.data ?? []
+        return (
+          <MetricCards
+            metrics={metricsList}
+            isLoading={metrics.isLoading && metricsList.length === 0}
+            isRefetching={isFetchingData && metricsList.length > 0}
+          />
+        )
+      })()}
 
       {renderSlot("beforeViewContent")}
 

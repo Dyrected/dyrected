@@ -1,9 +1,16 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { MemoryRouter } from "react-router-dom"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { OperationalViewPage } from "../operational-view-page"
 import type { SerializedView } from "../types"
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+  },
+})
 
 const useDyrectedMock = vi.fn()
 
@@ -125,14 +132,16 @@ describe("OperationalViewPage component slots", () => {
     })
 
     const { container } = render(
-      <MemoryRouter>
-        <OperationalViewPage
-          slug="deals"
-          schema={schema}
-          view={view}
-          schemas={{ collections: [schema], globals: [] }}
-        />
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <OperationalViewPage
+            slug="deals"
+            schema={schema}
+            view={view}
+            schemas={{ collections: [schema], globals: [] }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
     )
 
     expect(screen.getByTestId("view-top-banner")).toBeDefined()
@@ -190,14 +199,16 @@ describe("OperationalViewPage component slots", () => {
     })
 
     const { container } = render(
-      <MemoryRouter>
-        <OperationalViewPage
-          slug="guests"
-          schema={schema}
-          view={view}
-          schemas={{ collections: [schema], globals: [] }}
-        />
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <OperationalViewPage
+            slug="guests"
+            schema={schema}
+            view={view}
+            schemas={{ collections: [schema], globals: [] }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
     )
 
     expect(screen.getByTestId("collection-wide-banner")).toBeDefined()
@@ -207,5 +218,50 @@ describe("OperationalViewPage component slots", () => {
     expect(html.indexOf('data-testid="collection-wide-banner"')).toBeLessThan(
       html.indexOf('data-testid="view-specific-banner"'),
     )
+  })
+
+  it("renders a refresh button that invalidates view and metrics queries on click", async () => {
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries")
+
+    const view: SerializedView = {
+      slug: "all",
+      label: "All Guests",
+      layout: "table",
+    }
+
+    const schema = {
+      slug: "guests",
+      labels: { singular: "Guest", plural: "Guests" },
+      admin: {},
+      fields: [],
+    }
+
+    useDyrectedMock.mockReturnValue({
+      client: {},
+      user: { id: "u1" },
+      components: {},
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <OperationalViewPage
+            slug="guests"
+            schema={schema}
+            view={view}
+            schemas={{ collections: [schema], globals: [] }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const refreshBtn = screen.getByTitle("Refresh view data")
+    expect(refreshBtn).toBeDefined()
+    expect(refreshBtn.textContent).toContain("Refresh")
+
+    refreshBtn.click()
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["operational-view", "guests"] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["operational-view-metrics", "guests"] })
   })
 })
