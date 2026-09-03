@@ -1,5 +1,14 @@
 # @dyrected/admin
 
+## 2.12.0
+
+### Patch Changes
+
+- Updated dependencies [cdc2abe]
+  - @dyrected/core@2.12.0
+  - @dyrected/knowledge@0.4.2
+  - @dyrected/sdk@2.12.0
+
 ## 2.11.0
 
 ### Minor Changes
