@@ -3,7 +3,7 @@ import {
   defineNumberField,
   defineSelectField,
   defineTextField,
-  when,
+  expr,
 } from "@dyrected/core";
 
 export const Invoices = defineCollection({
@@ -21,9 +21,9 @@ export const Invoices = defineCollection({
       required: true,
       admin: {
         hooks: {
-          onChange: when.then(
-            when.fieldEmpty("value"),
-            when.slugify("siblingData.title"),
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.slugify("siblingData.title"),
             "value"
           ),
         },
@@ -47,10 +47,10 @@ export const Invoices = defineCollection({
       admin: {
         readOnly: true,
         hooks: {
-          onChange: when.match()
-            .case(when.sibling("planTier").equals("trial"), 0)
-            .case(when.sibling("planTier").equals("standard"), 25000)
-            .case(when.sibling("planTier").equals("enterprise"), 100000)
+          onChange: expr.match()
+            .case(expr.sibling("planTier").equals("trial"), 0)
+            .case(expr.sibling("planTier").equals("standard"), 25000)
+            .case(expr.sibling("planTier").equals("enterprise"), 100000)
             .otherwise(25000),
         },
       },
@@ -62,11 +62,11 @@ export const Invoices = defineCollection({
       admin: {
         readOnly: true,
         hooks: {
-          onChange: when.concat(
+          onChange: expr.concat(
             "INV-",
-            when.upper("siblingData.planTier"),
+            expr.upper("siblingData.planTier"),
             "-",
-            when.slugify("siblingData.title")
+            expr.slugify("siblingData.title")
           ),
         },
       },

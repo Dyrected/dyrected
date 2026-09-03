@@ -1,4 +1,4 @@
-import { defineCollection, defineNumberField, defineTextField, when } from "@dyrected/core";
+import { defineCollection, defineNumberField, defineTextField, expr } from "@dyrected/core";
 
 export const Orders = defineCollection({
   slug: "orders",
@@ -7,7 +7,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: when.fieldNotEmpty("couponCode") },
+      admin: { condition: expr.notEmpty("couponCode") },
     }),
   ],
 });

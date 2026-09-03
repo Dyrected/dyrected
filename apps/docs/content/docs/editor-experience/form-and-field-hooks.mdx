@@ -228,12 +228,12 @@ This is the right API for:
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
 
-## Declarative Field Transforms & `when` Helpers
+## Declarative Field Transforms & `expr` Builder
 
-For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `when` builder:
+For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `expr` expression builder:
 
 ```typescript
-import { defineTextField, when } from "@dyrected/sdk";
+import { defineTextField, expr } from "@dyrected/sdk";
 
 defineTextField({
   name: "slug",
@@ -241,9 +241,9 @@ defineTextField({
   admin: {
     hooks: {
       // Auto-generates slug from title when empty
-      onChange: when.then(
-        when.fieldEmpty("value"),
-        when.slugify("siblingData.title"),
+      onChange: expr.ifElse(
+        expr.empty("value"),
+        expr.slugify("siblingData.title"),
         "value"
       ),
     },
@@ -253,12 +253,12 @@ defineTextField({
 
 ### Global JEXL Runtime Functions
 
-The `when` builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
+The `expr` expression builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
 
 ### String Helpers
-- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `when.slugify(field)`.
-- `lower(str)` / `upper(str)`: Converts string casing. Available via `when.lower(field)` and `when.upper(field)`.
-- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `when.trim(field)`.
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `expr.slugify(field)`.
+- `lower(str)` / `upper(str)`: Converts string casing. Available via `expr.lower(field)` and `expr.upper(field)`.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `expr.trim(field)`.
 - `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
 - `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
 - `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.

@@ -135,6 +135,13 @@ export class FieldConditionBuilder {
   }
 
   /**
+   * Alias for `isEmpty()`.
+   */
+  empty(): string {
+    return this.isEmpty();
+  }
+
+  /**
    * Numerical greater than (`field > num`).
    */
   greaterThan(num: number | string): string {
@@ -203,6 +210,34 @@ export class FieldConditionBuilder {
   hasLengthAtLeast(length: number): string {
     return `length(${this.field}) >= ${length}`;
   }
+
+  /**
+   * Generates a JEXL `slugify(field)` transform expression.
+   */
+  slugify(): string {
+    return `slugify(${this.field})`;
+  }
+
+  /**
+   * Generates a JEXL `lower(field)` transform expression.
+   */
+  lower(): string {
+    return `lower(${this.field})`;
+  }
+
+  /**
+   * Generates a JEXL `upper(field)` transform expression.
+   */
+  upper(): string {
+    return `upper(${this.field})`;
+  }
+
+  /**
+   * Generates a JEXL `trim(field)` transform expression.
+   */
+  trim(): string {
+    return `trim(${this.field})`;
+  }
 }
 
 /**
@@ -247,25 +282,29 @@ export interface AccessConditions {
  * Condition builder utilities for serializable JEXL expressions in `admin.condition`,
  * access control rules, computed fields, and dynamic `admin.previewUrl`.
  */
-export interface WhenFunction {
+/**
+ * Expression builder utilities for serializable JEXL expressions in `admin.condition`,
+ * access control rules, computed fields, transforms, and dynamic `admin.previewUrl`.
+ */
+export interface ExprFunction {
   /**
-   * Starts a fluent condition builder for a specific field name.
+   * Starts a fluent condition/expression builder for a specific field name.
    *
    * @example
-   *   admin: { condition: when('price').greaterThan(100) }
-   *   admin: { condition: when('status').in('published', 'archived') }
-   *   admin: { previewUrl: when.then(when('slug').equals('home'), '/', "'/' + slug") }
+   *   admin: { condition: expr('price').greaterThan(100) }
+   *   admin: { condition: expr('status').in('published', 'archived') }
+   *   admin: { previewUrl: expr.ifElse(expr('slug').equals('home'), '/', expr.concat('/', 'slug')) }
    */
   (fieldName: string): FieldConditionBuilder;
 
   // ── Scoped Fluent Shortcuts ──
   /**
-   * Starts a fluent condition builder on the `user` context (e.g. `when.user('email').endsWith('@company.com')`).
+   * Starts a fluent condition builder on the `user` context (e.g. `expr.user('email').endsWith('@company.com')`).
    */
   user: (userProp: string) => FieldConditionBuilder;
 
   /**
-   * Starts a fluent condition builder on `siblingData` (e.g. `when.sibling('_variant').equals('split')`).
+   * Starts a fluent condition builder on `siblingData` (e.g. `expr.sibling('_variant').equals('split')`).
    */
   sibling: (siblingProp: string) => FieldConditionBuilder;
 
@@ -281,10 +320,10 @@ export interface WhenFunction {
    * Automatically quotes literal segments (like paths) and preserves field identifiers.
    *
    * @example
-   *   when.concat('/country-portals/', 'slug')
+   *   expr.concat('/country-portals/', 'slug')
    *   // => "'/country-portals/' + slug"
    *
-   *   when.concat('/blog/', 'category', '/', 'slug')
+   *   expr.concat('/blog/', 'category', '/', 'slug')
    *   // => "'/blog/' + category + '/' + slug"
    */
   concat: (...parts: string[]) => string;
@@ -315,7 +354,16 @@ export interface WhenFunction {
    * Can be nested to create ternary chains.
    *
    * @example
-   *   admin: { previewUrl: when.then(when.fieldEquals('slug', 'home'), '/', "'/' + slug") }
+   *   admin: { previewUrl: expr.ifElse(expr.equals('slug', 'home'), '/', expr.concat('/', 'slug')) }
+   */
+  ifElse: (
+    condition: string,
+    ifTrue: string | number | boolean | null,
+    ifFalse?: string | number | boolean | null,
+  ) => string;
+
+  /**
+   * Alias for `ifElse`.
    */
   then: (
     condition: string,
@@ -328,10 +376,10 @@ export interface WhenFunction {
    *
    * @example
    *   admin: {
-   *     previewUrl: when.match()
-   *       .case(when('slug').equals('home'), '/')
-   *       .case(when.fieldNotEmpty('path'), 'path')
-   *       .case(when('category').equals('news'), "'/news/' + slug")
+   *     previewUrl: expr.match()
+   *       .case(expr('slug').equals('home'), '/')
+   *       .case(expr.notEmpty('path'), 'path')
+   *       .case(expr('category').equals('news'), "'/news/' + slug")
    *       .otherwise("'/' + slug")
    *   }
    */
@@ -342,9 +390,9 @@ export interface WhenFunction {
    *
    * @example
    *   admin: {
-   *     previewUrl: when.cases(
-   *       [when.fieldEquals('slug', 'home'), '/'],
-   *       [when.fieldNotEmpty('path'), 'path'],
+   *     previewUrl: expr.cases(
+   *       [expr.equals('slug', 'home'), '/'],
+   *       [expr.notEmpty('path'), 'path'],
    *       "'/' + slug"
    *     )
    *   }
@@ -365,7 +413,7 @@ export interface WhenFunction {
    */
   all: (...conditions: (string | undefined | null | false)[]) => string;
   /**
-   * Alias for `when.all(...)`.
+   * Alias for `expr.all(...)`.
    */
   and: (...conditions: (string | undefined | null | false)[]) => string;
   /**
@@ -373,7 +421,7 @@ export interface WhenFunction {
    */
   any: (...conditions: (string | undefined | null | false)[]) => string;
   /**
-   * Alias for `when.any(...)`.
+   * Alias for `expr.any(...)`.
    */
   or: (...conditions: (string | undefined | null | false)[]) => string;
   /**
@@ -386,8 +434,8 @@ export interface WhenFunction {
    * Generates a condition matching one or multiple variant names.
    *
    * @example
-   *   admin: { condition: when.variant('split') }
-   *   admin: { condition: when.variant('imageLeft', 'imageRight') }
+   *   admin: { condition: expr.variant('split') }
+   *   admin: { condition: expr.variant('imageLeft', 'imageRight') }
    */
   variant: (...variants: (string | string[])[]) => string;
   /**
@@ -398,7 +446,7 @@ export interface WhenFunction {
    * Generates a condition matching one or multiple block slugs.
    *
    * @example
-   *   admin: { condition: when.block('hero', 'cta') }
+   *   admin: { condition: expr.block('hero', 'cta') }
    */
   block: (...blocks: (string | string[])[]) => string;
   /**
@@ -406,76 +454,97 @@ export interface WhenFunction {
    */
   notBlock: (...blocks: (string | string[])[]) => string;
 
-  // ── Field Value Matchers ──
+  // ── Field Value Matchers (Clean & Concise) ──
   /**
    * Generates a condition checking equality against a field value.
    *
    * @example
-   *   admin: { condition: when.fieldEquals('status', 'published') }
+   *   admin: { condition: expr.equals('status', 'published') }
    */
-  fieldEquals: (field: string, value: string | number | boolean | null) => string;
+  equals: (field: string, value: string | number | boolean | null) => string;
   /**
    * Generates a condition checking inequality against a field value.
    */
-  fieldNotEquals: (field: string, value: string | number | boolean | null) => string;
+  notEquals: (field: string, value: string | number | boolean | null) => string;
   /**
    * Generates a condition checking if a field is in a list of allowed values.
    */
-  fieldIn: (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]) => string;
+  in: (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]) => string;
   /**
    * Generates a condition checking if a field is NOT in a list of values.
    */
-  fieldNotIn: (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]) => string;
+  notIn: (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]) => string;
   /**
    * Generates a condition checking that a field is not null and not empty.
    *
    * @example
-   *   admin: { condition: when.fieldNotEmpty('couponCode') }
+   *   admin: { condition: expr.notEmpty('couponCode') }
    */
-  fieldNotEmpty: (field: string) => string;
+  notEmpty: (field: string) => string;
   /**
    * Generates a condition checking that a field is null, undefined, or empty.
+   *
+   * @example
+   *   admin: { condition: expr.empty('couponCode') }
    */
-  fieldEmpty: (field: string) => string;
+  empty: (field: string) => string;
   /**
    * Generates a condition checking that a boolean field is true.
    */
-  fieldIsTrue: (field: string) => string;
+  isTrue: (field: string) => string;
   /**
    * Generates a condition checking that a boolean field is false / falsy.
    */
-  fieldIsFalse: (field: string) => string;
+  isFalse: (field: string) => string;
   /**
    * Generates a numerical greater-than condition (`field > value`).
    */
-  fieldGreaterThan: (field: string, value: number | string) => string;
+  greaterThan: (field: string, value: number | string) => string;
   /**
    * Generates a numerical greater-than-or-equal condition (`field >= value`).
    */
-  fieldGreaterThanOrEqual: (field: string, value: number | string) => string;
+  greaterThanOrEqual: (field: string, value: number | string) => string;
   /**
    * Generates a numerical less-than condition (`field < value`).
    */
-  fieldLessThan: (field: string, value: number | string) => string;
+  lessThan: (field: string, value: number | string) => string;
   /**
    * Generates a numerical less-than-or-equal condition (`field <= value`).
    */
-  fieldLessThanOrEqual: (field: string, value: number | string) => string;
+  lessThanOrEqual: (field: string, value: number | string) => string;
   /**
    * Generates a range condition (`field >= min && field <= max`).
    */
-  fieldBetween: (field: string, min: number, max: number) => string;
+  between: (field: string, min: number, max: number) => string;
   /**
    * Generates a string prefix condition using JEXL `startsWith(...)`.
    */
-  fieldStartsWith: (field: string, prefix: string) => string;
+  startsWith: (field: string, prefix: string) => string;
   /**
    * Generates a string suffix condition using JEXL `endsWith(...)`.
    */
-  fieldEndsWith: (field: string, suffix: string) => string;
+  endsWith: (field: string, suffix: string) => string;
   /**
    * Generates a string/array inclusion condition using JEXL `includes(...)`.
    */
+  contains: (field: string, item: string | number) => string;
+
+  // ── Legacy Field Value Matchers (with "field" prefix) ──
+  fieldEquals: (field: string, value: string | number | boolean | null) => string;
+  fieldNotEquals: (field: string, value: string | number | boolean | null) => string;
+  fieldIn: (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]) => string;
+  fieldNotIn: (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]) => string;
+  fieldNotEmpty: (field: string) => string;
+  fieldEmpty: (field: string) => string;
+  fieldIsTrue: (field: string) => string;
+  fieldIsFalse: (field: string) => string;
+  fieldGreaterThan: (field: string, value: number | string) => string;
+  fieldGreaterThanOrEqual: (field: string, value: number | string) => string;
+  fieldLessThan: (field: string, value: number | string) => string;
+  fieldLessThanOrEqual: (field: string, value: number | string) => string;
+  fieldBetween: (field: string, min: number, max: number) => string;
+  fieldStartsWith: (field: string, prefix: string) => string;
+  fieldEndsWith: (field: string, suffix: string) => string;
   fieldContains: (field: string, item: string | number) => string;
 
   // ── Arrays & Lists ──
@@ -506,14 +575,14 @@ export interface WhenFunction {
    * Checks both `user.role` (string) and `user.roles` (array).
    *
    * @example
-   *   admin: { condition: when.userRole('admin', 'developer') }
+   *   admin: { condition: expr.userRole('admin', 'developer') }
    */
   userRole: (...roles: (string | string[])[]) => string;
   /**
    * Generates a condition checking the editor's email domain.
    *
    * @example
-   *   admin: { condition: when.userEmailDomain('agrictrail.com') }
+   *   admin: { condition: expr.userEmailDomain('agrictrail.com') }
    */
   userEmailDomain: (domain: string) => string;
   /**
@@ -540,23 +609,28 @@ export interface WhenFunction {
   statusIn: (...statuses: (string | string[])[]) => string;
 }
 
-function createWhen(): WhenFunction {
-  const whenFn = ((fieldName: string) => new FieldConditionBuilder(fieldName)) as WhenFunction;
+/**
+ * Backwards compatibility type alias for `ExprFunction`.
+ */
+export type WhenFunction = ExprFunction;
 
-  whenFn.user = (userProp: string) => new FieldConditionBuilder(`user.${userProp}`);
-  whenFn.sibling = (siblingProp: string) => new FieldConditionBuilder(`siblingData.${siblingProp}`);
+function createExpr(): ExprFunction {
+  const exprFn = ((fieldName: string) => new FieldConditionBuilder(fieldName)) as ExprFunction;
 
-  whenFn.concat = (...parts: string[]): string => {
+  exprFn.user = (userProp: string) => new FieldConditionBuilder(`user.${userProp}`);
+  exprFn.sibling = (siblingProp: string) => new FieldConditionBuilder(`siblingData.${siblingProp}`);
+
+  exprFn.concat = (...parts: string[]): string => {
     if (parts.length === 0) return "''";
     return parts.map((p) => formatJexlValue(p)).join(" + ");
   };
 
-  whenFn.slugify = (field: string): string => `slugify(${field})`;
-  whenFn.lower = (field: string): string => `lower(${field})`;
-  whenFn.upper = (field: string): string => `upper(${field})`;
-  whenFn.trim = (field: string): string => `trim(${field})`;
+  exprFn.slugify = (field: string): string => `slugify(${field})`;
+  exprFn.lower = (field: string): string => `lower(${field})`;
+  exprFn.upper = (field: string): string => `upper(${field})`;
+  exprFn.trim = (field: string): string => `trim(${field})`;
 
-  whenFn.access = {
+  exprFn.access = {
     isOwner: (ownerField = "author"): string => {
       return `${ownerField} == user.id || ${ownerField}.id == user.id`;
     },
@@ -564,14 +638,14 @@ function createWhen(): WhenFunction {
       return "user.role == 'admin' || (user.roles != null && 'admin' in user.roles)";
     },
     hasRole: (...roles: (string | string[])[]): string => {
-      return whenFn.userRole(...roles);
+      return exprFn.userRole(...roles);
     },
     isPublishedOrAdmin: (statusField = "status"): string => {
       return `${statusField} == 'published' || user.role == 'admin' || (user.roles != null && 'admin' in user.roles)`;
     },
   };
 
-  whenFn.then = (
+  exprFn.ifElse = (
     condition: string,
     ifTrue: string | number | boolean | null,
     ifFalse: string | number | boolean | null = "null",
@@ -579,9 +653,11 @@ function createWhen(): WhenFunction {
     return `${condition} ? ${formatJexlValue(ifTrue)} : ${formatJexlValue(ifFalse)}`;
   };
 
-  whenFn.match = () => new MatchBuilder();
+  exprFn.then = exprFn.ifElse;
 
-  whenFn.cases = (
+  exprFn.match = () => new MatchBuilder();
+
+  exprFn.cases = (
     ...branches: (
       | [condition: string, value: string | number | boolean | null]
       | string
@@ -604,144 +680,163 @@ function createWhen(): WhenFunction {
     return builder.otherwise(fallback);
   };
 
-  whenFn.all = (...conditions: (string | undefined | null | false)[]): string => {
+  exprFn.all = (...conditions: (string | undefined | null | false)[]): string => {
     const valid = conditions.filter(Boolean) as string[];
     if (valid.length === 0) return "true";
     if (valid.length === 1) return valid[0];
     return valid.map((c) => (c.includes(" ") ? `(${c})` : c)).join(" && ");
   };
 
-  whenFn.and = whenFn.all;
+  exprFn.and = exprFn.all;
 
-  whenFn.any = (...conditions: (string | undefined | null | false)[]): string => {
+  exprFn.any = (...conditions: (string | undefined | null | false)[]): string => {
     const valid = conditions.filter(Boolean) as string[];
     if (valid.length === 0) return "true";
     if (valid.length === 1) return valid[0];
     return valid.map((c) => (c.includes(" ") ? `(${c})` : c)).join(" || ");
   };
 
-  whenFn.or = whenFn.any;
+  exprFn.or = exprFn.any;
 
-  whenFn.not = (condition: string): string => {
+  exprFn.not = (condition: string): string => {
     if (!condition) return "false";
     return `!(${condition})`;
   };
 
-  whenFn.variant = (...variants: (string | string[])[]): string => {
+  exprFn.variant = (...variants: (string | string[])[]): string => {
     const flat = variants.flat();
     if (flat.length === 0) return "true";
     if (flat.length === 1) return `variant == '${flat[0]}'`;
     return `variant in [${flat.map((v) => `'${v}'`).join(", ")}]`;
   };
 
-  whenFn.notVariant = (...variants: (string | string[])[]): string => {
+  exprFn.notVariant = (...variants: (string | string[])[]): string => {
     const flat = variants.flat();
     if (flat.length === 0) return "false";
     if (flat.length === 1) return `variant != '${flat[0]}'`;
     return `!(variant in [${flat.map((v) => `'${v}'`).join(", ")}])`;
   };
 
-  whenFn.block = (...blocks: (string | string[])[]): string => {
+  exprFn.block = (...blocks: (string | string[])[]): string => {
     const flat = blocks.flat();
     if (flat.length === 0) return "true";
     if (flat.length === 1) return `block == '${flat[0]}'`;
     return `block in [${flat.map((b) => `'${b}'`).join(", ")}]`;
   };
 
-  whenFn.notBlock = (...blocks: (string | string[])[]): string => {
+  exprFn.notBlock = (...blocks: (string | string[])[]): string => {
     const flat = blocks.flat();
     if (flat.length === 0) return "false";
     if (flat.length === 1) return `block != '${flat[0]}'`;
     return `!(block in [${flat.map((b) => `'${b}'`).join(", ")}])`;
   };
 
-  whenFn.fieldEquals = (field: string, value: string | number | boolean | null): string => {
+  // ── Field Value Matchers ──
+  exprFn.equals = (field: string, value: string | number | boolean | null): string => {
     return `${field} == ${JSON.stringify(value)}`;
   };
+  exprFn.fieldEquals = exprFn.equals;
 
-  whenFn.fieldNotEquals = (field: string, value: string | number | boolean | null): string => {
+  exprFn.notEquals = (field: string, value: string | number | boolean | null): string => {
     return `${field} != ${JSON.stringify(value)}`;
   };
+  exprFn.fieldNotEquals = exprFn.notEquals;
 
-  whenFn.fieldIn = (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]): string => {
+  exprFn.in = (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]): string => {
     const flat = values.flat();
     return `${field} in [${flat.map((v) => JSON.stringify(v)).join(", ")}]`;
   };
+  exprFn.fieldIn = exprFn.in;
 
-  whenFn.fieldNotIn = (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]): string => {
+  exprFn.notIn = (field: string, ...values: (string | number | boolean | (string | number | boolean)[])[]): string => {
     const flat = values.flat();
     return `!(${field} in [${flat.map((v) => JSON.stringify(v)).join(", ")}])`;
   };
+  exprFn.fieldNotIn = exprFn.notIn;
 
-  whenFn.fieldNotEmpty = (field: string): string => {
+  exprFn.notEmpty = (field: string): string => {
     return `${field} != null && ${field} != ''`;
   };
+  exprFn.fieldNotEmpty = exprFn.notEmpty;
 
-  whenFn.fieldEmpty = (field: string): string => {
+  exprFn.empty = (field: string): string => {
     return `${field} == null || ${field} == ''`;
   };
+  exprFn.fieldEmpty = exprFn.empty;
 
-  whenFn.fieldIsTrue = (field: string): string => {
+  exprFn.isTrue = (field: string): string => {
     return `${field} == true`;
   };
+  exprFn.fieldIsTrue = exprFn.isTrue;
 
-  whenFn.fieldIsFalse = (field: string): string => {
+  exprFn.isFalse = (field: string): string => {
     return `${field} != true`;
   };
+  exprFn.fieldIsFalse = exprFn.isFalse;
 
-  whenFn.fieldGreaterThan = (field: string, value: number | string): string => {
+  exprFn.greaterThan = (field: string, value: number | string): string => {
     return `${field} > ${value}`;
   };
+  exprFn.fieldGreaterThan = exprFn.greaterThan;
 
-  whenFn.fieldGreaterThanOrEqual = (field: string, value: number | string): string => {
+  exprFn.greaterThanOrEqual = (field: string, value: number | string): string => {
     return `${field} >= ${value}`;
   };
+  exprFn.fieldGreaterThanOrEqual = exprFn.greaterThanOrEqual;
 
-  whenFn.fieldLessThan = (field: string, value: number | string): string => {
+  exprFn.lessThan = (field: string, value: number | string): string => {
     return `${field} < ${value}`;
   };
+  exprFn.fieldLessThan = exprFn.lessThan;
 
-  whenFn.fieldLessThanOrEqual = (field: string, value: number | string): string => {
+  exprFn.lessThanOrEqual = (field: string, value: number | string): string => {
     return `${field} <= ${value}`;
   };
+  exprFn.fieldLessThanOrEqual = exprFn.lessThanOrEqual;
 
-  whenFn.fieldBetween = (field: string, min: number, max: number): string => {
+  exprFn.between = (field: string, min: number, max: number): string => {
     return `${field} >= ${min} && ${field} <= ${max}`;
   };
+  exprFn.fieldBetween = exprFn.between;
 
-  whenFn.fieldStartsWith = (field: string, prefix: string): string => {
+  exprFn.startsWith = (field: string, prefix: string): string => {
     return `startsWith(${field}, ${JSON.stringify(prefix)})`;
   };
+  exprFn.fieldStartsWith = exprFn.startsWith;
 
-  whenFn.fieldEndsWith = (field: string, suffix: string): string => {
+  exprFn.endsWith = (field: string, suffix: string): string => {
     return `endsWith(${field}, ${JSON.stringify(suffix)})`;
   };
+  exprFn.fieldEndsWith = exprFn.endsWith;
 
-  whenFn.fieldContains = (field: string, item: string | number): string => {
+  exprFn.contains = (field: string, item: string | number): string => {
     return `includes(${field}, ${JSON.stringify(item)})`;
   };
+  exprFn.fieldContains = exprFn.contains;
 
-  whenFn.arrayNotEmpty = (field: string): string => {
+  // ── Arrays & Lists ──
+  exprFn.arrayNotEmpty = (field: string): string => {
     return `length(${field}) > 0`;
   };
 
-  whenFn.arrayEmpty = (field: string): string => {
+  exprFn.arrayEmpty = (field: string): string => {
     return `length(${field}) == 0`;
   };
 
-  whenFn.arrayCountGreaterThan = (field: string, count: number): string => {
+  exprFn.arrayCountGreaterThan = (field: string, count: number): string => {
     return `length(${field}) > ${count}`;
   };
 
-  whenFn.arrayCountAtLeast = (field: string, count: number): string => {
+  exprFn.arrayCountAtLeast = (field: string, count: number): string => {
     return `length(${field}) >= ${count}`;
   };
 
-  whenFn.arrayCountLessThan = (field: string, count: number): string => {
+  exprFn.arrayCountLessThan = (field: string, count: number): string => {
     return `length(${field}) < ${count}`;
   };
 
-  whenFn.userRole = (...roles: (string | string[])[]): string => {
+  // ── User, Roles & Permissions ──
+  exprFn.userRole = (...roles: (string | string[])[]): string => {
     const flat = roles.flat();
     if (flat.length === 1) {
       return `user.role == '${flat[0]}' || (user.roles != null && '${flat[0]}' in user.roles)`;
@@ -750,33 +845,43 @@ function createWhen(): WhenFunction {
     return `user.role in ${roleArray} || (user.roles != null && includes(${roleArray}, user.role))`;
   };
 
-  whenFn.userEmailDomain = (domain: string): string => {
+  exprFn.userEmailDomain = (domain: string): string => {
     const clean = domain.startsWith("@") ? domain : `@${domain}`;
     return `endsWith(user.email, '${clean}')`;
   };
 
-  whenFn.userAttributeEquals = (attr: string, value: string | number | boolean | null): string => {
+  exprFn.userAttributeEquals = (attr: string, value: string | number | boolean | null): string => {
     return `user.${attr} == ${JSON.stringify(value)}`;
   };
 
-  whenFn.isNewDocument = (): string => {
+  // ── Document Lifecycle & Workflow ──
+  exprFn.isNewDocument = (): string => {
     return "id == null";
   };
 
-  whenFn.isExistingDocument = (): string => {
+  exprFn.isExistingDocument = (): string => {
     return "id != null";
   };
 
-  whenFn.statusEquals = (status: string): string => {
+  exprFn.statusEquals = (status: string): string => {
     return `status == '${status}'`;
   };
 
-  whenFn.statusIn = (...statuses: (string | string[])[]): string => {
+  exprFn.statusIn = (...statuses: (string | string[])[]): string => {
     const flat = statuses.flat();
     return `status in [${flat.map((s) => `'${s}'`).join(", ")}]`;
   };
 
-  return whenFn;
+  return exprFn;
 }
 
-export const when: WhenFunction = createWhen();
+/**
+ * Primary declarative expression builder for Dyrected schemas.
+ */
+export const expr: ExprFunction = createExpr();
+
+/**
+ * Backwards compatibility alias for `expr`.
+ */
+export const when: ExprFunction = expr;
+

@@ -42,11 +42,11 @@ It does not yet:
 For routable content, set `admin.previewUrl` on the collection so Dyrected knows which frontend route to open:
 
 ```ts
-import { when } from "@dyrected/sdk";
+import { expr } from "@dyrected/sdk";
 
 admin: {
   useAsTitle: "title",
-  previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
+  previewUrl: expr.ifElse(expr("slug").equals("home"), "/", expr.concat("/", "slug")),
 }
 ```
 

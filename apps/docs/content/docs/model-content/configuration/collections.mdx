@@ -773,26 +773,26 @@ When a collection is routable, the collection config and the frontend route need
 
 `admin.previewUrl` can be configured using:
 
-- the `when` condition builder (or serializable JEXL string), which is the recommended default
+- the `expr` expression builder (or serializable JEXL string), which is the recommended default
 - a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the `when` builder (`when.concat`, `when.then`, or `when.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
+Prefer the `expr` builder (`expr.concat`, `expr.ifElse`, or `expr.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
 `admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
 ### Dynamic Preview Routing Examples
 
-For single-prefix collections, use `when.concat`:
+For single-prefix collections, use `expr.concat`:
 
 ```ts
-import { defineCollection, defineTextField, when } from "@dyrected/sdk";
+import { defineCollection, defineTextField, expr } from "@dyrected/sdk";
 
 export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
     // Generates: '/blog/' + slug
-    previewUrl: when.concat("/blog/", "slug"),
+    previewUrl: expr.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -802,21 +802,21 @@ export const Posts = defineCollection({
 });
 ```
 
-For conditional fallback routing (such as routing a `home` slug directly to `/`), use `when.then`:
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `expr.ifElse`:
 
 ```ts
 // Routes 'home' to '/', and all other pages to '/slug'
-previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
+previewUrl: expr.ifElse(expr("slug").equals("home"), "/", expr.concat("/", "slug")),
 ```
 
-For multi-branch category routing, use `when.match`:
+For multi-branch category routing, use `expr.match`:
 
 ```ts
-previewUrl: when.match()
-  .case(when("slug").equals("home"), "/")
-  .case(when("category").equals("news"), when.concat("/news/", "slug"))
-  .case(when("category").equals("portal"), when.concat("/portals/", "slug"))
-  .otherwise(when.concat("/", "slug")),
+previewUrl: expr.match()
+  .case(expr("slug").equals("home"), "/")
+  .case(expr("category").equals("news"), expr.concat("/news/", "slug"))
+  .case(expr("category").equals("portal"), expr.concat("/portals/", "slug"))
+  .otherwise(expr.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:

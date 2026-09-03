@@ -31,7 +31,7 @@ Use this recipe only when its runtime matches the project you are documenting or
 This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-import { defineCollection, defineNumberField, defineTextField, when } from "@dyrected/core";
+import { defineCollection, defineNumberField, defineTextField, expr } from "@dyrected/core";
 
 export const Orders = defineCollection({
   slug: "orders",
@@ -40,7 +40,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: when.fieldNotEmpty("couponCode") },
+      admin: { condition: expr.notEmpty("couponCode") },
     }),
   ],
 });

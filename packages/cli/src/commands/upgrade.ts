@@ -35,9 +35,18 @@ function getDyrectedDeps(pkg: Record<string, any>) {
   return { dependencies, devDependencies };
 }
 
+function getCleanEnv(): NodeJS.ProcessEnv {
+  return Object.fromEntries(
+    Object.entries(process.env).filter(
+      ([key]) => !key.startsWith("npm_config_") && !key.startsWith("npm_lifecycle_"),
+    ),
+  );
+}
+
 function getLatestVersion(pkgName: string): string {
   const version = execFileSync("npm", ["view", pkgName, "version"], {
     encoding: "utf8",
+    env: getCleanEnv(),
     stdio: ["ignore", "pipe", "pipe"],
   }).trim();
 
@@ -110,51 +119,30 @@ function resolveLatestVersions(packageNames: string[]): PackageVersionMap {
   return versions;
 }
 
-function runInstall(
-  cwd: string,
-  packageManager: PackageManager,
-  deps: string[],
-  versions: PackageVersionMap,
-  bucket: DependencyBucket,
+function updatePackageManifest(
+  pkgPath: string,
+  pkg: Record<string, any>,
+  buckets: Record<DependencyBucket, string[]>,
+  latestVersions: PackageVersionMap,
 ) {
-  if (deps.length === 0) return;
-
-  const specs = deps.map((dep) => `${dep}@${versions[dep]}`);
-  let command = "";
-  let args: string[] = [];
-
-  if (packageManager === "pnpm") {
-    args = ["add", "--save-exact", ...specs];
-    if (bucket === "devDependencies") args.splice(1, 0, "-D");
-    command = `pnpm ${args.join(" ")}`;
-    console.log(chalk.blue(`Running: ${command}`));
-    execFileSync("pnpm", args, { cwd, stdio: "inherit" });
-    return;
+  for (const bucket of ["dependencies", "devDependencies"] as const) {
+    if (buckets[bucket].length > 0 && pkg[bucket]) {
+      for (const dep of buckets[bucket]) {
+        pkg[bucket][dep] = latestVersions[dep];
+      }
+    }
   }
+  fs.writeJsonSync(pkgPath, pkg, { spaces: 2 });
+}
 
-  if (packageManager === "yarn") {
-    args = ["add", "--exact", ...specs];
-    if (bucket === "devDependencies") args.splice(1, 0, "-D");
-    command = `yarn ${args.join(" ")}`;
-    console.log(chalk.blue(`Running: ${command}`));
-    execFileSync("yarn", args, { cwd, stdio: "inherit" });
-    return;
-  }
-
-  if (packageManager === "bun") {
-    args = ["add", "--exact", ...specs];
-    if (bucket === "devDependencies") args.splice(1, 0, "-d");
-    command = `bun ${args.join(" ")}`;
-    console.log(chalk.blue(`Running: ${command}`));
-    execFileSync("bun", args, { cwd, stdio: "inherit" });
-    return;
-  }
-
-  args = ["install", "--save-exact", ...specs];
-  if (bucket === "devDependencies") args.splice(1, 0, "--save-dev");
-  command = `npm ${args.join(" ")}`;
+function runInstall(cwd: string, packageManager: PackageManager) {
+  const command = `${packageManager} install`;
   console.log(chalk.blue(`Running: ${command}`));
-  execFileSync("npm", args, { cwd, stdio: "inherit" });
+  execFileSync(packageManager, ["install"], {
+    cwd,
+    env: getCleanEnv(),
+    stdio: "inherit",
+  });
 }
 
 function readInstalledVersion(cwd: string, pkgName: string): string | null {
@@ -216,12 +204,12 @@ async function upgradePackage(
   packageManager: PackageManager,
   latestVersions: PackageVersionMap,
 ) {
-  const { cwd, pkgPath, buckets } = workspacePackage;
+  const { cwd, pkgPath, pkg, buckets } = workspacePackage;
   const label = path.relative(process.cwd(), cwd) || ".";
 
   console.log(chalk.cyan(`\nUpgrading ${label}`));
-  runInstall(cwd, packageManager, buckets.dependencies, latestVersions, "dependencies");
-  runInstall(cwd, packageManager, buckets.devDependencies, latestVersions, "devDependencies");
+  updatePackageManifest(pkgPath, pkg, buckets, latestVersions);
+  runInstall(cwd, packageManager);
   await verifyUpgrade(cwd, pkgPath, latestVersions, buckets);
 }
 

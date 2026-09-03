@@ -87,7 +87,7 @@ import {
   defineNumberField,
   defineSelectField,
   defineTextField,
-  when,
+  expr,
 } from "@dyrected/core";
 
 export const recordPaymentAction = defineAction({
@@ -113,7 +113,7 @@ export const recordPaymentAction = defineAction({
       label: "Cheque Number",
       admin: {
         // Shows only when 'cheque' is selected in the modal
-        condition: when.sibling("paymentMethod").equals("cheque"),
+        condition: expr.sibling("paymentMethod").equals("cheque"),
       },
     }),
     defineNumberField({

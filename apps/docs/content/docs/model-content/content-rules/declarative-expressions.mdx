@@ -1,33 +1,33 @@
 ---
 title: Declarative Expressions & Conditions
-description: Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the when builder.
+description: Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the expr expression builder.
 ---
 
 When configuring field visibility, live preview routing, access control policies, or reactive form transforms in Dyrected, you can write **declarative expressions**.
 
-Dyrected provides the type-safe `when` builder (`@dyrected/sdk` or `@dyrected/core`) as the recommended standard for constructing these expressions. Because `when` compiles to pure serializable [JEXL](https://github.com/TomFrost/Jexl) strings, your logic remains 100% portable: it survives `npx dyrected sync:schema` and runs identically across self-hosted servers, headless API runtimes, and Dyrected Cloud.
+Dyrected provides the type-safe `expr` expression builder (`@dyrected/sdk` or `@dyrected/core`) as the recommended standard for constructing these expressions. Because `expr` compiles to pure serializable [JEXL](https://github.com/TomFrost/Jexl) strings, your logic remains 100% portable: it survives `npx dyrected sync:schema` and runs identically across self-hosted servers, headless API runtimes, and Dyrected Cloud.
 
-By the end of this guide, you will understand how to build reactive conditions with `when`, how to configure preview URLs and access rules, and how expressions work under the hood.
+By the end of this guide, you will understand how to build reactive conditions with `expr`, how to configure preview URLs and access rules, and how expressions work under the hood.
 
 ---
 
 ## Quickstart
 
-Import the `when` builder from `@dyrected/sdk` (or `@dyrected/core`):
+Import the `expr` expression builder from `@dyrected/sdk` (or `@dyrected/core`):
 
 ```typescript
-import { defineCollection, defineNumberField, defineTextField, when } from "@dyrected/sdk";
+import { defineCollection, defineNumberField, defineTextField, expr } from "@dyrected/sdk";
 
 export const Products = defineCollection({
   slug: "products",
   admin: {
     useAsTitle: "title",
     // Preview URL routing: /products/slug
-    previewUrl: when.concat("/products/", "slug"),
+    previewUrl: expr.concat("/products/", "slug"),
   },
   access: {
     // Only admins or the document creator can edit
-    update: when.any(when.access.isOwner("author"), when.access.isAdmin()),
+    update: expr.any(expr.access.isOwner("author"), expr.access.isAdmin()),
   },
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
@@ -37,7 +37,7 @@ export const Products = defineCollection({
       label: "Discount Percentage",
       // Reveals this field only when a coupon code is entered
       admin: {
-        condition: when.fieldNotEmpty("couponCode"),
+        condition: expr.notEmpty("couponCode"),
       },
     }),
   ],
@@ -55,14 +55,14 @@ Use `admin.condition` on any field or block to conditionally reveal it based on 
 Check if a field equals a specific value or is non-empty:
 
 ```typescript
-import { defineNumberField, defineTextField, when } from "@dyrected/sdk";
+import { defineNumberField, defineTextField, expr } from "@dyrected/sdk";
 
 // Show field when 'hasCustomTax' is checked
 export const CustomTaxField = defineNumberField({
   name: "taxRate",
   label: "Tax Rate (%)",
   admin: {
-    condition: when("hasCustomTax").isTrue(),
+    condition: expr("hasCustomTax").isTrue(),
   },
 });
 
@@ -71,7 +71,7 @@ export const DeliveryDateField = defineTextField({
   name: "deliveryWindow",
   label: "Delivery Window",
   admin: {
-    condition: when("category").in("furniture", "appliances", "perishables"),
+    condition: expr("category").in("furniture", "appliances", "perishables"),
   },
 });
 ```
@@ -81,36 +81,36 @@ export const DeliveryDateField = defineTextField({
 In layout builders and polymorphic blocks, reveal fields only when a specific block layout variant is selected:
 
 ```typescript
-import { defineMediaField, when } from "@dyrected/sdk";
+import { defineMediaField, expr } from "@dyrected/sdk";
 
 export const AvatarField = defineMediaField({
   name: "avatar",
   label: "Author Avatar",
   admin: {
     // Only visible when the editor selects the 'card' or 'split' variant
-    condition: when.variant("card", "split"),
+    condition: expr.variant("card", "split"),
   },
 });
 ```
 
-### Compound Conditions (`when.all`, `when.any`, `when.not`)
+### Compound Conditions (`expr.all`, `expr.any`, `expr.not`)
 
 Combine multiple conditions using boolean combinators:
 
 ```typescript
 // Visible if status is draft AND current user has editor/admin role
 admin: {
-  condition: when.all(
-    when("status").equals("draft"),
-    when.userRole("admin", "editor")
+  condition: expr.all(
+    expr("status").equals("draft"),
+    expr.userRole("admin", "editor")
   ),
 }
 
 // Visible if stock is below 10 OR promoted is true
 admin: {
-  condition: when.any(
-    when("stock").lessThan(10),
-    when("isPromoted").isTrue()
+  condition: expr.any(
+    expr("stock").lessThan(10),
+    expr("isPromoted").isTrue()
   ),
 }
 ```
@@ -121,50 +121,50 @@ admin: {
 
 The `admin.previewUrl` setting determines the frontend route loaded in the live preview panel and the external view button.
 
-### Path Concatenation (`when.concat`)
+### Path Concatenation (`expr.concat`)
 
 Safely combine static path prefixes with dynamic field identifiers:
 
 ```typescript
-import { defineCollection, when } from "@dyrected/sdk";
+import { defineCollection, expr } from "@dyrected/sdk";
 
 export const Articles = defineCollection({
   slug: "articles",
   admin: {
     // Generates: '/news/' + slug
-    previewUrl: when.concat("/news/", "slug"),
+    previewUrl: expr.concat("/news/", "slug"),
   },
   fields: [ ... ],
 });
 ```
 
-### Fallback Routing (`when.then`)
+### Fallback Routing (`expr.ifElse`)
 
 Handle root homepages or custom path overrides with ternary expressions:
 
 ```typescript
 // If slug is 'home', route to '/'; otherwise route to '/' + slug
 admin: {
-  previewUrl: when.then(
-    when("slug").equals("home"),
+  previewUrl: expr.ifElse(
+    expr("slug").equals("home"),
     "/",
-    when.concat("/", "slug")
+    expr.concat("/", "slug")
   ),
 }
 ```
 
-### Multi-Branch Routing (`when.match`)
+### Multi-Branch Routing (`expr.match`)
 
-When a collection supports multiple categories or localized routes, chain branches with `when.match()`:
+When a collection supports multiple categories or localized routes, chain branches with `expr.match()`:
 
 ```typescript
 admin: {
-  previewUrl: when.match()
-    .case(when("slug").equals("home"), "/")
-    .case(when.fieldNotEmpty("customPath"), "customPath")
-    .case(when("category").equals("news"), when.concat("/news/", "slug"))
-    .case(when("category").equals("portal"), when.concat("/country-portals/", "slug"))
-    .otherwise(when.concat("/", "slug")),
+  previewUrl: expr.match()
+    .case(expr("slug").equals("home"), "/")
+    .case(expr.notEmpty("customPath"), "customPath")
+    .case(expr("category").equals("news"), expr.concat("/news/", "slug"))
+    .case(expr("category").equals("portal"), expr.concat("/country-portals/", "slug"))
+    .otherwise(expr.concat("/", "slug")),
 }
 ```
 
@@ -175,19 +175,19 @@ admin: {
 Define declarative Row-Level Security (RLS) policies evaluated against `{ doc, user }`:
 
 ```typescript
-import { defineCollection, when } from "@dyrected/sdk";
+import { defineCollection, expr } from "@dyrected/sdk";
 
 export const Documents = defineCollection({
   slug: "documents",
   access: {
     // Public can read published docs; admins can read everything
-    read: when.access.isPublishedOrAdmin(),
+    read: expr.access.isPublishedOrAdmin(),
 
     // Document authors or admins can edit
-    update: when.any(when.access.isOwner("authorId"), when.access.isAdmin()),
+    update: expr.any(expr.access.isOwner("authorId"), expr.access.isAdmin()),
 
     // Only superadmins can delete
-    delete: when.access.hasRole("superadmin"),
+    delete: expr.access.hasRole("superadmin"),
   },
   fields: [ ... ],
 });
@@ -200,7 +200,7 @@ export const Documents = defineCollection({
 Automatically transform values live in the browser as the editor types:
 
 ```typescript
-import { defineCollection, defineTextField, when } from "@dyrected/sdk";
+import { defineCollection, defineTextField, expr } from "@dyrected/sdk";
 
 export const Posts = defineCollection({
   slug: "posts",
@@ -212,9 +212,9 @@ export const Posts = defineCollection({
       admin: {
         hooks: {
           // Auto-slugify title if slug is empty, but preserve manual edits
-          onChange: when.then(
-            when.fieldEmpty("value"),
-            when.slugify("siblingData.title"),
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.slugify("siblingData.title"),
             "value"
           ),
         },
@@ -226,34 +226,36 @@ export const Posts = defineCollection({
 
 ---
 
-## `when` API Cheatsheet
+## `expr` API Cheatsheet
 
 | Helper | Description | Output |
 | :--- | :--- | :--- |
-| `when('field').equals(val)` | Equality check | `field == "val"` |
-| `when('field').notEquals(val)` | Inequality check | `field != "val"` |
-| `when('field').in('a', 'b')` | Set membership | `field in ["a", "b"]` |
-| `when('field').isTrue()` | Boolean true check | `field == true` |
-| `when.fieldNotEmpty('field')` | Non-empty string / non-null check | `field != null && field != ''` |
-| `when.fieldEmpty('field')` | Empty or null check | `field == null \|\| field == ''` |
-| `when('price').greaterThan(10)` | Numerical greater than | `price > 10` |
-| `when('price').between(10, 50)` | Numerical range | `price >= 10 && price <= 50` |
-| `when.variant('card', 'hero')` | Block variant matching | `variant in ['card', 'hero']` |
-| `when.all(c1, c2)` | Logical AND | `c1 && c2` |
-| `when.any(c1, c2)` | Logical OR | `c1 \|\| c2` |
-| `when.then(cond, ifTrue, ifFalse)`| Ternary expression | `cond ? ifTrue : ifFalse` |
-| `when.match().case().otherwise()` | Multi-branch switch | `c1 ? v1 : c2 ? v2 : v3` |
-| `when.concat('/path/', 'slug')` | Safe string concatenation | `'/path/' + slug` |
-| `when.slugify('title')` | JEXL slugify transform | `slugify(title)` |
-| `when.access.isOwner('author')` | Document ownership match | `author == user.id \|\| author.id == user.id` |
-| `when.access.isAdmin()` | Admin role check | `user.role == 'admin' \|\| ('admin' in user.roles)` |
-| `when.access.isPublishedOrAdmin()`| Published or admin read rule | `status == 'published' \|\| user.role == 'admin'` |
+| `expr('field').equals(val)` | Equality check | `field == "val"` |
+| `expr('field').notEquals(val)` | Inequality check | `field != "val"` |
+| `expr('field').in('a', 'b')` | Set membership | `field in ["a", "b"]` |
+| `expr('field').isTrue()` | Boolean true check | `field == true` |
+| `expr.notEmpty('field')` | Non-empty string / non-null check | `field != null && field != ''` |
+| `expr.empty('field')` | Empty or null check | `field == null \|\| field == ''` |
+| `expr('price').greaterThan(10)` | Numerical greater than | `price > 10` |
+| `expr('price').between(10, 50)` | Numerical range | `price >= 10 && price <= 50` |
+| `expr.variant('card', 'hero')` | Block variant matching | `variant in ['card', 'hero']` |
+| `expr.all(c1, c2)` | Logical AND | `c1 && c2` |
+| `expr.any(c1, c2)` | Logical OR | `c1 \|\| c2` |
+| `expr.ifElse(cond, ifTrue, ifFalse)`| Ternary expression | `cond ? ifTrue : ifFalse` |
+| `expr.match().case().otherwise()` | Multi-branch switch | `c1 ? v1 : c2 ? v2 : v3` |
+| `expr.concat('/path/', 'slug')` | Safe string concatenation | `'/path/' + slug` |
+| `expr.slugify('title')` | JEXL slugify transform | `slugify(title)` |
+| `expr.access.isOwner('author')` | Document ownership match | `author == user.id \|\| author.id == user.id` |
+| `expr.access.isAdmin()` | Admin role check | `user.role == 'admin' \|\| ('admin' in user.roles)` |
+| `expr.access.isPublishedOrAdmin()`| Published or admin read rule | `status == 'published' \|\| user.role == 'admin'` |
 
 ---
 
 ## Under the Hood: JEXL Specification & Raw Strings
 
-The `when` builder produces serializable [JEXL (Javascript Expression Language)](https://github.com/TomFrost/Jexl) strings. 
+The `expr` expression builder produces serializable [JEXL (Javascript Expression Language)](https://github.com/TomFrost/Jexl) strings. 
+
+Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests. 
 
 Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests.
 

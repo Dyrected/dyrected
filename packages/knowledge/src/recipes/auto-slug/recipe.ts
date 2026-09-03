@@ -1,4 +1,4 @@
-import { defineCollection, defineTextField, when } from "@dyrected/core";
+import { defineCollection, defineTextField, expr } from "@dyrected/core";
 
 export const toSlug = (value: unknown) =>
   String(value ?? "")
@@ -29,9 +29,9 @@ export const Posts = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange: when.then(
-            when.fieldEmpty("value"),
-            when.then(when.fieldNotEmpty("siblingData.title"), when.slugify("siblingData.title"), "value"),
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.ifElse(expr.notEmpty("siblingData.title"), expr.slugify("siblingData.title"), "value"),
             "value",
           ),
         },

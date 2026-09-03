@@ -1,11 +1,44 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import jexl from "jexl";
-import { when } from "../utils/conditions.js";
+import { expr, when } from "../utils/conditions.js";
 import { registerJexlHelpers } from "../utils/jexl-helpers.js";
 
-describe("when Condition Builder — Comprehensive Test Suite", () => {
+describe("expr & when Condition/Expression Builder — Comprehensive Test Suite", () => {
   beforeAll(() => {
     registerJexlHelpers(jexl);
+  });
+
+  describe("expr & when Parity and ifElse", () => {
+    it("exports expr and when as identical helpers", () => {
+      expect(expr).toBe(when);
+    });
+
+    it("evaluates expr.ifElse ternary expressions", async () => {
+      const preview = expr.ifElse(expr.equals("slug", "home"), "/", expr.concat("/", "slug"));
+      expect(preview).toBe("slug == \"home\" ? '/' : '/' + slug");
+      expect(await jexl.eval(preview, { slug: "home" })).toBe("/");
+      expect(await jexl.eval(preview, { slug: "about" })).toBe("/about");
+    });
+
+    it("evaluates clean shorthands: expr.empty, expr.notEmpty, expr.equals, expr.in", async () => {
+      expect(await jexl.eval(expr.empty("slug"), { slug: "" })).toBe(true);
+      expect(await jexl.eval(expr.empty("slug"), { slug: "has-slug" })).toBe(false);
+
+      expect(await jexl.eval(expr.notEmpty("title"), { title: "Hello" })).toBe(true);
+      expect(await jexl.eval(expr.notEmpty("title"), { title: "" })).toBe(false);
+
+      expect(await jexl.eval(expr.equals("status", "published"), { status: "published" })).toBe(true);
+      expect(await jexl.eval(expr.in("role", ["admin", "editor"]), { role: "admin" })).toBe(true);
+      expect(await jexl.eval(expr.in("role", ["admin", "editor"]), { role: "guest" })).toBe(false);
+    });
+
+    it("evaluates fluent field transforms: expr(field).slugify(), lower(), upper(), trim(), empty()", async () => {
+      expect(await jexl.eval(expr("title").slugify(), { title: "Hello World 2026" })).toBe("hello-world-2026");
+      expect(await jexl.eval(expr("name").lower(), { name: "Dyrected" })).toBe("dyrected");
+      expect(await jexl.eval(expr("code").upper(), { code: "sale" })).toBe("SALE");
+      expect(await jexl.eval(expr("tag").trim(), { tag: " space " })).toBe("space");
+      expect(await jexl.eval(expr("slug").empty(), { slug: "" })).toBe(true);
+    });
   });
 
   // ───────────────────────────────────────────────────────────────────────────

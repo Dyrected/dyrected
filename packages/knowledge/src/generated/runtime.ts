@@ -2841,7 +2841,7 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "id": "model-content--content-rules--declarative-expressions",
     "relativePath": "model-content/content-rules/declarative-expressions",
     "title": "Declarative Expressions & Conditions",
-    "description": "Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the when builder.",
+    "description": "Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the expr expression builder.",
     "runtime": "cloud",
     "runtimeGroup": "",
     "runtimeNotes": "",
