@@ -5,7 +5,9 @@ import {
   Check,
   Trash2,
   Info,
+  RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -23,6 +25,7 @@ import { FocalPointPicker } from "./focal-point-picker";
 import { getMediaPreviewUrl, isExternalMedia } from "../../lib/external-media";
 import { getTransformedMediaUrl, cn } from "../../lib/utils";
 import { useIsMobile } from "../../hooks/use-mobile";
+import { useDyrected } from "../../providers/dyrected-context";
 import type { MediaFolder } from "../../types/media-folders";
 
 interface MediaInspectorProps {
@@ -94,6 +97,10 @@ function MediaInspectorForm({
   onUpdate: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
 }) {
+  const { client } = useDyrected();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isReplacing, setIsReplacing] = React.useState(false);
+
   const [alt, setAlt] = React.useState(item?.alt || "");
   const [caption, setCaption] = React.useState(item?.caption || "");
   const [folderId, setFolderId] = React.useState<string>(item?.folderId || "root");
@@ -112,6 +119,35 @@ function MediaInspectorForm({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !client) return;
+
+    setIsReplacing(true);
+    const toastId = toast.loading("Uploading replacement file...");
+    try {
+      const col = item.collection || "media";
+      const uploaded = await client.collection(col).upload(file);
+      onUpdate(item.id, {
+        filename: uploaded.filename,
+        originalFilename: file.name,
+        mimeType: uploaded.mimeType,
+        filesize: uploaded.filesize,
+        url: uploaded.url,
+        width: uploaded.width,
+        height: uploaded.height,
+        aspectRatio: uploaded.aspectRatio,
+        blurhash: uploaded.blurhash,
+      });
+      toast.success("File replaced successfully", { id: toastId });
+    } catch (err: any) {
+      toast.error("Failed to replace file", { description: err.message, id: toastId });
+    } finally {
+      setIsReplacing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSave = () => {
     onUpdate(item.id, {
       alt,
@@ -128,6 +164,14 @@ function MediaInspectorForm({
 
   return (
     <>
+      {/* Hidden File Input for in-place replacement */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="dy-hidden"
+        onChange={handleReplaceFile}
+      />
+
       {/* Header */}
       <SheetHeader className="dy-p-4 dy-border-b dy-border-border/60 dy-flex dy-flex-row dy-items-center dy-justify-between">
         <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
@@ -153,7 +197,7 @@ function MediaInspectorForm({
       {/* Scrollable Content */}
       <div className="dy-flex-1 dy-overflow-y-auto dy-p-4 dy-space-y-5">
         {/* Asset Preview Frame */}
-        <div className="dy-relative dy-w-full dy-aspect-video dy-rounded-xl dy-overflow-hidden dy-bg-muted/30 dy-border dy-border-border/40 dy-flex dy-items-center dy-justify-center">
+        <div className="dy-relative dy-w-full dy-aspect-video dy-rounded-xl dy-overflow-hidden dy-bg-muted/30 dy-border dy-border-border/40 dy-flex dy-items-center dy-justify-center dy-group">
           {isImage ? (
             <img
               src={previewUrl}
@@ -165,6 +209,20 @@ function MediaInspectorForm({
               <Info className="dy-h-8 dy-w-8" />
               <span className="dy-text-xs dy-uppercase">{item.mimeType || "Asset"}</span>
             </div>
+          )}
+
+          {!isExternal && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isReplacing}
+              onClick={() => fileInputRef.current?.click()}
+              className="dy-absolute dy-bottom-2 dy-right-2 dy-h-7 dy-px-2 dy-text-[11px] dy-bg-background/90 dy-backdrop-blur dy-shadow-md hover:dy-bg-background dy-opacity-90 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 dy-transition-all"
+            >
+              <RefreshCw className={cn("dy-h-3 dy-w-3 dy-mr-1.5", isReplacing && "dy-animate-spin")} />
+              {isReplacing ? "Replacing..." : "Replace File"}
+            </Button>
           )}
         </div>
 

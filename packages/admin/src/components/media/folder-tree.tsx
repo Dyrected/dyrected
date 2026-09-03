@@ -233,7 +233,7 @@ export function FolderTree({
   const rootFolders = folders.filter((f) => !f.parentId);
 
   return (
-    <aside className={cn("dy-flex dy-flex-col dy-w-60 dy-border-r dy-border-border/60 dy-bg-muted/10 dy-p-3 dy-shrink-0", className)}>
+    <aside className={cn("dy-flex dy-flex-col dy-w-52 lg:dy-w-60 dy-border-r dy-border-border/60 dy-bg-muted/10 dy-p-3 dy-shrink-0", className)}>
       <div className="dy-flex dy-items-center dy-justify-between dy-mb-3 dy-px-1">
         <span className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider">
           Folders
