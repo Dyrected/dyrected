@@ -280,6 +280,16 @@ export interface DyrectedConfig<
   image?: ImageService;
 
   /**
+   * Media management, dynamic transformations, and transformation preset configurations.
+   */
+  media?: {
+    /** Whether to restrict dynamic transformations to registered preset keys in production. */
+    restrictTransforms?: boolean;
+    /** Named transformation presets available via `?key=name`. */
+    presets?: Record<string, ImageTransformOptions>;
+  };
+
+  /**
    * Runtime logger configuration. Accepts either logger options/destination or
    * a fully-instantiated Pino logger.
    */
@@ -426,6 +436,7 @@ export interface DyrectedConfig<
 | <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
 | <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>media</code> (optional) | Media management, dynamic transformations, and transformation preset configurations. |
 | <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
 | <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |

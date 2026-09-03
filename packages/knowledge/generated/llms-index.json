@@ -1786,6 +1786,12 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:MediaFolder",
+      "name": "MediaFolder",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:PREVIEW_TOKEN_PARAM",
       "name": "PREVIEW_TOKEN_PARAM",
       "category": "sdk",

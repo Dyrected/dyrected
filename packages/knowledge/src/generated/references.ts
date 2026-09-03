@@ -1959,7 +1959,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The root configuration object passed to `createDyrectedApp`.\n\nThis is the single source of truth for your entire Dyrected instance —\ncollections, globals, database adapter, storage, email, and more.",
-    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /**\n   * Runtime logger configuration. Accepts either logger options/destination or\n   * a fully-instantiated Pino logger.\n   */\n  logger?: DyrectedLoggerConfig;\n\n  /**\n   * Request logging, redaction, sampling, tracing, metrics, and transport\n   * configuration for the Dyrected server runtime.\n   */\n  observability?: DyrectedObservabilityConfig;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * App-level HTTP request rate limiting.\n   *\n   * Similar to Payload's `rateLimit` option, this counts requests by client IP\n   * over a rolling time window and returns `429` responses once the limit is\n   * exhausted.\n   */\n  rateLimit?: RateLimitConfig;\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
+    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /**\n   * Media management, dynamic transformations, and transformation preset configurations.\n   */\n  media?: {\n    /** Whether to restrict dynamic transformations to registered preset keys in production. */\n    restrictTransforms?: boolean;\n    /** Named transformation presets available via `?key=name`. */\n    presets?: Record<string, ImageTransformOptions>;\n  };\n\n  /**\n   * Runtime logger configuration. Accepts either logger options/destination or\n   * a fully-instantiated Pino logger.\n   */\n  logger?: DyrectedLoggerConfig;\n\n  /**\n   * Request logging, redaction, sampling, tracing, metrics, and transport\n   * configuration for the Dyrected server runtime.\n   */\n  observability?: DyrectedObservabilityConfig;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * App-level HTTP request rate limiting.\n   *\n   * Similar to Payload's `rateLimit` option, this counts requests by client IP\n   * over a rolling time window and returns `429` responses once the limit is\n   * exhausted.\n   */\n  rateLimit?: RateLimitConfig;\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
     "members": [
       {
         "name": "blocks",
@@ -1990,6 +1990,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "image",
         "signature": "image?: ImageService",
         "description": "The image processing service. Required when any upload collection\ndefines `imageSizes`.\n\nSee: ImageService"
+      },
+      {
+        "name": "media",
+        "signature": "media?: {\n    /** Whether to restrict dynamic transformations to registered preset keys in production. */\n    restrictTransforms?: boolean;\n    /** Named transformation presets available via `?key=name`. */\n    presets?: Record<string, ImageTransformOptions>;\n  }",
+        "description": "Media management, dynamic transformations, and transformation preset configurations."
       },
       {
         "name": "logger",
@@ -2440,11 +2445,16 @@ export const references: readonly ReferenceEntry[] = [
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
     "description": "Metadata returned after a file is uploaded and stored.\nStored on the document in upload collections.",
-    "signature": "export interface FileData {\n  filename: string;\n  filesize?: number;\n  mimeType: string;\n  /** Public URL of the stored file. */\n  url: string;\n  width?: number;\n  height?: number;\n  focalPoint?: { x: number; y: number };\n  /** Base64-encoded BlurHash string for progressive image loading. */\n  blurhash?: string;\n  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */\n  type?: \"upload\" | \"external\";\n  provider?: string;\n  provider_metadata?: unknown;\n  [key: string]: unknown;\n}",
+    "signature": "export interface FileData {\n  filename: string;\n  originalFilename?: string;\n  filesize?: number;\n  mimeType: string;\n  /** Public URL of the stored file. */\n  url: string;\n  width?: number;\n  height?: number;\n  aspectRatio?: number;\n  folderId?: string | null;\n  focalPoint?: { x: number; y: number };\n  /** Base64-encoded BlurHash string for progressive image loading. */\n  blurhash?: string;\n  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */\n  type?: \"upload\" | \"external\";\n  provider?: string;\n  provider_metadata?: unknown;\n  metadata?: Record<string, unknown>;\n  [key: string]: unknown;\n}",
     "members": [
       {
         "name": "filename",
         "signature": "filename: string",
+        "description": ""
+      },
+      {
+        "name": "originalFilename",
+        "signature": "originalFilename?: string",
         "description": ""
       },
       {
@@ -2473,6 +2483,16 @@ export const references: readonly ReferenceEntry[] = [
         "description": ""
       },
       {
+        "name": "aspectRatio",
+        "signature": "aspectRatio?: number",
+        "description": ""
+      },
+      {
+        "name": "folderId",
+        "signature": "folderId?: string | null",
+        "description": ""
+      },
+      {
         "name": "focalPoint",
         "signature": "focalPoint?: { x: number; y: number }",
         "description": ""
@@ -2495,6 +2515,11 @@ export const references: readonly ReferenceEntry[] = [
       {
         "name": "provider_metadata",
         "signature": "provider_metadata?: unknown",
+        "description": ""
+      },
+      {
+        "name": "metadata",
+        "signature": "metadata?: Record<string, unknown>",
         "description": ""
       }
     ]
@@ -3228,7 +3253,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
     "description": "The interface every storage adapter must implement.\n\nDyrected ships adapters for local disk, AWS S3 and other S3-compatible\nservices through the S3 adapter, Cloudinary, and Backblaze B2. Implement\nthis interface to use any other storage provider.",
-    "signature": "export interface StorageAdapter {\n  /**\n   * Upload a file and return its metadata (URL, dimensions, etc.).\n   * The `prefix` is a path prefix used for multi-tenant setups.\n   */\n  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;\n\n  /** Delete a file by its stored filename. */\n  delete(args: { filename: string }): Promise<void>;\n\n  /** Return the public URL for a stored file. */\n  getURL(args: { filename: string }): string;\n\n  /**\n   * Retrieve the file's raw bytes and MIME type for serving via the API.\n   * Only needed by adapters that serve files through the Dyrected API\n   * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on\n   * direct CDN URLs instead.\n   */\n  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;\n}",
+    "signature": "export interface StorageAdapter {\n  /**\n   * Upload a file and return its metadata (URL, dimensions, etc.).\n   * The `prefix` is a path prefix used for multi-tenant setups.\n   */\n  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;\n\n  /** Delete a file by its stored filename. */\n  delete(args: { filename: string }): Promise<void>;\n\n  /** Return the public URL for a stored file, with optional dynamic transformations. */\n  getURL(args: { filename: string; transform?: ImageTransformOptions }): string;\n\n  /**\n   * Retrieve the file's raw bytes and MIME type for serving via the API.\n   * Only needed by adapters that serve files through the Dyrected API\n   * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on\n   * direct CDN URLs instead.\n   */\n  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;\n}",
     "members": [
       {
         "name": "upload",
@@ -3242,8 +3267,8 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "getURL",
-        "signature": "getURL(args: { filename: string }): string",
-        "description": "Return the public URL for a stored file."
+        "signature": "getURL(args: { filename: string; transform?: ImageTransformOptions }): string",
+        "description": "Return the public URL for a stored file, with optional dynamic transformations."
       },
       {
         "name": "resolve",
@@ -4151,6 +4176,26 @@ export const references: readonly ReferenceEntry[] = [
         "description": ""
       },
       {
+        "name": "listFolders",
+        "signature": "listFolders(collection: string = \"media\"): Promise<PaginatedResult<MediaFolder>>",
+        "description": "List all media folders in an upload-enabled collection."
+      },
+      {
+        "name": "createFolder",
+        "signature": "createFolder(collection: string = \"media\", data: { name: string; parentId?: string | null; color?: string | null }): Promise<MediaFolder>",
+        "description": "Create a new media folder in an upload-enabled collection."
+      },
+      {
+        "name": "updateFolder",
+        "signature": "updateFolder(collection: string = \"media\", id: string, data: { name?: string; parentId?: string | null; color?: string | null }): Promise<MediaFolder>",
+        "description": "Update an existing media folder in an upload-enabled collection."
+      },
+      {
+        "name": "deleteFolder",
+        "signature": "deleteFolder(collection: string = \"media\", id: string): Promise<{ success: boolean; id: string }>",
+        "description": "Delete a media folder from an upload-enabled collection."
+      },
+      {
         "name": "uploadMedia",
         "signature": "uploadMedia(file: File, collection: string = \"media\"): Promise<Media>",
         "description": ""
@@ -4248,6 +4293,62 @@ export const references: readonly ReferenceEntry[] = [
     "description": "Derives a typed `TSchema` from your exported collection and global config constants.\n\nPass it to `createClient<Schema>()` so every `find`, `findOne`, `create`,\n`update`, `global().get()` call returns the inferred document shape — no\nmanual interfaces required.",
     "signature": "export type InferSchema<\n  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,\n  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<\n    never,\n    never\n  >,\n> = {\n  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };\n  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };\n};",
     "members": []
+  },
+  {
+    "id": "@dyrected/sdk:MediaFolder",
+    "name": "MediaFolder",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "Shape of a media folder document in the DAM system.",
+    "signature": "export interface MediaFolder {\n  id: string;\n  name: string;\n  slug: string;\n  collection: string;\n  parentId: string | null;\n  path: string;\n  color?: string | null;\n  createdAt?: string;\n  updatedAt?: string;\n}",
+    "members": [
+      {
+        "name": "id",
+        "signature": "id: string",
+        "description": ""
+      },
+      {
+        "name": "name",
+        "signature": "name: string",
+        "description": ""
+      },
+      {
+        "name": "slug",
+        "signature": "slug: string",
+        "description": ""
+      },
+      {
+        "name": "collection",
+        "signature": "collection: string",
+        "description": ""
+      },
+      {
+        "name": "parentId",
+        "signature": "parentId: string | null",
+        "description": ""
+      },
+      {
+        "name": "path",
+        "signature": "path: string",
+        "description": ""
+      },
+      {
+        "name": "color",
+        "signature": "color?: string | null",
+        "description": ""
+      },
+      {
+        "name": "createdAt",
+        "signature": "createdAt?: string",
+        "description": ""
+      },
+      {
+        "name": "updatedAt",
+        "signature": "updatedAt?: string",
+        "description": ""
+      }
+    ]
   },
   {
     "id": "@dyrected/sdk:PREVIEW_TOKEN_PARAM",

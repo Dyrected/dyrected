@@ -159,6 +159,10 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
+| <code>listFolders</code> (required) | List all media folders in an upload-enabled collection. |
+| <code>createFolder</code> (optional) | Create a new media folder in an upload-enabled collection. |
+| <code>updateFolder</code> (optional) | Update an existing media folder in an upload-enabled collection. |
+| <code>deleteFolder</code> (required) | Delete a media folder from an upload-enabled collection. |
 | <code>uploadMedia</code> (required) |  |
 | <code>deleteMedia</code> (required) |  |
 
@@ -246,6 +250,37 @@ export type InferSchema<
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
 };
 ```
+
+
+## MediaFolder
+
+Shape of a media folder document in the DAM system.
+
+```ts
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>name</code> (required) |  |
+| <code>slug</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>parentId</code> (required) |  |
+| <code>path</code> (required) |  |
+| <code>color</code> (optional) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM

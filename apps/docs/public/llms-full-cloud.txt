@@ -916,6 +916,10 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
+| <code>listFolders</code> (required) | List all media folders in an upload-enabled collection. |
+| <code>createFolder</code> (optional) | Create a new media folder in an upload-enabled collection. |
+| <code>updateFolder</code> (optional) | Update an existing media folder in an upload-enabled collection. |
+| <code>deleteFolder</code> (required) | Delete a media folder from an upload-enabled collection. |
 | <code>uploadMedia</code> (required) |  |
 | <code>deleteMedia</code> (required) |  |
 
@@ -1003,6 +1007,37 @@ export type InferSchema<
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
 };
 ```
+
+
+## MediaFolder
+
+Shape of a media folder document in the DAM system.
+
+```ts
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>name</code> (required) |  |
+| <code>slug</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>parentId</code> (required) |  |
+| <code>path</code> (required) |  |
+| <code>color</code> (optional) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM
@@ -16360,6 +16395,16 @@ export interface DyrectedConfig<
   image?: ImageService;
 
   /**
+   * Media management, dynamic transformations, and transformation preset configurations.
+   */
+  media?: {
+    /** Whether to restrict dynamic transformations to registered preset keys in production. */
+    restrictTransforms?: boolean;
+    /** Named transformation presets available via `?key=name`. */
+    presets?: Record<string, ImageTransformOptions>;
+  };
+
+  /**
    * Runtime logger configuration. Accepts either logger options/destination or
    * a fully-instantiated Pino logger.
    */
@@ -16506,6 +16551,7 @@ export interface DyrectedConfig<
 | <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
 | <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>media</code> (optional) | Media management, dynamic transformations, and transformation preset configurations. |
 | <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
 | <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
@@ -22027,12 +22073,15 @@ Stored on the document in upload collections.
 ```ts
 export interface FileData {
   filename: string;
+  originalFilename?: string;
   filesize?: number;
   mimeType: string;
   /** Public URL of the stored file. */
   url: string;
   width?: number;
   height?: number;
+  aspectRatio?: number;
+  folderId?: string | null;
   focalPoint?: { x: number; y: number };
   /** Base64-encoded BlurHash string for progressive image loading. */
   blurhash?: string;
@@ -22040,6 +22089,7 @@ export interface FileData {
   type?: "upload" | "external";
   provider?: string;
   provider_metadata?: unknown;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
 ```
@@ -22047,16 +22097,20 @@ export interface FileData {
 | Option | Description |
 | --- | --- |
 | <code>filename</code> (required) |  |
+| <code>originalFilename</code> (optional) |  |
 | <code>filesize</code> (optional) |  |
 | <code>mimeType</code> (required) |  |
 | <code>url</code> (required) | Public URL of the stored file. |
 | <code>width</code> (optional) |  |
 | <code>height</code> (optional) |  |
+| <code>aspectRatio</code> (optional) |  |
+| <code>folderId</code> (optional) |  |
 | <code>focalPoint</code> (optional) |  |
 | <code>blurhash</code> (optional) | Base64-encoded BlurHash string for progressive image loading. |
 | <code>type</code> (optional) | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
 | <code>provider</code> (optional) |  |
 | <code>provider_metadata</code> (optional) |  |
+| <code>metadata</code> (optional) |  |
 
 
 ## ImageService
@@ -22108,8 +22162,8 @@ export interface StorageAdapter {
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
 
-  /** Return the public URL for a stored file. */
-  getURL(args: { filename: string }): string;
+  /** Return the public URL for a stored file, with optional dynamic transformations. */
+  getURL(args: { filename: string; transform?: ImageTransformOptions }): string;
 
   /**
    * Retrieve the file's raw bytes and MIME type for serving via the API.
@@ -22125,7 +22179,7 @@ export interface StorageAdapter {
 | --- | --- |
 | <code>upload</code> (optional) | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
 | <code>delete</code> (required) | Delete a file by its stored filename. |
-| <code>getURL</code> (required) | Return the public URL for a stored file. |
+| <code>getURL</code> (optional) | Return the public URL for a stored file, with optional dynamic transformations. |
 | <code>resolve</code> (required) | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
 
 
