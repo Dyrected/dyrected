@@ -11,6 +11,26 @@ const NEVER_FILTERABLE_TYPES = [
   'collapsible'
 ];
 
+const SYSTEM_FILTERABLE_FIELDS = new Set([
+  'id',
+  'createdAt',
+  'updatedAt',
+  'createdBy',
+  'updatedBy',
+  'folderId',
+  'filename',
+  'originalFilename',
+  'mimeType',
+  'filesize',
+  'url',
+  'width',
+  'height',
+  'aspectRatio',
+  'blurhash',
+  'alt',
+  'caption',
+]);
+
 /**
  * Sanitizes a WhereClause by stripping out any fields that:
  * 1. Do not exist in the schema.
@@ -55,8 +75,8 @@ export function sanitizeWhereClause(where: WhereClause, fields: Field[]): WhereC
         continue;
       }
 
-      // It's a field condition
-      if (key === 'id') {
+      // System fields are always allowed
+      if (SYSTEM_FILTERABLE_FIELDS.has(key)) {
         result[key] = value;
         continue;
       }

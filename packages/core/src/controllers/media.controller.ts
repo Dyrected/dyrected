@@ -176,6 +176,142 @@ export class MediaController {
     return c.json(doc, 201);
   }
 
+  async replace(c: Context<DyrectedContext>) {
+    const id = c.req.param("id");
+    const config = c.get("config");
+    const storage = config.storage;
+    const imageService = config.image;
+    const db = config.db;
+
+    if (!storage) {
+      return c.json({ message: "Storage not configured" }, 500);
+    }
+    if (!db) {
+      return c.json({ message: "Database not configured" }, 500);
+    }
+    if (!id) {
+      return c.json({ message: "Missing ID" }, 400);
+    }
+
+    const existingDoc = await db.findOne({ collection: this.collection, id });
+    if (!existingDoc) {
+      return c.json({ message: "Asset not found" }, 404);
+    }
+
+    const body = await c.req.parseBody();
+    const file = body["file"] as File;
+    if (!file) {
+      return c.json({ message: "No file uploaded" }, 400);
+    }
+
+    const siteId = c.get("siteId");
+    let colConfig = config.collections.find((col) => col.slug === this.collection);
+    if (!colConfig && config.onSchemaFetch && siteId) {
+      const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+      colConfig = requestConfig.collections.find((col) => col.slug === this.collection);
+    }
+
+    const uploadConfig = typeof colConfig?.upload === "object" ? colConfig.upload : undefined;
+    const validationError = validateUpload(file, uploadConfig);
+    if (validationError) {
+      return c.json({ message: validationError.message }, validationError.status);
+    }
+
+    const buffer = new Uint8Array(await file.arrayBuffer());
+    const workspaceId = c.get("workspaceId");
+    const prefix = workspaceId ? `${workspaceId}/${siteId}` : siteId || "default";
+    const uniqueFilename = generateUniqueUploadFilename(file.name);
+
+    let imageMetadata: any = {};
+    let imageSizes: any = {};
+
+    if (imageService && file.type.startsWith("image/")) {
+      try {
+        const processed = await imageService.process({
+          buffer,
+          mimeType: file.type,
+          config: colConfig?.upload,
+          focalPoint: existingDoc.focalPoint,
+        });
+        imageMetadata = processed.metadata || {};
+        imageSizes = processed.sizes || {};
+      } catch (err) {
+        getRequestLogger(c, this.loggerComponent).error({
+          err,
+          msg: "Image processing failed during replace",
+          collection: this.collection,
+          filename: file.name,
+        });
+      }
+    }
+
+    const fileData = await storage.upload({
+      filename: uniqueFilename,
+      buffer,
+      mimeType: file.type,
+      prefix,
+    });
+
+    const width = fileData.width || imageMetadata.width;
+    const height = fileData.height || imageMetadata.height;
+    const aspectRatio = width && height ? width / height : undefined;
+
+    const finalFileData = {
+      ...fileData,
+      ...imageMetadata,
+      originalFilename: file.name,
+      width,
+      height,
+      aspectRatio,
+      sizes: {} as any,
+    };
+
+    if (imageSizes) {
+      for (const [sizeName, sizeData] of Object.entries(imageSizes) as [string, any][]) {
+        const lastDot = uniqueFilename.lastIndexOf(".");
+        const ext = lastDot !== -1 ? uniqueFilename.substring(lastDot) : "";
+        const baseName = lastDot !== -1 ? uniqueFilename.substring(0, lastDot) : uniqueFilename;
+        const sizeFilename = `${baseName}-${sizeName}${ext}`;
+        try {
+          const sizeFileData = await storage.upload({
+            filename: sizeFilename,
+            buffer: sizeData.buffer,
+            mimeType: file.type,
+            prefix,
+          });
+          finalFileData.sizes[sizeName] = {
+            ...sizeFileData,
+            width: sizeData.width,
+            height: sizeData.height,
+          };
+        } catch (err) {
+          getRequestLogger(c, this.loggerComponent).error({
+            err,
+            msg: "Failed to upload image size during replace",
+            collection: this.collection,
+            filename: file.name,
+            sizeName,
+          });
+        }
+      }
+    }
+
+    // Cleanup old storage file if filename changed
+    if (existingDoc.filename && existingDoc.filename !== fileData.filename) {
+      try {
+        await storage.delete({ filename: existingDoc.filename as string });
+      } catch {}
+    }
+
+    const updatedDoc = await db.update({
+      collection: this.collection,
+      id,
+      data: finalFileData,
+    });
+
+    return c.json(updatedDoc, 200);
+  }
+
   async find(c: Context<DyrectedContext>) {
     const db = c.get("config").db;
     if (!db) return c.json({ message: "Database not configured" }, 500);

@@ -523,6 +523,11 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
         data?: Record<string, string>,
         options?: UploadOptions,
       ) => this._upload(slug, file, data, options),
+      /**
+       * Replace the file of an existing asset in-place without creating a duplicate record.
+       */
+      replaceFile: (id: string, file: File | Blob) =>
+        this.replaceMedia(id, file, slug),
       // ---- Auth methods (only meaningful when the collection has auth: true) ----
       /**
        * Log in with email + password. Returns a JWT token and the user document.
@@ -1040,6 +1045,23 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   /** @deprecated Use client.collection('media').upload(file, data) instead */
   async uploadMedia(file: File, collection: string = "media"): Promise<Media> {
     return this._upload(collection, file);
+  }
+
+  /**
+   * Replace the underlying file of an existing media document in-place without creating a duplicate record.
+   */
+  async replaceMedia(
+    id: string,
+    file: File | Blob,
+    collection: string = "media",
+  ): Promise<Media> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return this.request<Media>(`/api/collections/${collection}/media/${id}/file`, {
+      method: "POST",
+      headers: { "Content-Type": undefined } as unknown as HeadersInit,
+      body: formData,
+    });
   }
 
   /**

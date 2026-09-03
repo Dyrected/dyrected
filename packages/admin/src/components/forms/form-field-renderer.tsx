@@ -80,7 +80,7 @@ function FormValidationFieldShell({
             {resolvedSchema.label || resolvedSchema.name!.charAt(0).toUpperCase() + resolvedSchema.name!.slice(1)}
             {resolvedSchema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
           </FormLabel>
-          {resolvedSchema.admin?.description && (
+          {isBoolean && resolvedSchema.admin?.description && (
             <p className={cn(
               "dy-text-muted-foreground/60 dy-italic",
               isBoolean ? "dy-text-[11px] dy-leading-tight" : "dy-text-[11px] dy-leading-relaxed"

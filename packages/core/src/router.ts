@@ -725,6 +725,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       app.get(`${prefix}/media`, accessGate(config, col, "read"), (c) => mediaController.find(c));
       app.get(`${prefix}/media/:filename{.+$}`, (c) => mediaController.serve(c));
       app.post(`${prefix}/media`, accessGate(config, col, "create"), (c) => mediaController.upload(c));
+      app.post(`${prefix}/media/:id/file`, accessGate(config, col, "update"), (c) => mediaController.replace(c));
+      app.put(`${prefix}/media/:id/file`, accessGate(config, col, "update"), (c) => mediaController.replace(c));
       app.delete(`${prefix}/media/:id`, accessGate(config, col, "delete"), (c) => mediaController.delete(c));
     }
   }

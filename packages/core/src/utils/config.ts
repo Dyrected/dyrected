@@ -39,6 +39,22 @@ const SYSTEM_FIELDS: Field[] = [
   },
 ];
 
+const MEDIA_SYSTEM_FIELDS: Field[] = [
+  { name: "folderId", type: "text", label: "Folder", admin: { hidden: true } },
+  { name: "filename", type: "text", label: "Filename", required: true },
+  { name: "originalFilename", type: "text", label: "Original Filename", admin: { hidden: true } },
+  { name: "mimeType", type: "text", label: "MIME Type", admin: { hidden: true } },
+  { name: "filesize", type: "number", label: "File Size", admin: { hidden: true } },
+  { name: "url", type: "text", label: "URL", admin: { hidden: true } },
+  { name: "width", type: "number", label: "Width", admin: { hidden: true } },
+  { name: "height", type: "number", label: "Height", admin: { hidden: true } },
+  { name: "aspectRatio", type: "number", label: "Aspect Ratio", admin: { hidden: true } },
+  { name: "blurhash", type: "text", label: "Blurhash", admin: { hidden: true } },
+  { name: "focalPoint", type: "json", label: "Focal Point", admin: { hidden: true } },
+  { name: "alt", type: "text", label: "Alt Text" },
+  { name: "caption", type: "text", label: "Caption" },
+];
+
 const AUDIT_COLLECTION: CollectionConfig = {
   slug: AUDIT_COLLECTION_SLUG,
   labels: { singular: "Audit Log", plural: "Audit Logs" },
@@ -329,6 +345,12 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
           fields = [...fields, field];
         }
       }
+    }
+
+    if (col.upload || col.slug === "media") {
+      const currentNames = new Set(fields.map((f) => f.name));
+      const mediaFieldsToInject = MEDIA_SYSTEM_FIELDS.filter((f) => !currentNames.has(f.name));
+      fields = [...fields, ...mediaFieldsToInject];
     }
 
     const updatedFieldNames = new Set(fields.map((f) => f.name));

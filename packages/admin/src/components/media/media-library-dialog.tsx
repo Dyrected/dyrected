@@ -327,7 +327,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent onPaste={handlePaste} className="dy-h-[94dvh] dy-w-[calc(100vw-1rem)] !dy-max-w-[calc(100vw-1rem)] sm:dy-w-[96vw] sm:!dy-max-w-[96vw] md:dy-w-[96vw] md:!dy-max-w-[96vw] lg:dy-w-[96vw] lg:!dy-max-w-[1600px] dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl dy-rounded-xl">
+      <DialogContent onPaste={handlePaste} className="dy-h-[94dvh] dy-w-[calc(100vw)] !dy-max-w-[calc(100vw)] sm:dy-w-[96vw] sm:!dy-max-w-[96vw] md:dy-w-[96vw] md:!dy-max-w-[96vw] lg:dy-w-[96vw] lg:!dy-max-w-[1600px] dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl dy-rounded-xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-h-full dy-flex-col">
           <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
             <div className="dy-flex dy-min-w-0 dy-items-center dy-gap-3 sm:dy-gap-4">

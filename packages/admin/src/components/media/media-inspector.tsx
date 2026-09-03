@@ -124,20 +124,20 @@ function MediaInspectorForm({
     if (!file || !client) return;
 
     setIsReplacing(true);
-    const toastId = toast.loading("Uploading replacement file...");
+    const toastId = toast.loading("Replacing file in-place...");
     try {
       const col = item.collection || "media";
-      const uploaded = await client.collection(col).upload(file);
+      const updated = await client.replaceMedia(item.id, file, col);
       onUpdate(item.id, {
-        filename: uploaded.filename,
+        filename: updated.filename,
         originalFilename: file.name,
-        mimeType: uploaded.mimeType,
-        filesize: uploaded.filesize,
-        url: uploaded.url,
-        width: uploaded.width,
-        height: uploaded.height,
-        aspectRatio: uploaded.aspectRatio,
-        blurhash: uploaded.blurhash,
+        mimeType: updated.mimeType,
+        filesize: updated.filesize,
+        url: updated.url,
+        width: updated.width,
+        height: updated.height,
+        aspectRatio: updated.aspectRatio,
+        blurhash: updated.blurhash,
       });
       toast.success("File replaced successfully", { id: toastId });
     } catch (err: any) {
@@ -168,6 +168,7 @@ function MediaInspectorForm({
       <input
         ref={fileInputRef}
         type="file"
+        accept={isImage ? "image/*" : (item.mimeType || undefined)}
         className="dy-hidden"
         onChange={handleReplaceFile}
       />

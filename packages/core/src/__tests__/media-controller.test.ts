@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
 import { MediaController } from "../controllers/media.controller.js";
 import type { DyrectedConfig, StorageAdapter } from "../types/index.js";
@@ -54,8 +54,12 @@ describe("MediaController - Dynamic Transforms & DAM Ingestion", () => {
     getGlobal: vi.fn(),
   };
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const createTestApp = (configOverrides: Partial<DyrectedConfig> = {}) => {
-    const app = new Hono();
+    const app = new Hono<any>();
     const config: DyrectedConfig = {
       collections: [{ slug: "media", upload: true, fields: [] }],
       globals: [],
@@ -136,5 +140,41 @@ describe("MediaController - Dynamic Transforms & DAM Ingestion", () => {
         where: { folderId: "folder-summer-2026" },
       })
     );
+  });
+
+  it("replaces existing file in-place and updates document without creating duplicates", async () => {
+    mockDb.update.mockResolvedValueOnce({
+      id: "doc-123",
+      filename: "test-new.png",
+      originalFilename: "test-new.png",
+      mimeType: "image/png",
+    });
+
+    const app = createTestApp();
+    const controller = new MediaController("media");
+    app.post("/api/media/:id/file", (c) => controller.replace(c as any));
+
+    const formData = new FormData();
+    const file = new File([new Uint8Array([9, 8, 7])], "test-new.png", {
+      type: "image/png",
+    });
+    formData.append("file", file);
+
+    const res = await app.request("/api/media/doc-123/file", {
+      method: "POST",
+      body: formData,
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockDb.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: "media",
+        id: "doc-123",
+        data: expect.objectContaining({
+          originalFilename: "test-new.png",
+        }),
+      })
+    );
+    expect(mockDb.create).not.toHaveBeenCalled();
   });
 });
