@@ -913,14 +913,18 @@ export function EditEntryPage() {
             size="icon"
             className="dy-h-9 dy-w-9 dy-rounded-lg hover:dy-bg-muted dy-shrink-0"
             onClick={() => {
-              const hasDetail = (schema as any)?.detail !== false
-              if (isEdit && id && hasDetail) {
-                navigate(`/collections/${slug}/${id}`)
+              if (window.history.length > 1) {
+                navigate(-1)
               } else {
-                navigate(`/collections/${slug}`)
+                const hasDetail = (schema as any)?.detail !== false
+                if (isEdit && id && hasDetail) {
+                  navigate(`/collections/${slug}/${id}`)
+                } else {
+                  navigate(`/collections/${slug}`)
+                }
               }
             }}
-            title={isEdit && (schema as any)?.detail !== false ? "Back to detail" : "Back to list"}
+            title="Go back"
           >
             <ChevronLeft className="dy-h-4 dy-w-4" />
           </Button>
