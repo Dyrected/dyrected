@@ -1,10 +1,28 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Trash2, Copy, Check, FileText, Music, Video as VideoIcon, ExternalLink } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Copy,
+  Check,
+  FileText,
+  Music,
+  Video as VideoIcon,
+  ExternalLink,
+  FolderInput,
+  MoreVertical,
+} from "lucide-react";
 import { Blurhash } from "react-blurhash";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Badge } from "../ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { getMediaPreviewUrl, isExternalMedia } from "../../lib/external-media";
 import { getTransformedMediaUrl, cn } from "../../lib/utils";
 import type { AspectRatioMode } from "./media-filter-bar";
@@ -17,6 +35,7 @@ interface MediaCardProps {
   aspectRatio?: AspectRatioMode;
   isSelected?: boolean;
   onToggleSelect?: (id: string, e: React.MouseEvent) => void;
+  onMoveToFolder?: (item: any) => void;
   onClick?: () => void;
 }
 
@@ -37,6 +56,7 @@ export function MediaCard({
   aspectRatio = "square",
   isSelected = false,
   onToggleSelect,
+  onMoveToFolder,
   onClick,
 }: MediaCardProps) {
   const [isLoaded, setIsLoaded] = React.useState(false);
@@ -138,7 +158,7 @@ export function MediaCard({
       )}
 
       {/* Top Controls: Selection Checkbox & Type Badge */}
-      <div className="dy-absolute dy-top-2 dy-left-2 dy-right-2 dy-flex dy-items-center dy-justify-between dy-pointer-events-none">
+      <div className="dy-absolute dy-top-2 dy-left-2 dy-right-2 dy-flex dy-items-center dy-justify-between dy-pointer-events-none dy-z-20">
         {onToggleSelect && (
           <div
             onClick={(e) => {
@@ -154,15 +174,66 @@ export function MediaCard({
           </div>
         )}
 
-        {isExternal && (
-          <Badge
-            variant="secondary"
-            className="dy-ml-auto dy-pointer-events-auto dy-bg-background/80 dy-backdrop-blur-sm dy-text-[10px] dy-h-5"
-          >
-            <ExternalLink className="dy-h-2.5 dy-w-2.5 dy-mr-1" />
-            Embed
-          </Badge>
-        )}
+        <div className="dy-flex dy-items-center dy-gap-1.5 dy-ml-auto dy-pointer-events-auto">
+          {isExternal && (
+            <Badge
+              variant="secondary"
+              className="dy-bg-background/80 dy-backdrop-blur-sm dy-text-[10px] dy-h-5"
+            >
+              <ExternalLink className="dy-h-2.5 dy-w-2.5 dy-mr-1" />
+              Embed
+            </Badge>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="icon"
+                variant="secondary"
+                className="dy-h-6 dy-w-6 dy-rounded-md dy-bg-background/80 hover:dy-bg-background dy-backdrop-blur-sm dy-shadow-sm dy-text-foreground opacity-90 sm:dy-opacity-0 sm:group-hover:dy-opacity-100 dy-transition-opacity"
+              >
+                <MoreVertical className="dy-h-3.5 dy-w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="dy-w-44" onClick={(e) => e.stopPropagation()}>
+              {onMoveToFolder && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveToFolder(item);
+                  }}
+                >
+                  <FolderInput className="dy-h-3.5 dy-w-3.5 dy-mr-2 dy-text-primary" />
+                  Move to Folder...
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onClick) onClick();
+                }}
+              >
+                <Pencil className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
+                Inspect Asset
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopy}>
+                <Copy className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
+                Copy CDN URL
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="dy-text-destructive focus:dy-text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item.id);
+                }}
+              >
+                <Trash2 className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
+                Delete Asset
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Hover Overlay Action Bar */}
@@ -176,6 +247,21 @@ export function MediaCard({
         >
           {hasCopied ? <Check className="dy-h-3.5 dy-w-3.5 dy-text-emerald-500" /> : <Copy className="dy-h-3.5 dy-w-3.5" />}
         </Button>
+
+        {onMoveToFolder && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="dy-h-8 dy-w-8 dy-rounded-full dy-bg-background/90 hover:dy-bg-background dy-text-foreground dy-shadow-md"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveToFolder(item);
+            }}
+            title="Move to Folder"
+          >
+            <FolderInput className="dy-h-3.5 dy-w-3.5" />
+          </Button>
+        )}
 
         <Link to={editPath} onClick={(e) => e.stopPropagation()}>
           <Button

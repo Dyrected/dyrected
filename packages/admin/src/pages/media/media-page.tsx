@@ -34,7 +34,18 @@ import {
   Video,
   Download,
   Link as LinkIcon,
+  FolderInput,
+  MoreVertical,
+  Copy,
+  Pencil,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu"
 import { getMediaPreviewUrl } from "../../lib/external-media"
 import { getMediaSourceInfo, isStorageNotConfiguredError } from "../../lib/media-utils"
 import { StorageNotConfiguredNotice } from "../../components/media/storage-notice"
@@ -53,6 +64,7 @@ import { FolderTree } from "../../components/media/folder-tree"
 import { FolderPillCarousel } from "../../components/media/folder-pill-carousel"
 import { MediaFilterBar, type MimeFilterType, type AspectRatioMode } from "../../components/media/media-filter-bar"
 import { MediaInspector } from "../../components/media/media-inspector"
+import { MoveToFolderDialog } from "../../components/media/move-to-folder-dialog"
 import { useMediaFolders } from "../../hooks/use-media-folders"
 
 type ViewMode = "grid" | "list"
@@ -81,6 +93,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   const [viewMode, setViewMode] = React.useState<ViewMode>("grid")
   const [mimeFilter, setMimeFilter] = React.useState<MimeFilterType>("all")
   const [aspectRatio, setAspectRatio] = React.useState<AspectRatioMode>("square")
+  const [movingItems, setMovingItems] = React.useState<Media[] | null>(null)
   const debouncedSearch = useDebouncedValue(search.trim(), 300)
 
   const {
@@ -92,6 +105,26 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
     deleteFolder,
     getBreadcrumbs,
   } = useMediaFolders(collectionSlug)
+
+  const handleMoveItems = async (destFolderId: string | null) => {
+    if (!movingItems || movingItems.length === 0 || !client) return
+    const toastId = toast.loading(`Moving ${movingItems.length} item(s)...`)
+    try {
+      await Promise.all(
+        movingItems.map((item) =>
+          client.collection(collectionSlug).update(item.id as string, {
+            folderId: destFolderId,
+          })
+        )
+      )
+      queryClient.invalidateQueries({ queryKey: ["media"] })
+      queryClient.invalidateQueries({ queryKey: [collectionSlug, "folders"] })
+      toast.success(`Moved ${movingItems.length} item(s)`, { id: toastId })
+      setMovingItems(null)
+    } catch (err: any) {
+      toast.error("Failed to move item(s)", { description: err?.message, id: toastId })
+    }
+  }
 
   const {
     data,
@@ -434,6 +467,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
                       item={item}
                       baseUrl={client!.getBaseUrl()}
                       onDelete={() => deleteMutation.mutate(item.id as string)}
+                      onMoveToFolder={() => setMovingItems([item])}
                       onClick={() => setSelectedItem(item)}
                       isSelected={selectedItem?.id === item.id}
                       aspectRatio={aspectRatio}
@@ -455,6 +489,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
                 sortValue={sortValue}
                 onSort={setSortValue}
                 onSelect={setSelectedItem}
+                onMoveToFolder={(item) => setMovingItems([item])}
                 onDelete={(id) => deleteMutation.mutate(id)}
                 sentinelRef={sentinelRef}
                 isFetchingNextPage={isFetchingNextPage}
@@ -491,6 +526,14 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
           setSelectedItem(null)
         }}
       />
+
+      <MoveToFolderDialog
+        open={!!movingItems}
+        onOpenChange={(open) => !open && setMovingItems(null)}
+        folders={folders}
+        itemCount={movingItems?.length || 0}
+        onMove={handleMoveItems}
+      />
     </div>
   )
 }
@@ -503,13 +546,14 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
-function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect, onDelete, sentinelRef, isFetchingNextPage, isRefreshing }: {
-  items: Media[]
+function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect, onMoveToFolder, onDelete, sentinelRef, isFetchingNextPage, isRefreshing }: {
+  items?: Media[]
   baseUrl: string
   selectedId?: string
   sortValue: SortValue
   onSort: (v: SortValue) => void
   onSelect: (item: Media) => void
+  onMoveToFolder?: (item: Media) => void
   onDelete: (id: string) => void
   sentinelRef: (node: HTMLDivElement | null) => void
   isFetchingNextPage: boolean
@@ -544,11 +588,11 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
           <button type="button" className="dy-hidden dy-w-32 dy-items-center dy-gap-1 dy-text-left hover:dy-text-foreground md:dy-flex" onClick={() => toggleSort("createdAt", "-createdAt")}>
             Date <span className="dy-text-primary">{indicator("createdAt", "-createdAt")}</span>
           </button>
-          <div className="dy-w-16 dy-flex-shrink-0 dy-text-right">Actions</div>
+          <div className="dy-w-24 dy-flex-shrink-0 dy-text-right">Actions</div>
         </div>
 
         {/* Rows */}
-        {items.map((item) => {
+        {items?.map((item) => {
           const isImage = item.mimeType?.startsWith("image/")
           const isExternalVideo = item.mimeType === "video/youtube" || item.mimeType === "video/vimeo"
           const preview = getMediaPreviewUrl(item, baseUrl)
@@ -585,7 +629,18 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
               <div className="dy-hidden dy-w-24 dy-truncate dy-text-xs dy-text-muted-foreground sm:dy-block">{item.mimeType?.split("/")[1] || "file"}</div>
               <div className="dy-hidden dy-w-24 dy-text-xs dy-text-muted-foreground sm:dy-block">{formatBytes(item.filesize)}</div>
               <div className="dy-hidden dy-w-32 dy-text-xs dy-text-muted-foreground md:dy-block">{createdAt ? new Date(createdAt).toLocaleDateString() : "—"}</div>
-              <div className="dy-flex dy-w-16 dy-flex-shrink-0 dy-items-center dy-justify-end dy-gap-1" onClick={(e) => e.stopPropagation()}>
+              <div className="dy-flex dy-w-24 dy-flex-shrink-0 dy-items-center dy-justify-end dy-gap-1" onClick={(e) => e.stopPropagation()}>
+                {onMoveToFolder && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="dy-h-8 dy-w-8 dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground"
+                    onClick={() => onMoveToFolder(item)}
+                    title="Move to Folder"
+                  >
+                    <FolderInput className="dy-h-4 dy-w-4" />
+                  </Button>
+                )}
                 {fileUrl && (
                   <a
                     href={fileUrl}
@@ -616,10 +671,11 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
   )
 }
 
-function MediaCard({ item, baseUrl, onDelete, onClick, isSelected, aspectRatio = "square" }: {
+function MediaCard({ item, baseUrl, onDelete, onMoveToFolder, onClick, isSelected, aspectRatio = "square" }: {
   item: Media,
   baseUrl: string,
   onDelete: () => void,
+  onMoveToFolder?: () => void,
   onClick: () => void,
   isSelected: boolean,
   aspectRatio?: AspectRatioMode,
@@ -652,7 +708,6 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected, aspectRatio =
             )
           })()}
           {hasPreview ? (
-
             <>
               {item.blurhash && (
                 <div className="dy-absolute dy-inset-0 dy-z-0">
@@ -700,20 +755,79 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected, aspectRatio =
           </p>
         </div>
       </CardContent>
-      <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-gap-2 dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
-        <Button
-          size="icon"
-          variant="destructive"
-          className="dy-h-8 dy-w-8 dy-rounded-lg dy-shadow-lg sm:dy-h-7 sm:dy-w-7"
-          onClick={(e) => {
-            e.stopPropagation()
-            if (confirm("Are you sure you want to delete this file?")) {
-              onDelete()
-            }
-          }}
-        >
-          <Trash2 className="dy-h-3.5 dy-w-3.5" />
-        </Button>
+      <div className="dy-absolute dy-top-2 dy-right-2 dy-z-30 dy-flex dy-items-center dy-gap-1.5" onClick={(e) => e.stopPropagation()}>
+        {onMoveToFolder && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="dy-h-7 dy-w-7 dy-rounded-md dy-bg-background/80 hover:dy-bg-background dy-backdrop-blur-sm dy-shadow-sm dy-text-foreground dy-opacity-90 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 dy-transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation()
+              onMoveToFolder()
+            }}
+            title="Move to Folder"
+          >
+            <FolderInput className="dy-h-3.5 dy-w-3.5" />
+          </Button>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="dy-h-7 dy-w-7 dy-rounded-md dy-bg-background/80 hover:dy-bg-background dy-backdrop-blur-sm dy-shadow-sm dy-text-foreground dy-opacity-90 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 dy-transition-opacity"
+            >
+              <MoreVertical className="dy-h-3.5 dy-w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="dy-w-44" onClick={(e) => e.stopPropagation()}>
+            {onMoveToFolder && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMoveToFolder()
+                }}
+              >
+                <FolderInput className="dy-h-3.5 dy-w-3.5 dy-mr-2 dy-text-primary" />
+                Move to Folder...
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick()
+              }}
+            >
+              <Pencil className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
+              Inspect Asset
+            </DropdownMenuItem>
+            {previewUrl && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigator.clipboard.writeText(previewUrl)
+                  toast.success("CDN URL copied")
+                }}
+              >
+                <Copy className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
+                Copy URL
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="dy-text-destructive focus:dy-text-destructive"
+              onClick={(e) => {
+                e.stopPropagation()
+                if (confirm("Are you sure you want to delete this file?")) {
+                  onDelete()
+                }
+              }}
+            >
+              <Trash2 className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
+              Delete Asset
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </Card>
   )

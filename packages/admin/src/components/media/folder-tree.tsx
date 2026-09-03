@@ -10,7 +10,9 @@ import {
   Trash2,
   FolderPlus,
   Layers,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -76,6 +78,7 @@ export function FolderTree({
   });
   const [folderNameInput, setFolderNameInput] = React.useState("");
   const [selectedColor, setSelectedColor] = React.useState(PRESET_COLORS[0]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -113,19 +116,28 @@ export function FolderTree({
     });
   };
 
-  const handleDialogSubmit = () => {
-    if (!folderNameInput.trim()) return;
-
-    if (dialogState.type === "create") {
-      onCreateFolder(folderNameInput.trim(), dialogState.parentId, selectedColor);
-      if (dialogState.parentId) {
-        setExpandedFolderIds((prev) => new Set(prev).add(dialogState.parentId!));
+  const handleDialogSubmit = async () => {
+    if (!folderNameInput.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    const isCreate = dialogState.type === "create";
+    const toastId = toast.loading(isCreate ? "Creating folder..." : "Updating folder...");
+    try {
+      if (isCreate) {
+        await onCreateFolder(folderNameInput.trim(), dialogState.parentId, selectedColor);
+        if (dialogState.parentId) {
+          setExpandedFolderIds((prev) => new Set(prev).add(dialogState.parentId!));
+        }
+        toast.success("Folder created", { id: toastId });
+      } else if (dialogState.folderId) {
+        await onRenameFolder(dialogState.folderId, folderNameInput.trim());
+        toast.success("Folder updated", { id: toastId });
       }
-    } else if (dialogState.type === "rename" && dialogState.folderId) {
-      onRenameFolder(dialogState.folderId, folderNameInput.trim());
+      setDialogState((prev) => ({ ...prev, isOpen: false }));
+    } catch (err: any) {
+      toast.error("Operation failed", { description: err?.message, id: toastId });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setDialogState((prev) => ({ ...prev, isOpen: false }));
   };
 
   // Build tree hierarchy
@@ -341,14 +353,16 @@ export function FolderTree({
           <DialogFooter>
             <Button
               variant="outline"
+              disabled={isSubmitting}
               onClick={() =>
                 setDialogState((prev) => ({ ...prev, isOpen: false }))
               }
             >
               Cancel
             </Button>
-            <Button onClick={handleDialogSubmit} disabled={!folderNameInput.trim()}>
-              {dialogState.type === "create" ? "Create" : "Save"}
+            <Button onClick={handleDialogSubmit} disabled={!folderNameInput.trim() || isSubmitting}>
+              {isSubmitting && <Loader2 className="dy-h-4 dy-w-4 dy-animate-spin dy-mr-1.5" />}
+              {isSubmitting ? "Saving..." : (dialogState.type === "create" ? "Create" : "Save")}
             </Button>
           </DialogFooter>
         </DialogContent>

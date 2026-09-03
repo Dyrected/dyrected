@@ -5,7 +5,9 @@ import {
   ChevronRight,
   Plus,
   Layers,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -24,7 +26,7 @@ interface FolderPillCarouselProps {
   activeFolderId: string | null;
   breadcrumbs: FolderBreadcrumbItem[];
   onSelectFolder: (id: string | null) => void;
-  onCreateFolder: (name: string, parentId?: string | null) => void;
+  onCreateFolder: (name: string, parentId?: string | null) => Promise<unknown> | void;
   className?: string;
   totalAssetCount?: number;
 }
@@ -40,6 +42,7 @@ export function FolderPillCarousel({
 }: FolderPillCarouselProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [folderName, setFolderName] = React.useState("");
+  const [isCreating, setIsCreating] = React.useState(false);
 
   // Determine current sibling / child folders to display as pills
   const visibleFolders = React.useMemo(() => {
@@ -58,11 +61,20 @@ export function FolderPillCarousel({
     return folders.filter((f) => !f.parentId);
   }, [folders, activeFolderId]);
 
-  const handleCreate = () => {
-    if (!folderName.trim()) return;
-    onCreateFolder(folderName.trim(), activeFolderId);
-    setFolderName("");
-    setIsCreateOpen(false);
+  const handleCreate = async () => {
+    if (!folderName.trim() || isCreating) return;
+    setIsCreating(true);
+    const toastId = toast.loading("Creating folder...");
+    try {
+      await onCreateFolder(folderName.trim(), activeFolderId);
+      setFolderName("");
+      setIsCreateOpen(false);
+      toast.success("Folder created", { id: toastId });
+    } catch (err: any) {
+      toast.error("Failed to create folder", { description: err?.message, id: toastId });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -183,11 +195,12 @@ export function FolderPillCarousel({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={isCreating}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={!folderName.trim()}>
-              Create
+            <Button onClick={handleCreate} disabled={!folderName.trim() || isCreating}>
+              {isCreating && <Loader2 className="dy-h-4 dy-w-4 dy-animate-spin dy-mr-1.5" />}
+              {isCreating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
