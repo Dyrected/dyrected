@@ -1,5 +1,14 @@
 # @dyrected/next
 
+## 2.12.0
+
+### Patch Changes
+
+- Updated dependencies [cdc2abe]
+  - @dyrected/core@2.12.0
+  - @dyrected/react@2.12.0
+  - @dyrected/sdk@2.12.0
+
 ## 2.11.0
 
 ### Patch Changes

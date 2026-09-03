@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.12.0
+
+### Minor Changes
+
+- cdc2abe: Add `expr` expression builder with `expr.ifElse`, concise shorthands (`expr.empty`, `expr.notEmpty`, `expr.equals`), and fluent transforms (`.slugify()`, `.lower()`, `.upper()`, `.trim()`). Improve `dyrected upgrade` CLI command with sanitized environment execution and streamlined manifest updates.
+
 ## 2.11.0
 
 ### Minor Changes
