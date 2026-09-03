@@ -4201,6 +4201,11 @@ export const references: readonly ReferenceEntry[] = [
         "description": ""
       },
       {
+        "name": "replaceMedia",
+        "signature": "replaceMedia(id: string, file: File | Blob, collection: string = \"media\"): Promise<Media>",
+        "description": "Replace the underlying file of an existing media document in-place without creating a duplicate record."
+      },
+      {
         "name": "deleteMedia",
         "signature": "deleteMedia(id: string, collection: string = \"media\"): Promise<{ message: string }>",
         "description": ""

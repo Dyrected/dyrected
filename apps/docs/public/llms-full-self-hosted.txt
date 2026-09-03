@@ -921,6 +921,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>updateFolder</code> (optional) | Update an existing media folder in an upload-enabled collection. |
 | <code>deleteFolder</code> (required) | Delete a media folder from an upload-enabled collection. |
 | <code>uploadMedia</code> (required) |  |
+| <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
 
 
