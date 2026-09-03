@@ -32,6 +32,7 @@ describe("Dashboard component slots", () => {
     useDyrectedMock.mockReturnValue({
       client: { getSchemas: vi.fn() },
       user: { id: "admin-1" },
+      schemas,
       components: {
         dashboard: {
           before: ({ schemas: received }: { schemas: typeof schemas }) => (
