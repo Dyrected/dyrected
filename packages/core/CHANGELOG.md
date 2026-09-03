@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.11.0
+
+### Minor Changes
+
+- e0246ed: Support dynamic and JEXL `defaultValue` evaluation, `admin.hooks.onChange` live reactivity, `admin.hooks.options` cascading dropdowns, and `admin.condition` visibility inside `ActionFormDialog` and `FormEngine`.
+
 ## 2.10.1
 
 ### Patch Changes
