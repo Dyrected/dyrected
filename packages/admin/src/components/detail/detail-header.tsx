@@ -79,7 +79,13 @@ export function DetailHeader({
           <Button
             variant="link"
             size="sm"
-            onClick={() => navigate(`/collections/${collection.slug}`)}
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1)
+              } else {
+                navigate(`/collections/${collection.slug}`)
+              }
+            }}
             className="dy-h-8 dy-pr-2 dy-pl-0 dy-gap-1 dy-text-muted-foreground hover:dy-text-foreground dy-shrink-0"
           >
             <ChevronLeft className="dy-h-4 dy-w-4" />

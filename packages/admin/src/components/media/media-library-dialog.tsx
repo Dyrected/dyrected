@@ -158,13 +158,34 @@ export function MediaLibraryDialog({
     removeQueueItem,
     clearQueue,
   } = useMediaUpload({
-
     collectionSlug: activeMediaCollection,
     onCompletedItem: async (result) => {
       await (searchQuery ? search(searchQuery) : load())
-      onSelect(result.id, result)
-      setSelectedItem(result)
-      toast.success("Media uploaded successfully!")
+      if (!multiple) {
+        onSelect(result.id, result)
+        setSelectedItem(result)
+        toast.success("Media uploaded successfully!")
+      } else {
+        select(result.id)
+        setSelectedItem(result)
+      }
+    },
+    onAllCompleted: async (results) => {
+      await (searchQuery ? search(searchQuery) : load())
+      if (multiple) {
+        results.forEach((r) => select(r.id))
+        if (onConfirm) {
+          const allIds = Array.from(new Set([...sVals, ...results.map(r => r.id)]))
+          const allItems = [...(selectedItems || []), ...results]
+          onConfirm(allIds, allItems)
+        } else {
+          results.forEach((r) => onSelect(r.id, r as unknown as Media))
+        }
+        if (results.length > 0) {
+          setSelectedItem(results[results.length - 1])
+        }
+        toast.success(`Successfully uploaded ${results.length} asset${results.length > 1 ? "s" : ""}!`)
+      }
     },
   })
 

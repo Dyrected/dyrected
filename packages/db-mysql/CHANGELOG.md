@@ -1,5 +1,13 @@
 # @dyrected/db-mysql
 
+## 2.10.1
+
+### Patch Changes
+
+- Updated dependencies [558341d]
+- Updated dependencies [2720377]
+  - @dyrected/core@2.10.1
+
 ## 2.10.0
 
 ### Minor Changes

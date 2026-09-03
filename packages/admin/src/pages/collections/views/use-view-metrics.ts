@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { evaluateJexlSync } from "@dyrected/core"
 import { useDyrected } from "../../../providers/dyrected-context"
 import type { SerializedViewMetric, SerializedViewSubMetric } from "./types"
@@ -162,6 +162,7 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
       })
     },
     enabled: hasMetrics && !!client,
+    placeholderData: keepPreviousData,
     staleTime: 15_000,
   })
 }

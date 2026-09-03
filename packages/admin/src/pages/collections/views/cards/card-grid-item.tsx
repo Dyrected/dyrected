@@ -7,7 +7,7 @@ import { RenderCell } from "../../../../components/ui/render-cell"
 import { getMediaUrl } from "../../../../lib/utils"
 import { RowActionsCell } from "../row-actions-cell"
 import type { SerializedAction, SerializedView } from "../types"
-import { resolveDocumentTitle } from "@/lib/document-title"
+import { resolveDocumentTitle } from "../../../../lib/document-title"
 
 interface CardGridItemProps {
   slug: string

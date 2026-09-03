@@ -6,8 +6,6 @@ runtimeGroup: recipe-auto-slug
 runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
 ---
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 {/* GENERATED:RECIPE:START */}
 Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
 
@@ -33,7 +31,7 @@ Use this recipe only when its runtime matches the project you are documenting or
 This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-import { defineCollection, defineTextField } from "@dyrected/core";
+import { defineCollection, defineTextField, when } from "@dyrected/core";
 
 export const toSlug = (value: unknown) =>
   String(value ?? "")
@@ -64,8 +62,11 @@ export const Posts = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.then(when.fieldNotEmpty("siblingData.title"), when.slugify("siblingData.title"), "value"),
+            "value",
+          ),
         },
       },
     }),

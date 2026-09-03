@@ -49,7 +49,9 @@ rules, generated package facts, and behavior-tested recipes.
 - Enforce access and validation on the server. Admin visibility is not
   authorization.
 - Use the type-safe `when` condition builder (or serializable Jexl strings) for
-  `admin.condition`, `admin.previewUrl`, `access.*`, and `admin.hooks.onChange`.
+  `admin.condition`, `admin.previewUrl`, `access.*`, and `admin.hooks.onChange`
+  when configuration synchronizes with Dyrected Cloud. JavaScript/TypeScript
+  functions are supported in self-hosted runtimes only.
 - Keep API keys, database credentials, encryption keys, and storage credentials
   out of browser code.
 - Use `relationship` for a stored owning reference and `join` for a virtual

@@ -22,7 +22,10 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
   const localStorageKey = `dyrected_pref_${key}`
   const localWriteVersionRef = React.useRef(0)
   const defaultValueRef = React.useRef(defaultValue)
-  defaultValueRef.current = defaultValue
+
+  React.useEffect(() => {
+    defaultValueRef.current = defaultValue
+  }, [defaultValue])
 
   const [value, setValue] = React.useState<T>(() => {
     if (typeof window === "undefined") return defaultValue
@@ -65,6 +68,7 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
         }
       })
       .catch((e) => {
+        if (e?.statusCode === 401 || (e instanceof Error && e.message.includes("401"))) return
         console.warn(`[usePreferences] Error loading remote key "${key}":`, e)
       })
 
@@ -92,6 +96,7 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
 
       if (client && user) {
         client.setPreference(key, newValue).catch((e) => {
+          if (e?.statusCode === 401 || (e instanceof Error && e.message.includes("401"))) return
           console.warn(`[usePreferences] Error saving remote key "${key}":`, e)
         })
       }

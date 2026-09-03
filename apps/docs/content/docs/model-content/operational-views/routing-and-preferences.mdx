@@ -62,6 +62,8 @@ You can inject custom React components into operational views using slot keys:
 - `beforeViewContent`: Injected above the active layout grid/table.
 - `afterViewContent`: Injected below the active layout.
 
+Slots can be declared collection-wide under `admin.components` (rendered across all views in that collection) or view-specifically inside `defineView({ components: { ... } })` (rendered on that single view only). When both are present, collection-wide slots render first. For registration details and slot props, see [List view components](/docs/editor-experience/custom-components/list-view).
+
 ## Next steps
 
 - Explore all layout options — [UX guidelines](/docs/model-content/operational-views/ux-guidelines)

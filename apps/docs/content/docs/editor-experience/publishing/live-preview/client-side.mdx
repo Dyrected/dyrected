@@ -162,20 +162,30 @@ const { data: page, isLive } = useLivePreview({
 
 ## Click-to-edit with `useDyPath`
 
-Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. Call `useDyPath()` once at the top of your component to get a path annotator helper (`dy`), then call `dy('fieldName')` directly on your elements:
 
 ```tsx
 // React / Next.js
 import { useDyPath } from "@dyrected/react";
 
-function Hero({ heading, subheading }: any) {
-  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+function Hero({ heading, subheading, cta, items }: any) {
+  // Call useDyPath() once at the top of the component
+  const dy = useDyPath();
+
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading && <p {...dySubheading}>{subheading}</p>}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading && <p {...dy("subheading")}>{subheading}</p>}
+      {cta && <button {...dy("cta")}>{cta}</button>}
+
+      {/* Fully hook-safe in loops & nested maps */}
+      <ul>
+        {items?.map((item: any, idx: number) => (
+          <li key={idx} {...dy(`items.${idx}.title`)}>
+            {item.title}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -184,15 +194,28 @@ function Hero({ heading, subheading }: any) {
 ```vue
 <!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>();
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+defineProps<{
+  heading: string;
+  subheading?: string;
+  cta?: string;
+  items?: Array<{ title: string }>;
+}>();
+
+// Call useDyPath() once in setup
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
+    <button v-if="cta" v-bind="dy('cta')">{{ cta }}</button>
+
+    <ul>
+      <li v-for="(item, idx) in items" :key="idx" v-bind="dy(`items.${idx}.title`)">
+        {{ item.title }}
+      </li>
+    </ul>
   </section>
 </template>
 ```

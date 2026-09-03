@@ -1,4 +1,5 @@
 import * as z from "zod"
+import { evaluateJexlSync } from "@dyrected/core"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 import type { PathSegment } from "./nested-editor-context"
 
@@ -133,6 +134,68 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
   return shape
 }
 
+export interface BuildDefaultValuesContext {
+  doc?: Record<string, any>
+  docs?: Record<string, any>[]
+  user?: unknown
+  data?: Record<string, any>
+  siblingData?: Record<string, any>
+}
+
+/**
+ * Evaluates a field's defaultValue, supporting static literals,
+ * dynamic resolver functions, and JEXL expressions with rich context.
+ */
+export function evaluateDefaultValue(
+  defaultValue: unknown,
+  context: BuildDefaultValuesContext = {},
+): unknown {
+  if (defaultValue === undefined) return undefined
+
+  if (typeof defaultValue === "function") {
+    try {
+      return defaultValue({
+        doc: context.doc,
+        docs: context.docs,
+        user: context.user,
+        siblingData: context.siblingData ?? {},
+        data: context.data ?? context.doc ?? {},
+      })
+    } catch {
+      return undefined
+    }
+  }
+
+  if (
+    typeof defaultValue === "string" &&
+    (defaultValue.includes("doc.") ||
+      defaultValue.includes("user.") ||
+      defaultValue.includes("siblingData.") ||
+      defaultValue.includes("data.") ||
+      defaultValue.includes("(") ||
+      defaultValue.includes("+") ||
+      defaultValue.includes("?") ||
+      defaultValue.includes("==") ||
+      defaultValue.includes(">") ||
+      defaultValue.includes("<"))
+  ) {
+    try {
+      const result = evaluateJexlSync(defaultValue, {
+        doc: context.doc,
+        docs: context.docs,
+        user: context.user,
+        siblingData: context.siblingData ?? {},
+        data: context.data ?? context.doc ?? {},
+      })
+      if (result !== undefined) return result
+    } catch {
+      // Fallback to raw string if expression evaluation errors
+    }
+  }
+
+  return defaultValue
+}
+
 /**
  * Builds `react-hook-form` default values from a collection's field definitions
  * and an existing document (or an empty object for new documents).
@@ -143,8 +206,20 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
  *
  * @param fields - Field definitions from the collection schema.
  * @param defaults - Existing document data, or `{}` for a new document.
+ * @param context - Additional contextual data (user, docs, doc).
  */
-export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
+export function buildDefaultValues(
+  fields: FieldSchema[],
+  defaults: any = {},
+  context: BuildDefaultValuesContext = {},
+) {
+  const doc = context.doc ?? (defaults && typeof defaults === "object" ? defaults : {})
+  const evalContext: BuildDefaultValuesContext = {
+    ...context,
+    doc,
+    data: context.data ?? doc,
+  }
+
   return fields.reduce((acc, field) => {
     if ((field.type as string) === "join") {
       // Include backend-populated join data for display (read-only, not submitted)
@@ -154,26 +229,33 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
       return acc
     }
     if ((field.type as string) === "row" && field.fields) {
-      Object.assign(acc, buildDefaultValues(field.fields, defaults))
+      Object.assign(acc, buildDefaultValues(field.fields, defaults, evalContext))
       return acc
     }
 
     const name = field.name!
-    let defaultVal = defaults[name] ?? field.defaultValue
+    let defaultVal = defaults[name]
+
+    if (defaultVal === undefined) {
+      defaultVal = evaluateDefaultValue(field.defaultValue, {
+        ...evalContext,
+        siblingData: acc,
+      })
+    }
 
     if (name === "password" || (field.type as string) === "password") {
       defaultVal = ""
     }
 
     if (field.type === "object" && field.fields) {
-      acc[name] = buildDefaultValues(field.fields, defaultVal || {})
+      acc[name] = buildDefaultValues(field.fields, defaultVal || {}, evalContext)
       return acc
     }
 
     if (field.type === "array") {
       const arr = Array.isArray(defaultVal) ? defaultVal : []
       if (field.fields) {
-        acc[name] = arr.map(item => buildDefaultValues(field.fields!, item || {}))
+        acc[name] = arr.map(item => buildDefaultValues(field.fields!, item || {}, evalContext))
       } else {
         acc[name] = arr
       }
@@ -187,7 +269,7 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
         if (block && block.fields) {
           const merged: Record<string, unknown> = {
             ...item,
-            ...buildDefaultValues(block.fields, item || {})
+            ...buildDefaultValues(block.fields, item || {}, evalContext)
           }
           // Ensure a variant is always present in form state when the block
           // defines variants, so switching/saving round-trips (older rows may

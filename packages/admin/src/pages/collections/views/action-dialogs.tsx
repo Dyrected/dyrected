@@ -25,6 +25,7 @@ export function ActionDialogs({ collection, schemas, pending, isRunning, onResol
         open
         label={pending.label}
         confirm={pending.confirm}
+        submitLabel={pending.submitLabel}
         fields={pending.fields}
         collection={collection}
         schemas={schemas}
@@ -42,6 +43,7 @@ export function ActionDialogs({ collection, schemas, pending, isRunning, onResol
       open
       label={pending.label}
       confirm={pending.confirm}
+      submitLabel={pending.submitLabel}
       isRunning={isRunning}
       onConfirm={() => onResolve()}
       onCancel={onCancel}

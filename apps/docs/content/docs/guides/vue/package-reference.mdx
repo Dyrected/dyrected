@@ -8,7 +8,7 @@ runtimeNotes: Vue can consume a Cloud-backed or self-hosted Dyrected API; it doe
 
 `@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
 
-If you are in Nuxt, prefer [`@dyrected/nuxt`](/docs/guides/frameworks/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+If you are in Nuxt, prefer [`@dyrected/nuxt`](/docs/guides/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
 
 ## What the package gives you
 
@@ -57,7 +57,7 @@ That gives the composables one shared client to work with.
 
 Use `useDyrectedCollection`, `useDyrected`, `useDyrectedGlobal`, `useDyrectedAuth`, and `useLivePreview` when Vue components need a Dyrected client or content state.
 
-For the full rendering workflow, use [Displaying Content in Vue](/docs/guides/frameworks/vue/displaying-content-in-vuejs).
+For the full rendering workflow, use [Displaying Content in Vue](/docs/guides/vue/displaying-content-in-vuejs).
 
 ## Embed the admin
 
@@ -123,12 +123,12 @@ function setTheme(next: "system" | "light" | "dark") {
 
 Use `useLivePreview` for preview-enabled pages. Keep the published fetch path as the main implementation, then render the returned preview data when the admin preview iframe sends updates.
 
-For the guided flow, use [Adding a Visual Editor in Vue](/docs/guides/frameworks/vue/adding-a-visual-editor-in-vuejs).
+For the guided flow, use [Adding a Visual Editor in Vue](/docs/guides/vue/adding-a-visual-editor-in-vuejs).
 
 ## Related pages
 
-- [Choose a package](/docs/guides/frameworks/choose-a-package)
-- [Nuxt package reference](/docs/guides/frameworks/nuxt/package-reference)
-- [Displaying content in Vue](/docs/guides/frameworks/vue/displaying-content-in-vuejs)
+- [Choose a package](/docs/guides/choose-a-package)
+- [Nuxt package reference](/docs/guides/nuxt/package-reference)
+- [Displaying content in Vue](/docs/guides/vue/displaying-content-in-vuejs)
 - [Live preview](/docs/editor-experience/publishing/live-preview/overview)
 - [Admin](/docs/editor-experience/overview)

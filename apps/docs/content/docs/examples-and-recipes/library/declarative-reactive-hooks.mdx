@@ -1,0 +1,110 @@
+---
+title: Calculate field values and format strings live
+description: Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.
+runtime: shared
+runtimeGroup: recipe-declarative-reactive-hooks
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+{/* GENERATED:RECIPE:START */}
+Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.
+
+## Use this when
+
+- build reactive form transforms that survive Cloud schema sync
+- compute field values without writing raw JavaScript functions
+- calculate status-based pricing or conditional totals declaratively
+- format reference codes or IDs from sibling inputs in real-time
+
+## Dyrected concepts
+
+`admin.hooks.onChange`, `when.then`, `when.match`, `when.sibling`, `when.concat`, `when.slugify`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  when,
+} from "@dyrected/core";
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Invoice Title",
+      required: true,
+    }),
+
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      admin: {
+        hooks: {
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
+
+    defineSelectField({
+      name: "planTier",
+      label: "Plan Tier",
+      defaultValue: "standard",
+      options: [
+        { label: "Free Trial", value: "trial" },
+        { label: "Standard", value: "standard" },
+        { label: "Enterprise", value: "enterprise" },
+      ],
+    }),
+
+    defineNumberField({
+      name: "basePrice",
+      label: "Base Price (₦)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: when.match()
+            .case(when.sibling("planTier").equals("trial"), 0)
+            .case(when.sibling("planTier").equals("standard"), 25000)
+            .case(when.sibling("planTier").equals("enterprise"), 100000)
+            .otherwise(25000),
+        },
+      },
+    }),
+
+    defineTextField({
+      name: "referenceCode",
+      label: "Payment Reference",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: when.concat(
+            "INV-",
+            when.upper("siblingData.planTier"),
+            "-",
+            when.slugify("siblingData.title")
+          ),
+        },
+      },
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

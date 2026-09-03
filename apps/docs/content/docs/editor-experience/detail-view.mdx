@@ -508,16 +508,18 @@ displayField("deliveryNotes", {
 
 ### 5. Progressive conditional disclosure with `visible`
 
-Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+Clean dashboards omit irrelevant data. Use the `when` builder (or a serializable JEXL expression) to conditionally hide entire sections or fields when they do not apply to the current record.
 
 ```ts
+import { displaySection, when } from "@dyrected/sdk";
+
 // Hide the entire fulfillment card if the guest didn't place an order
 displaySection("Order & Fulfillment", [
   // ... fields
 ], {
   span: 12,
   icon: "Package",
-  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+  visible: when.any(when.fieldIsTrue("wantsAsoebi"), when.fieldIsTrue("wantsAsoOke")),
 }),
 ```
 

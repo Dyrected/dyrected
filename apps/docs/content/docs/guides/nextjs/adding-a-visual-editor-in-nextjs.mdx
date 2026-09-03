@@ -42,9 +42,11 @@ It does not yet:
 For routable content, set `admin.previewUrl` on the collection so Dyrected knows which frontend route to open:
 
 ```ts
+import { when } from "@dyrected/sdk";
+
 admin: {
   useAsTitle: "title",
-  previewUrl: "slug == 'home' ? '/' : '/' + slug",
+  previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
 }
 ```
 
@@ -98,13 +100,33 @@ This keeps the first preview integration small: fetch the document normally on t
 
 Click-to-edit only works reliably when the frontend renders fields through the path-aware helpers Dyrected already exposes.
 
-For block content, that usually means rendering through `Blocks` and passing the real field path:
+For block content, that means rendering through `Blocks` and using `useDyPath()` inside the block component:
 
 ```tsx
+// app/components/blocks/HeroBlock.tsx
+"use client";
+
+import { useDyPath } from "@dyrected/next";
+
+export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
+  // Call useDyPath() once at the top of your component
+  const dy = useDyPath();
+
+  return (
+    <section>
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
+    </section>
+  );
+}
+```
+
+```tsx
+// app/[slug]/page.tsx
 <Blocks items={page.layout} path="layout" components={{ hero: HeroBlock }} />
 ```
 
-That path is what lets the preview surface map a click in the frontend back to the matching field in the editor.
+Those paths are what let the preview surface map a click in the frontend back to the matching field in the editor.
 
 </Step>
 <Step>
@@ -154,7 +176,7 @@ Once preview works on one real route, you are ready to turn that route into a co
 - matching frontend components for those sections
 - one real workflow where editors create and arrange a landing page in preview
 
-Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/guides/frameworks/nextjs/building-landing-pages-for-marketing).
+Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/guides/nextjs/building-landing-pages-for-marketing).
 
 ## Success check
 
@@ -164,4 +186,4 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/guides/frameworks/nextjs/building-landing-pages-for-marketing).
+Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/guides/nextjs/building-landing-pages-for-marketing).

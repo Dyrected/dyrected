@@ -13,7 +13,10 @@ import {
   executeFieldAfterRead,
 } from "../utils/hooks.js";
 import { createReadonlyDb } from "../utils/readonly-db.js";
-import { validateUpload } from "../utils/upload-validation.js";
+import {
+  validateUpload,
+  generateUniqueUploadFilename,
+} from "../utils/upload-validation.js";
 import { resolveAccess } from "../auth/access.js";
 import { getAdminAuthCollection } from "../utils/admin-auth.js";
 import { buildCollectionSearchWhere } from "../utils/collection-search.js";
@@ -542,6 +545,8 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
+    data = DefaultsService.apply(this.collection.fields, data);
+
     if (this.collection.workflow) {
       data = initializeWorkflowDocument(data, this.collection.workflow);
     }
@@ -694,8 +699,10 @@ export class CollectionController {
     const workspaceId = c.get("workspaceId");
     const prefix = workspaceId ? `${workspaceId}/${siteId}` : siteId;
 
+    const uniqueFilename = generateUniqueUploadFilename(file.name);
+
     const fileData = await storage.upload({
-      filename: file.name,
+      filename: uniqueFilename,
       buffer,
       mimeType: file.type,
       prefix,

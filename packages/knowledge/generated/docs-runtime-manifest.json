@@ -1695,6 +1695,21 @@
     "status": "classified"
   },
   {
+    "id": "examples-and-recipes--library--computed-fields-and-totals",
+    "relativePath": "examples-and-recipes/library/computed-fields-and-totals",
+    "title": "Compute fields and calculate totals live",
+    "description": "Automatically compute field values, totals, and balances with server-side guarantees and instant Admin UI reactivity.",
+    "runtime": "self-hosted",
+    "runtimeGroup": "recipe-computed-fields-and-totals",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/computed-fields-and-totals.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/computed-fields-and-totals",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/computed-fields-and-totals",
+    "status": "classified"
+  },
+  {
     "id": "examples-and-recipes--library--conditional-admin-field",
     "relativePath": "examples-and-recipes/library/conditional-admin-field",
     "title": "Show an Admin field only when it is relevant",
@@ -1767,6 +1782,21 @@
     "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/custom-theme-shell",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-theme-shell",
+    "status": "classified"
+  },
+  {
+    "id": "examples-and-recipes--library--declarative-reactive-hooks",
+    "relativePath": "examples-and-recipes/library/declarative-reactive-hooks",
+    "title": "Calculate field values and format strings live",
+    "description": "Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.",
+    "runtime": "shared",
+    "runtimeGroup": "recipe-declarative-reactive-hooks",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/declarative-reactive-hooks.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/declarative-reactive-hooks",
     "status": "classified"
   },
   {
@@ -2807,8 +2837,8 @@
   {
     "id": "model-content--content-rules--declarative-expressions",
     "relativePath": "model-content/content-rules/declarative-expressions",
-    "title": "Declarative Expressions & Helpers",
-    "description": "Learn how to write Cloud-safe Jexl expressions for field hooks, reactive form logic, and access control rules using Dyrected's built-in helper utility suite.",
+    "title": "Declarative Expressions & Conditions",
+    "description": "Learn how to write type-safe, Cloud-safe expressions for field visibility, live preview URLs, access control rules, and reactive form hooks using the when builder.",
     "runtime": "cloud",
     "runtimeGroup": "",
     "runtimeNotes": "",

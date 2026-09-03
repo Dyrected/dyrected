@@ -47,7 +47,9 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+If an action requires user input (like selecting a seat, entering notes, or recording a payment), declare `fields` to automatically generate an input modal.
+
+When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 import { defineAction, defineNumberField, defineTextField } from "@dyrected/core";
@@ -55,19 +57,97 @@ import { defineAction, defineNumberField, defineTextField } from "@dyrected/core
 export const assignTableAction = defineAction({
   name: "assignTable",
   label: "Assign Table",
+  submitLabel: "Save Seating", // Customizes modal button (defaults to "Run")
   icon: "Table2",
   type: "row",
   fields: [
     defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
-    defineTextField({ name: "notes", label: "Seating Notes" }),
+    defineTextField({ name: "seatingNotes", label: "Seating Notes" }),
   ],
-  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.seatingNotes" },
 });
 ```
 
 Expressions like `"input.tableNumber"` extract values submitted through the dialog.
 
-### 3. Bulk and header actions
+### 3. Dynamic defaults and live modal reactivity
+
+Action modal fields support the exact same reactivity engine and hooks as document edit forms:
+
+- **Dynamic `defaultValue` (Initial Prefill)**: Compute initial field values using targeted record data (`doc`), bulk records (`docs`), or the authenticated editor (`user`).
+- **Live `admin.hooks.onChange`**: Automatically recalculate calculated totals, summary strings, or reference codes as the editor types inside the modal.
+- **Dynamic `admin.hooks.options`**: Cascading dropdown choices that update live as sibling inputs change.
+- **Conditional Visibility (`admin.condition`)**: Dynamically show or hide modal inputs based on sibling choices or targeted row properties.
+
+Here is a complete example of a payment recording action modal with dynamic prefilling, live total calculation, and conditional cheque inputs:
+
+```ts
+import {
+  defineAction,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  when,
+} from "@dyrected/core";
+
+export const recordPaymentAction = defineAction({
+  name: "recordPayment",
+  label: "Record Payment",
+  submitLabel: "Process Payment",
+  icon: "CreditCard",
+  type: "row",
+  fields: [
+    defineSelectField({
+      name: "paymentMethod",
+      label: "Payment Method",
+      required: true,
+      defaultValue: "transfer",
+      options: [
+        { label: "Bank Transfer", value: "transfer" },
+        { label: "Cash", value: "cash" },
+        { label: "Cheque", value: "cheque" },
+      ],
+    }),
+    defineTextField({
+      name: "chequeNumber",
+      label: "Cheque Number",
+      admin: {
+        // Shows only when 'cheque' is selected in the modal
+        condition: when.sibling("paymentMethod").equals("cheque"),
+      },
+    }),
+    defineNumberField({
+      name: "amount",
+      label: "Amount (₦)",
+      required: true,
+      // 1. Initial prefill: Remaining balance from the targeted record
+      defaultValue: ({ doc }) => (doc?.totalDue || 0) - (doc?.amountPaid || 0),
+    }),
+    defineNumberField({
+      name: "balanceAfter",
+      label: "Remaining Balance After Payment (₦)",
+      admin: {
+        readOnly: true,
+        // 2. Live reactivity: Updates continuously as the editor edits 'amount'
+        hooks: {
+          onChange: ({ siblingData, doc }) => {
+            const remaining = (doc?.totalDue || 0) - (doc?.amountPaid || 0);
+            return Math.max(0, remaining - (Number(siblingData.amount) || 0));
+          },
+        },
+      },
+    }),
+  ],
+  mutation: {
+    amountPaid: "doc.amountPaid + input.amount",
+    paymentMethod: "input.paymentMethod",
+    chequeNumber: "input.chequeNumber",
+    lastPaymentAt: "now()",
+  },
+});
+```
+
+### 4. Bulk and header actions
 
 Define actions that operate across multiple selected documents or view-wide:
 
@@ -77,6 +157,7 @@ import { defineAction } from "@dyrected/core";
 export const markSelectedPaidAction = defineAction({
   name: "markSelectedPaid",
   label: "Mark Paid",
+  submitLabel: "Confirm Payment",
   type: "bulk",
   mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
 });
@@ -84,6 +165,7 @@ export const markSelectedPaidAction = defineAction({
 export const sendReminderAction = defineAction({
   name: "sendReminder",
   label: "Send Reminders",
+  submitLabel: "Send Message",
   icon: "BellRing",
   type: "header",
   confirm: "Send a payment reminder to all guests with pending requests?",
@@ -103,6 +185,7 @@ import { defineAction } from "@dyrected/core";
 export const chargeGuestAction = defineAction({
   name: "chargeGuest",
   label: "Charge Outfit",
+  submitLabel: "Process Charge",
   icon: "CreditCard",
   type: "row",
   handler: async ({ doc, input }) => {
@@ -121,22 +204,36 @@ The data returned from `handler` automatically merges into the document through 
 
 ## Configuration options
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
-| `label` | `string` **required** | Button text displayed to editors. |
-| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
-| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
-| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
-| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
+<CloudOnly>
+
+| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
+
+</CloudOnly>
 
 <SelfHostedOnly>
 
-| Self-Hosted Option | Type | Description |
-| --- | --- | --- |
-| `handler` | `(ctx) => Promise<Partial<Doc>>` | Custom async TypeScript handler for server-side workflows and third-party API integration. |
+| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
+| `handler`     | `(ctx) => Promise<Partial<Doc>>`  | Custom async TypeScript handler for server-side workflows and third-party API integration.                                               |
 
 </SelfHostedOnly>
 
@@ -147,6 +244,7 @@ The data returned from `handler` automatically merges into the document through 
 - **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
 
 To customize the order and visibility of built-in vs custom buttons on a view:
+
 ```ts
 defineView({
   slug: "attending-guests",

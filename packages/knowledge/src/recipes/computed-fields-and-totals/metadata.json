@@ -1,0 +1,23 @@
+{
+  "id": "computed-fields-and-totals",
+  "title": "Compute fields and calculate totals live",
+  "description": "Automatically compute field values, totals, and balances with server-side guarantees and instant Admin UI reactivity.",
+  "problem": "You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database.",
+  "summary": "Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.",
+  "category": "data-lifecycle",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses beforeChange for database guarantees and admin.hooks.onChange for live Admin UI reactivity.",
+  "intents": [
+    "calculate order totals from sibling inputs",
+    "compute remaining balances automatically",
+    "update field values live as an editor types",
+    "guarantee computed values in the database"
+  ],
+  "concepts": ["beforeChange", "admin.hooks.onChange", "defaultValue", "readOnly"],
+  "canonicalDocs": [
+    "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+    "/docs/model-content/content-rules/hooks",
+    "/docs/deployment-and-operations/server-runtime/hooks/fields"
+  ],
+  "requires": []
+}

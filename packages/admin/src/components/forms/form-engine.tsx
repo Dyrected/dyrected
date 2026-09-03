@@ -26,6 +26,7 @@ import {
 } from "../../lib/workflow-autosave"
 import { createDyrectedFormController, joinFieldPath } from "../../controllers/form"
 import { DyrectedFormProvider } from "../../providers/dyrected-form-context"
+import { useDyrected } from "../../providers/dyrected-context"
 
 export type { FieldSchema, BlockSchema }
 
@@ -119,9 +120,13 @@ function FormEngineInner({
   defaultTabLabel,
   autosave,
 }: FormEngineProps, ref: React.ForwardedRef<FormEngineHandle>) {
+  const { user } = useDyrected()
   const { activePath, navigateToPath, getStableId } = useNestedEditor()
   const [searchParams, setSearchParams] = useSearchParams()
   const isDrilledIn = activePath.length > 0
+  const rootDrilledFieldName = isDrilledIn
+    ? (activePath[0]?.fieldName || activePath[0]?.basePath?.split('.')[0])
+    : null
   const isEdit = !!defaultValues?.id
   const [dynamicOptions, setDynamicOptions] = useState<Record<string, Array<{ label: string, value: unknown }>>>({})
 
@@ -182,7 +187,11 @@ function FormEngineInner({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: buildDefaultValues(fields, defaultValues),
+    defaultValues: buildDefaultValues(fields, defaultValues, {
+      user,
+      doc: defaultValues,
+      data: defaultValues,
+    }),
   })
 
   const { isDirty } = form.formState
@@ -501,6 +510,7 @@ function FormEngineInner({
 
         const currentValue = watchedValues[field.name]
         let calculatedValue: unknown
+        const mergedData = { ...(defaultValues ?? {}), ...watchedValues }
 
         if (typeof hook === "function") {
           try {
@@ -508,14 +518,20 @@ function FormEngineInner({
               value: unknown
               siblingData: Record<string, unknown>
               data: Record<string, unknown>
+              doc?: Record<string, unknown>
+              user?: unknown
               setValue: (value: unknown) => void
             }) => unknown)({
               value: currentValue,
               siblingData: watchedValues,
-              data: watchedValues,
+              data: mergedData,
+              doc: defaultValues,
+              user,
               setValue: (val: unknown) => {
-                const setValueFn = form.setValue as unknown as (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void
-                setValueFn(field.name, val, { shouldDirty: true })
+                if (field.name) {
+                  const setValueFn = form.setValue as unknown as (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void
+                  setValueFn(field.name, val, { shouldDirty: true })
+                }
               },
             })
           } catch (err) {
@@ -527,9 +543,9 @@ function FormEngineInner({
                 stripSerializedFunctionHookPrefix(hook),
                 currentValue,
                 watchedValues,
-                watchedValues,
+                mergedData,
               )
-            : runDeclarativeHookExpression(hook, currentValue, watchedValues, watchedValues)
+            : runDeclarativeHookExpression(hook, currentValue, watchedValues, mergedData)
         }
 
         if (active && calculatedValue !== undefined && calculatedValue !== currentValue) {
@@ -547,7 +563,7 @@ function FormEngineInner({
 
     runOnChangeHooks()
     return () => { active = false }
-  }, [watchedValues, fields, form])
+  }, [watchedValues, fields, form, defaultValues, user])
 
   // ── Hook 2: admin.hooks.options — computes dynamic OPTIONS for select fields ─
   // e.g. country → state cascading dropdown.
@@ -564,12 +580,19 @@ function FormEngineInner({
         if (!hook) continue
 
         let newOptions: Array<string | { label: string; value: unknown }> = []
+        const mergedData = { ...(defaultValues ?? {}), ...watchedValues }
         try {
           if (typeof hook === "function") {
-            newOptions = await hook({ siblingData: watchedValues, data: watchedValues })
+            newOptions = await hook({
+              value: watchedValues[field.name],
+              siblingData: watchedValues,
+              data: mergedData,
+              doc: defaultValues,
+              user,
+            })
           } else if (typeof hook === "string") {
             // Serialized hook received from /api/schemas — run inside the sandbox
-            newOptions = await runHookSandboxed(hook, undefined, watchedValues, watchedValues) ?? []
+            newOptions = await runHookSandboxed(hook, undefined, watchedValues, mergedData) ?? []
           }
         } catch (err) {
           console.error(`[dyrected/admin] Error running options hook for field "${field.name}":`, err)
@@ -610,21 +633,23 @@ function FormEngineInner({
 
     runOptionsHooks()
     return () => { active = false }
-  }, [watchedValues, fields, form, dynamicOptions])
+  }, [watchedValues, fields, form, dynamicOptions, defaultValues, user])
 
   // ── Field layout ─────────────────────────────────────────────────────────────
   // In edit mode the password field is handled by the dedicated Change Password
-  // section below, so we exclude it from the normal field list to avoid
-  // rendering the old "Password Configuration" card inside a tab.
+  // When drilled into a nested container (e.g. a specific block in 'blocks' or
+  // an item in an array), only render that root field so top-level sibling fields
+  // (like page title, path, SEO, etc.) do not clutter the focused block editor.
   const visibleFields = resolvedFields
     .filter((f) => !f.admin?.hidden)
     .filter((f) => {
       if (isEdit && (f.name === "password" || (f.type as string) === "password")) return false
+      if (isDrilledIn && rootDrilledFieldName && f.name !== rootDrilledFieldName) return false
       return true
     })
   const topFields = visibleFields.filter((f) => !f.admin?.tab)
   const tabbedFields = visibleFields.filter((f) => !!f.admin?.tab)
-  const showPasswordSection = hasPassword && passwordChangeMode !== null
+  const showPasswordSection = !isDrilledIn && hasPassword && passwordChangeMode !== null
 
   let fieldsContent: React.ReactNode
 
@@ -745,7 +770,7 @@ function FormEngineInner({
   // drilled-in sub-form lives inside that tab's <TabsContent>, which Radix only
   // mounts while the tab is active — so if the user is on another tab we must
   // switch to the owning one, otherwise only the breadcrumb shows.
-  const drilledRootField = activePath[0]?.fieldName
+  const drilledRootField = rootDrilledFieldName
   let drilledTab: string | undefined
   if (drilledRootField) {
     for (const [tab, tabFields] of tabGroups) {

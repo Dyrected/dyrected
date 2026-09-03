@@ -6,6 +6,7 @@ import type { ResolvedMetric } from "./use-view-metrics"
 interface MetricCardsProps {
   metrics: ResolvedMetric[]
   isLoading?: boolean
+  isRefetching?: boolean
   className?: string
 }
 
@@ -108,7 +109,7 @@ function resolveMetricColor(color?: string): ColorTokens {
   }
 }
 
-export function MetricCards({ metrics, isLoading = false, className }: MetricCardsProps) {
+export function MetricCards({ metrics, isLoading = false, isRefetching = false, className }: MetricCardsProps) {
   if (!metrics.length && !isLoading) return null
 
   const count = isLoading ? Math.max(metrics.length, 3) : metrics.length
@@ -144,14 +145,20 @@ export function MetricCards({ metrics, isLoading = false, className }: MetricCar
               key={metric.label}
               className={cn(
                 colorStyles.card,
-                "dy-shadow-xs",
+                "dy-shadow-xs dy-transition-opacity dy-duration-200",
+                isRefetching && "dy-opacity-90",
                 isFullWidthMobile ? "dy-col-span-2 lg:dy-col-span-1" : "dy-col-span-1"
               )}
             >
               <CardContent className="dy-space-y-2 !dy-p-4">
-                <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
-                  {metric.label}
-                </p>
+                <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+                  <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
+                    {metric.label}
+                  </p>
+                  {isRefetching && (
+                    <span className="dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-current dy-animate-ping dy-opacity-75" title="Updating..." />
+                  )}
+                </div>
                 <div className="dy-flex dy-items-baseline dy-justify-between dy-gap-2">
                   <p className={cn("dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
                     {metric.formatted}

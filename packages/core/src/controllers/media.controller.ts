@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { DyrectedContext } from "../app.js";
-import { validateUpload } from "../utils/upload-validation.js";
+import { validateUpload, generateUniqueUploadFilename } from "../utils/upload-validation.js";
 import { mergeDynamicConfig } from "../utils/block-references.js";
 import { getRequestLogger } from "../observability.js";
 
@@ -63,6 +63,8 @@ export class MediaController {
       ? `${workspaceId}/${siteId}`
       : siteId || "default";
 
+    const uniqueFilename = generateUniqueUploadFilename(file.name);
+
     // 1. Process Image if service exists
     let imageMetadata: any = {};
     let imageSizes: any = {};
@@ -89,7 +91,7 @@ export class MediaController {
 
     // 2. Upload main file
     const fileData = await storage.upload({
-      filename: file.name,
+      filename: uniqueFilename,
       buffer,
       mimeType: file.type,
       prefix,
@@ -108,9 +110,10 @@ export class MediaController {
         string,
         any,
       ][]) {
-        const ext = file.name.split(".").pop();
-        const baseName = file.name.substring(0, file.name.lastIndexOf("."));
-        const sizeFilename = `${baseName}-${sizeName}.${ext}`;
+        const lastDot = uniqueFilename.lastIndexOf(".");
+        const ext = lastDot !== -1 ? uniqueFilename.substring(lastDot) : "";
+        const baseName = lastDot !== -1 ? uniqueFilename.substring(0, lastDot) : uniqueFilename;
+        const sizeFilename = `${baseName}-${sizeName}${ext}`;
 
         try {
           const sizeFileData = await storage.upload({

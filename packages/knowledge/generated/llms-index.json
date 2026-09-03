@@ -82,6 +82,26 @@
       ]
     },
     {
+      "id": "computed-fields-and-totals",
+      "title": "Compute fields and calculate totals live",
+      "description": "Automatically compute field values, totals, and balances with server-side guarantees and instant Admin UI reactivity.",
+      "problem": "You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database.",
+      "summary": "Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.",
+      "docsPath": "/docs/examples-and-recipes/library/computed-fields-and-totals",
+      "canonicalDocs": [
+        "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+        "/docs/model-content/content-rules/hooks",
+        "/docs/deployment-and-operations/server-runtime/hooks/fields"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "calculate order totals from sibling inputs",
+        "compute remaining balances automatically",
+        "update field values live as an editor types",
+        "guarantee computed values in the database"
+      ]
+    },
+    {
       "id": "conditional-admin-field",
       "title": "Show an Admin field only when it is relevant",
       "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
@@ -177,6 +197,26 @@
         "share dyrected theme state across a dashboard",
         "add a dyrected theme switcher to my app shell",
         "keep my product page and dyrected ui on the same theme"
+      ]
+    },
+    {
+      "id": "declarative-reactive-hooks",
+      "title": "Calculate field values and format strings live",
+      "description": "Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.",
+      "problem": "You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code.",
+      "summary": "Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.",
+      "docsPath": "/docs/examples-and-recipes/library/declarative-reactive-hooks",
+      "canonicalDocs": [
+        "/docs/model-content/content-rules/declarative-expressions",
+        "/docs/model-content/content-rules/cloud-safe-hooks",
+        "/docs/deployment-and-operations/server-runtime/hooks/fields"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build reactive form transforms that survive Cloud schema sync",
+        "compute field values without writing raw JavaScript functions",
+        "calculate status-based pricing or conditional totals declaratively",
+        "format reference codes or IDs from sibling inputs in real-time"
       ]
     },
     {

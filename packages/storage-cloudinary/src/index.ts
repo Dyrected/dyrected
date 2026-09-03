@@ -22,11 +22,28 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
       ? (this.config.folder ? `${this.config.folder}/${args.prefix}` : args.prefix)
       : this.config.folder;
 
+    const lastDotIndex = args.filename.lastIndexOf('.');
+    const baseName = lastDotIndex !== -1 ? args.filename.substring(0, lastDotIndex) : args.filename;
+    const sanitizedBase = baseName
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'file';
+
+    // If the filename does not already have a timestamp/random unique suffix, append one
+    // to guarantee no collision or overwrite in Cloudinary.
+    const publicId = /-\d{10,13}-[a-z0-9]{4,10}$/.test(sanitizedBase)
+      ? sanitizedBase
+      : `${sanitizedBase}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          public_id: args.filename.split('.')[0], // Remove extension
+          public_id: publicId,
           folder,
+          overwrite: false,
           resource_type: 'auto',
         },
         (error, result) => {

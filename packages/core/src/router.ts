@@ -202,6 +202,7 @@ export async function serializeViewForApi(view: any, serializeAccess: (access: a
     metrics: view.metrics,
     features: view.features,
     actionOrder: view.actionOrder,
+    components: view.components,
     actions: await Promise.all(
       (view.actions || []).map(async (action: any) => ({
         name: action.name,
@@ -209,6 +210,7 @@ export async function serializeViewForApi(view: any, serializeAccess: (access: a
         icon: action.icon,
         type: action.type ?? "row",
         confirm: action.confirm,
+        submitLabel: action.submitLabel,
         fields: action.fields?.map(serializeFieldForApi),
         mutation: action.mutation,
         // Self-hosted handlers are intentionally omitted: they never leave the server.

@@ -6,8 +6,6 @@ runtimeGroup: recipe-preview-url-token-mode
 runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
 ---
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 {/* GENERATED:RECIPE:START */}
 Set a preview URL expression and postMessage live preview mode for routable frontend content.
 
@@ -33,13 +31,13 @@ Use this recipe only when its runtime matches the project you are documenting or
 This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-import { defineCollection, defineTextField } from "@dyrected/core";
+import { defineCollection, defineTextField, when } from "@dyrected/core";
 
 export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: when.then("slug", when.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },

@@ -99,14 +99,13 @@ For block content, that usually means rendering through `<DyrectedBlocks>` and u
 <script setup lang="ts">
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -161,4 +160,4 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyrected](/docs/guides/frameworks/nuxt/building-landing-pages-for-marketing).
+Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyrected](/docs/guides/nuxt/building-landing-pages-for-marketing).

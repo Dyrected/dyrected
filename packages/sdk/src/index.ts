@@ -1,4 +1,12 @@
 import { stringify, stringifyQuery } from "./utils/stringify.js";
+export {
+  when,
+  formatJexlValue,
+  MatchBuilder,
+  FieldConditionBuilder,
+  type WhenFunction,
+  type AccessConditions,
+} from "@dyrected/core";
 import type {
   AdminConfig,
   PublicAdminAuthConfig,
@@ -40,7 +48,6 @@ type SchemaResponse = {
     uploadCollectionConfigured?: boolean;
   };
 };
-
 
 export type {
   PaginatedResult,
@@ -186,6 +193,10 @@ export interface DyrectedClientConfig {
   headers?: Record<string, string>;
   fetch?: typeof fetch;
   /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
+  /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
    * does not pass its own `depth`. Defaults to `1`.
@@ -267,11 +278,13 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   private headers: Record<string, string>;
   private fetch: typeof fetch;
   private defaultDepth: number;
+  private onAuthError?: (error: DyrectedError) => void;
 
   constructor(config: DyrectedClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
     this.fetch = (config.fetch || fetch).bind(globalThis);
     this.defaultDepth = config.defaultDepth ?? 1;
+    this.onAuthError = config.onAuthError;
     this.headers = {
       "Content-Type": "application/json",
       ...(config.apiKey ? { "x-api-key": config.apiKey } : {}),
@@ -1093,12 +1106,28 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             }),
           );
         }
-        console.log("[DyrectedError]", body, res.status);
-        throw new DyrectedError(
+        const error = new DyrectedError(
           body.message || `Request failed with status ${res.status}`,
           res.status,
           body.code,
         );
+        if (
+          res.status === 401 &&
+          !path.endsWith("/login") &&
+          !path.endsWith("/init") &&
+          !path.endsWith("/first-user")
+        ) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("dyrected:auth-unauthorized", {
+                detail: { message: body.message, code: body.code, path },
+              }),
+            );
+          }
+          this.onAuthError?.(error);
+        }
+        console.log("[DyrectedError]", body, res.status);
+        throw error;
       }
       return res.json() as Promise<T>;
     }

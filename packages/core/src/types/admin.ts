@@ -9,12 +9,25 @@ export interface AdminDashboardComponentSlots {
   afterDashboard?: string[];
 }
 
+/** Ordered custom component keys rendered around an operational view's content. */
+export interface CollectionViewComponentSlots {
+  beforeViewHeader?: string[];
+  afterViewHeader?: string[];
+  beforeViewContent?: string[];
+  afterViewContent?: string[];
+}
+
 /** Ordered custom component keys rendered around a collection's list content. */
 export interface CollectionListComponentSlots {
   beforeList?: string[];
   beforeListTable?: string[];
   afterListTable?: string[];
   afterList?: string[];
+  beforeViewHeader?: string[];
+  afterViewHeader?: string[];
+  beforeViewContent?: string[];
+  afterViewContent?: string[];
+  collectionView?: CollectionViewComponentSlots;
 }
 
 /**

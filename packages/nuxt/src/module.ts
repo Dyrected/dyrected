@@ -145,6 +145,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       { name: "useDyrectedAuth", from: resolver.resolve("./runtime/composables/useDyrectedAuth") },
       { name: "useLivePreview", from: "@dyrected/vue" },
       { name: "useDyPath", from: "@dyrected/vue" },
+      { name: "useDyPathHelper", from: "@dyrected/vue" },
       { name: "provideDyPath", from: "@dyrected/vue" },
       { name: "getPreviewToken", from: "@dyrected/vue" },
     ]);

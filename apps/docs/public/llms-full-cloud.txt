@@ -932,6 +932,10 @@ export interface DyrectedClientConfig {
   headers?: Record<string, string>;
   fetch?: typeof fetch;
   /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
+  /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
    * does not pass its own `depth`. Defaults to `1`.
@@ -947,6 +951,7 @@ export interface DyrectedClientConfig {
 | <code>siteId</code> (optional) |  |
 | <code>headers</code> (optional) |  |
 | <code>fetch</code> (optional) |  |
+| <code>onAuthError</code> (optional) | Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint. |
 | <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
 
 
@@ -2473,16 +2478,18 @@ displayField("deliveryNotes", {
 
 ### 5. Progressive conditional disclosure with `visible`
 
-Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+Clean dashboards omit irrelevant data. Use the `when` builder (or a serializable JEXL expression) to conditionally hide entire sections or fields when they do not apply to the current record.
 
 ```ts
+
+
 // Hide the entire fulfillment card if the guest didn't place an order
 displaySection("Order & Fulfillment", [
   // ... fields
 ], {
   span: 12,
   icon: "Package",
-  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+  visible: when.any(when.fieldIsTrue("wantsAsoebi"), when.fieldIsTrue("wantsAsoOke")),
 }),
 ```
 
@@ -3923,14 +3930,37 @@ This is the right API for:
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
 
-## Built-in Declarative Jexl Helpers
+## Declarative Field Transforms & `when` Helpers
 
-Dyrected provides a zero-dependency helper utility suite for declarative `admin.hooks.onChange`, field conditions, and access control rules:
+For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `when` builder:
+
+```typescript
+
+
+defineTextField({
+  name: "slug",
+  label: "Slug",
+  admin: {
+    hooks: {
+      // Auto-generates slug from title when empty
+      onChange: when.then(
+        when.fieldEmpty("value"),
+        when.slugify("siblingData.title"),
+        "value"
+      ),
+    },
+  },
+});
+```
+
+### Global JEXL Runtime Functions
+
+The `when` builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
 
 ### String Helpers
-- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`).
-- `lower(str)` / `upper(str)`: Converts string casing.
-- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word.
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `when.slugify(field)`.
+- `lower(str)` / `upper(str)`: Converts string casing. Available via `when.lower(field)` and `when.upper(field)`.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `when.trim(field)`.
 - `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
 - `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
 - `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.
@@ -5106,20 +5136,30 @@ const { data: page, isLive } = useLivePreview({
 
 ## Click-to-edit with `useDyPath`
 
-Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. Call `useDyPath()` once at the top of your component to get a path annotator helper (`dy`), then call `dy('fieldName')` directly on your elements:
 
 ```tsx
 // React / Next.js
 
 
-function Hero({ heading, subheading }: any) {
-  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+function Hero({ heading, subheading, cta, items }: any) {
+  // Call useDyPath() once at the top of the component
+  const dy = useDyPath();
+
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading && <p {...dySubheading}>{subheading}</p>}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading && <p {...dy("subheading")}>{subheading}</p>}
+      {cta && <button {...dy("cta")}>{cta}</button>}
+
+      
+      <ul>
+        {items?.map((item: any, idx: number) => (
+          <li key={idx} {...dy(`items.${idx}.title`)}>
+            {item.title}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -5128,15 +5168,28 @@ function Hero({ heading, subheading }: any) {
 ```vue
 <!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>();
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+defineProps<{
+  heading: string;
+  subheading?: string;
+  cta?: string;
+  items?: Array<{ title: string }>;
+}>();
+
+// Call useDyPath() once in setup
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
+    <button v-if="cta" v-bind="dy('cta')">{{ cta }}</button>
+
+    <ul>
+      <li v-for="(item, idx) in items" :key="idx" v-bind="dy(`items.${idx}.title`)">
+        {{ item.title }}
+      </li>
+    </ul>
   </section>
 </template>
 ```
@@ -7484,11 +7537,13 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Generate a slug from a title](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
+- [Compute fields and calculate totals live](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database. Summary: Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
+- [Calculate field values and format strings live](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks) — Problem: You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code. Summary: Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
 - [Create a document download library](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
@@ -7514,9 +7569,6 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 ## Set up a Calendar schedule view
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
 
@@ -7578,9 +7630,6 @@ export const Appointments = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use a reusable categories collection and a has-many relationship from content entries that need tagging.
 
 ## Use this when
@@ -7638,9 +7687,6 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use a serializable Admin condition to reveal a field from the editor's current form values.
 
 ## Use this when
@@ -7674,7 +7720,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: "couponCode != null && couponCode != ''" },
+      admin: { condition: when.fieldNotEmpty("couponCode") },
     }),
   ],
 });
@@ -7685,9 +7731,6 @@ export const Orders = defineCollection({
 ## Build a field editor directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.
 
@@ -7833,9 +7876,6 @@ export default function CustomerComplaintRoute() {
 ## Build a media picker directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
 
@@ -7999,9 +8039,6 @@ export default function ComplaintAttachmentRoute() {
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
 
 ## Use this when
@@ -8064,12 +8101,116 @@ export default function DashboardRoute() {
 
 ---
 
+## Calculate field values and format strings live
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks
+
+Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.
+
+## Use this when
+
+- build reactive form transforms that survive Cloud schema sync
+- compute field values without writing raw JavaScript functions
+- calculate status-based pricing or conditional totals declaratively
+- format reference codes or IDs from sibling inputs in real-time
+
+## Dyrected concepts
+
+`admin.hooks.onChange`, `when.then`, `when.match`, `when.sibling`, `when.concat`, `when.slugify`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  when,
+} from "@dyrected/core";
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Invoice Title",
+      required: true,
+    }),
+
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      admin: {
+        hooks: {
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
+
+    defineSelectField({
+      name: "planTier",
+      label: "Plan Tier",
+      defaultValue: "standard",
+      options: [
+        { label: "Free Trial", value: "trial" },
+        { label: "Standard", value: "standard" },
+        { label: "Enterprise", value: "enterprise" },
+      ],
+    }),
+
+    defineNumberField({
+      name: "basePrice",
+      label: "Base Price (₦)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: when.match()
+            .case(when.sibling("planTier").equals("trial"), 0)
+            .case(when.sibling("planTier").equals("standard"), 25000)
+            .case(when.sibling("planTier").equals("enterprise"), 100000)
+            .otherwise(25000),
+        },
+      },
+    }),
+
+    defineTextField({
+      name: "referenceCode",
+      label: "Payment Reference",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: when.concat(
+            "INV-",
+            when.upper("siblingData.planTier"),
+            "-",
+            when.slugify("siblingData.title")
+          ),
+        },
+      },
+    }),
+  ],
+});
+```
+
+---
+
 ## Create a document download library
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.
 
@@ -8121,9 +8262,6 @@ export const Documents = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
 
 ## Use this when
@@ -8165,9 +8303,6 @@ export const Posts = defineCollection({
 ## Build a Kanban pipeline board
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kanban-pipeline-view
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.
 
@@ -8256,9 +8391,6 @@ export const Orders = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Model reusable navigation links in one global, including one level of child links for grouped menus.
 
 ## Use this when
@@ -8314,9 +8446,6 @@ export const Navigation = defineGlobal({
 ## Add KPI metric cards above a view
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-metrics
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
 
@@ -8415,9 +8544,6 @@ export const EventRsvps = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.
 
 ## Use this when
@@ -8493,9 +8619,6 @@ export const GuestResponses = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/page-builder-blocks
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
 
 ## Use this when
@@ -8559,9 +8682,6 @@ export const Pages = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/preview-url-token-mode
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Set a preview URL expression and postMessage live preview mode for routable frontend content.
 
 ## Use this when
@@ -8592,7 +8712,7 @@ export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: when.then("slug", when.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
@@ -8608,9 +8728,6 @@ export const Docs = defineCollection({
 ## Model a relationship and its reverse lookup
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/relationship-and-reverse-join
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Store an author relationship on posts and expose the author's posts through a virtual join field.
 
@@ -8673,9 +8790,6 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/responsive-image-library
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.
 
 ## Use this when
@@ -8727,9 +8841,6 @@ export const Media = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/safe-field-rename
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use renameTo and a safe default while documents migrate lazily to a new field name.
 
 ## Use this when
@@ -8775,9 +8886,6 @@ export const Customers = defineCollection({
 ## Group SEO fields into an Admin tab
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/seo-tab-fields
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep secondary metadata together under an SEO tab so the main editing form stays focused.
 
@@ -8828,9 +8936,6 @@ export const Pages = defineCollection({
 ## Create a site settings global
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/site-settings-global
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep shared site-wide values in a single global instead of scattering them across collections.
 
@@ -8886,9 +8991,6 @@ export const SiteSettings = defineGlobal({
 ## Create a media upload collection
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/upload-collection
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Enable file uploads and capture accessible metadata in a dedicated media collection.
 
@@ -9504,11 +9606,11 @@ Use this page when you know your frontend framework, but you are not sure which 
 
 The practical choice is not "which package has the most features?" It is: **where does the Dyrected backend live, and how much framework glue do you want?**
 
-- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/guides/nextjs/package-reference).
+- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/guides/nuxt/package-reference).
+- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/cloud/guides/react/package-reference).
+- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/cloud/guides/vue/package-reference).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/cloud/guides/sdk).
 
 ## The package map
 
@@ -9592,9 +9694,11 @@ It does not yet:
 For routable content, set `admin.previewUrl` on the collection so Dyrected knows which frontend route to open:
 
 ```ts
+
+
 admin: {
   useAsTitle: "title",
-  previewUrl: "slug == 'home' ? '/' : '/' + slug",
+  previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
 }
 ```
 
@@ -9648,13 +9752,33 @@ This keeps the first preview integration small: fetch the document normally on t
 
 Click-to-edit only works reliably when the frontend renders fields through the path-aware helpers Dyrected already exposes.
 
-For block content, that usually means rendering through `Blocks` and passing the real field path:
+For block content, that means rendering through `Blocks` and using `useDyPath()` inside the block component:
 
 ```tsx
+// app/components/blocks/HeroBlock.tsx
+"use client";
+
+
+
+export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
+  // Call useDyPath() once at the top of your component
+  const dy = useDyPath();
+
+  return (
+    <section>
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
+    </section>
+  );
+}
+```
+
+```tsx
+// app/[slug]/page.tsx
 <Blocks items={page.layout} path="layout" components={{ hero: HeroBlock }} />
 ```
 
-That path is what lets the preview surface map a click in the frontend back to the matching field in the editor.
+Those paths are what let the preview surface map a click in the frontend back to the matching field in the editor.
 
 </Step>
 <Step>
@@ -9704,7 +9828,7 @@ Once preview works on one real route, you are ready to turn that route into a co
 - matching frontend components for those sections
 - one real workflow where editors create and arrange a landing page in preview
 
-Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/building-landing-pages-for-marketing).
 
 ## Success check
 
@@ -9714,7 +9838,7 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/building-landing-pages-for-marketing).
 
 ---
 
@@ -9722,7 +9846,7 @@ Once that is true, the preview integration is working. Continue to [Let Editors 
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). This is the page where schema, rendering, and visual preview finally become one complete workflow for editors. At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/adding-a-visual-editor-in-nextjs). This is the page where schema, rendering, and visual preview finally become one complete workflow for editors. At this point, the important pieces should already exist:
 
 - the `pages` collection exists
 - the frontend can render Dyrected content
@@ -9987,7 +10111,7 @@ function HeroBlockView(props: {
 />;
 ```
 
-If you need the shared rendering pattern first, go back to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), especially the section on rendering blocks.
+If you need the shared rendering pattern first, go back to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs), especially the section on rendering blocks.
 
 </Step>
 <Step>
@@ -10040,10 +10164,10 @@ That is the moment this guide is aiming for. It proves editors are no longer jus
 
 This workflow only works because the earlier quick-start pages already handled the pieces below:
 
-- [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) shaped the content model
-- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the first load non-empty
-- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the frontend render real content
-- [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made editors preview and click into that content
+- [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/nextjs/defining-a-schema) shaped the content model
+- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-initial-data) made the first load non-empty
+- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs) made the frontend render real content
+- [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/adding-a-visual-editor-in-nextjs) made editors preview and click into that content
 
 This page is where those pieces finally become one editor-ready landing-page workflow.
 
@@ -10067,7 +10191,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs)
 
 ## Success check
 
@@ -10087,7 +10211,7 @@ Once that is true, editors can create a page, add approved sections, reorder the
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
 
 By the end, you should know what to keep, what to remove, and how to shape the first version of the schema without modeling more than the frontend can safely render yet.
 
@@ -10256,7 +10380,7 @@ You are ready for the next step when:
 - shared site content lives in globals where that makes sense
 - preview can open a real frontend route for that routable content
 
-Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-initial-data).
 
 ---
 
@@ -10401,7 +10525,7 @@ You are ready for the next step when:
 - the route handles missing documents safely
 - at least one structured field shape is rendered with the proper helper instead of an ad hoc shortcut
 
-Once that is true, continue to [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/adding-a-visual-editor-in-nextjs).
 
 ---
 
@@ -10409,7 +10533,7 @@ Once that is true, continue to [Adding a Visual Editor in Next.js](https://docs.
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing Next.js app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Use this page when you are ready to add Dyrected to an existing Next.js app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/nextjs/defining-a-schema).
 
 For this quick start, **Dyrected Cloud is the recommended path**. It keeps the first setup small: you connect your app, point the admin at your Cloud site, and confirm `/admin` loads before you start modeling content.
 
@@ -10610,7 +10734,7 @@ You are ready for the next page when:
 - `/admin` loads
 - on the self-hosted path, the local route handler exists too
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/nextjs/defining-a-schema).
 
 ---
 
@@ -10628,12 +10752,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Next.js app.
-2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) that matches what the site really needs to edit.
-3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so a new environment does not start empty.
-4. **Step 4:** [Display that content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-6. **Step 6:** [Let editors build custom pages in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) when you want approved reusable sections instead of one fixed page shape.
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Next.js app.
+2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/guides/nextjs/defining-a-schema) that matches what the site really needs to edit.
+3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-initial-data) so a new environment does not start empty.
+4. **Step 4:** [Display that content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/nextjs/adding-a-visual-editor-in-nextjs).
+6. **Step 6:** [Let editors build custom pages in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/building-landing-pages-for-marketing) when you want approved reusable sections instead of one fixed page shape.
 
 ## The mental model
 
@@ -10666,7 +10790,7 @@ This quick start assumes:
 
 If you are still deciding whether Dyrected matches the kind of product or site you are building, start with [Use Cases](https://docs.dyrected.com/docs/cloud/start-here/use-cases) and [Concepts](https://docs.dyrected.com/docs/cloud/model-content/concepts).
 
-If you already know the backend will live on Dyrected Cloud and only want the short credential-prep step first, use [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) before the main install page.
+If you already know the backend will live on Dyrected Cloud and only want the short credential-prep step first, use [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-your-cloud-site) before the main install page.
 
 When the framework setup is done and you are ready to give access to another person, use [Handing Off to Editors](https://docs.dyrected.com/docs/cloud/editor-experience/hand-off-to-editors). That shared guide covers the Cloud and self-hosted onboarding paths without tying them to one frontend framework.
 
@@ -10679,7 +10803,7 @@ You are on the right guide path if your goal is:
 - your Next.js routes fetch and render Dyrected content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). If you already know you are using Dyrected Cloud and want the short prep step first, read [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and then return to the install page.
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected). If you already know you are using Dyrected Cloud and want the short prep step first, read [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-your-cloud-site) and then return to the install page.
 
 ---
 
@@ -10821,7 +10945,7 @@ export function AdminClientPage() {
 
 Use `getDyrectedClient()` when a server component, route handler, or server action needs a configured SDK client. The helper reads `NEXT_PUBLIC_DYRECTED_URL` first, then `DYRECTED_URL`, and falls back to `http://localhost:3000` if neither is set. It also reads the matching API key variables.
 
-For the end-to-end rendering workflow, use [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+For the end-to-end rendering workflow, use [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs).
 
 ## Use the rest of the stack from the same package
 
@@ -10830,6 +10954,7 @@ When you need live preview or rendering helpers, the Next package is still the e
 - `useLivePreview`
 - `Blocks`
 - `useDyPath`
+- `useDyPathHelper`
 - `DyrectedImage`
 - `DyrectedMedia`
 - `DyrectedIcon`
@@ -10845,8 +10970,8 @@ In production, remember two things:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [Displaying content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/choose-a-package)
+- [Displaying content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 - [Live preview](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview)
 - [Deployment](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
@@ -10988,7 +11113,7 @@ You are ready for the next step when:
 - shared site chrome has safe defaults
 - you are no longer depending on manual admin entry just to prove the site works
 
-Once that is true, continue to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs).
 
 ---
 
@@ -11004,7 +11129,7 @@ By the end, you should have one Dyrected Cloud site, the three values the instal
 
 The main Next.js setup page now covers both Cloud-backed and self-hosted installation in one place:
 
-- [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected)
 
 This page is only the Cloud-specific preflight for readers who already know they want Dyrected Cloud to host the backend.
 
@@ -11029,7 +11154,7 @@ Both options use the same Cloud backend.
 
 ## Continue with the full setup
 
-Once you have the Cloud site and those three values, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), which now covers the full Next.js setup flow.
+Once you have the Cloud site and those three values, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected), which now covers the full Next.js setup flow.
 
 ## Success check
 
@@ -11039,7 +11164,7 @@ You are ready to continue when:
 - you have the `Site ID`, `Site API key`, and `Base URL`
 - you know whether editors will use hosted admin or your own `/admin` route
 
-Once those are true, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once those are true, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected).
 
 ---
 
@@ -11143,14 +11268,13 @@ For block content, that usually means rendering through `<DyrectedBlocks>` and u
 <script setup lang="ts">
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -11205,7 +11329,7 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyrected](https://docs.dyrected.com/docs/cloud/guides/nuxt/building-landing-pages-for-marketing).
 
 ---
 
@@ -11213,7 +11337,7 @@ Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyre
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/adding-a-visual-editor-in-nuxtjs). At this point, the important pieces should already exist:
 
 - the `pages` collection exists
 - the frontend can render Dyrected content
@@ -11390,10 +11514,10 @@ That is the moment this guide is aiming for. It proves editors are no longer jus
 
 This workflow only works because the earlier quick-start pages already handled the pieces below:
 
-- [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) shaped the content model
-- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the first load non-empty
-- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the frontend render real content
-- [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made editors preview and click into that content
+- [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/nuxt/defining-a-schema) shaped the content model
+- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/nuxt/setting-up-initial-data) made the first load non-empty
+- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs) made the frontend render real content
+- [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/adding-a-visual-editor-in-nuxtjs) made editors preview and click into that content
 
 This page is where those pieces finally become one editor-ready landing-page workflow.
 
@@ -11417,7 +11541,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs)
 
 ## Success check
 
@@ -11437,7 +11561,7 @@ Once that is true, your Nuxt quick start is complete. When you are ready to give
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nuxt/installing-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
 
 By the end, you should know what to keep, what to remove, and how to shape the first version of the schema without modeling more than the frontend can safely render yet.
 
@@ -11606,7 +11730,7 @@ You are ready for the next step when:
 - shared site content lives in globals where that makes sense
 - preview can open a real frontend route for that routable content
 
-Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/nuxt/setting-up-initial-data).
 
 ---
 
@@ -11748,7 +11872,7 @@ You are ready for the next step when:
 - the route handles missing documents safely
 - at least one structured field shape is rendered with the proper helper instead of an ad hoc shortcut
 
-Once that is true, continue to [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/adding-a-visual-editor-in-nuxtjs).
 
 ---
 
@@ -11756,7 +11880,7 @@ Once that is true, continue to [Adding a Visual Editor in Nuxt](https://docs.dyr
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing Nuxt app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Use this page when you are ready to add Dyrected to an existing Nuxt app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/nuxt/defining-a-schema).
 
 For this quick start, **Dyrected Cloud is the recommended path**. It keeps the first setup small: you connect your app, point the Nuxt module at your Cloud site, and confirm `/admin` loads before you start modeling content.
 
@@ -11960,7 +12084,7 @@ You are ready for the next page when:
 - `/admin` loads
 - on the self-hosted path, the Nuxt module is serving the local Dyrected API route too
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/nuxt/defining-a-schema).
 
 ---
 
@@ -11978,12 +12102,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Nuxt app.
-2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) that matches what the site really needs to edit.
-3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so a new environment does not start empty.
-4. **Step 4:** [Display that content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-6. **Step 6:** [Let editors build custom pages in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/nuxt/installing-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Nuxt app.
+2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/guides/nuxt/defining-a-schema) that matches what the site really needs to edit.
+3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/guides/nuxt/setting-up-initial-data) so a new environment does not start empty.
+4. **Step 4:** [Display that content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/nuxt/adding-a-visual-editor-in-nuxtjs).
+6. **Step 6:** [Let editors build custom pages in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/building-landing-pages-for-marketing).
 
 ## The mental model
 
@@ -12027,7 +12151,7 @@ You are on the right guide path if your goal is:
 - your Nuxt routes fetch and render Dyrected content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/nuxt/installing-dyrected).
 
 ---
 
@@ -12158,7 +12282,7 @@ For normal reads, the module gives you a configured SDK client and Nuxt-friendly
 
 Those are auto-imported by the module.
 
-For the end-to-end rendering workflow, use [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+For the end-to-end rendering workflow, use [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs).
 
 ## Default path expectations
 
@@ -12181,9 +12305,9 @@ For remote API mode:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [Vue package reference](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [Displaying content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/choose-a-package)
+- [Vue package reference](https://docs.dyrected.com/docs/cloud/guides/vue/package-reference)
+- [Displaying content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 - [Deployment](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
@@ -12324,7 +12448,7 @@ You are ready for the next step when:
 - shared site chrome has safe defaults
 - you are no longer depending on manual admin entry just to prove the site works
 
-Once that is true, continue to [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs).
 
 ---
 
@@ -12406,13 +12530,12 @@ For block content, that usually means rendering through `Blocks` and using `useD
 
 
 export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+  const dy = useDyPath();
 
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading ? <p {...dySubheading}>{subheading}</p> : null}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
     </section>
   );
 }
@@ -12458,7 +12581,7 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in React with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Let Editors Build Custom Pages in React with Dyrected](https://docs.dyrected.com/docs/cloud/guides/react/building-landing-pages-for-marketing).
 
 ---
 
@@ -12466,7 +12589,7 @@ Once that is true, continue to [Let Editors Build Custom Pages in React with Dyr
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/guides/react/adding-a-visual-editor-in-reactjs). At this point, the important pieces should already exist:
 
 - the `pages` content type exists
 - the frontend can render Dyrected content
@@ -12579,7 +12702,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying Content in React](https://docs.dyrected.com/docs/cloud/guides/react/displaying-content-in-react)
 
 ## Success check
 
@@ -12699,7 +12822,7 @@ That is enough to make the next rendering step concrete instead of hypothetical.
 
 ## Escape hatches
 
-If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
+If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/react/defining-a-schema) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
 
 ## Success check
 
@@ -12709,7 +12832,7 @@ You are ready for the next step when:
 - the app has one or more shared records it can read
 - you can point to one real piece of content the frontend should render next
 
-Once that is true, continue to [Displaying Content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Displaying Content in React](https://docs.dyrected.com/docs/cloud/guides/react/displaying-content-in-react).
 
 ---
 
@@ -12717,7 +12840,7 @@ Once that is true, continue to [Displaying Content in React](https://docs.dyrect
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your React app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/react/installing-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your React app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
 
 By the end, you should know what the first collections and globals should be, what belongs in each, and how to avoid modeling more than the frontend can safely render yet.
 
@@ -12863,7 +12986,7 @@ You are ready for the next step when:
 - you know which shared content belongs in globals
 - you have one small first model the frontend can actually consume
 
-Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/guides/react/creating-your-first-content).
 
 ---
 
@@ -13034,7 +13157,7 @@ You are ready for the next step when:
 - the route handles missing content safely
 - at least one structured field shape is rendered with the proper helper
 
-Once that is true, continue to [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/guides/react/adding-a-visual-editor-in-reactjs).
 
 ---
 
@@ -13042,7 +13165,7 @@ Once that is true, continue to [Adding a Visual Editor in React](https://docs.dy
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing React app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Use this page when you are ready to add Dyrected to an existing React app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/react/defining-a-schema).
 
 For React, this quick start is **Cloud-only**. The current SPA path connects a React app to Dyrected Cloud and does not support running the full Dyrected backend inside the app itself.
 
@@ -13214,7 +13337,7 @@ You are ready for the next page when:
 - `dyrected.config.ts` exists
 - the admin loads against your Dyrected Cloud site
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/react/defining-a-schema).
 
 ---
 
@@ -13232,12 +13355,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and connect the app to Dyrected Cloud.
-2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) your app actually needs.
-3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so the frontend is not wiring against an empty CMS.
-4. **Step 4:** [Display that content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-6. **Step 6:** [Let editors build custom pages in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/react/installing-dyrected) and connect the app to Dyrected Cloud.
+2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/guides/react/defining-a-schema) your app actually needs.
+3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/guides/react/creating-your-first-content) so the frontend is not wiring against an empty CMS.
+4. **Step 4:** [Display that content in React](https://docs.dyrected.com/docs/cloud/guides/react/displaying-content-in-react).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/react/adding-a-visual-editor-in-reactjs).
+6. **Step 6:** [Let editors build custom pages in React](https://docs.dyrected.com/docs/cloud/guides/react/building-landing-pages-for-marketing).
 
 ## The mental model
 
@@ -13277,7 +13400,7 @@ You are on the right guide path if your goal is:
 - your React routes fetch and render that content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/react/installing-dyrected).
 
 ---
 
@@ -13287,7 +13410,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/package-referen
 
 `@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
 
-If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead.
+If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/guides/nextjs/package-reference) instead.
 
 ## What the package gives you
 
@@ -13341,13 +13464,13 @@ From there, every component can read the shared client through `useDyrected()`.
 
 ## Fetch content in components
 
-Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](https://docs.dyrected.com/docs/cloud/guides/react/displaying-content-in-react).
 
 ## Add live preview when the page needs it
 
 Use `useLivePreview` when a route should update from the admin preview iframe. Keep the published fetch path as the main implementation, then make preview additive on top of it.
 
-For the guided flow, use [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+For the guided flow, use [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/guides/react/adding-a-visual-editor-in-reactjs).
 
 ## Embed the admin
 
@@ -13402,9 +13525,9 @@ export function AdminPage() {
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [SDK](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [Displaying content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/choose-a-package)
+- [SDK](https://docs.dyrected.com/docs/cloud/guides/sdk)
+- [Displaying content in React](https://docs.dyrected.com/docs/cloud/guides/react/displaying-content-in-react)
 - [Live preview](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 
@@ -13418,7 +13541,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/guides/sdk
 
 If your framework already has a higher-level package, prefer that package first and drop to the SDK when you need lower-level control.
 
-For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/cloud/guides/choose-a-package).
 
 ## Install the package
 
@@ -13579,16 +13702,17 @@ For block content, that usually means rendering through `<Blocks>` and using `us
 
 ```vue
 <script setup lang="ts">
+
+
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -13633,7 +13757,7 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Vue with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Let Editors Build Custom Pages in Vue with Dyrected](https://docs.dyrected.com/docs/cloud/guides/vue/building-landing-pages-for-marketing).
 
 ---
 
@@ -13641,7 +13765,7 @@ Once that is true, continue to [Let Editors Build Custom Pages in Vue with Dyrec
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/adding-a-visual-editor-in-vuejs). At this point, the important pieces should already exist:
 
 - the `pages` content type exists
 - the frontend can render Dyrected content
@@ -13754,7 +13878,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/displaying-content-in-vuejs)
 
 ## Success check
 
@@ -13874,7 +13998,7 @@ That is enough to make the next rendering step concrete instead of hypothetical.
 
 ## Escape hatches
 
-If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
+If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/vue/defining-a-schema) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
 
 ## Success check
 
@@ -13884,7 +14008,7 @@ You are ready for the next step when:
 - the app has one or more shared records it can read
 - you can point to one real piece of content the frontend should render next
 
-Once that is true, continue to [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/displaying-content-in-vuejs).
 
 ---
 
@@ -13892,7 +14016,7 @@ Once that is true, continue to [Displaying Content in Vue](https://docs.dyrected
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your Vue app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/vue/installing-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your Vue app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
 
 By the end, you should know what the first collections and globals should be, what belongs in each, and how to avoid modeling more than the frontend can safely render yet.
 
@@ -14038,7 +14162,7 @@ You are ready for the next step when:
 - you know which shared content belongs in globals
 - you have one small first model the frontend can actually consume
 
-Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/guides/vue/creating-your-first-content).
 
 ---
 
@@ -14191,7 +14315,7 @@ You are ready for the next step when:
 - the route handles missing content safely
 - at least one structured field shape is rendered with the proper helper
 
-Once that is true, continue to [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once that is true, continue to [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/adding-a-visual-editor-in-vuejs).
 
 ---
 
@@ -14199,7 +14323,7 @@ Once that is true, continue to [Adding a Visual Editor in Vue](https://docs.dyre
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing Vue app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Use this page when you are ready to add Dyrected to an existing Vue app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/vue/defining-a-schema).
 
 For Vue, this quick start is **Cloud-only**. The current SPA path connects a Vue app to Dyrected Cloud and does not support running the full Dyrected backend inside the app itself.
 
@@ -14368,7 +14492,7 @@ You are ready for the next page when:
 - `dyrected.config.ts` exists
 - the admin loads against your Dyrected Cloud site
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/vue/defining-a-schema).
 
 ---
 
@@ -14386,12 +14510,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and connect the app to Dyrected Cloud.
-2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) your app actually needs.
-3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so the frontend is not wiring against an empty CMS.
-4. **Step 4:** [Display that content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-6. **Step 6:** [Let editors build custom pages in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/vue/installing-dyrected) and connect the app to Dyrected Cloud.
+2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/guides/vue/defining-a-schema) your app actually needs.
+3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/guides/vue/creating-your-first-content) so the frontend is not wiring against an empty CMS.
+4. **Step 4:** [Display that content in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/displaying-content-in-vuejs).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/vue/adding-a-visual-editor-in-vuejs).
+6. **Step 6:** [Let editors build custom pages in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/building-landing-pages-for-marketing).
 
 ## The mental model
 
@@ -14431,7 +14555,7 @@ You are on the right guide path if your goal is:
 - your Vue routes fetch and render that content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/vue/installing-dyrected).
 
 ---
 
@@ -14441,7 +14565,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/package-reference
 
 `@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
 
-If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/guides/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
 
 ## What the package gives you
 
@@ -14490,7 +14614,7 @@ That gives the composables one shared client to work with.
 
 Use `useDyrectedCollection`, `useDyrected`, `useDyrectedGlobal`, `useDyrectedAuth`, and `useLivePreview` when Vue components need a Dyrected client or content state.
 
-For the full rendering workflow, use [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+For the full rendering workflow, use [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/displaying-content-in-vuejs).
 
 ## Embed the admin
 
@@ -14556,13 +14680,13 @@ function setTheme(next: "system" | "light" | "dark") {
 
 Use `useLivePreview` for preview-enabled pages. Keep the published fetch path as the main implementation, then render the returned preview data when the admin preview iframe sends updates.
 
-For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/adding-a-visual-editor-in-vuejs).
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [Nuxt package reference](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
-- [Displaying content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/choose-a-package)
+- [Nuxt package reference](https://docs.dyrected.com/docs/cloud/guides/nuxt/package-reference)
+- [Displaying content in Vue](https://docs.dyrected.com/docs/cloud/guides/vue/displaying-content-in-vuejs)
 - [Live preview](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 
@@ -14700,7 +14824,7 @@ Adapters such as `@dyrected/db-postgres`, `@dyrected/db-mysql`, `@dyrected/db-sq
 
 ## Next step
 
-If this mental model feels clear, continue to [Installation](https://docs.dyrected.com/docs/cloud/start-here/installation). If you want the practical setup path after that, go to the quick start guide that matches your frontend: [Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), [Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), [React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), or [Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+If this mental model feels clear, continue to [Installation](https://docs.dyrected.com/docs/cloud/start-here/installation). If you want the practical setup path after that, go to the quick start guide that matches your frontend: [Next.js](https://docs.dyrected.com/docs/cloud/guides/nextjs/overview), [Nuxt](https://docs.dyrected.com/docs/cloud/guides/nuxt/overview), [React](https://docs.dyrected.com/docs/cloud/guides/react/overview), or [Vue](https://docs.dyrected.com/docs/cloud/guides/vue/overview).
 
 ---
 
@@ -15285,9 +15409,31 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
+   * table or cards view navigates directly to the editing form with Live Preview.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array using display helpers (`displaySection`, `displayField`, `displayTabs`, etc.) for a
+   * custom operational dashboard layout.
+   *
+   * @default false
+   * @example
+   * ```ts
+   * // Enable automatic summary detail view
+   * detail: true
+   *
+   * // Or define a custom operational detail view
+   * detail: [
+   *   displaySection("Customer Overview", [
+   *     displayField("name", { span: 8 }),
+   *     displayField("status", { span: 4, display: "badge" }),
+   *   ]),
+   * ]
+   * ```
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 
   /**
    * Slug of the operational view to render by default when navigating to `/collections/:slug`.
@@ -15351,7 +15497,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, collections are **Edit-First** (&#96;detail: false&#96;). Clicking a record in the table or cards view navigates directly to the editing form with Live Preview.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array using display helpers (&#96;displaySection&#96;, &#96;displayField&#96;, &#96;displayTabs&#96;, etc.) for a custom operational dashboard layout. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
 
@@ -15520,22 +15666,18 @@ When a collection is routable, the collection config and the frontend route need
 - `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
 - a real frontend route that can fetch and render the document
 
-`admin.previewUrl` can be either:
+`admin.previewUrl` can be configured using:
 
-- a Jexl string evaluated against the document, usually the best default
-- a function that returns the URL from the document data
+- the `when` condition builder (or serializable JEXL string), which is the recommended default
+- a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+Prefer the `when` builder (`when.concat`, `when.then`, or `when.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
-`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+`admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
-For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+### Dynamic Preview Routing Examples
 
-```ts
-previewUrl: "slug == 'home' ? '/' : '/' + slug";
-```
-
-Here is a typical blog-style example using Jexl:
+For single-prefix collections, use `when.concat`:
 
 ```ts
 
@@ -15544,7 +15686,8 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
-    previewUrl: "'/blog/' + slug",
+    // Generates: '/blog/' + slug
+    previewUrl: when.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -15552,6 +15695,23 @@ export const Posts = defineCollection({
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
+```
+
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `when.then`:
+
+```ts
+// Routes 'home' to '/', and all other pages to '/slug'
+previewUrl: when.then(when("slug").equals("home"), "/", when.concat("/", "slug")),
+```
+
+For multi-branch category routing, use `when.match`:
+
+```ts
+previewUrl: when.match()
+  .case(when("slug").equals("home"), "/")
+  .case(when("category").equals("news"), when.concat("/news/", "slug"))
+  .case(when("category").equals("portal"), when.concat("/portals/", "slug"))
+  .otherwise(when.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:
@@ -15826,9 +15986,17 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, globals are **Edit-First** (`detail: false`). Clicking the global in the
+   * sidebar navigates directly to the editing form.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array for a custom operational dashboard layout.
+   *
+   * @default false
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 }
 ```
 
@@ -15843,7 +16011,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, globals are **Edit-First** (&#96;detail: false&#96;). Clicking the global in the sidebar navigates directly to the editing form.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array for a custom operational dashboard layout. |
 
 
 ## Global options in practice
@@ -17091,17 +17259,19 @@ Field rules are enforced in two places at once:
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/overview) for the shared model, then use this page for the field-specific behavior.For Cloud, prefer Jexl strings, `false`, and string-backed named policies. Those shapes can be enforced by the hosted backend and reflected in the admin form after schema sync.
 ## The shape
 
-Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use the `when` builder (or a serializable JEXL expression) for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
-{
-  name: 'internalNotes',
-  type: 'textarea',
+
+
+defineTextareaField({
+  name: "internalNotes",
+  label: "Internal Notes",
   access: {
-    read: "'admin' in user.roles",
-    update: "'admin' in user.roles",
+    read: when.access.isAdmin(),
+    update: when.access.isAdmin(),
   },
-}
+});
 ```
 
 Omit a rule (or set it to `true`) to leave the field fully available.<Note>
@@ -17737,285 +17907,312 @@ That is why `afterChange`, delete hooks, `field.afterRead`, and `admin.hooks.opt
 
 ---
 
-## Declarative Expressions & Helpers
+## Declarative Expressions & Conditions
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/content-rules/declarative-expressions
 
-When configuring field state, reactive form logic, or access control policies in Dyrected, you can write **declarative string expressions**.
+When configuring field visibility, live preview routing, access control policies, or reactive form transforms in Dyrected, you can write **declarative expressions**.
 
-Declarative string expressions are powered by Jexl. Because they are plain strings stored inside your schema files, they are 100% serializable. They survive `npx dyrected sync:schema` and run safely across both self-hosted servers and Dyrected Cloud.
+Dyrected provides the type-safe `when` builder (`@dyrected/sdk` or `@dyrected/core`) as the recommended standard for constructing these expressions. Because `when` compiles to pure serializable [JEXL](https://github.com/TomFrost/Jexl) strings, your logic remains 100% portable: it survives `npx dyrected sync:schema` and runs identically across self-hosted servers, headless API runtimes, and Dyrected Cloud.
 
-By the end of this guide, you will understand when to reach for declarative expressions, what context variables are in scope, and how to use Dyrected's built-in helper utilities.
+By the end of this guide, you will understand how to build reactive conditions with `when`, how to configure preview URLs and access rules, and how expressions work under the hood.
 
-## Choose the right hook shape for your goal
+---
 
-In Dyrected, you can write hook and policy logic in two ways:
+## Quickstart
 
-1. **Declarative string expressions** (`"slugify(siblingData.title)"`): Recommended for value derivations, format conversions, and access checks. They are stored directly in your schema, survive Cloud schema sync, and run anywhere.
-2. **Function hooks** (`({ siblingData }) => siblingData.title`): Best for self-hosted Node.js servers performing custom asynchronous side effects or calling external microservices. Function hooks cannot be serialized to Dyrected Cloud and are stripped during schema sync.
-
-When a field calculation, access check, or UI condition can be expressed as a string, use the declarative string form.
-
-## Basic Expression Syntax
-
-Declarative expressions support property lookups, ternary conditionals, mathematical operators, and built-in helper functions:
-
-```typescript
-// Auto-derive a slug when empty, but preserve custom edits
-"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value"
-
-// Role and document ownership check
-"user.role == 'admin' || user.id == doc.authorId"
-
-// Relative date check for scheduled content
-"isPast(doc.publishAt)"
-```
-
-## Context Variables by Surface
-
-Dyrected provides an explicit context object to each declarative expression based on where it is executed:
-
-| Surface | Available Context Variables | Common Use Case |
-| --- | --- | --- |
-| **Form Reactive Hooks** | `value`, `siblingData`, `data` | `admin.hooks.onChange` live form reactivity |
-| **Field & Collection Hooks** | `req`, `user`, `data`, `doc`, `operation`, `value` | `beforeChange`, `beforeRead` server-side evaluation |
-| **Access Control Policies** | `user`, `req`, `doc`, `data`, `id` | `access.read`, `access.update` permissions |
-| **Admin UI Field Conditions** | `data`, `siblingData`, `user`, `id` | `admin.condition` dynamic field visibility |
-
-## Built-in Helper Function Reference
-
-Dyrected includes 30+ zero-dependency helper functions that are registered globally in all Jexl evaluation contexts.
-
-### String Helpers
-
-Use string helpers to clean, reformat, or inspect text fields:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `slugify(str)` | Transforms text into a URL-safe slug | `slugify("Hello World!")` | `"hello-world"` |
-| `lower(str)` | Converts text to lowercase | `lower("Dyrected")` | `"dyrected"` |
-| `upper(str)` | Converts text to uppercase | `upper("dyrected")` | `"DYRECTED"` |
-| `trim(str)` | Strips leading and trailing whitespace | `trim("  hello  ")` | `"hello"` |
-| `capitalize(str)` | Capitalizes the first letter of text | `capitalize("hELLO")` | `"Hello"` |
-| `truncate(str, len, ellipsis?)` | Truncates text with a custom suffix | `truncate(doc.body, 20)` | `"Long article body..."` |
-| `readingTime(str)` | Calculates reading time in minutes | `readingTime(doc.content)` | `3` |
-| `wordCount(str)` | Counts total words in a text string | `wordCount(doc.content)` | `450` |
-| `replace(str, search, replace)` | Replaces occurrences of a pattern | `replace(doc.title, "Draft", "Final")` | `"Final Title"` |
-| `startsWith(str, prefix)` | Checks if text starts with a prefix | `startsWith(doc.url, "https")` | `true` |
-| `endsWith(str, suffix)` | Checks if text ends with a suffix | `endsWith(doc.file, ".pdf")` | `true` |
-
-### Date & Time Helpers
-
-Use date helpers for scheduled publishing windows, expiration checks, and relative time calculations:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `now()` | Returns current ISO 8601 timestamp | `now()` | `"2026-07-27T00:00:00.000Z"` |
-| `today()` | Returns current date (YYYY-MM-DD) | `today()` | `"2026-07-27"` |
-| `formatDate(date, style?)` | Formats dates (`'short'`, `'iso'`, `'date'`, `'datetime'`, `'full'`) | `formatDate(doc.publishedAt, "short")` | `"Jul 27, 2026"` |
-| `addDays(date, days)` | Adds or subtracts days from a timestamp | `addDays(now(), 7)` | `"2026-08-03T00:00:00.000Z"` |
-| `diffDays(dateA, dateB)` | Calculates integer day difference between two dates | `diffDays(now(), doc.createdAt)` | `14` |
-| `isPast(date)` | Returns `true` if timestamp is in the past | `isPast(doc.publishAt)` | `true` |
-| `isFuture(date)` | Returns `true` if timestamp is in the future | `isFuture(doc.expireAt)` | `false` |
-
-### Array & Collection Helpers
-
-Use array helpers to inspect tags, user roles, or multi-select field lists:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `includes(arrOrStr, item)` | Checks array or substring membership | `includes(user.roles, "admin")` | `true` |
-| `join(arr, separator?)` | Joins array elements into a string | `join(siblingData.tags, ", ")` | `"news, tech"` |
-| `first(arr)` | Safely returns the first array element | `first(siblingData.images)` | `"{ id: 1, ... }"` |
-| `last(arr)` | Safely returns the last array element | `last(siblingData.history)` | `"{ step: 3, ... }"` |
-| `compact(arr)` | Removes empty, `null`, and `undefined` items | `compact(["a", null, "b"])` | `["a", "b"]` |
-| `unique(arr)` | Deduplicates array elements | `unique(["tag1", "tag1", "tag2"])` | `["tag1", "tag2"]` |
-| `length(val)` | Returns array length, string length, or key count | `length(siblingData.blocks)` | `4` |
-
-### Math & Logical Helpers
-
-Use math and logical helpers for numeric constraints, fallbacks, and safe nested property retrieval:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `round(num, decimals?)` | Rounds a number to specified decimal places | `round(siblingData.price * 1.15, 2)` | `29.99` |
-| `clamp(num, min, max)` | Constrains a number between upper and lower bounds | `clamp(siblingData.rating, 1, 5)` | `5` |
-| `default(val, fallback)` | Provides a fallback for `null`, `undefined`, or `""` | `default(siblingData.title, "Untitled")` | `"Untitled"` |
-| `coalesce(...args)` | Returns the first non-empty value | `coalesce(doc.shortTitle, doc.title, "Draft")` | `"Draft"` |
-| `isEmpty(val)` | Returns `true` for empty arrays, objects, strings, or `null` | `isEmpty(siblingData.items)` | `true` |
-| `get(obj, path, fallback?)` | Safely retrieves nested object properties | `get(siblingData, "author.name", "Guest")` | `"Guest"` |
-
-## Practical Working Examples
-
-### 1. Auto-generating a URL Slug from a Title
-The following collection configuration auto-generates a clean slug when `slug` is empty, but preserves manual edits once the user types into the field:
+Import the `when` builder from `@dyrected/sdk` (or `@dyrected/core`):
 
 ```typescript
 
 
-export const Pages = defineCollection({
-  slug: "pages",
+export const Products = defineCollection({
+  slug: "products",
+  admin: {
+    useAsTitle: "title",
+    // Preview URL routing: /products/slug
+    previewUrl: when.concat("/products/", "slug"),
+  },
+  access: {
+    // Only admins or the document creator can edit
+    update: when.any(when.access.isOwner("author"), when.access.isAdmin()),
+  },
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
-    defineTextField({
-      name: "slug",
-      label: "Slug",
-      required: true,
-      unique: true,
+    defineTextField({ name: "couponCode", label: "Coupon Code" }),
+    defineNumberField({
+      name: "discountPercent",
+      label: "Discount Percentage",
+      // Reveals this field only when a coupon code is entered
       admin: {
-        hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
-        },
+        condition: when.fieldNotEmpty("couponCode"),
       },
     }),
   ],
 });
 ```
 
-### 2. Scheduled Publishing Access Rule
-Restrict public document access so non-admin users cannot read articles until `publishAt` is in the past:
+---
+
+## 1. Conditional Field & Block Visibility (`admin.condition`)
+
+Use `admin.condition` on any field or block to conditionally reveal it based on the editor's current form input or block variant.
+
+### Match by Field Value
+
+Check if a field equals a specific value or is non-empty:
+
+```typescript
+
+
+// Show field when 'hasCustomTax' is checked
+export const CustomTaxField = defineNumberField({
+  name: "taxRate",
+  label: "Tax Rate (%)",
+  admin: {
+    condition: when("hasCustomTax").isTrue(),
+  },
+});
+
+// Show field when category is in a set of allowed values
+export const DeliveryDateField = defineTextField({
+  name: "deliveryWindow",
+  label: "Delivery Window",
+  admin: {
+    condition: when("category").in("furniture", "appliances", "perishables"),
+  },
+});
+```
+
+### Match Block Variants
+
+In layout builders and polymorphic blocks, reveal fields only when a specific block layout variant is selected:
+
+```typescript
+
+
+export const AvatarField = defineMediaField({
+  name: "avatar",
+  label: "Author Avatar",
+  admin: {
+    // Only visible when the editor selects the 'card' or 'split' variant
+    condition: when.variant("card", "split"),
+  },
+});
+```
+
+### Compound Conditions (`when.all`, `when.any`, `when.not`)
+
+Combine multiple conditions using boolean combinators:
+
+```typescript
+// Visible if status is draft AND current user has editor/admin role
+admin: {
+  condition: when.all(
+    when("status").equals("draft"),
+    when.userRole("admin", "editor")
+  ),
+}
+
+// Visible if stock is below 10 OR promoted is true
+admin: {
+  condition: when.any(
+    when("stock").lessThan(10),
+    when("isPromoted").isTrue()
+  ),
+}
+```
+
+---
+
+## 2. Live Preview URLs & Dynamic Routing (`admin.previewUrl`)
+
+The `admin.previewUrl` setting determines the frontend route loaded in the live preview panel and the external view button.
+
+### Path Concatenation (`when.concat`)
+
+Safely combine static path prefixes with dynamic field identifiers:
 
 ```typescript
 
 
 export const Articles = defineCollection({
   slug: "articles",
-  access: {
-    read: "includes(user.roles, 'admin') || (doc.status == 'published' && isPast(doc.publishAt))",
-  },
-  fields: [
-    /* ... fields */
-  ],
-});
-```
-
-### 3. Dynamic Field Visibility
-Only display a discount percentage input when the selected customer tier is either `'vip'` or `'partner'`:
-
-```typescript
-
-
-export const discountField = defineNumberField({
-  name: "discountPercentage",
-  label: "Discount %",
   admin: {
-    condition: "includes(['vip', 'partner'], siblingData.customerTier)",
+    // Generates: '/news/' + slug
+    previewUrl: when.concat("/news/", "slug"),
   },
+  fields: [ ... ],
 });
 ```
 
-### 4. Auto-calculating Reading Time & Excerpt
-Automatically compute estimated article reading time and generate a truncated SEO summary whenever the document content changes:
+### Fallback Routing (`when.then`)
+
+Handle root homepages or custom path overrides with ternary expressions:
+
+```typescript
+// If slug is 'home', route to '/'; otherwise route to '/' + slug
+admin: {
+  previewUrl: when.then(
+    when("slug").equals("home"),
+    "/",
+    when.concat("/", "slug")
+  ),
+}
+```
+
+### Multi-Branch Routing (`when.match`)
+
+When a collection supports multiple categories or localized routes, chain branches with `when.match()`:
+
+```typescript
+admin: {
+  previewUrl: when.match()
+    .case(when("slug").equals("home"), "/")
+    .case(when.fieldNotEmpty("customPath"), "customPath")
+    .case(when("category").equals("news"), when.concat("/news/", "slug"))
+    .case(when("category").equals("portal"), when.concat("/country-portals/", "slug"))
+    .otherwise(when.concat("/", "slug")),
+}
+```
+
+---
+
+## 3. Declarative Access Control (`collection.access`)
+
+Define declarative Row-Level Security (RLS) policies evaluated against `{ doc, user }`:
 
 ```typescript
 
 
-export const BlogPosts = defineCollection({
-  slug: "blog-posts",
-  fields: [
-    defineRichTextField({ name: "content", label: "Article Content" }),
-    defineNumberField({
-      name: "readingTimeMinutes",
-      label: "Reading Time (mins)",
-      admin: {
-        readOnly: true,
-        hooks: {
-          onChange: "readingTime(siblingData.content)",
-        },
-      },
-    }),
-    defineTextField({
-      name: "seoExcerpt",
-      label: "SEO Excerpt",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? truncate(siblingData.content, 150) : value",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 5. Formatting Author Full Names & User Handles
-Combine first and last name fields into a display name and auto-lowercase social handles:
-
-```typescript
-
-
-export const Authors = defineCollection({
-  slug: "authors",
-  fields: [
-    defineTextField({ name: "firstName", label: "First Name" }),
-    defineTextField({ name: "lastName", label: "Last Name" }),
-    defineTextField({
-      name: "displayName",
-      label: "Display Name",
-      admin: {
-        hooks: {
-          onChange: "trim(coalesce(join(compact([siblingData.firstName, siblingData.lastName]), ' '), value))",
-        },
-      },
-    }),
-    defineTextField({
-      name: "twitterHandle",
-      label: "Twitter Handle",
-      admin: {
-        hooks: {
-          onChange: "lower(trim(value))",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 6. Default Expiration Date Window
-Set an automatic 30-day expiration window when creating new promotion codes if no custom expiration date is provided:
-
-```typescript
-
-
-export const Promotions = defineCollection({
-  slug: "promotions",
-  fields: [
-    defineTextField({ name: "code", label: "Promo Code", required: true }),
-    defineDateTimeField({
-      name: "expiresAt",
-      label: "Expiration Date",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? addDays(now(), 30) : value",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 7. Safe Deep Property Retrieval & Owner Access Policies
-Allow users to update documents if they are either an admin or the owner specified in a deeply nested metadata field:
-
-```typescript
-
-
-export const Projects = defineCollection({
-  slug: "projects",
+export const Documents = defineCollection({
+  slug: "documents",
   access: {
-    update: "includes(user.roles, 'admin') || user.id == get(doc, 'metadata.ownerId')",
+    // Public can read published docs; admins can read everything
+    read: when.access.isPublishedOrAdmin(),
+
+    // Document authors or admins can edit
+    update: when.any(when.access.isOwner("authorId"), when.access.isAdmin()),
+
+    // Only superadmins can delete
+    delete: when.access.hasRole("superadmin"),
   },
+  fields: [ ... ],
+});
+```
+
+---
+
+## 4. Reactive Field Transforms (`admin.hooks.onChange`)
+
+Automatically transform values live in the browser as the editor types:
+
+```typescript
+
+
+export const Posts = defineCollection({
+  slug: "posts",
   fields: [
-    /* ... fields */
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      admin: {
+        hooks: {
+          // Auto-slugify title if slug is empty, but preserve manual edits
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
   ],
 });
 ```
+
+---
+
+## `when` API Cheatsheet
+
+| Helper | Description | Output |
+| :--- | :--- | :--- |
+| `when('field').equals(val)` | Equality check | `field == "val"` |
+| `when('field').notEquals(val)` | Inequality check | `field != "val"` |
+| `when('field').in('a', 'b')` | Set membership | `field in ["a", "b"]` |
+| `when('field').isTrue()` | Boolean true check | `field == true` |
+| `when.fieldNotEmpty('field')` | Non-empty string / non-null check | `field != null && field != ''` |
+| `when.fieldEmpty('field')` | Empty or null check | `field == null \|\| field == ''` |
+| `when('price').greaterThan(10)` | Numerical greater than | `price > 10` |
+| `when('price').between(10, 50)` | Numerical range | `price >= 10 && price <= 50` |
+| `when.variant('card', 'hero')` | Block variant matching | `variant in ['card', 'hero']` |
+| `when.all(c1, c2)` | Logical AND | `c1 && c2` |
+| `when.any(c1, c2)` | Logical OR | `c1 \|\| c2` |
+| `when.then(cond, ifTrue, ifFalse)`| Ternary expression | `cond ? ifTrue : ifFalse` |
+| `when.match().case().otherwise()` | Multi-branch switch | `c1 ? v1 : c2 ? v2 : v3` |
+| `when.concat('/path/', 'slug')` | Safe string concatenation | `'/path/' + slug` |
+| `when.slugify('title')` | JEXL slugify transform | `slugify(title)` |
+| `when.access.isOwner('author')` | Document ownership match | `author == user.id \|\| author.id == user.id` |
+| `when.access.isAdmin()` | Admin role check | `user.role == 'admin' \|\| ('admin' in user.roles)` |
+| `when.access.isPublishedOrAdmin()`| Published or admin read rule | `status == 'published' \|\| user.role == 'admin'` |
+
+---
+
+## Under the Hood: JEXL Specification & Raw Strings
+
+The `when` builder produces serializable [JEXL (Javascript Expression Language)](https://github.com/TomFrost/Jexl) strings. 
+
+Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests.
+
+### Raw JEXL String Escape Hatch
+
+If you have legacy schemas or generate conditions dynamically, you can pass raw JEXL strings directly:
+
+```typescript
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [
+    defineNumberField({
+      name: "discount",
+      label: "Discount",
+      // Raw JEXL string equivalent
+      admin: {
+        condition: "couponCode != null && couponCode != ''",
+      },
+    }),
+  ],
+});
+```
+
+### Context Variables by Surface
+
+Dyrected provides the following context variables based on where the expression is evaluated:
+
+| Surface | In-Scope Variables | Common Use Case |
+| :--- | :--- | :--- |
+| **`defaultValue`** | `doc`, `docs`, `user`, `siblingData`, `data` | Dynamic initial prefill on modal/form open |
+| **`admin.condition`** | `data`, `siblingData`, `doc`, `docs`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`admin.hooks.onChange`** | `value`, `siblingData`, `data`, `doc`, `docs`, `user` | Real-time form and action modal reactivity |
+| **`admin.previewUrl`** | `doc`, `entry`, `siteUrl`, all root fields | Frontend preview routing |
+| **`access.*`** | `user`, `doc`, `data`, `id`, `req` | Row-Level Security permissions |
+
+### Global Built-in JEXL Functions
+
+Dyrected includes 30+ built-in helper functions available in all JEXL evaluation contexts:
+
+* **Strings**: `slugify(str)`, `lower(str)`, `upper(str)`, `trim(str)`, `capitalize(str)`, `truncate(str, length)`, `wordCount(str)`, `readingTime(str)`, `startsWith(str, prefix)`, `endsWith(str, suffix)`.
+* **Dates**: `now()`, `today()`, `formatDate(date, style)`, `addDays(date, n)`, `diffDays(d1, d2)`, `isPast(date)`, `isFuture(date)`.
+* **Arrays**: `includes(arr, item)`, `join(arr, delim)`, `first(arr)`, `last(arr)`, `compact(arr)`, `unique(arr)`, `length(val)`.
+* **Math & Logic**: `round(num, decimals)`, `clamp(num, min, max)`, `default(val, fallback)`, `coalesce(...vals)`, `isEmpty(val)`, `get(obj, path, fallback)`.
+
+---
 
 ## Recommended Next Steps
 
-- Learn how declarative string hooks sync to Dyrected Cloud in [Cloud-safe hooks](https://docs.dyrected.com/docs/cloud/model-content/content-rules/cloud-safe-hooks).
+- Learn how field conditions isolate block editing in [Block Fields](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks).
 - Explore role and ownership access control patterns in [Collections Access Control](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/collections).
-- See how custom form components consume field state in [Form & Field Hooks](https://docs.dyrected.com/docs/cloud/editor-experience/form-and-field-hooks).
+- Wire Click-to-Edit annotations with `useDyPath` in [Live Preview Client-Side](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/client-side).
 
 ---
 
@@ -18852,9 +19049,11 @@ The first variant is the default. Like block slugs, keep variant slugs stable on
 
 ### Showing a field only for some variants
 
-Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Because the selected variant lives on the block row under the reserved `variant` key, any sibling field can read it in an `admin.condition`:
+Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Use the `when` builder to declare clean variant visibility in your field's `admin.condition`:
 
 ```ts
+
+
 defineBlock({
   slug: "testimonial",
   labels: { singular: "Testimonial", plural: "Testimonials" },
@@ -18868,13 +19067,13 @@ defineBlock({
       name: "avatar",
       label: "Avatar",
       relationTo: "media",
-      admin: { condition: "variant == 'card'" },
+      admin: { condition: when.variant("card") },
     }),
   ],
 });
 ```
 
-Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+Now the avatar picker appears only while the card variant is selected. The `when.variant("card")` condition generates a serializable expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can also match multiple variants with `when.variant("card", "split")` or everything except a variant with `when.notVariant("quote")`.
 
 <Note>
 Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
@@ -21990,7 +22189,9 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+If an action requires user input (like selecting a seat, entering notes, or recording a payment), declare `fields` to automatically generate an input modal.
+
+When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 
@@ -21998,19 +22199,97 @@ If an action requires user input (like selecting a seat or entering notes), decl
 export const assignTableAction = defineAction({
   name: "assignTable",
   label: "Assign Table",
+  submitLabel: "Save Seating", // Customizes modal button (defaults to "Run")
   icon: "Table2",
   type: "row",
   fields: [
     defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
-    defineTextField({ name: "notes", label: "Seating Notes" }),
+    defineTextField({ name: "seatingNotes", label: "Seating Notes" }),
   ],
-  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.seatingNotes" },
 });
 ```
 
 Expressions like `"input.tableNumber"` extract values submitted through the dialog.
 
-### 3. Bulk and header actions
+### 3. Dynamic defaults and live modal reactivity
+
+Action modal fields support the exact same reactivity engine and hooks as document edit forms:
+
+- **Dynamic `defaultValue` (Initial Prefill)**: Compute initial field values using targeted record data (`doc`), bulk records (`docs`), or the authenticated editor (`user`).
+- **Live `admin.hooks.onChange`**: Automatically recalculate calculated totals, summary strings, or reference codes as the editor types inside the modal.
+- **Dynamic `admin.hooks.options`**: Cascading dropdown choices that update live as sibling inputs change.
+- **Conditional Visibility (`admin.condition`)**: Dynamically show or hide modal inputs based on sibling choices or targeted row properties.
+
+Here is a complete example of a payment recording action modal with dynamic prefilling, live total calculation, and conditional cheque inputs:
+
+```ts
+
+  defineAction,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  when,
+} from "@dyrected/core";
+
+export const recordPaymentAction = defineAction({
+  name: "recordPayment",
+  label: "Record Payment",
+  submitLabel: "Process Payment",
+  icon: "CreditCard",
+  type: "row",
+  fields: [
+    defineSelectField({
+      name: "paymentMethod",
+      label: "Payment Method",
+      required: true,
+      defaultValue: "transfer",
+      options: [
+        { label: "Bank Transfer", value: "transfer" },
+        { label: "Cash", value: "cash" },
+        { label: "Cheque", value: "cheque" },
+      ],
+    }),
+    defineTextField({
+      name: "chequeNumber",
+      label: "Cheque Number",
+      admin: {
+        // Shows only when 'cheque' is selected in the modal
+        condition: when.sibling("paymentMethod").equals("cheque"),
+      },
+    }),
+    defineNumberField({
+      name: "amount",
+      label: "Amount (₦)",
+      required: true,
+      // 1. Initial prefill: Remaining balance from the targeted record
+      defaultValue: ({ doc }) => (doc?.totalDue || 0) - (doc?.amountPaid || 0),
+    }),
+    defineNumberField({
+      name: "balanceAfter",
+      label: "Remaining Balance After Payment (₦)",
+      admin: {
+        readOnly: true,
+        // 2. Live reactivity: Updates continuously as the editor edits 'amount'
+        hooks: {
+          onChange: ({ siblingData, doc }) => {
+            const remaining = (doc?.totalDue || 0) - (doc?.amountPaid || 0);
+            return Math.max(0, remaining - (Number(siblingData.amount) || 0));
+          },
+        },
+      },
+    }),
+  ],
+  mutation: {
+    amountPaid: "doc.amountPaid + input.amount",
+    paymentMethod: "input.paymentMethod",
+    chequeNumber: "input.chequeNumber",
+    lastPaymentAt: "now()",
+  },
+});
+```
+
+### 4. Bulk and header actions
 
 Define actions that operate across multiple selected documents or view-wide:
 
@@ -22020,6 +22299,7 @@ Define actions that operate across multiple selected documents or view-wide:
 export const markSelectedPaidAction = defineAction({
   name: "markSelectedPaid",
   label: "Mark Paid",
+  submitLabel: "Confirm Payment",
   type: "bulk",
   mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
 });
@@ -22027,6 +22307,7 @@ export const markSelectedPaidAction = defineAction({
 export const sendReminderAction = defineAction({
   name: "sendReminder",
   label: "Send Reminders",
+  submitLabel: "Send Message",
   icon: "BellRing",
   type: "header",
   confirm: "Send a payment reminder to all guests with pending requests?",
@@ -22035,20 +22316,17 @@ export const sendReminderAction = defineAction({
 ```
 
 
-## Configuration options
-
-| Option | Type | Description |
-| --- | --- | --- |
-| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
-| `label` | `string` **required** | Button text displayed to editors. |
-| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
-| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
-| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
-| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
-
-
+## Configuration options| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
 ## Button placement and ordering
 
 - **Row actions (`type: "row"`)**: Surface on table rows, kanban cards, calendar detail sheets, and gallery card tiles.
@@ -22056,6 +22334,7 @@ export const sendReminderAction = defineAction({
 - **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
 
 To customize the order and visibility of built-in vs custom buttons on a view:
+
 ```ts
 defineView({
   slug: "attending-guests",
@@ -22121,6 +22400,30 @@ export const attendingGuests = defineView({
 
 Dyrected synthesizes a table with search, sorting, and faceted filters. Layout defaults to `table` if you omit it.
 
+### Compound filters with `OR` and `AND`
+
+To create specialized views matching multiple conditions or alternative criteria, use compound `OR` or `AND` clauses in your `filter`:
+
+```ts
+
+
+export const pendingLogistics = defineView({
+  slug: "pending-logistics",
+  label: "Pending Logistics",
+  icon: "Package",
+  layout: "table",
+  filter: {
+    OR: [
+      { asoebiPaymentStatus: { equals: "pending" } },
+      { asoebiOrderStatus: { equals: "unfulfilled" } },
+    ],
+  },
+  columns: ["name", "asoebiPaymentStatus", "asoebiOrderStatus", "asoebiAmountPaid"],
+});
+```
+
+Logical operators are case-insensitive (`OR` / `or`, `AND` / `and`) and can be combined with field-level filters.
+
 ## Kanban board view
 
 Kanban views require a `groupBy` field to determine which field values represent the board's columns:
@@ -22164,6 +22467,30 @@ export const tastingSchedule = defineView({
 });
 ```
 
+## Adding view-specific component slots
+
+If you want a custom widget, header banner, or toolbar extension on a **specific view** rather than across the whole collection, declare `components` directly inside `defineView`:
+
+```ts
+
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+  components: {
+    beforeViewHeader: ["fulfillment-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["fulfillment-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order: collection banners render first, followed by view-specific extensions.
+
 ## Setting a default view
 
 To make a view the default landing page for a collection, set `defaultView` on the collection config pointing to the view's `slug`:
@@ -22205,7 +22532,7 @@ All options are optional except `slug` and `label`:
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
 | `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
-| `filter` | `Record<string, unknown> \| string` | Base filter applied before toolbar filters. Object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
+| `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
 | `startDateField` / `endDateField` | `string` | Start and end dates for timeline bars. | Required for `"gantt"` |
@@ -22215,6 +22542,7 @@ All options are optional except `slug` and `label`:
 | `features` | `ViewActionFeatures` | Toggles for built-in buttons: `view`, `edit`, `duplicate`, `delete`, `exportSelected`. | To hide built-ins (e.g. `delete: false`) |
 | `actionOrder` | `string[]` | Explicit button order mixing custom action names and built-in verbs. | When button order conveys workflow priority |
 | `metrics` | `ViewMetric[]` | KPI summary cards displayed above the view. See [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics). | For high-level aggregations and counts |
+| `components` | `ViewComponentSlots` | Custom component slots rendered around this operational view (`beforeViewHeader`, `afterViewHeader`, `beforeViewContent`, `afterViewContent`). | When you need custom widgets scoped to this view only |
 | `access` | `AccessConfig` | Role-based permissions controlling who can see or act on this view. | When a view is role-restricted |
 
 ## Defaults and fallbacks
@@ -23135,6 +23463,8 @@ You can inject custom React components into operational views using slot keys:
 - `afterViewHeader`: Injected between the header and metrics.
 - `beforeViewContent`: Injected above the active layout grid/table.
 - `afterViewContent`: Injected below the active layout.
+
+Slots can be declared collection-wide under `admin.components` (rendered across all views in that collection) or view-specifically inside `defineView({ components: { ... } })` (rendered on that single view only). When both are present, collection-wide slots render first. For registration details and slot props, see [List view components](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Next steps
 
@@ -24163,6 +24493,24 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.10.1
+
+- - Support `submitLabel` on operational view actions to customize the modal submit/run button text.
+  - Automatically prefill action modal forms with the target document's current field values when executing row actions.
+  - Normalize logical operators (`AND`/`and`, `OR`/`or`) case-insensitively in `where-sanitizer`.
+  - Apply schema default values on `create()` before persisting to the database.
+  - Strictly type operational view filters as `WhereClause | string`.
+  - Add thorough JSDoc documentation across all operational view types and interfaces.
+  - Add architecture specs for `npx dyrected doctor` diagnostics and multi-adapter automatic field promotion. (`@dyrected/admin`, `dyrected`, `@dyrected/core`)
+
+- - Added type-safe `when` declarative condition and expression builder to `@dyrected/sdk` and `@dyrected/core`.
+  - Added framework parity for `useDyPath()` and `useDyPathHelper()` in `@dyrected/vue` and auto-imported in `@dyrected/nuxt`.
+  - Enhanced CLI `upgrade` command to automatically refresh `.dyrected/ai-rules.md` with the latest canonical rules when upgrading packages.
+  - Added Marketing Site Page Builder Architecture, Array Field Object Shape Contract, and Type Synchronization Workflow to `@dyrected/knowledge` prompt templates and AI rules.
+  - Added `/docs/[...slug]` legacy catch-all redirect route in documentation.
+
+---
+
 ## v2.10.0
 
 - - **Aggregate Engine Expansion (`countDistinct`, `distinct`, `groupBy`)**:
@@ -24933,16 +25281,6 @@ Release notes and version history across all Dyrected packages.
 
 ---
 
-## v2.5.44
-
-- Add provider membership hooks type definitions and collection controller delegation logic to redirect authentication collection CRUD requests. (`@dyrected/core`)
-
-- @dyrected/sdk@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/admin@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
-
----
-
 &gt; For earlier release notes (v0.x), see the full [CHANGELOG.md](https://github.com/Dyrected/dyrected/blob/main/CHANGELOG.md) on GitHub.
 
 ---
@@ -25158,7 +25496,7 @@ Before you install, make sure you have:
 </Note>
 
 <Note>
-**Dyrected Cloud is the fastest way to go live** and works with every framework — it hosts the database, storage, and API for you, with no infrastructure to provision. See [Setting up your Cloud site](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+**Dyrected Cloud is the fastest way to go live** and works with every framework — it hosts the database, storage, and API for you, with no infrastructure to provision. See [Setting up your Cloud site](https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-your-cloud-site).
 
 **Next.js and Nuxt** can also self-host the full backend inside your app when you want full control — that is the path this page walks through. **React and Vue** are a frontend and admin only, so they always connect to a Dyrected Cloud backend.
 
@@ -25448,7 +25786,7 @@ That command writes `dyrected-types.ts` into your app's source directory (`src/`
   <Card
     title="Next.js quick start"
     description="Model a schema, display content, and invite editors in a real Next.js app."
-    href="https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected"
+    href="https://docs.dyrected.com/docs/cloud/guides/nextjs/overview"
   />
   <Card
     title="Admin"

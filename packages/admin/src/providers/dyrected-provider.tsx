@@ -185,8 +185,6 @@ export function DyrectedProvider({
     }
   }, [schemasError]);
 
-  const activeUser = user ?? initialTokenUser;
-
   // Apply the cloud-issued token to the SDK client.
   useEffect(() => {
     if (initialToken && client) {
@@ -296,6 +294,133 @@ export function DyrectedProvider({
     [authCollectionSlug, clearPersistedAuthState, client, schemas, shouldClearStoredAuth],
   );
 
+  const refreshingPromiseRef = React.useRef<Promise<string | null> | null>(null);
+
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    if (refreshingPromiseRef.current) {
+      return refreshingPromiseRef.current;
+    }
+    const token = getStoredToken();
+    const resolvedCollectionSlug =
+      authCollectionSlug || getAdminCollectionSlug(schemas);
+    if (!token || !resolvedCollectionSlug || !client) {
+      return null;
+    }
+
+    const refreshPromise = (async () => {
+      try {
+        client.setToken(token);
+        const res = await client.collection(resolvedCollectionSlug).refreshToken();
+        if (res?.token) {
+          setToken(res.token, resolvedCollectionSlug);
+          return res.token;
+        }
+        return null;
+      } catch (error) {
+        if (shouldClearStoredAuth(error)) {
+          clearPersistedAuthState(client);
+        }
+        return null;
+      } finally {
+        refreshingPromiseRef.current = null;
+      }
+    })();
+
+    refreshingPromiseRef.current = refreshPromise;
+    return refreshPromise;
+  }, [authCollectionSlug, clearPersistedAuthState, client, schemas, setToken, shouldClearStoredAuth]);
+
+  // Proactively refresh tokens before expiration
+  useEffect(() => {
+    if (initialToken || !client || !user) return;
+
+    const token = getStoredToken();
+    if (!token) return;
+
+    const payload = decodeTokenPayload(token);
+    const expSeconds = typeof payload?.exp === "number" ? payload.exp : null;
+    if (!expSeconds) return;
+
+    const expMs = expSeconds * 1000;
+    const now = Date.now();
+    const timeUntilExpiry = expMs - now;
+
+    // If expired or expiring in under 5 minutes, refresh right away
+    if (timeUntilExpiry <= 5 * 60 * 1000) {
+      refreshToken();
+      return;
+    }
+
+    // Schedule background refresh 5 minutes before expiry
+    const refreshDelay = Math.max(1000, timeUntilExpiry - 5 * 60 * 1000);
+    const timerId = setTimeout(() => {
+      refreshToken();
+    }, refreshDelay);
+
+    return () => clearTimeout(timerId);
+  }, [client, initialToken, refreshToken, user]);
+
+  // Refresh token when tab regains focus or visibility
+  useEffect(() => {
+    if (initialToken || !client) return;
+
+    const checkAndRefreshToken = () => {
+      if (document.hidden) return;
+      const token = getStoredToken();
+      if (!token) return;
+      const payload = decodeTokenPayload(token);
+      const expSeconds = typeof payload?.exp === "number" ? payload.exp : null;
+      if (!expSeconds) return;
+
+      const expMs = expSeconds * 1000;
+      const timeUntilExpiry = expMs - Date.now();
+      if (timeUntilExpiry <= 5 * 60 * 1000) {
+        refreshToken();
+      }
+    };
+
+    document.addEventListener("visibilitychange", checkAndRefreshToken);
+    window.addEventListener("focus", checkAndRefreshToken);
+
+    return () => {
+      document.removeEventListener("visibilitychange", checkAndRefreshToken);
+      window.removeEventListener("focus", checkAndRefreshToken);
+    };
+  }, [client, initialToken, refreshToken]);
+
+  // Listen for 401 unauthorized events emitted on API failures
+  useEffect(() => {
+    if (!client) return;
+
+    const handleUnauthorized = (e: Event) => {
+      const customEvent = e as CustomEvent<{ path?: string }>;
+      const path = customEvent.detail?.path;
+      if (
+        path?.endsWith("/login") ||
+        path?.endsWith("/init") ||
+        path?.endsWith("/first-user")
+      ) {
+        return;
+      }
+
+      const token = getStoredToken();
+      if (token) {
+        refreshToken().then((refreshedToken) => {
+          if (!refreshedToken) {
+            clearPersistedAuthState(client);
+          }
+        });
+      } else {
+        clearPersistedAuthState(client);
+      }
+    };
+
+    window.addEventListener("dyrected:auth-unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("dyrected:auth-unauthorized", handleUnauthorized);
+    };
+  }, [clearPersistedAuthState, client, refreshToken]);
+
   useEffect(() => {
     if (initialToken || !client || !schemas) {
       queueMicrotask(() => {
@@ -385,7 +510,7 @@ export function DyrectedProvider({
         isAuthenticated: !!baseUrl && !!apiKey,
         isResolvingStoredSession,
         schemas,
-        user: activeUser,
+        user,
         initialToken,
         components,
       }}

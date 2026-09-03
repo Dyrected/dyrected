@@ -208,9 +208,17 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, globals are **Edit-First** (`detail: false`). Clicking the global in the
+   * sidebar navigates directly to the editing form.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array for a custom operational dashboard layout.
+   *
+   * @default false
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 }
 ```
 
@@ -225,7 +233,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, globals are **Edit-First** (&#96;detail: false&#96;). Clicking the global in the sidebar navigates directly to the editing form.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array for a custom operational dashboard layout. |
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:END */}
 
 ## Global options in practice

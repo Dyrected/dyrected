@@ -410,9 +410,31 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
+   * table or cards view navigates directly to the editing form with Live Preview.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array using display helpers (`displaySection`, `displayField`, `displayTabs`, etc.) for a
+   * custom operational dashboard layout.
+   *
+   * @default false
+   * @example
+   * ```ts
+   * // Enable automatic summary detail view
+   * detail: true
+   *
+   * // Or define a custom operational detail view
+   * detail: [
+   *   displaySection("Customer Overview", [
+   *     displayField("name", { span: 8 }),
+   *     displayField("status", { span: 4, display: "badge" }),
+   *   ]),
+   * ]
+   * ```
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 
   /**
    * Slug of the operational view to render by default when navigating to `/collections/:slug`.
@@ -552,7 +574,15 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, globals are **Edit-First** (`detail: false`). Clicking the global in the
+   * sidebar navigates directly to the editing form.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array for a custom operational dashboard layout.
+   *
+   * @default false
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 }

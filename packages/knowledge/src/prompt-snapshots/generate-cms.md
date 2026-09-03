@@ -36,6 +36,8 @@ feature being implemented:
 
 - Documentation index: https://docs.dyrected.com/llms.txt
 - Documentation home: https://docs.dyrected.com
+- Cloud concise index: https://docs.dyrected.com/llms-cloud.txt
+- Self-hosted concise index: https://docs.dyrected.com/llms-self-hosted.txt
 - Existing-site agent workflow: https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt
 - Installation: https://docs.dyrected.com/docs/start-here/installation
 - CLI and schema synchronization: https://docs.dyrected.com/docs/reference/cli
@@ -155,8 +157,9 @@ structured editable content.
 - Use a small explicit adapter when Dyrected data shapes differ from existing
   component props.
 - Keep state, event handlers, calculations, validation behaviour,
-  authentication, submissions, dashboards, analytics, and user data in
-  application code unless explicitly approved.
+  authentication, dashboards, analytics, and private user data in
+  application code unless explicitly approved (incoming form submissions,
+  leads, and contact requests may be stored in an approved collection).
 - Pass only serializable data across server/client boundaries. Resolve icons,
   components, functions, classes, and other executable values inside the
   appropriate code boundary.

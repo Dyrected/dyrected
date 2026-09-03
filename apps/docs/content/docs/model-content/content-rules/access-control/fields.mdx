@@ -29,17 +29,19 @@ For self-hosted Dyrected, field access can also use function rules when a field 
 
 ## The shape
 
-Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use the `when` builder (or a serializable JEXL expression) for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
-{
-  name: 'internalNotes',
-  type: 'textarea',
+import { defineTextareaField, when } from "@dyrected/sdk";
+
+defineTextareaField({
+  name: "internalNotes",
+  label: "Internal Notes",
   access: {
-    read: "'admin' in user.roles",
-    update: "'admin' in user.roles",
+    read: when.access.isAdmin(),
+    update: when.access.isAdmin(),
   },
-}
+});
 ```
 
 Omit a rule (or set it to `true`) to leave the field fully available.

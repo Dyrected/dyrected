@@ -41,7 +41,6 @@ export function GlobalEditorPage() {
   })
 
   const schema = schemas?.globals.find((g: any) => g.slug === slug)
-  const GlobalIcon = resolveAdminIcon(schema?.admin?.icon, Globe)
 
   // Fetch global data
   const { data: globalData, isLoading: isGlobalLoading } = useQuery({
@@ -70,7 +69,7 @@ export function GlobalEditorPage() {
       setIsDirty(false)
       queryClient.invalidateQueries({ queryKey: ["global", slug] })
       queryClient.invalidateQueries({ queryKey: ["global", slug, "detail"] })
-      toast.success(`${schema.label || schema.slug} updated successfully`)
+      toast.success(`${schema?.label || schema?.slug || "Global"} updated successfully`)
       navigate(`/globals/${slug}`)
     },
     onError: (error: any) => {
@@ -99,14 +98,20 @@ export function GlobalEditorPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/globals/${slug}`)}
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1)
+              } else {
+                navigate(`/globals/${slug}`)
+              }
+            }}
             className="dy-h-9 dy-w-9 dy-p-0 dy-text-muted-foreground hover:dy-text-foreground"
-            title="Back to Details"
+            title="Back"
           >
             <ArrowLeft className="dy-h-4 dy-w-4" />
           </Button>
           <div className="dy-p-2 dy-bg-primary/10 dy-text-primary dy-rounded-lg dy-shrink-0">
-            <GlobalIcon className="dy-h-5 dy-w-5" />
+            {React.createElement(resolveAdminIcon(schema?.admin?.icon, Globe), { className: "dy-h-5 dy-w-5" })}
           </div>
           <div>
             <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
@@ -122,7 +127,13 @@ export function GlobalEditorPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/globals/${slug}`)}
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1)
+              } else {
+                navigate(`/globals/${slug}`)
+              }
+            }}
             className="dy-h-8 dy-gap-1.5 text-xs"
           >
             Cancel
