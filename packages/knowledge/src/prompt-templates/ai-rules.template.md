@@ -8,6 +8,29 @@ rules, generated package facts, and behavior-tested recipes.
 <!-- GENERATED:INTEGRATION_CONTRACT:START -->
 <!-- GENERATED:INTEGRATION_CONTRACT:END -->
 
+## Core Architecture & Modeling Invariants
+
+1. **Marketing Site Default: Page Builder Architecture**
+   - When modeling marketing websites or content-driven applications, **always default to a `Pages` collection with an ordered `blocks` field** (`defineBlocksField({ name: "layout", blocks: [...] })`) rather than hardcoding section layouts in `page.tsx` or `pages/[slug].vue`.
+   - Define a cohesive block registry (`Hero`, `TwoColumnFeature`, `CardGrid`, `PricingTierGrid`, `Timeline`, `FinalCTA`, etc.) in `dyrected.config.ts`.
+   - Routes must query `getPageByPath(pathname, fallbackData)` or `client.collection('pages').findBySlug(slug)` and render through `<Blocks items={page.layout} path="layout" />` with `useDyPath` click-to-edit support.
+   - 100% preserve existing design, typography, spacing, and responsive styling.
+
+2. **Array Field Object Shape Contract (Crucial)**
+   - In Dyrected, `defineArrayField({ name: "checklist", fields: [defineTextField({ name: "item" })] })` **ALWAYS produces and expects an array of objects**, e.g.:
+     ```ts
+     checklist: [{ item: "First point" }, { item: "Second point" }]
+     ```
+   - **Never pass primitive arrays** (e.g. `checklist: ["First point", "Second point"]`) in fallback data, seed scripts, or SDK mutations, as CMS schema validation will drop them.
+   - In frontend components, always defensively normalize items: `const text = typeof item === 'string' ? item : item?.item || item?.text || '';`.
+
+3. **Type Safety Workflow**
+   - Immediately after creating or updating `dyrected.config.ts`, always run:
+     ```bash
+     npx dyrected generate:types
+     ```
+   - Import generated interfaces into seed scripts, page components, and block definitions to catch schema mismatches at compile time.
+
 ## API and Security Invariants
 
 - Import public APIs from `@dyrected/core`, `@dyrected/sdk`, and the documented

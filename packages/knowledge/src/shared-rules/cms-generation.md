@@ -100,6 +100,18 @@ Grant the smallest permissions required by the approved editing plan.
 - Use serializable declarative conditions, hooks, and access values when the
   schema must synchronize to Dyrected Cloud.
 
+## Type Synchronization Workflow
+
+Immediately after creating or editing `dyrected.config.ts`, synchronize TypeScript types:
+
+```bash
+npx dyrected generate:types
+```
+
+- `npx dyrected generate:types` outputs `dyrected-types.ts` into your application source directory.
+- `npx dyrected sync:schema` also auto-runs type generation upon successful synchronization.
+- **Always import generated interfaces** into seed scripts, page components, and block definitions to catch schema mismatches (such as array shape errors) at compile time before committing code.
+
 ## Schema and Seed Safety
 
 Before changing a schema:
@@ -108,7 +120,7 @@ Before changing a schema:
 2. Identify persisted slugs, fields, blocks, variants, relationships, and URL
    patterns affected by the change.
 3. Add or evolve one related batch at a time.
-4. Generate types and validate the local schema.
+4. Generate types (`npx dyrected generate:types`) and validate the local schema.
 5. Review changes that could affect stored documents.
 6. Synchronize only after local validation passes.
 
