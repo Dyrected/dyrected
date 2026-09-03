@@ -327,9 +327,9 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent onPaste={handlePaste} className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] !dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[960px]">
+      <DialogContent onPaste={handlePaste} className="dy-h-[94dvh] dy-w-[calc(100vw-1rem)] !dy-max-w-[calc(100vw-1rem)] sm:dy-w-[96vw] sm:!dy-max-w-[96vw] md:dy-w-[96vw] md:!dy-max-w-[96vw] lg:dy-w-[96vw] lg:!dy-max-w-[1600px] dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl dy-rounded-xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-h-full dy-flex-col">
-          <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
+          <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
             <div className="dy-flex dy-min-w-0 dy-items-center dy-gap-3 sm:dy-gap-4">
               <DialogTitle className="dy-min-w-0 dy-truncate dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight sm:dy-text-xl">{collectionLabel}</DialogTitle>
               {multiple && sVals.length > 0 && (
@@ -368,7 +368,7 @@ export function MediaLibraryDialog({
           <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden">
             <TabsContent value="library" className="dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0">
               <div className="dy-flex dy-h-full dy-flex-col md:dy-flex-row">
-                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-3 dy-border-b dy-p-3 sm:dy-p-4 md:dy-border-b-0 md:dy-border-r">
+                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-3 dy-border-b dy-p-3 sm:dy-p-4 md:dy-border-b-0 md:dy-border-r dy-border-border">
                   {/* Folders Navigation Pill Carousel */}
                   <FolderPillCarousel
                     folders={folders}
@@ -451,7 +451,7 @@ export function MediaLibraryDialog({
                   </div>
 
                   <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-1 dy-px-1">
-                    <div className="dy-grid dy-grid-cols-2 dy-gap-2.5 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 xl:dy-grid-cols-5">
+                    <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 xl:dy-grid-cols-6 2xl:dy-grid-cols-7">
                       {media?.map((item: LooseMediaRecord) => {
                         const sourceInfo = getMediaSourceInfo(item)
                         const previewUrl = getPreviewUrl(item)
@@ -558,7 +558,7 @@ export function MediaLibraryDialog({
                 </div>
 
                 {/* Right Inspector Column */}
-                <div className="dy-flex dy-max-h-[42dvh] dy-w-full dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 md:dy-h-full md:dy-max-h-none md:dy-w-72 md:dy-gap-5 md:dy-border-l md:dy-p-5">
+                <div className="dy-flex dy-max-h-[42dvh] dy-w-full dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 md:dy-h-full md:dy-max-h-none md:dy-w-80 lg:dy-w-96 md:dy-gap-5 md:dy-border-l md:dy-p-5">
                   {selectedItem ? (
                     <>
                       <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-3 md:dy-block md:dy-space-y-4">
