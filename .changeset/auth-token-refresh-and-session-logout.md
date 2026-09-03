@@ -12,3 +12,7 @@
   - Fix user state leak bug in `DyrectedProvider` that prevented logout and login page rendering.
   - Call backend `POST /api/collections/:slug/logout` to revoke server session in `__auth_sessions` during logout.
 - Allow operational view component slots (`afterViewHeader`, `beforeViewHeader`, `beforeViewContent`, `afterViewContent`) to resolve components registered under either `components.collectionView` or `components.collectionList`.
+- Enhance action and confirmation dialogs for mobile and tall content:
+  - Render as a mobile bottom-sheet (`max-sm:bottom-0`, slide from bottom, top grab handle) on small viewports.
+  - Constrain all fields and custom modal components within the device viewport width (`w-full min-w-0 overflow-x-hidden`).
+  - Enable independent vertical scrolling (`overflow-y-auto`) with fixed, docked headers and action footer buttons.
