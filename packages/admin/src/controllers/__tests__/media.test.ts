@@ -125,4 +125,38 @@ describe("media controllers", () => {
     ])
     expect(controller.getState().selectedIds).toEqual(["asset-2"])
   })
+
+  it("createMediaLibraryController filters by folderId and mimeType", async () => {
+    mockListMedia.mockResolvedValue({
+      docs: [{ id: "asset-4", filename: "banner.png", mimeType: "image/png", folderId: "marketing" }],
+      hasNextPage: false,
+    })
+
+    const controller = createMediaLibraryController({
+      client,
+      schemas: { collections: [{ slug: "media", upload: true }] },
+      collection: "media",
+    })
+
+    await controller.setFolder("marketing")
+    expect(mockListMedia).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { folderId: { equals: "marketing" } },
+      }),
+      "media"
+    )
+
+    await controller.setMimeFilter("image")
+    expect(mockListMedia).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            { folderId: { equals: "marketing" } },
+            { mimeType: { contains: "image" } },
+          ],
+        },
+      }),
+      "media"
+    )
+  })
 })

@@ -443,6 +443,17 @@ export function MediaPicker({
                     </div>
                   )}
 
+                  {item?.focalPoint && (
+                    <div
+                      className="dy-absolute dy-w-2.5 dy-h-2.5 dy-rounded-full dy-border-2 dy-border-white dy-bg-primary dy-shadow-sm dy-pointer-events-none dy-z-10"
+                      style={{
+                        left: `${(item.focalPoint as { x: number; y: number }).x * 100}%`,
+                        top: `${(item.focalPoint as { x: number; y: number }).y * 100}%`,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    />
+                  )}
+
                   <div className="dy-absolute dy-inset-0 dy-flex dy-items-start dy-justify-end dy-gap-1 dy-bg-black/25 dy-p-1.5 dy-opacity-100 dy-transition-all sm:dy-bg-black/40 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 sm:dy-backdrop-blur-[2px]">
                     {checkIsCropable(valId, item) && (
                       <Button
@@ -583,6 +594,17 @@ export function MediaPicker({
                         </div>
                       )}
                     </button>
+
+                    {item?.focalPoint && (
+                      <div
+                        className="dy-absolute dy-w-2.5 dy-h-2.5 dy-rounded-full dy-border-2 dy-border-white dy-bg-primary dy-shadow-sm dy-pointer-events-none dy-z-10"
+                        style={{
+                          left: `${(item.focalPoint as { x: number; y: number }).x * 100}%`,
+                          top: `${(item.focalPoint as { x: number; y: number }).y * 100}%`,
+                          transform: "translate(-50%, -50%)",
+                        }}
+                      />
+                    )}
 
                     {!disabled && (
                       <div className="dy-pointer-events-none dy-absolute dy-inset-0 dy-flex dy-items-start dy-justify-end dy-gap-1 dy-bg-black/25 dy-p-1.5 dy-opacity-100 dy-transition-all sm:dy-bg-black/40 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 sm:dy-backdrop-blur-[2px]">

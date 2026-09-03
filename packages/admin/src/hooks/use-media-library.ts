@@ -11,6 +11,8 @@ export interface UseMediaLibraryOptions {
   pageSize?: number
   initialSearchQuery?: string
   initialSelectedIds?: string[]
+  initialFolderId?: string | null
+  initialMimeFilter?: string | null
 }
 
 export function useMediaLibrary({
@@ -18,12 +20,10 @@ export function useMediaLibrary({
   pageSize = 12,
   initialSearchQuery = "",
   initialSelectedIds = [],
+  initialFolderId = null,
+  initialMimeFilter = null,
 }: UseMediaLibraryOptions) {
   const { client, schemas } = useDyrected()
-  const selectedIdsKey = React.useMemo(
-    () => initialSelectedIds.join("|"),
-    [initialSelectedIds]
-  )
 
   const controller = React.useMemo<MediaLibraryController>(() => {
     return createMediaLibraryController({
@@ -33,8 +33,10 @@ export function useMediaLibrary({
       pageSize,
       initialSearchQuery,
       initialSelectedIds,
+      initialFolderId,
+      initialMimeFilter,
     })
-  }, [client, schemas, collection, pageSize, initialSearchQuery, selectedIdsKey])
+  }, [client, schemas, collection, pageSize, initialSearchQuery, initialFolderId, initialMimeFilter, initialSelectedIds])
 
   const state = React.useSyncExternalStore(
     controller.subscribe,
@@ -51,6 +53,8 @@ export function useMediaLibrary({
     ...state,
     load: controller.load,
     search: controller.search,
+    setFolder: controller.setFolder,
+    setMimeFilter: controller.setMimeFilter,
     loadNextPage: controller.loadNextPage,
     setSelectedIds: controller.setSelectedIds,
     select: controller.select,
