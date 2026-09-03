@@ -6,6 +6,16 @@ import { MediaFilterBar } from "../media-filter-bar";
 import { MediaInspector } from "../media-inspector";
 import type { MediaFolder } from "../../../types/media-folders";
 
+vi.mock("../../../providers/dyrected-context", () => ({
+  useDyrected: () => ({
+    client: {
+      getBaseUrl: () => "http://localhost:3000",
+      replaceMedia: vi.fn(),
+      collection: () => ({ replaceFile: vi.fn() }),
+    },
+  }),
+}));
+
 describe("DAM Folder & Navigation Components", () => {
   const mockFolders: MediaFolder[] = [
     {

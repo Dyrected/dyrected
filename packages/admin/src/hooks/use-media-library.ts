@@ -36,7 +36,8 @@ export function useMediaLibrary({
       initialFolderId,
       initialMimeFilter,
     })
-  }, [client, schemas, collection, pageSize, initialSearchQuery, initialFolderId, initialMimeFilter, initialSelectedIds])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, schemas, collection, pageSize])
 
   const state = React.useSyncExternalStore(
     controller.subscribe,
@@ -49,18 +50,29 @@ export function useMediaLibrary({
     [state.items, state.selectedIds]
   )
 
+  const load = React.useCallback(() => controller.load(), [controller])
+  const search = React.useCallback((q: string) => controller.search(q), [controller])
+  const setFolder = React.useCallback((fid: string | null) => controller.setFolder(fid), [controller])
+  const setMimeFilter = React.useCallback((mf: string | null) => controller.setMimeFilter(mf), [controller])
+  const loadNextPage = React.useCallback(() => controller.loadNextPage(), [controller])
+  const setSelectedIds = React.useCallback((ids: string[]) => controller.setSelectedIds(ids), [controller])
+  const select = React.useCallback((id: string) => controller.select(id), [controller])
+  const deselect = React.useCallback((id: string) => controller.deselect(id), [controller])
+  const toggle = React.useCallback((id: string) => controller.toggle(id), [controller])
+  const clearSelection = React.useCallback(() => controller.clearSelection(), [controller])
+
   return {
     ...state,
-    load: controller.load,
-    search: controller.search,
-    setFolder: controller.setFolder,
-    setMimeFilter: controller.setMimeFilter,
-    loadNextPage: controller.loadNextPage,
-    setSelectedIds: controller.setSelectedIds,
-    select: controller.select,
-    deselect: controller.deselect,
-    toggle: controller.toggle,
-    clearSelection: controller.clearSelection,
+    load,
+    search,
+    setFolder,
+    setMimeFilter,
+    loadNextPage,
+    setSelectedIds,
+    select,
+    deselect,
+    toggle,
+    clearSelection,
     selectedItems,
   }
 }

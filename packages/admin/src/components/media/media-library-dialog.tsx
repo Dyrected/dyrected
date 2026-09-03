@@ -36,7 +36,6 @@ import {
   Link as LinkIcon,
   Info
 } from "lucide-react"
-import { ScrollArea } from "../ui/scroll-area"
 import { Input } from "../ui/input"
 import { cn, getDisplayFilename, getTransformedMediaUrl } from "../../lib/utils"
 import { getMediaPreviewUrl } from "../../lib/external-media"
@@ -105,7 +104,7 @@ export function MediaLibraryDialog({
     setActiveFolderId,
     createFolder,
     getBreadcrumbs,
-  } = useMediaFolders()
+  } = useMediaFolders(activeMediaCollection)
 
   const getIdentifier = React.useCallback((v: unknown): string => {
     if (!v) return ""
@@ -141,7 +140,6 @@ export function MediaLibraryDialog({
     clearSelection,
   } = useMediaLibrary({
     collection: activeMediaCollection,
-    initialSelectedIds: sVals,
     initialFolderId: activeFolderId,
     initialMimeFilter: mimeFilter,
   })
@@ -189,6 +187,25 @@ export function MediaLibraryDialog({
     [hasNextPage, isFetchingMedia, loadNextPage]
   )
 
+  const uploadConfig = typeof schema?.upload === "object" ? (schema.upload as { mimeTypes?: string[] }) : undefined
+  const allowedMimeTypes = uploadConfig?.mimeTypes
+
+  const dropzoneAccept = React.useMemo(() => {
+    if (allowedMimeTypes && allowedMimeTypes.length > 0) {
+      const acceptMap: Record<string, string[]> = {}
+      for (const mime of allowedMimeTypes) {
+        acceptMap[mime] = []
+      }
+      return acceptMap
+    }
+    return {
+      "image/*": [],
+      "video/*": [],
+      "audio/*": [],
+      "application/pdf": [],
+    }
+  }, [allowedMimeTypes])
+
   const {
     queue,
     uploadFiles,
@@ -197,33 +214,16 @@ export function MediaLibraryDialog({
     clearQueue,
   } = useMediaUpload({
     collectionSlug: activeMediaCollection,
-    onCompletedItem: async (result) => {
+    onCompletedItem: async (_result) => {
       await (searchQuery ? search(searchQuery) : load())
-      if (!multiple) {
-        onSelect(result.id, result)
-        setSelectedItem(result)
-        toast.success("Media uploaded successfully!")
-      } else {
-        select(result.id)
-        setSelectedItem(result)
-      }
     },
     onAllCompleted: async (results) => {
       await (searchQuery ? search(searchQuery) : load())
-      if (multiple) {
-        results.forEach((r) => select(r.id))
-        if (onConfirm) {
-          const allIds = Array.from(new Set([...sVals, ...results.map(r => r.id)]))
-          const allItems = [...(selectedItems || []), ...results]
-          onConfirm(allIds, allItems)
-        } else {
-          results.forEach((r) => onSelect(r.id, r as unknown as Media))
-        }
-        if (results.length > 0) {
-          setSelectedItem(results[results.length - 1])
-        }
-        toast.success(`Successfully uploaded ${results.length} asset${results.length > 1 ? "s" : ""}!`)
+      if (results.length > 0) {
+        setSelectedItem(results[results.length - 1])
       }
+      setActiveTab("library")
+      toast.success(`Uploaded ${results.length} asset${results.length > 1 ? "s" : ""} to library! Select any to insert.`)
     },
   })
 
@@ -292,11 +292,7 @@ export function MediaLibraryDialog({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "image/*": [],
-      "video/*": [],
-      "application/pdf": [],
-    },
+    accept: dropzoneAccept,
   })
 
   const {
@@ -365,10 +361,10 @@ export function MediaLibraryDialog({
             </div>
           )}
 
-          <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden">
-            <TabsContent value="library" className="dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0">
-              <div className="dy-flex dy-h-full dy-flex-col md:dy-flex-row">
-                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-3 dy-border-b dy-p-3 sm:dy-p-4 md:dy-border-b-0 md:dy-border-r dy-border-border">
+          <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden dy-relative">
+            <TabsContent value="library" className="data-[state=active]:dy-flex dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0 dy-overflow-hidden">
+              <div className="dy-flex dy-h-full dy-w-full dy-flex-col lg:dy-flex-row dy-overflow-hidden">
+                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-3 dy-border-b dy-p-3 sm:dy-p-4 lg:dy-border-b-0 lg:dy-border-r dy-border-border dy-overflow-hidden">
                   {/* Folders Navigation Pill Carousel */}
                   <FolderPillCarousel
                     folders={folders}
@@ -450,7 +446,7 @@ export function MediaLibraryDialog({
                     )}
                   </div>
 
-                  <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-1 dy-px-1">
+                  <div className="dy-min-h-0 dy-flex-1 dy-overflow-y-auto dy-overscroll-contain dy--mx-1 dy-px-1">
                     <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 xl:dy-grid-cols-6 2xl:dy-grid-cols-7">
                       {media?.map((item: LooseMediaRecord) => {
                         const sourceInfo = getMediaSourceInfo(item)
@@ -554,14 +550,24 @@ export function MediaLibraryDialog({
                         )}
                       </div>
                     </div>
-                  </ScrollArea>
+                  </div>
+
+                  {/* Mobile / Tablet Sticky Selection Footer */}
+                  {multiple && sVals.length > 0 && (
+                    <div className="lg:dy-hidden dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-background/95 dy-backdrop-blur-md dy-border dy-border-border dy-rounded-xl dy-shadow-xl dy-sticky dy-bottom-2 dy-z-30">
+                      <span className="dy-text-xs dy-font-bold dy-text-foreground">{sVals.length} {sVals.length === 1 ? 'asset' : 'assets'} selected</span>
+                      <Button size="sm" className="dy-h-8 dy-font-bold dy-text-xs dy-bg-primary" onClick={handleConfirm}>
+                        Confirm {sVals.length} {sVals.length === 1 ? 'Asset' : 'Assets'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {/* Right Inspector Column */}
-                <div className="dy-flex dy-max-h-[42dvh] dy-w-full dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 md:dy-h-full md:dy-max-h-none md:dy-w-80 lg:dy-w-96 md:dy-gap-5 md:dy-border-l md:dy-p-5">
+                {/* Right Inspector Column - Visible on lg screens */}
+                <div className="dy-hidden lg:dy-flex lg:dy-w-80 xl:dy-w-96 dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 xl:dy-p-5 lg:dy-border-l">
                   {selectedItem ? (
                     <>
-                      <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-3 md:dy-block md:dy-space-y-4">
+                      <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-3 lg:dy-block lg:dy-space-y-4">
                         <div className="dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border dy-bg-background dy-shadow-md dy-group dy-relative dy-ring-1 dy-ring-border/50">
                           {getPreviewUrl(selectedItem) ? (
                             <img
@@ -664,7 +670,7 @@ export function MediaLibraryDialog({
                         </div>
                       )}
 
-                      <div className="dy-space-y-2.5 dy-border-t dy-border-muted/20 dy-pt-3 md:dy-pt-4">
+                      <div className="dy-space-y-2.5 dy-border-t dy-border-muted/20 dy-pt-3 lg:dy-pt-4">
                         {multiple ? (
                           <>
                             <Button
@@ -723,8 +729,8 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="upload" className="dy-h-full dy-m-0 dy-p-4 focus-visible:dy-ring-0 sm:dy-p-6 dy-overflow-y-auto">
-              <div className="dy-max-w-2xl dy-mx-auto dy-space-y-6">
+            <TabsContent value="upload" className="data-[state=active]:dy-flex data-[state=active]:dy-flex-col dy-h-full dy-m-0 dy-p-4 focus-visible:dy-ring-0 sm:dy-p-6 dy-overflow-y-auto dy-overscroll-contain">
+              <div className="dy-max-w-2xl dy-w-full dy-mx-auto dy-space-y-6 dy-pb-16">
                 {/* Drag & Drop Zone */}
                 <div
                   {...getRootProps()}
@@ -744,7 +750,11 @@ export function MediaLibraryDialog({
                     <p className="dy-text-xs dy-text-muted-foreground/70 dy-font-medium sm:dy-text-sm">
                       Drag & drop files here, browse, or <span className="dy-text-foreground dy-font-semibold">paste from clipboard (<kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-muted/60 dy-px-1 dy-py-0.5 dy-rounded">⌘V</kbd> / <kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-muted/60 dy-px-1 dy-py-0.5 dy-rounded">Ctrl+V</kbd>)</span>
                     </p>
-                    <p className="dy-text-[10px] dy-text-muted-foreground/50">Supports JPEG, PNG, WebP, GIF, MP4, WebM, PDF. Images are automatically compressed.</p>
+                    <p className="dy-text-[10px] dy-text-muted-foreground/50">
+                      {allowedMimeTypes && allowedMimeTypes.length > 0
+                        ? `Allowed types: ${allowedMimeTypes.join(", ")}. Images are automatically compressed.`
+                        : "Supports JPEG, PNG, WebP, GIF, MP4, WebM, PDF. Images are automatically compressed."}
+                    </p>
                   </div>
                   <Button variant="secondary" size="sm" className="dy-mt-4 dy-rounded-full dy-px-6 dy-font-bold dy-pointer-events-none">
                     Choose Files
@@ -848,8 +858,8 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="external" className="dy-h-full dy-m-0 dy-overflow-y-auto dy-p-4 focus-visible:dy-ring-0 sm:dy-p-12">
-              <div className="dy-mx-auto dy-max-w-2xl dy-space-y-6 dy-pt-2 sm:dy-space-y-10 sm:dy-pt-4">
+            <TabsContent value="external" className="data-[state=active]:dy-flex data-[state=active]:dy-flex-col dy-h-full dy-m-0 dy-overflow-y-auto dy-overscroll-contain dy-p-4 focus-visible:dy-ring-0 sm:dy-p-12">
+              <div className="dy-mx-auto dy-max-w-2xl dy-w-full dy-space-y-6 dy-pt-2 sm:dy-space-y-10 sm:dy-pt-4 dy-pb-16">
                 <div className="dy-text-center dy-space-y-3 sm:dy-space-y-4">
                   <div className="dy-h-16 dy-w-16 dy-bg-primary/10 dy-text-primary dy-rounded-lg dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4 dy-shadow-sm dy-rotate-3 sm:dy-h-20 sm:dy-w-20 sm:dy-rounded-3xl sm:dy-mb-6">
                     <Globe className="dy-h-8 dy-w-8 sm:dy-h-10 sm:dy-w-10" />
