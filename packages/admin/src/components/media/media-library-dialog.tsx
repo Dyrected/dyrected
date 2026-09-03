@@ -543,11 +543,33 @@ export function MediaLibraryDialog({
                           </div>
                         </div>
                       )}
-                      {/* Sentinel for infinite scroll */}
-                      <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
-                        {isFetchingMedia && (
-                          <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
+                      {/* Pagination & Load More */}
+                      <div className="dy-w-full dy-col-span-full dy-flex dy-flex-col dy-items-center dy-justify-center dy-py-6 dy-gap-2">
+                        {hasNextPage && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="dy-rounded-full dy-px-6 dy-h-9 dy-text-xs dy-font-bold dy-shadow-xs hover:dy-bg-muted dy-border-border"
+                            onClick={() => void loadNextPage()}
+                            disabled={isFetchingMedia}
+                          >
+                            {isFetchingMedia ? (
+                              <span className="dy-flex dy-items-center dy-gap-2">
+                                <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-3.5 dy-w-3.5"></div>
+                                Loading more...
+                              </span>
+                            ) : (
+                              "Load more"
+                            )}
+                          </Button>
                         )}
+                        {!hasNextPage && (media?.length ?? 0) > 0 && !isFetchingMedia && (
+                          <p className="dy-text-[11px] dy-font-medium dy-text-muted-foreground/50">
+                            Showing all {media?.length} {media?.length === 1 ? 'asset' : 'assets'}
+                          </p>
+                        )}
+                        <div ref={sentinelRef} className="dy-h-1 dy-w-full" />
                       </div>
                     </div>
                   </div>
