@@ -932,6 +932,10 @@ export interface DyrectedClientConfig {
   headers?: Record<string, string>;
   fetch?: typeof fetch;
   /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
+  /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
    * does not pass its own `depth`. Defaults to `1`.
@@ -947,6 +951,7 @@ export interface DyrectedClientConfig {
 | <code>siteId</code> (optional) |  |
 | <code>headers</code> (optional) |  |
 | <code>fetch</code> (optional) |  |
+| <code>onAuthError</code> (optional) | Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint. |
 | <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
 
 
@@ -7532,11 +7537,13 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Generate a slug from a title](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
+- [Compute fields and calculate totals live](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database. Summary: Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
+- [Declarative reactive hooks with JEXL and when](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks) — Problem: You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code. Summary: Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
 - [Create a document download library](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
@@ -7562,9 +7569,6 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 ## Set up a Calendar schedule view
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
 
@@ -7626,9 +7630,6 @@ export const Appointments = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use a reusable categories collection and a has-many relationship from content entries that need tagging.
 
 ## Use this when
@@ -7686,9 +7687,6 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use a serializable Admin condition to reveal a field from the editor's current form values.
 
 ## Use this when
@@ -7733,9 +7731,6 @@ export const Orders = defineCollection({
 ## Build a field editor directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.
 
@@ -7881,9 +7876,6 @@ export default function CustomerComplaintRoute() {
 ## Build a media picker directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
 
@@ -8047,9 +8039,6 @@ export default function ComplaintAttachmentRoute() {
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
 
 ## Use this when
@@ -8112,12 +8101,116 @@ export default function DashboardRoute() {
 
 ---
 
+## Declarative reactive hooks with JEXL and when
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks
+
+Build Cloud-safe, serializable browser hooks for live calculations, slug generation, and conditional values using the when helper.
+
+## Use this when
+
+- build reactive form transforms that survive Cloud schema sync
+- compute field values without writing raw JavaScript functions
+- calculate status-based pricing or conditional totals declaratively
+- format reference codes or IDs from sibling inputs in real-time
+
+## Dyrected concepts
+
+`admin.hooks.onChange`, `when.then`, `when.match`, `when.sibling`, `when.concat`, `when.slugify`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  when,
+} from "@dyrected/core";
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Invoice Title",
+      required: true,
+    }),
+
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      admin: {
+        hooks: {
+          onChange: when.then(
+            when.fieldEmpty("value"),
+            when.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
+
+    defineSelectField({
+      name: "planTier",
+      label: "Plan Tier",
+      defaultValue: "standard",
+      options: [
+        { label: "Free Trial", value: "trial" },
+        { label: "Standard", value: "standard" },
+        { label: "Enterprise", value: "enterprise" },
+      ],
+    }),
+
+    defineNumberField({
+      name: "basePrice",
+      label: "Base Price (₦)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: when.match()
+            .case(when.sibling("planTier").equals("trial"), 0)
+            .case(when.sibling("planTier").equals("standard"), 25000)
+            .case(when.sibling("planTier").equals("enterprise"), 100000)
+            .otherwise(25000),
+        },
+      },
+    }),
+
+    defineTextField({
+      name: "referenceCode",
+      label: "Payment Reference",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: when.concat(
+            "INV-",
+            when.upper("siblingData.planTier"),
+            "-",
+            when.slugify("siblingData.title")
+          ),
+        },
+      },
+    }),
+  ],
+});
+```
+
+---
+
 ## Create a document download library
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.
 
@@ -8169,9 +8262,6 @@ export const Documents = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
 
 ## Use this when
@@ -8213,9 +8303,6 @@ export const Posts = defineCollection({
 ## Build a Kanban pipeline board
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kanban-pipeline-view
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.
 
@@ -8304,9 +8391,6 @@ export const Orders = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Model reusable navigation links in one global, including one level of child links for grouped menus.
 
 ## Use this when
@@ -8362,9 +8446,6 @@ export const Navigation = defineGlobal({
 ## Add KPI metric cards above a view
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-metrics
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
 
@@ -8463,9 +8544,6 @@ export const EventRsvps = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.
 
 ## Use this when
@@ -8541,9 +8619,6 @@ export const GuestResponses = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/page-builder-blocks
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
 
 ## Use this when
@@ -8607,9 +8682,6 @@ export const Pages = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/preview-url-token-mode
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Set a preview URL expression and postMessage live preview mode for routable frontend content.
 
 ## Use this when
@@ -8656,9 +8728,6 @@ export const Docs = defineCollection({
 ## Model a relationship and its reverse lookup
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/relationship-and-reverse-join
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Store an author relationship on posts and expose the author's posts through a virtual join field.
 
@@ -8721,9 +8790,6 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/responsive-image-library
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.
 
 ## Use this when
@@ -8775,9 +8841,6 @@ export const Media = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/safe-field-rename
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use renameTo and a safe default while documents migrate lazily to a new field name.
 
 ## Use this when
@@ -8823,9 +8886,6 @@ export const Customers = defineCollection({
 ## Group SEO fields into an Admin tab
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/seo-tab-fields
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep secondary metadata together under an SEO tab so the main editing form stays focused.
 
@@ -8876,9 +8936,6 @@ export const Pages = defineCollection({
 ## Create a site settings global
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/site-settings-global
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep shared site-wide values in a single global instead of scattering them across collections.
 
@@ -8934,9 +8991,6 @@ export const SiteSettings = defineGlobal({
 ## Create a media upload collection
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/upload-collection
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Enable file uploads and capture accessible metadata in a dedicated media collection.
 
@@ -18137,10 +18191,11 @@ Dyrected provides the following context variables based on where the expression 
 
 | Surface | In-Scope Variables | Common Use Case |
 | :--- | :--- | :--- |
-| **`admin.condition`** | `data`, `siblingData`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`defaultValue`** | `doc`, `docs`, `user`, `siblingData`, `data` | Dynamic initial prefill on modal/form open |
+| **`admin.condition`** | `data`, `siblingData`, `doc`, `docs`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`admin.hooks.onChange`** | `value`, `siblingData`, `data`, `doc`, `docs`, `user` | Real-time form and action modal reactivity |
 | **`admin.previewUrl`** | `doc`, `entry`, `siteUrl`, all root fields | Frontend preview routing |
 | **`access.*`** | `user`, `doc`, `data`, `id`, `req` | Row-Level Security permissions |
-| **`admin.hooks.onChange`** | `value`, `siblingData`, `data` | Real-time form reactivity |
 
 ### Global Built-in JEXL Functions
 
@@ -22134,7 +22189,9 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal. When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
+If an action requires user input (like selecting a seat, entering notes, or recording a payment), declare `fields` to automatically generate an input modal.
+
+When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 
@@ -22155,7 +22212,84 @@ export const assignTableAction = defineAction({
 
 Expressions like `"input.tableNumber"` extract values submitted through the dialog.
 
-### 3. Bulk and header actions
+### 3. Dynamic defaults and live modal reactivity
+
+Action modal fields support the exact same reactivity engine and hooks as document edit forms:
+
+- **Dynamic `defaultValue` (Initial Prefill)**: Compute initial field values using targeted record data (`doc`), bulk records (`docs`), or the authenticated editor (`user`).
+- **Live `admin.hooks.onChange`**: Automatically recalculate calculated totals, summary strings, or reference codes as the editor types inside the modal.
+- **Dynamic `admin.hooks.options`**: Cascading dropdown choices that update live as sibling inputs change.
+- **Conditional Visibility (`admin.condition`)**: Dynamically show or hide modal inputs based on sibling choices or targeted row properties.
+
+Here is a complete example of a payment recording action modal with dynamic prefilling, live total calculation, and conditional cheque inputs:
+
+```ts
+
+  defineAction,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  when,
+} from "@dyrected/core";
+
+export const recordPaymentAction = defineAction({
+  name: "recordPayment",
+  label: "Record Payment",
+  submitLabel: "Process Payment",
+  icon: "CreditCard",
+  type: "row",
+  fields: [
+    defineSelectField({
+      name: "paymentMethod",
+      label: "Payment Method",
+      required: true,
+      defaultValue: "transfer",
+      options: [
+        { label: "Bank Transfer", value: "transfer" },
+        { label: "Cash", value: "cash" },
+        { label: "Cheque", value: "cheque" },
+      ],
+    }),
+    defineTextField({
+      name: "chequeNumber",
+      label: "Cheque Number",
+      admin: {
+        // Shows only when 'cheque' is selected in the modal
+        condition: when.sibling("paymentMethod").equals("cheque"),
+      },
+    }),
+    defineNumberField({
+      name: "amount",
+      label: "Amount (₦)",
+      required: true,
+      // 1. Initial prefill: Remaining balance from the targeted record
+      defaultValue: ({ doc }) => (doc?.totalDue || 0) - (doc?.amountPaid || 0),
+    }),
+    defineNumberField({
+      name: "balanceAfter",
+      label: "Remaining Balance After Payment (₦)",
+      admin: {
+        readOnly: true,
+        // 2. Live reactivity: Updates continuously as the editor edits 'amount'
+        hooks: {
+          onChange: ({ siblingData, doc }) => {
+            const remaining = (doc?.totalDue || 0) - (doc?.amountPaid || 0);
+            return Math.max(0, remaining - (Number(siblingData.amount) || 0));
+          },
+        },
+      },
+    }),
+  ],
+  mutation: {
+    amountPaid: "doc.amountPaid + input.amount",
+    paymentMethod: "input.paymentMethod",
+    chequeNumber: "input.chequeNumber",
+    lastPaymentAt: "now()",
+  },
+});
+```
+
+### 4. Bulk and header actions
 
 Define actions that operate across multiple selected documents or view-wide:
 

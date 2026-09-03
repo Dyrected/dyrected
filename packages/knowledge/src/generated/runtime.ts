@@ -1698,6 +1698,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "examples-and-recipes--library--computed-fields-and-totals",
+    "relativePath": "examples-and-recipes/library/computed-fields-and-totals",
+    "title": "Compute fields and calculate totals live",
+    "description": "Automatically compute field values, totals, and balances with server-side guarantees and instant Admin UI reactivity.",
+    "runtime": "self-hosted",
+    "runtimeGroup": "recipe-computed-fields-and-totals",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/computed-fields-and-totals.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/computed-fields-and-totals",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/computed-fields-and-totals",
+    "status": "classified"
+  },
+  {
     "id": "examples-and-recipes--library--conditional-admin-field",
     "relativePath": "examples-and-recipes/library/conditional-admin-field",
     "title": "Show an Admin field only when it is relevant",
@@ -1770,6 +1785,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/custom-theme-shell",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-theme-shell",
+    "status": "classified"
+  },
+  {
+    "id": "examples-and-recipes--library--declarative-reactive-hooks",
+    "relativePath": "examples-and-recipes/library/declarative-reactive-hooks",
+    "title": "Declarative reactive hooks with JEXL and when",
+    "description": "Build Cloud-safe, serializable browser hooks for live calculations, slug generation, and conditional values using the when helper.",
+    "runtime": "shared",
+    "runtimeGroup": "recipe-declarative-reactive-hooks",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/declarative-reactive-hooks.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/declarative-reactive-hooks",
     "status": "classified"
   },
   {

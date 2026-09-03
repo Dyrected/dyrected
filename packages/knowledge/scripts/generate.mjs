@@ -72,6 +72,8 @@ const recipeDocsPathMap = {
   "kanban-pipeline-view": "/docs/examples-and-recipes/library/kanban-pipeline-view",
   "calendar-schedule-view": "/docs/examples-and-recipes/library/calendar-schedule-view",
   "operational-metrics": "/docs/examples-and-recipes/library/operational-metrics",
+  "computed-fields-and-totals": "/docs/examples-and-recipes/library/computed-fields-and-totals",
+  "declarative-reactive-hooks": "/docs/examples-and-recipes/library/declarative-reactive-hooks",
 };
 
 function fail(message) {

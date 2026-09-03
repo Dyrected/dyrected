@@ -2751,6 +2751,13 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/computed-fields-and-totals#example-1",
+    "page": "/examples-and-recipes/library/computed-fields-and-totals",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/conditional-admin-field#example-1",
     "page": "/examples-and-recipes/library/conditional-admin-field",
     "language": "ts",
@@ -2781,6 +2788,13 @@
   {
     "id": "/examples-and-recipes/library/custom-theme-shell#example-1",
     "page": "/examples-and-recipes/library/custom-theme-shell",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/declarative-reactive-hooks#example-1",
+    "page": "/examples-and-recipes/library/declarative-reactive-hooks",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
@@ -5559,6 +5573,13 @@
   },
   {
     "id": "/model-content/operational-views/actions#example-6",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-7",
     "page": "/model-content/operational-views/actions",
     "language": "ts",
     "classification": "syntax-checked",

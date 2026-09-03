@@ -123,6 +123,37 @@
     "snippetStatus": "validated"
   },
   {
+    "id": "computed-fields-and-totals",
+    "title": "Compute fields and calculate totals live",
+    "description": "Automatically compute field values, totals, and balances with server-side guarantees and instant Admin UI reactivity.",
+    "problem": "You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database.",
+    "summary": "Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.",
+    "category": "data-lifecycle",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses beforeChange for database guarantees and admin.hooks.onChange for live Admin UI reactivity.",
+    "intents": [
+      "calculate order totals from sibling inputs",
+      "compute remaining balances automatically",
+      "update field values live as an editor types",
+      "guarantee computed values in the database"
+    ],
+    "concepts": [
+      "beforeChange",
+      "admin.hooks.onChange",
+      "defaultValue",
+      "readOnly"
+    ],
+    "canonicalDocs": [
+      "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+      "/docs/model-content/content-rules/hooks",
+      "/docs/deployment-and-operations/server-runtime/hooks/fields"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineNumberField, defineSelectField, defineTextField } from \"@dyrected/core\";\n\nexport function calculateOrderTotals(item: Record<string, any> = {}) {\n  const quantity = Number(item.quantity) || 0;\n  const unitPrice = Number(item.unitPrice) || 0;\n  const discount = Number(item.discount) || 0;\n  const subtotal = quantity * unitPrice;\n  const total = Math.max(0, subtotal - discount);\n  return { subtotal, total };\n}\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc, operation }) => {\n        const merged = { ...(doc || {}), ...data };\n        const { total } = calculateOrderTotals(merged);\n        return {\n          ...data,\n          totalAmount: total,\n        };\n      },\n    ],\n  },\n  fields: [\n    defineNumberField({\n      name: \"quantity\",\n      label: \"Quantity\",\n      required: true,\n      defaultValue: 1,\n    }),\n    defineNumberField({\n      name: \"unitPrice\",\n      label: \"Unit Price (₦)\",\n      required: true,\n      defaultValue: 10000,\n    }),\n    defineNumberField({\n      name: \"discount\",\n      label: \"Discount (₦)\",\n      defaultValue: 0,\n    }),\n    defineNumberField({\n      name: \"totalAmount\",\n      label: \"Total Amount (₦)\",\n      admin: {\n        readOnly: true,\n        hooks: {\n          onChange: ({ siblingData }) => calculateOrderTotals(siblingData).total,\n        },\n      },\n    }),\n    defineSelectField({\n      name: \"paymentStatus\",\n      label: \"Payment Status\",\n      defaultValue: \"pending\",\n      options: [\n        { label: \"Pending\", value: \"pending\" },\n        { label: \"Partial\", value: \"partial\" },\n        { label: \"Paid\", value: \"paid\" },\n      ],\n    }),\n    defineNumberField({\n      name: \"amountPaid\",\n      label: \"Amount Paid (₦)\",\n      admin: {\n        hooks: {\n          onChange: ({ value, siblingData }) => {\n            const { total } = calculateOrderTotals(siblingData);\n            const status = siblingData.paymentStatus;\n\n            if (status === \"pending\") return 0;\n            if (status === \"paid\") return total;\n            if (status === \"partial\") {\n              if (typeof value === \"number\" && value > 0 && value !== total) {\n                return value;\n              }\n              return total;\n            }\n            return value;\n          },\n        },\n      },\n    }),\n  ],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/computed-fields-and-totals",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "conditional-admin-field",
     "title": "Show an Admin field only when it is relevant",
     "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
@@ -279,6 +310,39 @@
     ],
     "source": "import {\n  AdminThemeProvider,\n  AdminThemedRoot,\n  useAdminTheme,\n} from \"@dyrected/react\";\n\nfunction ThemeSwitcher() {\n  const { theme, setTheme } = useAdminTheme();\n\n  return (\n    <select\n      value={theme}\n      onChange={(event) => setTheme(event.target.value as \"system\" | \"light\" | \"dark\")}\n    >\n      <option value=\"system\">System</option>\n      <option value=\"light\">Light</option>\n      <option value=\"dark\">Dark</option>\n    </select>\n  );\n}\n\nexport default function DashboardRoute() {\n  return (\n    <AdminThemeProvider>\n      <AdminThemedRoot>\n        <header>\n          <ThemeSwitcher />\n        </header>\n\n        <main>{/* page content */}</main>\n      </AdminThemedRoot>\n    </AdminThemeProvider>\n  );\n}",
     "docsPath": "/docs/examples-and-recipes/library/custom-theme-shell",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "declarative-reactive-hooks",
+    "title": "Declarative reactive hooks with JEXL and when",
+    "description": "Build Cloud-safe, serializable browser hooks for live calculations, slug generation, and conditional values using the when helper.",
+    "problem": "You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code.",
+    "summary": "Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.",
+    "category": "data-lifecycle",
+    "runtime": "shared",
+    "runtimeNotes": "Uses declarative JEXL expressions with the when helper, compatible with both Cloud and self-hosted runtimes.",
+    "intents": [
+      "build reactive form transforms that survive Cloud schema sync",
+      "compute field values without writing raw JavaScript functions",
+      "calculate status-based pricing or conditional totals declaratively",
+      "format reference codes or IDs from sibling inputs in real-time"
+    ],
+    "concepts": [
+      "admin.hooks.onChange",
+      "when.then",
+      "when.match",
+      "when.sibling",
+      "when.concat",
+      "when.slugify"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/content-rules/declarative-expressions",
+      "/docs/model-content/content-rules/cloud-safe-hooks",
+      "/docs/deployment-and-operations/server-runtime/hooks/fields"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineNumberField,\n  defineSelectField,\n  defineTextField,\n  when,\n} from \"@dyrected/core\";\n\nexport const Invoices = defineCollection({\n  slug: \"invoices\",\n  fields: [\n    defineTextField({\n      name: \"title\",\n      label: \"Invoice Title\",\n      required: true,\n    }),\n\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      admin: {\n        hooks: {\n          onChange: when.then(\n            when.fieldEmpty(\"value\"),\n            when.slugify(\"siblingData.title\"),\n            \"value\"\n          ),\n        },\n      },\n    }),\n\n    defineSelectField({\n      name: \"planTier\",\n      label: \"Plan Tier\",\n      defaultValue: \"standard\",\n      options: [\n        { label: \"Free Trial\", value: \"trial\" },\n        { label: \"Standard\", value: \"standard\" },\n        { label: \"Enterprise\", value: \"enterprise\" },\n      ],\n    }),\n\n    defineNumberField({\n      name: \"basePrice\",\n      label: \"Base Price (₦)\",\n      admin: {\n        readOnly: true,\n        hooks: {\n          onChange: when.match()\n            .case(when.sibling(\"planTier\").equals(\"trial\"), 0)\n            .case(when.sibling(\"planTier\").equals(\"standard\"), 25000)\n            .case(when.sibling(\"planTier\").equals(\"enterprise\"), 100000)\n            .otherwise(25000),\n        },\n      },\n    }),\n\n    defineTextField({\n      name: \"referenceCode\",\n      label: \"Payment Reference\",\n      admin: {\n        readOnly: true,\n        hooks: {\n          onChange: when.concat(\n            \"INV-\",\n            when.upper(\"siblingData.planTier\"),\n            \"-\",\n            when.slugify(\"siblingData.title\")\n          ),\n        },\n      },\n    }),\n  ],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/declarative-reactive-hooks",
     "snippetStatus": "validated"
   },
   {

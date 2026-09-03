@@ -193,6 +193,8 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
       ...(resolvedVariant !== undefined ? { variant: resolvedVariant, _variant: resolvedVariant } : {}),
       ...(resolvedBlock !== undefined ? { block: resolvedBlock, _block: resolvedBlock } : {}),
       user,
+      doc: formValues,
+      document: formValues,
       ...(documentId ? { id: documentId } : {}),
     }),
     [conditionData, formValues, normalizedSiblingData, ancestorMerged, ancestors, resolvedVariant, resolvedBlock, user, documentId],
@@ -251,7 +253,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
       }
     }
   } else if (typeof condition === "function") {
-    isVisible = condition(conditionData, siblingData)
+    isVisible = condition(conditionContext, siblingData)
   }
 
   if (!isVisible && !jexlError) return null

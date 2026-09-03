@@ -2115,7 +2115,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldAdminOnChangeHookArgs<TValue = unknown> {\n  /** Current field value in the form state. */\n  value: TValue;\n  /** Current values for sibling fields at the same nesting level. */\n  siblingData: Record<string, unknown>;\n  /** Current values for the entire form. */\n  data: Record<string, unknown>;\n  /** Imperative setter for async or derived updates. */\n  setValue: (value: unknown) => void;\n}",
+    "signature": "export interface FieldAdminOnChangeHookArgs<TValue = unknown> {\n  /** Current field value in the form state. */\n  value: TValue;\n  /** Current values for sibling fields at the same nesting level. */\n  siblingData: Record<string, unknown>;\n  /** Current values for the entire form. */\n  data: Record<string, unknown>;\n  /** The targeted record / document when available. */\n  doc?: Record<string, unknown>;\n  /** Array of targeted records for bulk action operations. */\n  docs?: Record<string, unknown>[];\n  /** Current authenticated user. */\n  user?: unknown;\n  /** Imperative setter for async or derived updates. */\n  setValue: (value: unknown) => void;\n}",
     "members": [
       {
         "name": "value",
@@ -2131,6 +2131,21 @@ export const references: readonly ReferenceEntry[] = [
         "name": "data",
         "signature": "data: Record<string, unknown>",
         "description": "Current values for the entire form."
+      },
+      {
+        "name": "doc",
+        "signature": "doc?: Record<string, unknown>",
+        "description": "The targeted record / document when available."
+      },
+      {
+        "name": "docs",
+        "signature": "docs?: Record<string, unknown>[]",
+        "description": "Array of targeted records for bulk action operations."
+      },
+      {
+        "name": "user",
+        "signature": "user?: unknown",
+        "description": "Current authenticated user."
       },
       {
         "name": "setValue",
@@ -2156,8 +2171,13 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldAdminOptionsHookArgs {\n  /** Current values for sibling fields at the same nesting level. */\n  siblingData: Record<string, unknown>;\n  /** Current values for the entire form. */\n  data: Record<string, unknown>;\n}",
+    "signature": "export interface FieldAdminOptionsHookArgs {\n  /** Current field value in the form state (if set). */\n  value?: unknown;\n  /** Current values for sibling fields at the same nesting level. */\n  siblingData: Record<string, unknown>;\n  /** Current values for the entire form. */\n  data: Record<string, unknown>;\n  /** The targeted record / document when available. */\n  doc?: Record<string, unknown>;\n  /** Array of targeted records for bulk action operations. */\n  docs?: Record<string, unknown>[];\n  /** Current authenticated user. */\n  user?: unknown;\n}",
     "members": [
+      {
+        "name": "value",
+        "signature": "value?: unknown",
+        "description": "Current field value in the form state (if set)."
+      },
       {
         "name": "siblingData",
         "signature": "siblingData: Record<string, unknown>",
@@ -2167,6 +2187,21 @@ export const references: readonly ReferenceEntry[] = [
         "name": "data",
         "signature": "data: Record<string, unknown>",
         "description": "Current values for the entire form."
+      },
+      {
+        "name": "doc",
+        "signature": "doc?: Record<string, unknown>",
+        "description": "The targeted record / document when available."
+      },
+      {
+        "name": "docs",
+        "signature": "docs?: Record<string, unknown>[]",
+        "description": "Array of targeted records for bulk action operations."
+      },
+      {
+        "name": "user",
+        "signature": "user?: unknown",
+        "description": "Current authenticated user."
       }
     ]
   },
@@ -4134,7 +4169,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export interface DyrectedClientConfig {\n  baseUrl: string;\n  apiKey?: string;\n  siteId?: string;\n  headers?: Record<string, string>;\n  fetch?: typeof fetch;\n  /**\n   * Default relationship population depth applied to document reads\n   * (`find`, `findOne`, `global().get()`, and media listing) when a call\n   * does not pass its own `depth`. Defaults to `1`.\n   */\n  defaultDepth?: number;\n}",
+    "signature": "export interface DyrectedClientConfig {\n  baseUrl: string;\n  apiKey?: string;\n  siteId?: string;\n  headers?: Record<string, string>;\n  fetch?: typeof fetch;\n  /**\n   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.\n   */\n  onAuthError?: (error: DyrectedError) => void;\n  /**\n   * Default relationship population depth applied to document reads\n   * (`find`, `findOne`, `global().get()`, and media listing) when a call\n   * does not pass its own `depth`. Defaults to `1`.\n   */\n  defaultDepth?: number;\n}",
     "members": [
       {
         "name": "baseUrl",
@@ -4160,6 +4195,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "fetch",
         "signature": "fetch?: typeof fetch",
         "description": ""
+      },
+      {
+        "name": "onAuthError",
+        "signature": "onAuthError?: (error: DyrectedError) => void",
+        "description": "Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint."
       },
       {
         "name": "defaultDepth",

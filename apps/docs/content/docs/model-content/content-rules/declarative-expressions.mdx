@@ -283,10 +283,11 @@ Dyrected provides the following context variables based on where the expression 
 
 | Surface | In-Scope Variables | Common Use Case |
 | :--- | :--- | :--- |
-| **`admin.condition`** | `data`, `siblingData`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`defaultValue`** | `doc`, `docs`, `user`, `siblingData`, `data` | Dynamic initial prefill on modal/form open |
+| **`admin.condition`** | `data`, `siblingData`, `doc`, `docs`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`admin.hooks.onChange`** | `value`, `siblingData`, `data`, `doc`, `docs`, `user` | Real-time form and action modal reactivity |
 | **`admin.previewUrl`** | `doc`, `entry`, `siteUrl`, all root fields | Frontend preview routing |
 | **`access.*`** | `user`, `doc`, `data`, `id`, `req` | Row-Level Security permissions |
-| **`admin.hooks.onChange`** | `value`, `siblingData`, `data` | Real-time form reactivity |
 
 ### Global Built-in JEXL Functions
 
