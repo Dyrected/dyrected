@@ -446,7 +446,7 @@ export function MediaLibraryDialog({
                     )}
                   </div>
 
-                  <div className="dy-min-h-0 dy-flex-1 dy-overflow-y-auto dy-overscroll-contain dy--mx-1 dy-px-1">
+                  <div className="dy-min-h-0 dy-max-h-[60vh] lg:dy-max-h-[68vh] dy-flex-1 dy-overflow-y-auto dy-overscroll-contain dy--mx-1 dy-px-1">
                     <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 xl:dy-grid-cols-6 2xl:dy-grid-cols-7">
                       {media?.map((item: LooseMediaRecord) => {
                         const sourceInfo = getMediaSourceInfo(item)

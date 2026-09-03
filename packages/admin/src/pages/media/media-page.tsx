@@ -33,11 +33,11 @@ import {
   Globe,
   Video,
   Download,
-  Link as LinkIcon,
   FolderInput,
   MoreVertical,
   Copy,
   Pencil,
+  X,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -366,14 +366,17 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
               Upload Assets
             </Button>
           </DialogTrigger>
-          <DialogContent className="dy-max-h-[90dvh] dy-w-[calc(100vw)] dy-overflow-y-auto dy-rounded-2xl dy-border-none dy-shadow-2xl sm:dy-max-w-[600px]">
-            <DialogHeader className="dy-pb-4 dy-border-b dy-border-border/40">
-              <DialogTitle className="dy-text-xl dy-font-bold">Upload Media Assets</DialogTitle>
+          <DialogContent className="dy-max-h-[88dvh] dy-w-[calc(100vw-2rem)] sm:dy-max-w-[560px] dy-flex dy-flex-col dy-p-0 dy-gap-0 dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border dy-bg-background dy-shadow-2xl">
+            <DialogHeader className="dy-px-6 dy-py-4 dy-border-b dy-border-border/60 dy-bg-muted/10">
+              <DialogTitle className="dy-font-serif dy-text-lg sm:dy-text-xl dy-font-bold dy-tracking-tight">
+                Upload {schema.labels?.singular ? `${schema.labels.singular} Assets` : "Media Assets"}
+              </DialogTitle>
             </DialogHeader>
             <FileUploader
               collectionSlug={collectionSlug}
               files={uploadFiles}
               setFiles={setUploadFiles}
+              allowedMimeTypes={typeof schema.upload === "object" ? (schema.upload as { mimeTypes?: string[] })?.mimeTypes : undefined}
               onComplete={() => {
                 handleUploadOpenChange(false)
                 queryClient.invalidateQueries({ queryKey: ["media", collectionSlug] })
@@ -833,11 +836,12 @@ function MediaCard({ item, baseUrl, onDelete, onMoveToFolder, onClick, isSelecte
   )
 }
 
-function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
+function FileUploader({ collectionSlug, files, setFiles, onComplete, allowedMimeTypes }: {
   collectionSlug?: string,
   files: File[],
   setFiles: React.Dispatch<React.SetStateAction<File[]>>,
-  onComplete: () => void
+  onComplete: () => void,
+  allowedMimeTypes?: string[],
 }) {
   const {
     isUploading: uploading,
@@ -877,107 +881,185 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
     setFiles(prev => [...prev, ...acceptedFiles])
   }, [setFiles])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
+  const dropzoneAccept = React.useMemo(() => {
+    if (allowedMimeTypes && allowedMimeTypes.length > 0) {
+      const acceptMap: Record<string, string[]> = {}
+      for (const mime of allowedMimeTypes) {
+        acceptMap[mime] = []
+      }
+      return acceptMap
+    }
+    return undefined
+  }, [allowedMimeTypes])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: dropzoneAccept,
+  })
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
 
   const handleUpload = async () => {
     if (files.length === 0) return
     await uploadFiles(files)
   }
 
-
   return (
-    <Tabs defaultValue="files" className="dy-w-full">
-      <TabsList className="dy-grid dy-w-full dy-grid-cols-2">
-        <TabsTrigger value="files" className="dy-gap-2">
-          <Upload className="dy-h-4 dy-w-4" />
-          Upload Files
-        </TabsTrigger>
-        <TabsTrigger value="url" className="dy-gap-2">
-          <LinkIcon className="dy-h-4 dy-w-4" />
-          From URL
-        </TabsTrigger>
-      </TabsList>
+    <Tabs defaultValue="files" className="dy-flex dy-flex-col dy-min-h-0 dy-flex-1 dy-overflow-hidden">
+      <div className="dy-px-5 dy-pt-3.5 dy-pb-2 dy-bg-muted/5 sm:dy-px-6">
+        <TabsList className="dy-grid dy-w-full dy-grid-cols-2 dy-h-10 dy-rounded-xl dy-bg-muted/50 dy-p-1">
+          <TabsTrigger value="files" className="dy-gap-2 dy-text-xs dy-font-bold dy-rounded-lg data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-xs">
+            <Upload className="dy-h-3.5 dy-w-3.5" />
+            Upload Files
+            {files.length > 0 && (
+              <span className="dy-ml-1 dy-h-4 dy-w-4 dy-rounded-full dy-bg-primary dy-text-[9px] dy-font-black dy-text-primary-foreground dy-flex dy-items-center dy-justify-center">
+                {files.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="url" className="dy-gap-2 dy-text-xs dy-font-bold dy-rounded-lg data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-xs">
+            <Globe className="dy-h-3.5 dy-w-3.5" />
+            From URL
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
-      <TabsContent value="files" className="dy-mt-0 dy-space-y-6 dy-py-6 dy-px-4">
-        <div
-          {...getRootProps()}
-          className={`dy-border-2 dy-border-dashed dy-rounded-2xl dy-p-12 dy-text-center dy-cursor-pointer dy-transition-all dy-duration-300 ${isDragActive
-            ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.98]"
-            : "dy-border-muted-foreground/20 hover:dy-border-primary/40 hover:dy-bg-muted/5"
-            }`}
-        >
-          <input {...getInputProps()} />
-          <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4">
-            <Upload className="dy-h-8 dy-w-8 dy-text-primary" />
+      <TabsContent value="files" className="data-[state=active]:dy-flex data-[state=active]:dy-flex-col dy-min-h-0 dy-flex-1 dy-m-0 dy-overflow-hidden">
+        <div className="dy-flex-1 dy-overflow-y-auto dy-overscroll-contain dy-p-5 sm:dy-p-6 dy-space-y-4">
+          <div
+            {...getRootProps()}
+            className={cn(
+              "dy-border-2 dy-border-dashed dy-rounded-2xl dy-text-center dy-cursor-pointer dy-transition-all dy-duration-200",
+              files.length > 0 ? "dy-py-4 dy-px-4 sm:dy-py-5" : "dy-py-8 dy-px-6 sm:dy-py-10",
+              isDragActive
+                ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.99]"
+                : "dy-border-muted-foreground/25 hover:dy-border-primary/50 hover:dy-bg-muted/5"
+            )}
+          >
+            <input {...getInputProps()} />
+            <div className={cn(
+              "dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto",
+              files.length > 0 ? "dy-h-10 dy-w-10 dy-mb-2" : "dy-h-14 dy-w-14 dy-mb-3"
+            )}>
+              <Upload className={cn("dy-text-primary", files.length > 0 ? "dy-h-5 dy-w-5" : "dy-h-7 dy-w-7")} />
+            </div>
+            <p className="dy-text-sm sm:dy-text-base dy-font-bold dy-text-foreground">
+              {files.length > 0 ? "Add more assets" : "Drag & drop assets here"}
+            </p>
+            <p className="dy-text-xs dy-text-muted-foreground dy-mt-0.5">
+              or click to browse from device
+            </p>
+            {allowedMimeTypes && allowedMimeTypes.length > 0 && (
+              <p className="dy-text-[10px] dy-text-muted-foreground/60 dy-mt-2">
+                Allowed: {allowedMimeTypes.join(", ")}
+              </p>
+            )}
           </div>
-          <p className="dy-text-xl dy-font-bold dy-text-foreground">Drag & drop assets</p>
-          <p className="dy-text-sm dy-text-muted-foreground dy-mt-1">or click to browse your files</p>
+
+          {files.length > 0 && (
+            <div className="dy-space-y-2.5 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2">
+              <div className="dy-flex dy-items-center dy-justify-between dy-px-1">
+                <span className="dy-text-xs dy-font-bold dy-text-foreground">
+                  {files.length} {files.length === 1 ? "asset" : "assets"} queued
+                </span>
+                <span className="dy-text-[11px] dy-text-muted-foreground">
+                  {(files.reduce((acc, f) => acc + f.size, 0) / 1024).toFixed(1)} KB total
+                </span>
+              </div>
+
+              <div className="dy-space-y-1.5 dy-max-h-[220px] dy-overflow-y-auto dy-overscroll-contain dy-pr-1">
+                {files.map((file, idx) => (
+                  <div
+                    key={`${file.name}-${idx}`}
+                    className="dy-flex dy-items-center dy-justify-between dy-p-2.5 dy-bg-muted/20 dy-border dy-border-border/50 dy-rounded-xl dy-text-xs dy-group hover:dy-bg-muted/40 dy-transition-colors"
+                  >
+                    <div className="dy-flex dy-items-center dy-gap-2.5 dy-min-w-0 dy-flex-1 dy-mr-2">
+                      <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-card dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
+                        <FileIcon className="dy-h-4 dy-w-4 dy-text-primary/70" />
+                      </div>
+                      <div className="dy-min-w-0 dy-flex-1">
+                        <p className="dy-truncate dy-font-medium dy-text-foreground" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="dy-text-[10px] dy-text-muted-foreground">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="dy-h-7 dy-w-7 dy-rounded-lg dy-text-muted-foreground hover:dy-text-destructive hover:dy-bg-destructive/10"
+                      onClick={() => removeFile(idx)}
+                      disabled={uploading}
+                      title="Remove file"
+                    >
+                      <X className="dy-h-3.5 dy-w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {uploading && (
+                <div className="dy-space-y-1.5 dy-pt-2">
+                  <div className="dy-flex dy-justify-between dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
+                    <span>Uploading...</span>
+                    <span>{Math.round(progress)}%</span>
+                  </div>
+                  <Progress value={progress} className="dy-h-1.5 dy-rounded-full" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {files.length > 0 && (
-          <div className="dy-space-y-4 dy-animate-in dy-fade-in dy-slide-in-from-bottom-4">
-            <div className="dy-flex dy-items-center dy-justify-between">
-              <p className="dy-text-sm dy-font-bold dy-text-foreground">{files.length} assets selected</p>
-              <Button variant="ghost" size="sm" onClick={() => setFiles([])} disabled={uploading} className="dy-text-xs dy-h-8">
-                Clear All
-              </Button>
-            </div>
-
-            <div className="dy-max-h-[240px] dy-overflow-auto dy-space-y-2 dy-pr-2 dy-custom-scrollbar">
-              {files.map((file, idx) => (
-                <div key={idx} className="dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-muted/30 dy-border dy-border-border/40 dy-rounded-lg dy-text-sm dy-group dy-transition-colors hover:dy-bg-muted/50">
-                  <div className="dy-flex dy-items-center dy-gap-3 dy-truncate">
-                    <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-card dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
-                      <FileIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
-                    </div>
-                    <span className="dy-truncate dy-font-medium dy-text-foreground/80">{file.name}</span>
-                  </div>
-                  <span className="dy-text-muted-foreground dy-text-[10px] dy-font-bold dy-bg-card dy-px-2 dy-py-1 dy-rounded dy-border dy-border-border/40 dy-ml-4">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {uploading && (
-              <div className="dy-space-y-2 dy-pt-2">
-                <div className="dy-flex dy-justify-between dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
-                  <span>Uploading...</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="dy-h-2 dy-rounded-full" />
-              </div>
+        {/* Pinned Sticky Footer */}
+        <div className="dy-flex dy-items-center dy-justify-between dy-border-t dy-border-border/60 dy-bg-muted/10 dy-px-5 dy-py-3.5 dy-gap-3 sm:dy-px-6">
+          {files.length > 0 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setFiles([])}
+              disabled={uploading}
+              className="dy-text-xs dy-font-semibold dy-text-muted-foreground hover:dy-text-destructive dy-h-9"
+            >
+              Clear All ({files.length})
+            </Button>
+          ) : (
+            <div />
+          )}
+          <Button
+            onClick={handleUpload}
+            disabled={uploading || files.length === 0}
+            className="dy-h-10 dy-px-6 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-text-xs dy-shadow-md dy-transition-all"
+          >
+            {uploading ? (
+              <span className="dy-flex dy-items-center dy-gap-2">
+                <div className="dy-h-3.5 dy-w-3.5 dy-border-2 dy-border-primary-foreground/30 dy-border-t-primary-foreground dy-rounded-full dy-animate-spin" />
+                Uploading Assets...
+              </span>
+            ) : (
+              `Upload ${files.length > 0 ? `${files.length} ` : ""}Asset${files.length === 1 ? "" : "s"}`
             )}
-
-            <div className="dy-flex dy-justify-end dy-pt-4 dy-border-t dy-border-border/40">
-              <Button
-                onClick={handleUpload}
-                disabled={uploading || files.length === 0}
-                className="dy-w-full dy-h-12 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98]"
-              >
-                {uploading ? (
-                  <span className="dy-flex dy-items-center dy-gap-2">
-                    <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-card/30 dy-border-t-card dy-rounded-full dy-animate-spin" />
-                    Uploading Assets...
-                  </span>
-                ) : `Upload ${files.length} Assets`}
-              </Button>
-            </div>
-          </div>
-        )}
+          </Button>
+        </div>
       </TabsContent>
 
-      <TabsContent value="url" className="dy-mt-0 dy-space-y-5 dy-py-6 dy-px-4">
-        <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto">
-          <Globe className="dy-h-8 dy-w-8 dy-text-primary" />
+      <TabsContent value="url" className="data-[state=active]:dy-flex data-[state=active]:dy-flex-col dy-min-h-0 dy-flex-1 dy-m-0 dy-p-5 sm:dy-p-6 dy-space-y-5 dy-overflow-y-auto">
+        <div className="dy-h-14 dy-w-14 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto dy-text-primary">
+          <Globe className="dy-h-7 dy-w-7" />
         </div>
         <div className="dy-text-center">
-          <p className="dy-text-xl dy-font-bold dy-text-foreground">Add media from a URL</p>
-          <p className="dy-text-sm dy-text-muted-foreground dy-mt-1">
+          <p className="dy-text-lg dy-font-bold dy-text-foreground">Add media from a URL</p>
+          <p className="dy-text-xs dy-text-muted-foreground dy-mt-1 dy-max-w-sm dy-mx-auto">
             Paste a YouTube or Vimeo link, or a direct link to an image or file.
           </p>
         </div>
-        <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row">
+        <div className="dy-flex dy-flex-col dy-gap-2.5 sm:dy-flex-row">
           <Input
             value={externalUrl}
             onChange={(e) => setExternalUrl(e.target.value)}
@@ -989,16 +1071,16 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
             }}
             placeholder="https://youtube.com/watch?v=…"
             disabled={addingUrl}
-            className="dy-h-12 dy-flex-1"
+            className="dy-h-10 dy-text-xs dy-flex-1"
           />
           <Button
             onClick={handleAddUrl}
             disabled={addingUrl || !externalUrl.trim()}
-            className="dy-h-12 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98] sm:dy-w-auto"
+            className="dy-h-10 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-text-xs dy-shadow-md sm:dy-w-auto"
           >
             {addingUrl ? (
               <span className="dy-flex dy-items-center dy-gap-2">
-                <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-card/30 dy-border-t-card dy-rounded-full dy-animate-spin" />
+                <div className="dy-h-3.5 dy-w-3.5 dy-border-2 dy-border-primary-foreground/30 dy-border-t-primary-foreground dy-rounded-full dy-animate-spin" />
                 Adding…
               </span>
             ) : "Add Media"}
