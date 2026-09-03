@@ -1,7 +1,7 @@
 {
   "id": "declarative-reactive-hooks",
-  "title": "Declarative reactive hooks with JEXL and when",
-  "description": "Build Cloud-safe, serializable browser hooks for live calculations, slug generation, and conditional values using the when helper.",
+  "title": "Calculate field values and format strings live",
+  "description": "Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.",
   "problem": "You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code.",
   "summary": "Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.",
   "category": "data-lifecycle",
