@@ -315,7 +315,7 @@ export function MediaLibraryDialog({
     onError: () => alert("Failed to add URL. Please make sure it is valid."),
   })
 
-  const getPreviewUrl = (item: { url?: string; mimeType?: string; [key: string]: unknown }) =>
+  const getPreviewUrl = (item: { url?: string; mimeType?: string;[key: string]: unknown }) =>
     getMediaPreviewUrl(item, client?.getBaseUrl() || "")
 
   const handleConfirm = () => {
@@ -327,7 +327,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent onPaste={handlePaste} className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[960px]">
+      <DialogContent onPaste={handlePaste} className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] !dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[960px]">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-h-full dy-flex-col">
           <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
             <div className="dy-flex dy-min-w-0 dy-items-center dy-gap-3 sm:dy-gap-4">

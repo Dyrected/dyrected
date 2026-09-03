@@ -12,16 +12,25 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { FocalPointPicker } from "./focal-point-picker";
 import { getMediaPreviewUrl, isExternalMedia } from "../../lib/external-media";
 import { getTransformedMediaUrl, cn } from "../../lib/utils";
 import { useIsMobile } from "../../hooks/use-mobile";
+import type { MediaFolder } from "../../types/media-folders";
 
 interface MediaInspectorProps {
   item: any | null;
   isOpen: boolean;
   onClose: () => void;
   baseUrl: string;
+  folders?: MediaFolder[];
   onUpdate: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
 }
@@ -39,6 +48,7 @@ export function MediaInspector({
   isOpen,
   onClose,
   baseUrl,
+  folders,
   onUpdate,
   onDelete,
 }: MediaInspectorProps) {
@@ -59,6 +69,7 @@ export function MediaInspector({
           key={item.id}
           item={item}
           baseUrl={baseUrl}
+          folders={folders}
           onClose={onClose}
           onUpdate={onUpdate}
           onDelete={onDelete}
@@ -71,18 +82,21 @@ export function MediaInspector({
 function MediaInspectorForm({
   item,
   baseUrl,
+  folders = [],
   onClose,
   onUpdate,
   onDelete,
 }: {
   item: any;
   baseUrl: string;
+  folders?: MediaFolder[];
   onClose: () => void;
   onUpdate: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
 }) {
   const [alt, setAlt] = React.useState(item?.alt || "");
   const [caption, setCaption] = React.useState(item?.caption || "");
+  const [folderId, setFolderId] = React.useState<string>(item?.folderId || "root");
   const [focalPoint, setFocalPoint] = React.useState<{ x: number; y: number } | undefined>(
     item?.focalPoint || undefined
   );
@@ -102,6 +116,7 @@ function MediaInspectorForm({
     onUpdate(item.id, {
       alt,
       caption,
+      folderId: folderId === "root" ? null : folderId,
       focalPoint,
     });
     onClose();
@@ -220,6 +235,35 @@ function MediaInspectorForm({
                   className="dy-h-8 dy-text-xs"
                 />
               </div>
+
+              {folders.length > 0 && (
+                <div className="dy-space-y-1.5">
+                  <Label htmlFor="folder" className="dy-text-xs">
+                    Folder
+                  </Label>
+                  <Select value={folderId} onValueChange={setFolderId}>
+                    <SelectTrigger id="folder" className="dy-h-8 dy-text-xs">
+                      <SelectValue placeholder="Select folder" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="root">
+                        <span className="dy-text-muted-foreground">None (Root Folder)</span>
+                      </SelectItem>
+                      {folders.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          <div className="dy-flex dy-items-center dy-gap-2">
+                            <span
+                              className="dy-h-2 dy-w-2 dy-rounded-full dy-shrink-0"
+                              style={{ backgroundColor: f.color || "#64748b" }}
+                            />
+                            <span>{f.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </TabsContent>
 

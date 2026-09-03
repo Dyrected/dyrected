@@ -4,6 +4,7 @@ import type { DyrectedConfig } from "./types/index.js";
 import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";
+import { MediaFolderController } from "./controllers/media-folders.controller.js";
 import { AuthController } from "./controllers/auth.controller.js";
 import { AdminAuthController } from "./controllers/admin-auth.controller.js";
 import { PreviewController } from "./controllers/preview.controller.js";
@@ -679,6 +680,23 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   });
 
   // Global Media Fallback (Proxies to the 'media' collection)
+  app.get("/api/media/folders", async (c) => {
+    const folderController = new MediaFolderController("media");
+    return folderController.list(c);
+  });
+  app.post("/api/media/folders", async (c) => {
+    const folderController = new MediaFolderController("media");
+    return folderController.create(c);
+  });
+  app.patch("/api/media/folders/:id", async (c) => {
+    const folderController = new MediaFolderController("media");
+    return folderController.update(c);
+  });
+  app.delete("/api/media/folders/:id", async (c) => {
+    const folderController = new MediaFolderController("media");
+    return folderController.delete(c);
+  });
+
   app.get("/api/media/:filename{.+$}", async (c) => {
     const mediaController = new MediaController("media");
     return mediaController.serve(c);
@@ -696,7 +714,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     // Register routes for each upload-enabled collection
     for (const col of uploadCollections) {
       const mediaController = new MediaController(col.slug);
+      const folderController = new MediaFolderController(col.slug);
       const prefix = `/api/collections/${col.slug}`;
+
+      app.get(`${prefix}/folders`, accessGate(config, col, "read"), (c) => folderController.list(c));
+      app.post(`${prefix}/folders`, accessGate(config, col, "create"), (c) => folderController.create(c));
+      app.patch(`${prefix}/folders/:id`, accessGate(config, col, "update"), (c) => folderController.update(c));
+      app.delete(`${prefix}/folders/:id`, accessGate(config, col, "delete"), (c) => folderController.delete(c));
 
       app.get(`${prefix}/media`, accessGate(config, col, "read"), (c) => mediaController.find(c));
       app.get(`${prefix}/media/:filename{.+$}`, (c) => mediaController.serve(c));

@@ -484,12 +484,11 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
         isOpen={!!selectedItem}
         onClose={() => setSelectedItem(null)}
         baseUrl={client!.getBaseUrl()}
+        folders={folders}
         onUpdate={(id, data) => updateMutation.mutate({ id, data })}
         onDelete={(id) => {
-          if (confirm("Are you sure you want to delete this file?")) {
-            deleteMutation.mutate(id)
-            setSelectedItem(null)
-          }
+          deleteMutation.mutate(id)
+          setSelectedItem(null)
         }}
       />
     </div>

@@ -68,6 +68,19 @@ export type {
   LifecycleEvent,
 };
 
+/** Shape of a media folder document in the DAM system. */
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /** Shape of a document returned from a workflow-enabled collection. */
 export interface WorkflowDocument {
   id: string;
@@ -684,6 +697,26 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           },
         ),
       /**
+       * List media folders for this upload-enabled collection.
+       */
+      listFolders: (): Promise<PaginatedResult<MediaFolder>> =>
+        this.listFolders(slug),
+      /**
+       * Create a media folder in this collection.
+       */
+      createFolder: (data: { name: string; parentId?: string | null; color?: string | null }): Promise<MediaFolder> =>
+        this.createFolder(slug, data),
+      /**
+       * Update an existing media folder in this collection.
+       */
+      updateFolder: (id: string, data: { name?: string; parentId?: string | null; color?: string | null }): Promise<MediaFolder> =>
+        this.updateFolder(slug, id, data),
+      /**
+       * Delete a media folder from this collection.
+       */
+      deleteFolder: (id: string): Promise<{ success: boolean; id: string }> =>
+        this.deleteFolder(slug, id),
+      /**
        * Run an operational view action (`defineAction`) against one or more documents.
        *
        * Sends `POST /api/collections/:collection/views/:viewSlug/actions/:action`.
@@ -950,6 +983,57 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     );
     return this.request<PaginatedResult<Media>>(
       `/api/collections/${collection}${query}`,
+    );
+  }
+
+  /**
+   * List all media folders in an upload-enabled collection.
+   */
+  async listFolders(collection: string = "media"): Promise<PaginatedResult<MediaFolder>> {
+    return this.request<PaginatedResult<MediaFolder>>(
+      `/api/collections/${collection}/folders`,
+    );
+  }
+
+  /**
+   * Create a new media folder in an upload-enabled collection.
+   */
+  async createFolder(
+    collection: string = "media",
+    data: { name: string; parentId?: string | null; color?: string | null },
+  ): Promise<MediaFolder> {
+    return this.request<MediaFolder>(`/api/collections/${collection}/folders`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update an existing media folder in an upload-enabled collection.
+   */
+  async updateFolder(
+    collection: string = "media",
+    id: string,
+    data: { name?: string; parentId?: string | null; color?: string | null },
+  ): Promise<MediaFolder> {
+    return this.request<MediaFolder>(`/api/collections/${collection}/folders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a media folder from an upload-enabled collection.
+   */
+  async deleteFolder(
+    collection: string = "media",
+    id: string,
+  ): Promise<{ success: boolean; id: string }> {
+    return this.request<{ success: boolean; id: string }>(
+      `/api/collections/${collection}/folders/${id}`,
+      {
+        method: "DELETE",
+      },
     );
   }
 
