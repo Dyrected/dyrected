@@ -366,7 +366,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
               Upload Assets
             </Button>
           </DialogTrigger>
-          <DialogContent className="dy-max-h-[88dvh] dy-w-[calc(100vw-2rem)] sm:dy-max-w-[560px] dy-flex dy-flex-col dy-p-0 dy-gap-0 dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border dy-bg-background dy-shadow-2xl">
+          <DialogContent className="dy-max-h-[88dvh] dy-w-[calc(100vw)] sm:dy-max-w-[560px] dy-flex dy-flex-col dy-p-0 dy-gap-0 dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border dy-bg-background dy-shadow-2xl">
             <DialogHeader className="dy-px-6 dy-py-4 dy-border-b dy-border-border/60 dy-bg-muted/10">
               <DialogTitle className="dy-font-serif dy-text-lg sm:dy-text-xl dy-font-bold dy-tracking-tight">
                 Upload {schema.labels?.singular ? `${schema.labels.singular} Assets` : "Media Assets"}
