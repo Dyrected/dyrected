@@ -413,21 +413,16 @@ export function MediaPicker({
           {selectedValues.map((val, index) => {
             const valId = getIdentifier(val)
             const item = localMediaCache.find((m: any) => m.id === valId || m.filename === valId || m.url === valId)
+            const preview = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
             return (
               <div key={valId} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
                 <div className={cn(
                   "dy-relative dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border-2 dy-bg-muted/20 dy-transition-all dy-shadow-sm",
                   index === 0 ? "dy-border-primary dy-ring-4 dy-ring-primary/10" : "dy-border-border/40 hover:dy-border-border/80"
                 )}>
-                  {item ? (
+                  {preview ? (
                     <img
-                      src={getPreviewUrl(item)}
-                      alt=""
-                      className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
-                    />
-                  ) : val ? (
-                    <img
-                      src={getMediaUrl(val, client?.getBaseUrl() || "")}
+                      src={preview}
                       alt=""
                       className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
                     />

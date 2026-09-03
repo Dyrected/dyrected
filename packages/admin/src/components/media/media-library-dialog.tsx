@@ -563,11 +563,17 @@ export function MediaLibraryDialog({
                     <>
                       <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-3 md:dy-block md:dy-space-y-4">
                         <div className="dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border dy-bg-background dy-shadow-md dy-group dy-relative dy-ring-1 dy-ring-border/50">
-                          <img
-                            src={getPreviewUrl(selectedItem)}
-                            className="dy-w-full dy-h-full dy-object-contain dy-p-1"
-                            alt=""
-                          />
+                          {getPreviewUrl(selectedItem) ? (
+                            <img
+                              src={getPreviewUrl(selectedItem)}
+                              className="dy-w-full dy-h-full dy-object-contain dy-p-1"
+                              alt=""
+                            />
+                          ) : (
+                            <div className="dy-w-full dy-h-full dy-flex dy-items-center dy-justify-center dy-bg-muted/20">
+                              <ImageIcon className="dy-h-8 dy-w-8 dy-text-muted-foreground/30" />
+                            </div>
+                          )}
                           {/* Focal Point Indicator */}
                           {selectedItem.focalPoint && (
                             <div
