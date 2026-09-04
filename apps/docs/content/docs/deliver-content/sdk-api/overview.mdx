@@ -57,6 +57,35 @@ const { docs } = await client.collection("posts").find({
 
 Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
 
+## Managing media & folders
+
+Organize upload collections, manipulate folders, and replace asset files in-place:
+
+```ts
+// 1. Create a media folder
+const folder = await client.createFolder("media", {
+  name: "Summer Campaign",
+  color: "#3b82f6",
+});
+
+// 2. List all folders in a collection
+const { docs: folders } = await client.listFolders("media");
+
+// 3. Upload a file directly into a folder
+const asset = await client.collection("media").upload(myFile, {
+  folderId: folder.id,
+  alt: "Summer campaign banner",
+});
+
+// 4. Replace an existing file in-place (keeps the same document ID)
+const updatedAsset = await client.replaceMedia(asset.id, newFile);
+
+// 5. Delete multiple assets in batch
+await client.deleteMany("media", {
+  ids: ["asset-1", "asset-2"],
+});
+```
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.

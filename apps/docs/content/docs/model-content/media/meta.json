@@ -3,6 +3,7 @@
   "runtimeDefault": "variant",
   "pages": [
     "overview",
+    "digital-asset-management",
     "storage-adapters"
   ]
 }
