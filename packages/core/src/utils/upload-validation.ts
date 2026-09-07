@@ -57,3 +57,34 @@ export function validateUpload(
 
   return null;
 }
+
+/**
+ * Sanitizes an uploaded filename and appends a timestamp and random suffix
+ * to guarantee uniqueness across all storage adapters and prevent silent overwrites.
+ *
+ * Example:
+ * "My Photo.2026.png" -> "my-photo-2026-1725195000000-a1b2c3.png"
+ * "image.jpg" -> "image-1725195000000-a1b2c3.jpg"
+ */
+export function generateUniqueUploadFilename(filename: string): string {
+  const lastDotIndex = filename.lastIndexOf(".");
+  const ext = lastDotIndex !== -1 ? filename.substring(lastDotIndex).toLowerCase() : "";
+  const baseName = lastDotIndex !== -1 ? filename.substring(0, lastDotIndex) : filename;
+
+  const sanitizedBase = baseName
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "file";
+
+  // If already contains a timestamp-random suffix, don't double-suffix
+  if (/-\d{10,13}-[a-z0-9]{4,10}$/.test(sanitizedBase)) {
+    return `${sanitizedBase}${ext}`;
+  }
+
+  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  return `${sanitizedBase}-${uniqueSuffix}${ext}`;
+}
+

@@ -98,6 +98,37 @@ export interface DatabaseAdapter {
 export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal" | "aggregate">;
 
 /**
+ * Options for dynamic on-the-fly image transformations.
+ */
+export interface ImageTransformOptions {
+  /** Target width in pixels. */
+  width?: number;
+  /** Target height in pixels. */
+  height?: number;
+  /** Aspect ratio string (e.g. "16:9", "1:1") or numeric ratio (e.g. 1.777). */
+  aspectRatio?: string | number;
+  /** Crop strategy. */
+  crop?: "fill" | "fit" | "limit" | "pad" | "thumb" | "scale" | "cover" | "contain";
+  /** Gravity / focal anchor for cropping. */
+  gravity?: "auto" | "face" | "center" | "focal" | "xy_center" | string;
+  /** Explicit focal point percentage coordinates (0.0 to 1.0). */
+  focalPoint?: { x: number; y: number };
+  /** Output quality (1-100 or 'auto'). */
+  quality?: number | "auto" | "auto:best" | "auto:good" | "auto:eco";
+  /** Target image format. */
+  format?: "auto" | "webp" | "avif" | "png" | "jpg" | "jpeg";
+  /** Blur radius for placeholders/effects. */
+  blur?: number;
+  /** Rotation angle in degrees (e.g. 90, 180, 270). */
+  rotate?: number;
+  /** Device pixel ratio multiplier. */
+  dpr?: number | "auto";
+  /** Named transformation preset key. */
+  key?: string;
+  [key: string]: unknown;
+}
+
+/**
  * The interface every storage adapter must implement.
  *
  * Dyrected ships adapters for local disk, AWS S3 and other S3-compatible
@@ -114,8 +145,8 @@ export interface StorageAdapter {
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
 
-  /** Return the public URL for a stored file. */
-  getURL(args: { filename: string }): string;
+  /** Return the public URL for a stored file, with optional dynamic transformations. */
+  getURL(args: { filename: string; transform?: ImageTransformOptions }): string;
 
   /**
    * Retrieve the file's raw bytes and MIME type for serving via the API.

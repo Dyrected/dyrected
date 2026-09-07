@@ -1101,7 +1101,7 @@ export function AdminShell({
                 <button
                   type="button"
                   onClick={() => setMobileOpen(true)}
-                  className="dy-fixed md:dy-hidden dy-z-10 dy-top-2 dy-right-2 dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground dy-bg-background hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+                  className="dy-fixed md:dy-hidden dy-z-10 dy-top-2 dy-right-2 dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-accent-foreground dy-bg-accent hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
                   aria-label="Open menu"
                 >
                   <Menu className="dy-h-5 dy-w-5" />

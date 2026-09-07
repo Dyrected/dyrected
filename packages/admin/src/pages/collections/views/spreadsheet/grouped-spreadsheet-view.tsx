@@ -123,13 +123,19 @@ function SpreadsheetGroupSection({
     return [...editedDocs, ...groupNewRows]
   }, [group.docs, group.value, updates, newRows])
 
+  const [columnSizing, setColumnSizing] = React.useState<Record<string, number>>({})
+
   const table = useReactTable({
     data: gridData,
     columns,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    onColumnSizingChange: setColumnSizing,
     state: {
       sorting,
       columnOrder,
       columnVisibility,
+      columnSizing,
     },
     onSortingChange,
     getRowId: (row) => String(row.id),

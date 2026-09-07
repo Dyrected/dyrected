@@ -32,6 +32,22 @@ export function isEmbeddableVideoUrl(url: string): boolean {
   return YOUTUBE_RE.test(trimmed) || VIMEO_RE.test(trimmed);
 }
 
+/** Check if an item represents an external media resource. */
+export function isExternalMedia(item: unknown): boolean {
+  if (!item || typeof item !== "object") return false;
+  const obj = item as Record<string, unknown>;
+  const mime = obj.mimeType as string | undefined;
+  const url = obj.url as string | undefined;
+  return Boolean(
+    mime === "video/youtube" ||
+    mime === "video/vimeo" ||
+    mime === "image/external" ||
+    mime === "video/external" ||
+    mime === "application/external" ||
+    (typeof url === "string" && (isEmbeddableVideoUrl(url) || isDirectImageUrl(url)))
+  );
+}
+
 /** Check if a URL points directly to a raster/vector image file. */
 export function isDirectImageUrl(url: string): boolean {
   return IMAGE_RE.test(url.trim());

@@ -29,6 +29,14 @@ test("awaits app initialization and mounts routes at /dyrected", async () => {
       mode: "local",
       providers: [],
     },
+    hasStorage: false,
+    configDiagnostics: [],
+    adminHealth: {
+      emailConfigured: false,
+      secureAuthSecretConfigured: false,
+      authCollectionConfigured: false,
+      uploadCollectionConfigured: false,
+    },
   });
   assert.equal(second.status, 200);
   assert.equal(syncCalls, 1);

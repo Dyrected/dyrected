@@ -61,6 +61,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    if (!schemas || !client) return;
+
     if (
       !externalParams.token ||
       handledExternalTokenRef.current === externalParams.token

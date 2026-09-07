@@ -68,7 +68,7 @@ export interface KanbanLayoutProps {
   client: unknown
   schemas: unknown
   actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   /** Returns true while an action × selection is executing (drives loading states). */
   isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
@@ -128,7 +128,9 @@ export function KanbanLayout({
       try {
         const parsed = JSON.parse(f)
         if (Array.isArray(parsed)) return parsed as ColumnFiltersState
-      } catch {}
+      } catch {
+        // invalid URL filter JSON, fall through
+      }
     }
     return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
   }

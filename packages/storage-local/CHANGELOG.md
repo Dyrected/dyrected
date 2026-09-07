@@ -1,5 +1,28 @@
 # @dyrected/storage-local
 
+## 2.12.0
+
+### Patch Changes
+
+- Updated dependencies [cdc2abe]
+- Updated dependencies [e601008]
+  - @dyrected/core@2.12.0
+
+## 2.11.0
+
+### Patch Changes
+
+- Updated dependencies [e0246ed]
+  - @dyrected/core@2.11.0
+
+## 2.10.1
+
+### Patch Changes
+
+- Updated dependencies [558341d]
+- Updated dependencies [2720377]
+  - @dyrected/core@2.10.1
+
 ## 2.10.0
 
 ### Patch Changes

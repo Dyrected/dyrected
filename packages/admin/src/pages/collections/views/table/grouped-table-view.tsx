@@ -101,14 +101,20 @@ function GroupSection({
   onRowSelectionChange,
   onRowClick,
 }: GroupSectionProps) {
+  const [columnSizing, setColumnSizing] = React.useState<Record<string, number>>({})
+
   const table = useReactTable({
     data: group.docs,
     columns,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    onColumnSizingChange: setColumnSizing,
     state: {
       sorting,
       rowSelection,
       columnOrder,
       columnVisibility,
+      columnSizing,
     },
     onSortingChange,
     onRowSelectionChange,

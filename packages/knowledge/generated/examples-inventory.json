@@ -273,6 +273,41 @@
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
+    "id": "/deliver-content/rest-api/overview#example-7",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/overview#example-8",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/overview#example-9",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/overview#example-10",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/overview#example-11",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
     "id": "/deliver-content/sdk-api/aggregate#example-1",
     "page": "/deliver-content/sdk-api/aggregate",
     "language": "ts",
@@ -519,6 +554,20 @@
   },
   {
     "id": "/deliver-content/sdk-api/overview#example-19",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-20",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-21",
     "page": "/deliver-content/sdk-api/overview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -925,6 +974,20 @@
   },
   {
     "id": "/deployment-and-operations/infrastructure/database/migrations#example-3",
+    "page": "/deployment-and-operations/infrastructure/database/migrations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/database/migrations#example-4",
+    "page": "/deployment-and-operations/infrastructure/database/migrations",
+    "language": "sql",
+    "classification": "syntax-checked",
+    "validation": "Inventoried sql example"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/database/migrations#example-5",
     "page": "/deployment-and-operations/infrastructure/database/migrations",
     "language": "bash",
     "classification": "command",
@@ -1696,6 +1759,13 @@
   {
     "id": "/editor-experience/custom-components/list-view#example-3",
     "page": "/editor-experience/custom-components/list-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/list-view#example-4",
+    "page": "/editor-experience/custom-components/list-view",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
@@ -2301,6 +2371,13 @@
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/editor-experience/form-and-field-hooks#example-3",
+    "page": "/editor-experience/form-and-field-hooks",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/editor-experience/list-view#example-1",
@@ -2933,6 +3010,13 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/computed-fields-and-totals#example-1",
+    "page": "/examples-and-recipes/library/computed-fields-and-totals",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/conditional-admin-field#example-1",
     "page": "/examples-and-recipes/library/conditional-admin-field",
     "language": "ts",
@@ -2970,6 +3054,13 @@
   {
     "id": "/examples-and-recipes/library/custom-theme-shell#example-1",
     "page": "/examples-and-recipes/library/custom-theme-shell",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/declarative-reactive-hooks#example-1",
+    "page": "/examples-and-recipes/library/declarative-reactive-hooks",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
@@ -3144,6 +3235,13 @@
   },
   {
     "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-3",
+    "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-4",
     "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
@@ -3761,9 +3859,9 @@
   {
     "id": "/model-content/configuration/collections#example-6",
     "page": "/model-content/configuration/collections",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/model-content/configuration/collections#example-7",
@@ -3788,6 +3886,20 @@
   },
   {
     "id": "/model-content/configuration/collections#example-10",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-11",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-12",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",
@@ -4133,8 +4245,8 @@
     "id": "/model-content/content-rules/access-control/fields#example-1",
     "page": "/model-content/content-rules/access-control/fields",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/content-rules/access-control/fields#example-2",
@@ -4371,36 +4483,36 @@
     "id": "/model-content/content-rules/declarative-expressions#example-3",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-4",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-5",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-6",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-7",
     "page": "/model-content/content-rules/declarative-expressions",
     "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/declarative-expressions#example-8",
@@ -4408,6 +4520,20 @@
     "language": "typescript",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/content-rules/declarative-expressions#example-9",
+    "page": "/model-content/content-rules/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/content-rules/declarative-expressions#example-10",
+    "page": "/model-content/content-rules/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/content-rules/hooks#example-1",
@@ -5628,6 +5754,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/model-content/media/digital-asset-management#example-1",
+    "page": "/model-content/media/digital-asset-management",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/model-content/media/overview#example-1",
     "page": "/model-content/media/overview",
     "language": "ts",
@@ -5754,6 +5887,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/model-content/operational-views/actions#example-7",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/model-content/operational-views/define-view#example-1",
     "page": "/model-content/operational-views/define-view",
     "language": "mermaid",
@@ -5783,6 +5923,20 @@
   },
   {
     "id": "/model-content/operational-views/define-view#example-5",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-6",
+    "page": "/model-content/operational-views/define-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/define-view#example-7",
     "page": "/model-content/operational-views/define-view",
     "language": "ts",
     "classification": "illustrative",

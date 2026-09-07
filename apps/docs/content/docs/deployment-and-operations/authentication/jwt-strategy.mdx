@@ -41,6 +41,10 @@ client.setToken(token)
 
 An expired token cannot refresh itself, so schedule the refresh while the current token is still good.
 
+<Callout type="info">
+The built-in Dyrected Admin UI handles this automatically — it schedules a background refresh 5 minutes before expiration and checks token freshness whenever the browser tab regains focus or visibility.
+</Callout>
+
 ## Sending the token
 
 Dyrected reads the token from one place: the `Authorization` header, using the `Bearer` scheme.

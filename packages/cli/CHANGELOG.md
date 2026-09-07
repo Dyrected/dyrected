@@ -1,5 +1,63 @@
 # dyrected
 
+## 2.12.0
+
+### Patch Changes
+
+- cdc2abe: Add `expr` expression builder with `expr.ifElse`, concise shorthands (`expr.empty`, `expr.notEmpty`, `expr.equals`), and fluent transforms (`.slugify()`, `.lower()`, `.upper()`, `.trim()`). Improve `dyrected upgrade` CLI command with sanitized environment execution and streamlined manifest updates.
+- Updated dependencies [cdc2abe]
+- Updated dependencies [e601008]
+  - @dyrected/core@2.12.0
+  - @dyrected/knowledge@0.4.2
+  - @dyrected/sdk@2.12.0
+
+## 2.11.0
+
+### Patch Changes
+
+- 0ecdf5c: - Fix Admin UI session staleness and authentication desynchronization:
+  - Add proactive background token refresh timer scheduled 5 minutes before JWT expiration.
+  - Refresh token on browser tab `focus` and `visibilitychange` when returning to an open dashboard.
+  - Dispatch `dyrected:auth-unauthorized` and support `onAuthError` callback in `@dyrected/sdk` on 401 responses.
+  - Automatically attempt token refresh on 401s in Admin UI, falling back to instant login gate transition if session is expired or revoked.
+  - Fix user state leak bug in `DyrectedProvider` that prevented logout and login page rendering.
+  - Call backend `POST /api/collections/:slug/logout` to revoke server session in `__auth_sessions` during logout.
+  - Allow operational view component slots (`afterViewHeader`, `beforeViewHeader`, `beforeViewContent`, `afterViewContent`) to resolve components registered under either `components.collectionView` or `components.collectionList`.
+  - Enhance action and confirmation dialogs for mobile and tall content:
+    - Render as a mobile bottom-sheet (`max-sm:bottom-0`, slide from bottom, top grab handle) on small viewports.
+    - Constrain all fields and custom modal components within the device viewport width (`w-full min-w-0 overflow-x-hidden`).
+    - Enable independent vertical scrolling (`overflow-y-auto`) with fixed, docked headers and action footer buttons.
+  - Add operational view Refresh button in [ViewHeader](file:///Users/busola/Work/dyrected/packages/admin/src/pages/collections/views/view-header.tsx) and mobile action menu:
+    - Refetches both collection/view data and summary metrics in the background.
+    - Keeps current datasets and stats on screen while displaying spinning and pulsing refetch indicators.
+  - Update back button navigation on document edit and global editor pages to use browser history when available, preserving active operational view filters, sorting, and pagination.
+- Updated dependencies [e0246ed]
+- Updated dependencies [0ecdf5c]
+  - @dyrected/core@2.11.0
+  - @dyrected/sdk@2.11.0
+
+## 2.10.1
+
+### Patch Changes
+
+- 558341d: - Support `submitLabel` on operational view actions to customize the modal submit/run button text.
+  - Automatically prefill action modal forms with the target document's current field values when executing row actions.
+  - Normalize logical operators (`AND`/`and`, `OR`/`or`) case-insensitively in `where-sanitizer`.
+  - Apply schema default values on `create()` before persisting to the database.
+  - Strictly type operational view filters as `WhereClause | string`.
+  - Add thorough JSDoc documentation across all operational view types and interfaces.
+  - Add architecture specs for `npx dyrected doctor` diagnostics and multi-adapter automatic field promotion.
+- 2720377: - Added type-safe `when` declarative condition and expression builder to `@dyrected/sdk` and `@dyrected/core`.
+  - Added framework parity for `useDyPath()` and `useDyPathHelper()` in `@dyrected/vue` and auto-imported in `@dyrected/nuxt`.
+  - Enhanced CLI `upgrade` command to automatically refresh `.dyrected/ai-rules.md` with the latest canonical rules when upgrading packages.
+  - Added Marketing Site Page Builder Architecture, Array Field Object Shape Contract, and Type Synchronization Workflow to `@dyrected/knowledge` prompt templates and AI rules.
+  - Added `/docs/[...slug]` legacy catch-all redirect route in documentation.
+- Updated dependencies [558341d]
+- Updated dependencies [2720377]
+  - @dyrected/core@2.10.1
+  - @dyrected/sdk@2.10.1
+  - @dyrected/knowledge@0.4.1
+
 ## 2.10.0
 
 ### Patch Changes

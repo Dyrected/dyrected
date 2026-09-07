@@ -233,8 +233,14 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
   siblingData: Record<string, unknown>;
   /** Current values for the entire form. */
   data: Record<string, unknown>;
-  /** Imperative setter for async or derived updates. */
-  setValue: (value: unknown) => void;
+  /** The targeted record / document when available. */
+  doc?: Record<string, unknown>;
+  /** Array of targeted records for bulk action operations. */
+  docs?: Record<string, unknown>[];
+  /** Current authenticated user. */
+  user?: unknown;
+  /** Imperative setter for current field or sibling fields. */
+  setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void;
 }
 
 export type FieldAdminOnChangeHook<TValue = unknown> = (
@@ -250,10 +256,18 @@ export type FieldAdminHooks<TValue> = {
 };
 
 export interface FieldAdminOptionsHookArgs {
+  /** Current field value in the form state (if set). */
+  value?: unknown;
   /** Current values for sibling fields at the same nesting level. */
   siblingData: Record<string, unknown>;
   /** Current values for the entire form. */
   data: Record<string, unknown>;
+  /** The targeted record / document when available. */
+  doc?: Record<string, unknown>;
+  /** Array of targeted records for bulk action operations. */
+  docs?: Record<string, unknown>[];
+  /** Current authenticated user. */
+  user?: unknown;
 }
 
 export type FieldAdminOptionsHookResult = Array<
@@ -604,6 +618,10 @@ export type JoinFieldAdmin = {
   showCreateButton?: boolean;
   /** Whether the join field should show the "View all" action in the Admin UI. Defaults to `true`. */
   showViewButton?: boolean;
+  /** Display layout for the join list: 'list' (default) or 'table'. */
+  layout?: "list" | "table";
+  /** Columns to display when layout is 'table'. */
+  columns?: string[];
 };
 
 export interface UrlLinkValue {

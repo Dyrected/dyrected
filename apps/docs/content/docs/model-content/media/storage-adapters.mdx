@@ -189,12 +189,15 @@ Stored on the document in upload collections.
 ```ts
 export interface FileData {
   filename: string;
+  originalFilename?: string;
   filesize?: number;
   mimeType: string;
   /** Public URL of the stored file. */
   url: string;
   width?: number;
   height?: number;
+  aspectRatio?: number;
+  folderId?: string | null;
   focalPoint?: { x: number; y: number };
   /** Base64-encoded BlurHash string for progressive image loading. */
   blurhash?: string;
@@ -202,6 +205,7 @@ export interface FileData {
   type?: "upload" | "external";
   provider?: string;
   provider_metadata?: unknown;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
 ```
@@ -209,16 +213,20 @@ export interface FileData {
 | Option | Description |
 | --- | --- |
 | <code>filename</code> (required) |  |
+| <code>originalFilename</code> (optional) |  |
 | <code>filesize</code> (optional) |  |
 | <code>mimeType</code> (required) |  |
 | <code>url</code> (required) | Public URL of the stored file. |
 | <code>width</code> (optional) |  |
 | <code>height</code> (optional) |  |
+| <code>aspectRatio</code> (optional) |  |
+| <code>folderId</code> (optional) |  |
 | <code>focalPoint</code> (optional) |  |
 | <code>blurhash</code> (optional) | Base64-encoded BlurHash string for progressive image loading. |
 | <code>type</code> (optional) | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
 | <code>provider</code> (optional) |  |
 | <code>provider_metadata</code> (optional) |  |
+| <code>metadata</code> (optional) |  |
 
 
 ## ImageService
@@ -270,8 +278,8 @@ export interface StorageAdapter {
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
 
-  /** Return the public URL for a stored file. */
-  getURL(args: { filename: string }): string;
+  /** Return the public URL for a stored file, with optional dynamic transformations. */
+  getURL(args: { filename: string; transform?: ImageTransformOptions }): string;
 
   /**
    * Retrieve the file's raw bytes and MIME type for serving via the API.
@@ -287,7 +295,7 @@ export interface StorageAdapter {
 | --- | --- |
 | <code>upload</code> (optional) | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
 | <code>delete</code> (required) | Delete a file by its stored filename. |
-| <code>getURL</code> (required) | Return the public URL for a stored file. |
+| <code>getURL</code> (optional) | Return the public URL for a stored file, with optional dynamic transformations. |
 | <code>resolve</code> (required) | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
 {/* GENERATED:REFERENCE-STORAGE-ADAPTERS:END */}
 

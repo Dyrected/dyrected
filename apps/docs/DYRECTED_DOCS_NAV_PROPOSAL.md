@@ -1,19 +1,10 @@
-# Dyrected Docs Navigation Proposal
+# Dyrected Docs Navigation Proposal (Historical / Inactive)
 
-This file defines the new Dyrected documentation navigation structure.
+> [!WARNING]
+> **Status: Obsolete / Historical Document**
+> This proposal is archived and no longer relevant for the current docs structure. Refer directly to [DOCS_PHILOSOPHY.md](file:///Users/busola/Work/dyrected/apps/docs/DOCS_PHILOSOPHY.md) and the active `content/docs` navigation hierarchy.
 
-It is based on Payload's top-level grouping model, with one intentional addition:
-
-1. Basics
-2. Quick Start Guides
-3. Managing Data
-4. Features
-5. Ecosystem
-6. Deployment
-
-The key decision is that `Quick Start Guides` becomes a first-class top-level group instead of being buried under `Basics` or `Getting Started`.
-
-Date: `2026-07-08`
+This file defines an earlier conceptual proposal for navigation structure.
 
 ## Reference model
 

@@ -899,6 +899,71 @@ curl -X POST https://example.com/api/collections/orders/aggregate \
 
 Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/aggregate).
 
+## Media and uploads
+
+Upload-enabled collections expose dedicated routes for file ingestion and atomic in-place replacement:
+
+### Upload a new file
+
+Send a `multipart/form-data` request with the `file` field and optional document fields:
+
+```bash
+curl -X POST https://example.com/api/collections/media/upload \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/hero.jpg" \
+  -F "alt=Hero campaign banner" \
+  -F "folderId=marketing-folder-id"
+```
+
+### Replace an asset in-place
+
+Replace the physical file bytes for an existing asset without changing its document ID or breaking relations:
+
+```bash
+curl -X POST https://example.com/api/collections/media/asset-123/file \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/new-hero.jpg"
+```
+
+Dyrected replaces the stored file in your storage adapter, recalculates dimensions, aspect ratio, and BlurHash, and returns the updated document.
+
+## Media folders
+
+Organize upload collections into nested hierarchical folders:
+
+```bash
+GET /api/collections/:slug/folders
+POST /api/collections/:slug/folders
+PATCH /api/collections/:slug/folders/:id
+DELETE /api/collections/:slug/folders/:id
+```
+
+### Create a folder
+
+```bash
+curl -X POST https://example.com/api/collections/media/folders \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Summer 2026",
+    "parentId": "marketing-folder-id",
+    "color": "#3b82f6"
+  }'
+```
+
+### Batch delete assets
+
+Delete multiple assets in a single atomic request:
+
+```bash
+curl -X DELETE https://example.com/api/collections/media/delete-many \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "ids": ["asset-1", "asset-2", "asset-3"]
+  }'
+```
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.
@@ -1455,6 +1520,35 @@ const { docs } = await client.collection("posts").find({
 
 Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
 
+## Managing media & folders
+
+Organize upload collections, manipulate folders, and replace asset files in-place:
+
+```ts
+// 1. Create a media folder
+const folder = await client.createFolder("media", {
+  name: "Summer Campaign",
+  color: "#3b82f6",
+});
+
+// 2. List all folders in a collection
+const { docs: folders } = await client.listFolders("media");
+
+// 3. Upload a file directly into a folder
+const asset = await client.collection("media").upload(myFile, {
+  folderId: folder.id,
+  alt: "Summer campaign banner",
+});
+
+// 4. Replace an existing file in-place (keeps the same document ID)
+const updatedAsset = await client.replaceMedia(asset.id, newFile);
+
+// 5. Delete multiple assets in batch
+await client.deleteMany("media", {
+  ids: ["asset-1", "asset-2"],
+});
+```
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
@@ -1557,7 +1651,12 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
+| <code>listFolders</code> (required) | List all media folders in an upload-enabled collection. |
+| <code>createFolder</code> (optional) | Create a new media folder in an upload-enabled collection. |
+| <code>updateFolder</code> (optional) | Update an existing media folder in an upload-enabled collection. |
+| <code>deleteFolder</code> (required) | Delete a media folder from an upload-enabled collection. |
 | <code>uploadMedia</code> (required) |  |
+| <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
 
 
@@ -1572,6 +1671,10 @@ export interface DyrectedClientConfig {
   siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
+  /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
   /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
@@ -1588,6 +1691,7 @@ export interface DyrectedClientConfig {
 | <code>siteId</code> (optional) |  |
 | <code>headers</code> (optional) |  |
 | <code>fetch</code> (optional) |  |
+| <code>onAuthError</code> (optional) | Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint. |
 | <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
 
 
@@ -1639,6 +1743,37 @@ export type InferSchema<
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
 };
 ```
+
+
+## MediaFolder
+
+Shape of a media folder document in the DAM system.
+
+```ts
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>name</code> (required) |  |
+| <code>slug</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>parentId</code> (required) |  |
+| <code>path</code> (required) |  |
+| <code>color</code> (optional) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM
@@ -3185,16 +3320,18 @@ displayField("deliveryNotes", {
 
 ### 5. Progressive conditional disclosure with `visible`
 
-Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+Clean dashboards omit irrelevant data. Use the `expr` expression builder (or a serializable JEXL expression) to conditionally hide entire sections or fields when they do not apply to the current record.
 
 ```ts
+
+
 // Hide the entire fulfillment card if the guest didn't place an order
 displaySection("Order & Fulfillment", [
   // ... fields
 ], {
   span: 12,
   icon: "Package",
-  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+  visible: expr.any(expr.isTrue("wantsAsoebi"), expr.isTrue("wantsAsoOke")),
 }),
 ```
 
@@ -4635,14 +4772,37 @@ This is the right API for:
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
 
-## Built-in Declarative Jexl Helpers
+## Declarative Field Transforms & `expr` Builder
 
-Dyrected provides a zero-dependency helper utility suite for declarative `admin.hooks.onChange`, field conditions, and access control rules:
+For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `expr` expression builder:
+
+```typescript
+
+
+defineTextField({
+  name: "slug",
+  label: "Slug",
+  admin: {
+    hooks: {
+      // Auto-generates slug from title when empty
+      onChange: expr.ifElse(
+        expr.empty("value"),
+        expr.slugify("siblingData.title"),
+        "value"
+      ),
+    },
+  },
+});
+```
+
+### Global JEXL Runtime Functions
+
+The `expr` expression builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
 
 ### String Helpers
-- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`).
-- `lower(str)` / `upper(str)`: Converts string casing.
-- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word.
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `expr.slugify(field)`.
+- `lower(str)` / `upper(str)`: Converts string casing. Available via `expr.lower(field)` and `expr.upper(field)`.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `expr.trim(field)`.
 - `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
 - `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
 - `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.
@@ -4751,6 +4911,8 @@ If a collection has a `status` field, a status column is added automatically so 
 ## Shaping the table
 
 The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields — or from the view's `columns` when you're in an operational view (`defineView({ columns: [...] })`). Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person via `layout:collections:${slug}:view:${viewSlug}` (see [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences) for legacy `view-columns:` fallback). Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](https://docs.dyrected.com/docs/cloud/editor-experience/preferences) for the full cascade and how to set defaults.
+
+The table uses a single unified scroll container with a sticky header row and sticky selection column. As editors scroll long lists or wide schemas horizontally and vertically on desktop and mobile, column headers and selection controls stay pinned in view.
 
 ```ts
 
@@ -5818,20 +5980,30 @@ const { data: page, isLive } = useLivePreview({
 
 ## Click-to-edit with `useDyPath`
 
-Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. Call `useDyPath()` once at the top of your component to get a path annotator helper (`dy`), then call `dy('fieldName')` directly on your elements:
 
 ```tsx
 // React / Next.js
 
 
-function Hero({ heading, subheading }: any) {
-  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+function Hero({ heading, subheading, cta, items }: any) {
+  // Call useDyPath() once at the top of the component
+  const dy = useDyPath();
+
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading && <p {...dySubheading}>{subheading}</p>}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading && <p {...dy("subheading")}>{subheading}</p>}
+      {cta && <button {...dy("cta")}>{cta}</button>}
+
+      
+      <ul>
+        {items?.map((item: any, idx: number) => (
+          <li key={idx} {...dy(`items.${idx}.title`)}>
+            {item.title}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -5840,15 +6012,28 @@ function Hero({ heading, subheading }: any) {
 ```vue
 <!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>();
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+defineProps<{
+  heading: string;
+  subheading?: string;
+  cta?: string;
+  items?: Array<{ title: string }>;
+}>();
+
+// Call useDyPath() once in setup
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
+    <button v-if="cta" v-bind="dy('cta')">{{ cta }}</button>
+
+    <ul>
+      <li v-for="(item, idx) in items" :key="idx" v-bind="dy(`items.${idx}.title`)">
+        {{ item.title }}
+      </li>
+    </ul>
   </section>
 </template>
 ```
@@ -8351,12 +8536,14 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
 - [Chat-to-order AI proposals](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/chat-to-order-proposal) — Problem: Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation. Summary: Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.
+- [Compute fields and calculate totals live](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database. Summary: Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
 - [Custom business logic AI tools](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-ai-tools) — Problem: The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations. Summary: Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
+- [Calculate field values and format strings live](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks) — Problem: You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code. Summary: Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
 - [Create a document download library](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
@@ -8382,9 +8569,6 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 ## Set up a Calendar schedule view
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/calendar-schedule-view
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Render appointment and booking documents in interactive monthly, weekly, and daily calendar views.
 
@@ -8445,9 +8629,6 @@ export const Appointments = defineCollection({
 ## Create a category taxonomy for content
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/category-taxonomy
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use a reusable categories collection and a has-many relationship from content entries that need tagging.
 
@@ -8591,9 +8772,6 @@ export const config: DyrectedConfig = {
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/conditional-admin-field
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use a serializable Admin condition to reveal a field from the editor's current form values.
 
 ## Use this when
@@ -8627,7 +8805,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: "couponCode != null && couponCode != ''" },
+      admin: { condition: expr.notEmpty("couponCode") },
     }),
   ],
 });
@@ -8718,9 +8896,6 @@ export const config: DyrectedConfig = {
 ## Build a field editor directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-field-editor
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.
 
@@ -8866,9 +9041,6 @@ export default function CustomerComplaintRoute() {
 ## Build a media picker directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-page-media-picker
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
 
@@ -9032,9 +9204,6 @@ export default function ComplaintAttachmentRoute() {
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/custom-theme-shell
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
 
 ## Use this when
@@ -9097,12 +9266,116 @@ export default function DashboardRoute() {
 
 ---
 
+## Calculate field values and format strings live
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/declarative-reactive-hooks
+
+Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.
+
+## Use this when
+
+- build reactive form transforms that survive Cloud schema sync
+- compute field values without writing raw JavaScript functions
+- calculate status-based pricing or conditional totals declaratively
+- format reference codes or IDs from sibling inputs in real-time
+
+## Dyrected concepts
+
+`admin.hooks.onChange`, `when.then`, `when.match`, `when.sibling`, `when.concat`, `when.slugify`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  expr,
+} from "@dyrected/core";
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Invoice Title",
+      required: true,
+    }),
+
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      admin: {
+        hooks: {
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
+
+    defineSelectField({
+      name: "planTier",
+      label: "Plan Tier",
+      defaultValue: "standard",
+      options: [
+        { label: "Free Trial", value: "trial" },
+        { label: "Standard", value: "standard" },
+        { label: "Enterprise", value: "enterprise" },
+      ],
+    }),
+
+    defineNumberField({
+      name: "basePrice",
+      label: "Base Price (₦)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: expr.match()
+            .case(expr.sibling("planTier").equals("trial"), 0)
+            .case(expr.sibling("planTier").equals("standard"), 25000)
+            .case(expr.sibling("planTier").equals("enterprise"), 100000)
+            .otherwise(25000),
+        },
+      },
+    }),
+
+    defineTextField({
+      name: "referenceCode",
+      label: "Payment Reference",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: expr.concat(
+            "INV-",
+            expr.upper("siblingData.planTier"),
+            "-",
+            expr.slugify("siblingData.title")
+          ),
+        },
+      },
+    }),
+  ],
+});
+```
+
+---
+
 ## Create a document download library
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.
 
@@ -9154,9 +9427,6 @@ export const Documents = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
 
 ## Use this when
@@ -9198,9 +9468,6 @@ export const Posts = defineCollection({
 ## Build a Kanban pipeline board
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kanban-pipeline-view
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Transform status-driven workflows into an interactive drag-and-drop Kanban board grouped by a select field.
 
@@ -9289,9 +9556,6 @@ export const Orders = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Model reusable navigation links in one global, including one level of child links for grouped menus.
 
 ## Use this when
@@ -9347,9 +9611,6 @@ export const Navigation = defineGlobal({
 ## Add KPI metric cards above a view
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-metrics
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
 
@@ -9448,9 +9709,6 @@ export const EventRsvps = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Create a task-focused table workspace with filtered records, custom columns, and one-click row actions.
 
 ## Use this when
@@ -9526,9 +9784,6 @@ export const GuestResponses = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/page-builder-blocks
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
 
 ## Use this when
@@ -9592,9 +9847,6 @@ export const Pages = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/preview-url-token-mode
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Set a preview URL expression and postMessage live preview mode for routable frontend content.
 
 ## Use this when
@@ -9625,7 +9877,7 @@ export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: expr.ifElse("slug", expr.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
@@ -9641,9 +9893,6 @@ export const Docs = defineCollection({
 ## Model a relationship and its reverse lookup
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/relationship-and-reverse-join
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Store an author relationship on posts and expose the author's posts through a virtual join field.
 
@@ -9706,9 +9955,6 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/responsive-image-library
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.
 
 ## Use this when
@@ -9760,9 +10006,6 @@ export const Media = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/safe-field-rename
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use renameTo and a safe default while documents migrate lazily to a new field name.
 
 ## Use this when
@@ -9808,9 +10051,6 @@ export const Customers = defineCollection({
 ## Group SEO fields into an Admin tab
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/seo-tab-fields
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep secondary metadata together under an SEO tab so the main editing form stays focused.
 
@@ -9861,9 +10101,6 @@ export const Pages = defineCollection({
 ## Create a site settings global
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/site-settings-global
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep shared site-wide values in a single global instead of scattering them across collections.
 
@@ -9919,9 +10156,6 @@ export const SiteSettings = defineGlobal({
 ## Create a media upload collection
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/upload-collection
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Enable file uploads and capture accessible metadata in a dedicated media collection.
 
@@ -10625,9 +10859,11 @@ It does not yet:
 For routable content, set `admin.previewUrl` on the collection so Dyrected knows which frontend route to open:
 
 ```ts
+
+
 admin: {
   useAsTitle: "title",
-  previewUrl: "slug == 'home' ? '/' : '/' + slug",
+  previewUrl: expr.ifElse(expr("slug").equals("home"), "/", expr.concat("/", "slug")),
 }
 ```
 
@@ -10681,13 +10917,33 @@ This keeps the first preview integration small: fetch the document normally on t
 
 Click-to-edit only works reliably when the frontend renders fields through the path-aware helpers Dyrected already exposes.
 
-For block content, that usually means rendering through `Blocks` and passing the real field path:
+For block content, that means rendering through `Blocks` and using `useDyPath()` inside the block component:
 
 ```tsx
+// app/components/blocks/HeroBlock.tsx
+"use client";
+
+
+
+export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
+  // Call useDyPath() once at the top of your component
+  const dy = useDyPath();
+
+  return (
+    <section>
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
+    </section>
+  );
+}
+```
+
+```tsx
+// app/[slug]/page.tsx
 <Blocks items={page.layout} path="layout" components={{ hero: HeroBlock }} />
 ```
 
-That path is what lets the preview surface map a click in the frontend back to the matching field in the editor.
+Those paths are what let the preview surface map a click in the frontend back to the matching field in the editor.
 
 </Step>
 <Step>
@@ -11863,6 +12119,7 @@ When you need live preview or rendering helpers, the Next package is still the e
 - `useLivePreview`
 - `Blocks`
 - `useDyPath`
+- `useDyPathHelper`
 - `DyrectedImage`
 - `DyrectedMedia`
 - `DyrectedIcon`
@@ -12176,14 +12433,13 @@ For block content, that usually means rendering through `<DyrectedBlocks>` and u
 <script setup lang="ts">
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -13439,13 +13695,12 @@ For block content, that usually means rendering through `Blocks` and using `useD
 
 
 export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+  const dy = useDyPath();
 
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading ? <p {...dySubheading}>{subheading}</p> : null}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
     </section>
   );
 }
@@ -14612,16 +14867,17 @@ For block content, that usually means rendering through `<Blocks>` and using `us
 
 ```vue
 <script setup lang="ts">
+
+
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```
@@ -16490,9 +16746,31 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
+   * table or cards view navigates directly to the editing form with Live Preview.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array using display helpers (`displaySection`, `displayField`, `displayTabs`, etc.) for a
+   * custom operational dashboard layout.
+   *
+   * @default false
+   * @example
+   * ```ts
+   * // Enable automatic summary detail view
+   * detail: true
+   *
+   * // Or define a custom operational detail view
+   * detail: [
+   *   displaySection("Customer Overview", [
+   *     displayField("name", { span: 8 }),
+   *     displayField("status", { span: 4, display: "badge" }),
+   *   ]),
+   * ]
+   * ```
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 
   /**
    * Slug of the operational view to render by default when navigating to `/collections/:slug`.
@@ -16557,7 +16835,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
 | <code>ai</code> (optional) | Optional custom AI assistant instructions and RAG indexing options for this collection. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, collections are **Edit-First** (&#96;detail: false&#96;). Clicking a record in the table or cards view navigates directly to the editing form with Live Preview.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array using display helpers (&#96;displaySection&#96;, &#96;displayField&#96;, &#96;displayTabs&#96;, etc.) for a custom operational dashboard layout. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
 
@@ -16726,22 +17004,18 @@ When a collection is routable, the collection config and the frontend route need
 - `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
 - a real frontend route that can fetch and render the document
 
-`admin.previewUrl` can be either:
+`admin.previewUrl` can be configured using:
 
-- a Jexl string evaluated against the document, usually the best default
-- a function that returns the URL from the document data
+- the `expr` expression builder (or serializable JEXL string), which is the recommended default
+- a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+Prefer the `expr` builder (`expr.concat`, `expr.ifElse`, or `expr.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
-`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+`admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
-For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+### Dynamic Preview Routing Examples
 
-```ts
-previewUrl: "slug == 'home' ? '/' : '/' + slug";
-```
-
-Here is a typical blog-style example using Jexl:
+For single-prefix collections, use `expr.concat`:
 
 ```ts
 
@@ -16750,7 +17024,8 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
-    previewUrl: "'/blog/' + slug",
+    // Generates: '/blog/' + slug
+    previewUrl: expr.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -16758,6 +17033,23 @@ export const Posts = defineCollection({
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
+```
+
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `expr.ifElse`:
+
+```ts
+// Routes 'home' to '/', and all other pages to '/slug'
+previewUrl: expr.ifElse(expr("slug").equals("home"), "/", expr.concat("/", "slug")),
+```
+
+For multi-branch category routing, use `expr.match`:
+
+```ts
+previewUrl: expr.match()
+  .case(expr("slug").equals("home"), "/")
+  .case(expr("category").equals("news"), expr.concat("/news/", "slug"))
+  .case(expr("category").equals("portal"), expr.concat("/portals/", "slug"))
+  .otherwise(expr.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:
@@ -17040,9 +17332,17 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, globals are **Edit-First** (`detail: false`). Clicking the global in the
+   * sidebar navigates directly to the editing form.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array for a custom operational dashboard layout.
+   *
+   * @default false
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 }
 ```
 
@@ -17058,7 +17358,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>ai</code> (optional) | Optional custom AI assistant instructions for this global singleton. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, globals are **Edit-First** (&#96;detail: false&#96;). Clicking the global in the sidebar navigates directly to the editing form.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array for a custom operational dashboard layout. |
 
 
 ## Global options in practice
@@ -17407,6 +17707,16 @@ export interface DyrectedConfig<
   image?: ImageService;
 
   /**
+   * Media management, dynamic transformations, and transformation preset configurations.
+   */
+  media?: {
+    /** Whether to restrict dynamic transformations to registered preset keys in production. */
+    restrictTransforms?: boolean;
+    /** Named transformation presets available via `?key=name`. */
+    presets?: Record<string, ImageTransformOptions>;
+  };
+
+  /**
    * Runtime logger configuration. Accepts either logger options/destination or
    * a fully-instantiated Pino logger.
    */
@@ -17558,6 +17868,7 @@ export interface DyrectedConfig<
 | <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
 | <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>media</code> (optional) | Media management, dynamic transformations, and transformation preset configurations. |
 | <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
 | <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
@@ -18312,17 +18623,19 @@ Field rules are enforced in two places at once:
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/overview) for the shared model, then use this page for the field-specific behavior.For Cloud, prefer Jexl strings, `false`, and string-backed named policies. Those shapes can be enforced by the hosted backend and reflected in the admin form after schema sync.
 ## The shape
 
-Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use the `expr` expression builder (or a serializable JEXL expression) for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
-{
-  name: 'internalNotes',
-  type: 'textarea',
+
+
+defineTextareaField({
+  name: "internalNotes",
+  label: "Internal Notes",
   access: {
-    read: "'admin' in user.roles",
-    update: "'admin' in user.roles",
+    read: expr.access.isAdmin(),
+    update: expr.access.isAdmin(),
   },
-}
+});
 ```
 
 Omit a rule (or set it to `true`) to leave the field fully available.<Note>
@@ -18958,285 +19271,314 @@ That is why `afterChange`, delete hooks, `field.afterRead`, and `admin.hooks.opt
 
 ---
 
-## Declarative Expressions & Helpers
+## Declarative Expressions & Conditions
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/content-rules/declarative-expressions
 
-When configuring field state, reactive form logic, or access control policies in Dyrected, you can write **declarative string expressions**.
+When configuring field visibility, live preview routing, access control policies, or reactive form transforms in Dyrected, you can write **declarative expressions**.
 
-Declarative string expressions are powered by Jexl. Because they are plain strings stored inside your schema files, they are 100% serializable. They survive `npx dyrected sync:schema` and run safely across both self-hosted servers and Dyrected Cloud.
+Dyrected provides the type-safe `expr` expression builder (`@dyrected/sdk` or `@dyrected/core`) as the recommended standard for constructing these expressions. Because `expr` compiles to pure serializable [JEXL](https://github.com/TomFrost/Jexl) strings, your logic remains 100% portable: it survives `npx dyrected sync:schema` and runs identically across self-hosted servers, headless API runtimes, and Dyrected Cloud.
 
-By the end of this guide, you will understand when to reach for declarative expressions, what context variables are in scope, and how to use Dyrected's built-in helper utilities.
+By the end of this guide, you will understand how to build reactive conditions with `expr`, how to configure preview URLs and access rules, and how expressions work under the hood.
 
-## Choose the right hook shape for your goal
+---
 
-In Dyrected, you can write hook and policy logic in two ways:
+## Quickstart
 
-1. **Declarative string expressions** (`"slugify(siblingData.title)"`): Recommended for value derivations, format conversions, and access checks. They are stored directly in your schema, survive Cloud schema sync, and run anywhere.
-2. **Function hooks** (`({ siblingData }) => siblingData.title`): Best for self-hosted Node.js servers performing custom asynchronous side effects or calling external microservices. Function hooks cannot be serialized to Dyrected Cloud and are stripped during schema sync.
-
-When a field calculation, access check, or UI condition can be expressed as a string, use the declarative string form.
-
-## Basic Expression Syntax
-
-Declarative expressions support property lookups, ternary conditionals, mathematical operators, and built-in helper functions:
-
-```typescript
-// Auto-derive a slug when empty, but preserve custom edits
-"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value"
-
-// Role and document ownership check
-"user.role == 'admin' || user.id == doc.authorId"
-
-// Relative date check for scheduled content
-"isPast(doc.publishAt)"
-```
-
-## Context Variables by Surface
-
-Dyrected provides an explicit context object to each declarative expression based on where it is executed:
-
-| Surface | Available Context Variables | Common Use Case |
-| --- | --- | --- |
-| **Form Reactive Hooks** | `value`, `siblingData`, `data` | `admin.hooks.onChange` live form reactivity |
-| **Field & Collection Hooks** | `req`, `user`, `data`, `doc`, `operation`, `value` | `beforeChange`, `beforeRead` server-side evaluation |
-| **Access Control Policies** | `user`, `req`, `doc`, `data`, `id` | `access.read`, `access.update` permissions |
-| **Admin UI Field Conditions** | `data`, `siblingData`, `user`, `id` | `admin.condition` dynamic field visibility |
-
-## Built-in Helper Function Reference
-
-Dyrected includes 30+ zero-dependency helper functions that are registered globally in all Jexl evaluation contexts.
-
-### String Helpers
-
-Use string helpers to clean, reformat, or inspect text fields:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `slugify(str)` | Transforms text into a URL-safe slug | `slugify("Hello World!")` | `"hello-world"` |
-| `lower(str)` | Converts text to lowercase | `lower("Dyrected")` | `"dyrected"` |
-| `upper(str)` | Converts text to uppercase | `upper("dyrected")` | `"DYRECTED"` |
-| `trim(str)` | Strips leading and trailing whitespace | `trim("  hello  ")` | `"hello"` |
-| `capitalize(str)` | Capitalizes the first letter of text | `capitalize("hELLO")` | `"Hello"` |
-| `truncate(str, len, ellipsis?)` | Truncates text with a custom suffix | `truncate(doc.body, 20)` | `"Long article body..."` |
-| `readingTime(str)` | Calculates reading time in minutes | `readingTime(doc.content)` | `3` |
-| `wordCount(str)` | Counts total words in a text string | `wordCount(doc.content)` | `450` |
-| `replace(str, search, replace)` | Replaces occurrences of a pattern | `replace(doc.title, "Draft", "Final")` | `"Final Title"` |
-| `startsWith(str, prefix)` | Checks if text starts with a prefix | `startsWith(doc.url, "https")` | `true` |
-| `endsWith(str, suffix)` | Checks if text ends with a suffix | `endsWith(doc.file, ".pdf")` | `true` |
-
-### Date & Time Helpers
-
-Use date helpers for scheduled publishing windows, expiration checks, and relative time calculations:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `now()` | Returns current ISO 8601 timestamp | `now()` | `"2026-07-27T00:00:00.000Z"` |
-| `today()` | Returns current date (YYYY-MM-DD) | `today()` | `"2026-07-27"` |
-| `formatDate(date, style?)` | Formats dates (`'short'`, `'iso'`, `'date'`, `'datetime'`, `'full'`) | `formatDate(doc.publishedAt, "short")` | `"Jul 27, 2026"` |
-| `addDays(date, days)` | Adds or subtracts days from a timestamp | `addDays(now(), 7)` | `"2026-08-03T00:00:00.000Z"` |
-| `diffDays(dateA, dateB)` | Calculates integer day difference between two dates | `diffDays(now(), doc.createdAt)` | `14` |
-| `isPast(date)` | Returns `true` if timestamp is in the past | `isPast(doc.publishAt)` | `true` |
-| `isFuture(date)` | Returns `true` if timestamp is in the future | `isFuture(doc.expireAt)` | `false` |
-
-### Array & Collection Helpers
-
-Use array helpers to inspect tags, user roles, or multi-select field lists:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `includes(arrOrStr, item)` | Checks array or substring membership | `includes(user.roles, "admin")` | `true` |
-| `join(arr, separator?)` | Joins array elements into a string | `join(siblingData.tags, ", ")` | `"news, tech"` |
-| `first(arr)` | Safely returns the first array element | `first(siblingData.images)` | `"{ id: 1, ... }"` |
-| `last(arr)` | Safely returns the last array element | `last(siblingData.history)` | `"{ step: 3, ... }"` |
-| `compact(arr)` | Removes empty, `null`, and `undefined` items | `compact(["a", null, "b"])` | `["a", "b"]` |
-| `unique(arr)` | Deduplicates array elements | `unique(["tag1", "tag1", "tag2"])` | `["tag1", "tag2"]` |
-| `length(val)` | Returns array length, string length, or key count | `length(siblingData.blocks)` | `4` |
-
-### Math & Logical Helpers
-
-Use math and logical helpers for numeric constraints, fallbacks, and safe nested property retrieval:
-
-| Function | What it accomplishes | Working Example | Output |
-| --- | --- | --- | --- |
-| `round(num, decimals?)` | Rounds a number to specified decimal places | `round(siblingData.price * 1.15, 2)` | `29.99` |
-| `clamp(num, min, max)` | Constrains a number between upper and lower bounds | `clamp(siblingData.rating, 1, 5)` | `5` |
-| `default(val, fallback)` | Provides a fallback for `null`, `undefined`, or `""` | `default(siblingData.title, "Untitled")` | `"Untitled"` |
-| `coalesce(...args)` | Returns the first non-empty value | `coalesce(doc.shortTitle, doc.title, "Draft")` | `"Draft"` |
-| `isEmpty(val)` | Returns `true` for empty arrays, objects, strings, or `null` | `isEmpty(siblingData.items)` | `true` |
-| `get(obj, path, fallback?)` | Safely retrieves nested object properties | `get(siblingData, "author.name", "Guest")` | `"Guest"` |
-
-## Practical Working Examples
-
-### 1. Auto-generating a URL Slug from a Title
-The following collection configuration auto-generates a clean slug when `slug` is empty, but preserves manual edits once the user types into the field:
+Import the `expr` expression builder from `@dyrected/sdk` (or `@dyrected/core`):
 
 ```typescript
 
 
-export const Pages = defineCollection({
-  slug: "pages",
+export const Products = defineCollection({
+  slug: "products",
+  admin: {
+    useAsTitle: "title",
+    // Preview URL routing: /products/slug
+    previewUrl: expr.concat("/products/", "slug"),
+  },
+  access: {
+    // Only admins or the document creator can edit
+    update: expr.any(expr.access.isOwner("author"), expr.access.isAdmin()),
+  },
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
-    defineTextField({
-      name: "slug",
-      label: "Slug",
-      required: true,
-      unique: true,
+    defineTextField({ name: "couponCode", label: "Coupon Code" }),
+    defineNumberField({
+      name: "discountPercent",
+      label: "Discount Percentage",
+      // Reveals this field only when a coupon code is entered
       admin: {
-        hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
-        },
+        condition: expr.notEmpty("couponCode"),
       },
     }),
   ],
 });
 ```
 
-### 2. Scheduled Publishing Access Rule
-Restrict public document access so non-admin users cannot read articles until `publishAt` is in the past:
+---
+
+## 1. Conditional Field & Block Visibility (`admin.condition`)
+
+Use `admin.condition` on any field or block to conditionally reveal it based on the editor's current form input or block variant.
+
+### Match by Field Value
+
+Check if a field equals a specific value or is non-empty:
+
+```typescript
+
+
+// Show field when 'hasCustomTax' is checked
+export const CustomTaxField = defineNumberField({
+  name: "taxRate",
+  label: "Tax Rate (%)",
+  admin: {
+    condition: expr("hasCustomTax").isTrue(),
+  },
+});
+
+// Show field when category is in a set of allowed values
+export const DeliveryDateField = defineTextField({
+  name: "deliveryWindow",
+  label: "Delivery Window",
+  admin: {
+    condition: expr("category").in("furniture", "appliances", "perishables"),
+  },
+});
+```
+
+### Match Block Variants
+
+In layout builders and polymorphic blocks, reveal fields only when a specific block layout variant is selected:
+
+```typescript
+
+
+export const AvatarField = defineMediaField({
+  name: "avatar",
+  label: "Author Avatar",
+  admin: {
+    // Only visible when the editor selects the 'card' or 'split' variant
+    condition: expr.variant("card", "split"),
+  },
+});
+```
+
+### Compound Conditions (`expr.all`, `expr.any`, `expr.not`)
+
+Combine multiple conditions using boolean combinators:
+
+```typescript
+// Visible if status is draft AND current user has editor/admin role
+admin: {
+  condition: expr.all(
+    expr("status").equals("draft"),
+    expr.userRole("admin", "editor")
+  ),
+}
+
+// Visible if stock is below 10 OR promoted is true
+admin: {
+  condition: expr.any(
+    expr("stock").lessThan(10),
+    expr("isPromoted").isTrue()
+  ),
+}
+```
+
+---
+
+## 2. Live Preview URLs & Dynamic Routing (`admin.previewUrl`)
+
+The `admin.previewUrl` setting determines the frontend route loaded in the live preview panel and the external view button.
+
+### Path Concatenation (`expr.concat`)
+
+Safely combine static path prefixes with dynamic field identifiers:
 
 ```typescript
 
 
 export const Articles = defineCollection({
   slug: "articles",
-  access: {
-    read: "includes(user.roles, 'admin') || (doc.status == 'published' && isPast(doc.publishAt))",
-  },
-  fields: [
-    /* ... fields */
-  ],
-});
-```
-
-### 3. Dynamic Field Visibility
-Only display a discount percentage input when the selected customer tier is either `'vip'` or `'partner'`:
-
-```typescript
-
-
-export const discountField = defineNumberField({
-  name: "discountPercentage",
-  label: "Discount %",
   admin: {
-    condition: "includes(['vip', 'partner'], siblingData.customerTier)",
+    // Generates: '/news/' + slug
+    previewUrl: expr.concat("/news/", "slug"),
   },
+  fields: [ ... ],
 });
 ```
 
-### 4. Auto-calculating Reading Time & Excerpt
-Automatically compute estimated article reading time and generate a truncated SEO summary whenever the document content changes:
+### Fallback Routing (`expr.ifElse`)
+
+Handle root homepages or custom path overrides with ternary expressions:
+
+```typescript
+// If slug is 'home', route to '/'; otherwise route to '/' + slug
+admin: {
+  previewUrl: expr.ifElse(
+    expr("slug").equals("home"),
+    "/",
+    expr.concat("/", "slug")
+  ),
+}
+```
+
+### Multi-Branch Routing (`expr.match`)
+
+When a collection supports multiple categories or localized routes, chain branches with `expr.match()`:
+
+```typescript
+admin: {
+  previewUrl: expr.match()
+    .case(expr("slug").equals("home"), "/")
+    .case(expr.notEmpty("customPath"), "customPath")
+    .case(expr("category").equals("news"), expr.concat("/news/", "slug"))
+    .case(expr("category").equals("portal"), expr.concat("/country-portals/", "slug"))
+    .otherwise(expr.concat("/", "slug")),
+}
+```
+
+---
+
+## 3. Declarative Access Control (`collection.access`)
+
+Define declarative Row-Level Security (RLS) policies evaluated against `{ doc, user }`:
 
 ```typescript
 
 
-export const BlogPosts = defineCollection({
-  slug: "blog-posts",
-  fields: [
-    defineRichTextField({ name: "content", label: "Article Content" }),
-    defineNumberField({
-      name: "readingTimeMinutes",
-      label: "Reading Time (mins)",
-      admin: {
-        readOnly: true,
-        hooks: {
-          onChange: "readingTime(siblingData.content)",
-        },
-      },
-    }),
-    defineTextField({
-      name: "seoExcerpt",
-      label: "SEO Excerpt",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? truncate(siblingData.content, 150) : value",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 5. Formatting Author Full Names & User Handles
-Combine first and last name fields into a display name and auto-lowercase social handles:
-
-```typescript
-
-
-export const Authors = defineCollection({
-  slug: "authors",
-  fields: [
-    defineTextField({ name: "firstName", label: "First Name" }),
-    defineTextField({ name: "lastName", label: "Last Name" }),
-    defineTextField({
-      name: "displayName",
-      label: "Display Name",
-      admin: {
-        hooks: {
-          onChange: "trim(coalesce(join(compact([siblingData.firstName, siblingData.lastName]), ' '), value))",
-        },
-      },
-    }),
-    defineTextField({
-      name: "twitterHandle",
-      label: "Twitter Handle",
-      admin: {
-        hooks: {
-          onChange: "lower(trim(value))",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 6. Default Expiration Date Window
-Set an automatic 30-day expiration window when creating new promotion codes if no custom expiration date is provided:
-
-```typescript
-
-
-export const Promotions = defineCollection({
-  slug: "promotions",
-  fields: [
-    defineTextField({ name: "code", label: "Promo Code", required: true }),
-    defineDateTimeField({
-      name: "expiresAt",
-      label: "Expiration Date",
-      admin: {
-        hooks: {
-          onChange: "isEmpty(value) ? addDays(now(), 30) : value",
-        },
-      },
-    }),
-  ],
-});
-```
-
-### 7. Safe Deep Property Retrieval & Owner Access Policies
-Allow users to update documents if they are either an admin or the owner specified in a deeply nested metadata field:
-
-```typescript
-
-
-export const Projects = defineCollection({
-  slug: "projects",
+export const Documents = defineCollection({
+  slug: "documents",
   access: {
-    update: "includes(user.roles, 'admin') || user.id == get(doc, 'metadata.ownerId')",
+    // Public can read published docs; admins can read everything
+    read: expr.access.isPublishedOrAdmin(),
+
+    // Document authors or admins can edit
+    update: expr.any(expr.access.isOwner("authorId"), expr.access.isAdmin()),
+
+    // Only superadmins can delete
+    delete: expr.access.hasRole("superadmin"),
   },
+  fields: [ ... ],
+});
+```
+
+---
+
+## 4. Reactive Field Transforms (`admin.hooks.onChange`)
+
+Automatically transform values live in the browser as the editor types:
+
+```typescript
+
+
+export const Posts = defineCollection({
+  slug: "posts",
   fields: [
-    /* ... fields */
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      admin: {
+        hooks: {
+          // Auto-slugify title if slug is empty, but preserve manual edits
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
   ],
 });
 ```
+
+---
+
+## `expr` API Cheatsheet
+
+| Helper | Description | Output |
+| :--- | :--- | :--- |
+| `expr('field').equals(val)` | Equality check | `field == "val"` |
+| `expr('field').notEquals(val)` | Inequality check | `field != "val"` |
+| `expr('field').in('a', 'b')` | Set membership | `field in ["a", "b"]` |
+| `expr('field').isTrue()` | Boolean true check | `field == true` |
+| `expr.notEmpty('field')` | Non-empty string / non-null check | `field != null && field != ''` |
+| `expr.empty('field')` | Empty or null check | `field == null \|\| field == ''` |
+| `expr('price').greaterThan(10)` | Numerical greater than | `price > 10` |
+| `expr('price').between(10, 50)` | Numerical range | `price >= 10 && price <= 50` |
+| `expr.variant('card', 'hero')` | Block variant matching | `variant in ['card', 'hero']` |
+| `expr.all(c1, c2)` | Logical AND | `c1 && c2` |
+| `expr.any(c1, c2)` | Logical OR | `c1 \|\| c2` |
+| `expr.ifElse(cond, ifTrue, ifFalse)`| Ternary expression | `cond ? ifTrue : ifFalse` |
+| `expr.match().case().otherwise()` | Multi-branch switch | `c1 ? v1 : c2 ? v2 : v3` |
+| `expr.concat('/path/', 'slug')` | Safe string concatenation | `'/path/' + slug` |
+| `expr.slugify('title')` | JEXL slugify transform | `slugify(title)` |
+| `expr.access.isOwner('author')` | Document ownership match | `author == user.id \|\| author.id == user.id` |
+| `expr.access.isAdmin()` | Admin role check | `user.role == 'admin' \|\| ('admin' in user.roles)` |
+| `expr.access.isPublishedOrAdmin()`| Published or admin read rule | `status == 'published' \|\| user.role == 'admin'` |
+
+---
+
+## Under the Hood: JEXL Specification & Raw Strings
+
+The `expr` expression builder produces serializable [JEXL (Javascript Expression Language)](https://github.com/TomFrost/Jexl) strings. 
+
+Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests. 
+
+Because expressions run inside a sandboxed JEXL runtime rather than `eval()`, they cannot execute arbitrary Node.js code or perform unauthorized network requests.
+
+### Raw JEXL String Escape Hatch
+
+If you have legacy schemas or generate conditions dynamically, you can pass raw JEXL strings directly:
+
+```typescript
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [
+    defineNumberField({
+      name: "discount",
+      label: "Discount",
+      // Raw JEXL string equivalent
+      admin: {
+        condition: "couponCode != null && couponCode != ''",
+      },
+    }),
+  ],
+});
+```
+
+### Context Variables by Surface
+
+Dyrected provides the following context variables based on where the expression is evaluated:
+
+| Surface | In-Scope Variables | Common Use Case |
+| :--- | :--- | :--- |
+| **`defaultValue`** | `doc`, `docs`, `user`, `siblingData`, `data` | Dynamic initial prefill on modal/form open |
+| **`admin.condition`** | `data`, `siblingData`, `doc`, `docs`, `user`, `variant`, `block` | Dynamic field visibility |
+| **`admin.hooks.onChange`** | `value`, `siblingData`, `data`, `doc`, `docs`, `user` | Real-time form and action modal reactivity |
+| **`admin.previewUrl`** | `doc`, `entry`, `siteUrl`, all root fields | Frontend preview routing |
+| **`access.*`** | `user`, `doc`, `data`, `id`, `req` | Row-Level Security permissions |
+
+### Global Built-in JEXL Functions
+
+Dyrected includes 30+ built-in helper functions available in all JEXL evaluation contexts:
+
+* **Strings**: `slugify(str)`, `lower(str)`, `upper(str)`, `trim(str)`, `capitalize(str)`, `truncate(str, length)`, `wordCount(str)`, `readingTime(str)`, `startsWith(str, prefix)`, `endsWith(str, suffix)`.
+* **Dates**: `now()`, `today()`, `formatDate(date, style)`, `addDays(date, n)`, `diffDays(d1, d2)`, `isPast(date)`, `isFuture(date)`.
+* **Arrays**: `includes(arr, item)`, `join(arr, delim)`, `first(arr)`, `last(arr)`, `compact(arr)`, `unique(arr)`, `length(val)`.
+* **Math & Logic**: `round(num, decimals)`, `clamp(num, min, max)`, `default(val, fallback)`, `coalesce(...vals)`, `isEmpty(val)`, `get(obj, path, fallback)`.
+
+---
 
 ## Recommended Next Steps
 
-- Learn how declarative string hooks sync to Dyrected Cloud in [Cloud-safe hooks](https://docs.dyrected.com/docs/cloud/model-content/content-rules/cloud-safe-hooks).
+- Learn how field conditions isolate block editing in [Block Fields](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks).
 - Explore role and ownership access control patterns in [Collections Access Control](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/collections).
-- See how custom form components consume field state in [Form & Field Hooks](https://docs.dyrected.com/docs/cloud/editor-experience/form-and-field-hooks).
+- Wire Click-to-Edit annotations with `useDyPath` in [Live Preview Client-Side](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/client-side).
 
 ---
 
@@ -20073,9 +20415,11 @@ The first variant is the default. Like block slugs, keep variant slugs stable on
 
 ### Showing a field only for some variants
 
-Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Because the selected variant lives on the block row under the reserved `variant` key, any sibling field can read it in an `admin.condition`:
+Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Use the `expr` expression builder to declare clean variant visibility in your field's `admin.condition`:
 
 ```ts
+
+
 defineBlock({
   slug: "testimonial",
   labels: { singular: "Testimonial", plural: "Testimonials" },
@@ -20089,13 +20433,13 @@ defineBlock({
       name: "avatar",
       label: "Avatar",
       relationTo: "media",
-      admin: { condition: "variant == 'card'" },
+      admin: { condition: expr.variant("card") },
     }),
   ],
 });
 ```
 
-Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+Now the avatar picker appears only while the card variant is selected. The `expr.variant("card")` condition generates a serializable expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can also match multiple variants with `expr.variant("card", "split")` or everything except a variant with `expr.notVariant("quote")`.
 
 <Note>
 Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
@@ -22634,6 +22978,139 @@ export interface UrlLinkValue {
 
 ---
 
+## Managing Media & Folders
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/media/digital-asset-management
+
+Use this page to learn how to organize, search, replace, and transform digital assets in your Dyrected media library. By the end of this guide, you will know how to create folder hierarchies, organize files, filter assets, replace images in-place without breaking relationships, and use URL transform presets.
+
+## The mental model
+
+As your project grows, media libraries quickly accumulate hundreds or thousands of assets. Dyrected includes a built-in Digital Asset Management (DAM) system that organizes assets without altering their public delivery URLs or storage paths:
+
+- **Folders are organizational taxonomy**: A folder is metadata that groups files inside an upload collection. Moving a file between folders updates its organizational `folderId` but preserves its public CDN URL and database document ID.
+- **In-place replacement protects relationships**: When you update a product photo, banner, or document, replacing the asset updates the underlying file bytes while keeping the original document ID intact so referenced pages and records do not break.
+- **Universal availability**: The same folder hierarchy, search, and type filters available in the full Media Page are accessible inside document form fields via the Media Picker dialog.
+
+## Creating and navigating folders
+
+Folders can be nested to any depth, allowing you to structure assets by department, campaign, year, or page section (for example: `/Marketing/2026/Summer-Launch`).
+
+### Desktop folder navigation
+
+In the desktop admin interface, the left sidebar displays your complete folder tree:
+
+1. Click **+ New Folder** at the root or hover over an existing folder to add a subfolder.
+2. Provide a name and optional color tag to help team members quickly scan categories.
+3. Click any folder to filter the workspace view to only assets within that folder.
+4. Use the **All Media** item at the top to view your complete library across all folders.
+
+### Mobile & tablet navigation
+
+On mobile phones and tablet viewports, the folder tree transforms into a horizontal **Folder Pill Carousel** with breadcrumb navigation. Tap any pill to jump into a subfolder, or tap the breadcrumb trail to return to parent levels.
+
+## Organizing assets into folders
+
+You can assign an asset to a folder when uploading or move existing assets at any time.
+
+### Moving a single asset
+
+To move an individual file:
+
+1. Hover over the asset card in grid view (or click the row in table view).
+2. Click the folder icon or open the three-dots menu (**···**) and select **Move to Folder...**.
+3. Choose the target folder from the dropdown tree and confirm.
+
+### Moving multiple assets in batch
+
+To organize multiple files at once:
+
+1. Switch to table view or enable multi-selection in the Media Library dialog.
+2. Select the checkbox for each asset you want to move.
+3. Click **Move Selected** in the action bar, choose the destination folder, and click **Move Assets**.
+
+## Filtering and searching assets
+
+The media filter bar helps you quickly find assets across large libraries:
+
+- **Search by filename**: Type any part of the original or stored filename in the search box.
+- **MIME type chips**: Filter instantly between `All`, `Images` (JPEG, PNG, WebP, SVG, GIF), `Videos` (MP4, WebM, YouTube, Vimeo), `Audio` (MP3, WAV), and `Documents` (PDF, DOCX, TXT).
+- **Aspect ratio filter**: Toggle between `Square (1:1)`, `Widescreen (16:9)`, and `Original` aspect ratio views to inspect thumbnails accurately.
+- **View modes**: Switch between the visual **Grid View** and the detailed **Table View** (which shows file size, MIME type, upload date, and quick action buttons).
+
+## Replacing assets in-place
+
+When a design asset or document is updated, you usually want to replace the file without having to find and update every content document that references it.
+
+Dyrected supports atomic in-place asset replacement:
+
+1. Open the asset in the **Media Inspector** sidebar (or click **Inspect Asset**).
+2. Click **Replace File**.
+3. Choose the new file from your computer. Dyrected automatically restricts the file picker to matching MIME types (for example, only allowing images to replace an existing image).
+4. The storage adapter replaces the stored file bytes and recalculates dimensions, aspect ratio, filesize, and BlurHash while **preserving the original document ID**.
+
+All relations in other collections pointing to this asset immediately resolve to the new file with zero broken links.
+
+## Focal point and responsive crop
+
+When displaying the same image across multiple aspect ratios (such as mobile portrait cards and desktop landscape banners), critical subject matter can be inadvertently cropped out.
+
+1. In the **Media Inspector**, view the image preview.
+2. Click anywhere on the image to set the **Focal Point** (represented by a central target indicator).
+3. Dyrected saves the normalized coordinate (`x` and `y` between 0.0 and 1.0) on the asset document.
+4. Your frontend components (such as `DyrectedImage` or custom CSS `object-position: {x}% {y}%`) use this coordinate to position crops centered around the subject.
+
+## Dynamic URL transformations
+
+For projects utilizing dynamic image transformations, the Media Inspector provides one-click copy buttons for standard delivery presets:
+
+- **Thumbnail**: Copies a pre-configured 300px thumbnail transformation URL.
+- **Banner**: Copies a 1200px widescreen banner URL.
+- **WebP**: Copies the next-gen WebP format conversion URL.
+
+These presets leverage your root `image` service configuration to serve optimized, device-appropriate assets to visitors globally.
+
+## Using folders in the SDK
+
+You can also manage folders and query assets programmatically using the `@dyrected/sdk` client:
+
+```ts
+
+
+const client = createClient({
+  baseUrl: "https://cms.example.com",
+  apiKey: process.env.DYRECTED_API_KEY,
+});
+
+// 1. Create a campaign folder
+const folder = await client.createFolder("media", {
+  name: "Summer 2026",
+  color: "#3b82f6",
+});
+
+// 2. Fetch all media assets inside that folder
+const { docs: summerAssets } = await client.collection("media").find({
+  where: {
+    folderId: { equals: folder.id },
+  },
+  sort: "-createdAt",
+});
+
+// 3. Replace an existing asset in-place
+const updatedAsset = await client.replaceMedia(summerAssets[0].id, newFile);
+```
+
+## Success check
+
+You are ready to manage project assets when you can:
+
+- Create and navigate nested folders in desktop and mobile views.
+- Move assets between folders individually and in batch.
+- Replace an existing image in-place without altering its database ID.
+- Set focal points for responsive frontend cropping.
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/media/overview
@@ -23047,12 +23524,15 @@ Stored on the document in upload collections.
 ```ts
 export interface FileData {
   filename: string;
+  originalFilename?: string;
   filesize?: number;
   mimeType: string;
   /** Public URL of the stored file. */
   url: string;
   width?: number;
   height?: number;
+  aspectRatio?: number;
+  folderId?: string | null;
   focalPoint?: { x: number; y: number };
   /** Base64-encoded BlurHash string for progressive image loading. */
   blurhash?: string;
@@ -23060,6 +23540,7 @@ export interface FileData {
   type?: "upload" | "external";
   provider?: string;
   provider_metadata?: unknown;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
 ```
@@ -23067,16 +23548,20 @@ export interface FileData {
 | Option | Description |
 | --- | --- |
 | <code>filename</code> (required) |  |
+| <code>originalFilename</code> (optional) |  |
 | <code>filesize</code> (optional) |  |
 | <code>mimeType</code> (required) |  |
 | <code>url</code> (required) | Public URL of the stored file. |
 | <code>width</code> (optional) |  |
 | <code>height</code> (optional) |  |
+| <code>aspectRatio</code> (optional) |  |
+| <code>folderId</code> (optional) |  |
 | <code>focalPoint</code> (optional) |  |
 | <code>blurhash</code> (optional) | Base64-encoded BlurHash string for progressive image loading. |
 | <code>type</code> (optional) | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
 | <code>provider</code> (optional) |  |
 | <code>provider_metadata</code> (optional) |  |
+| <code>metadata</code> (optional) |  |
 
 
 ## ImageService
@@ -23128,8 +23613,8 @@ export interface StorageAdapter {
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
 
-  /** Return the public URL for a stored file. */
-  getURL(args: { filename: string }): string;
+  /** Return the public URL for a stored file, with optional dynamic transformations. */
+  getURL(args: { filename: string; transform?: ImageTransformOptions }): string;
 
   /**
    * Retrieve the file's raw bytes and MIME type for serving via the API.
@@ -23145,7 +23630,7 @@ export interface StorageAdapter {
 | --- | --- |
 | <code>upload</code> (optional) | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
 | <code>delete</code> (required) | Delete a file by its stored filename. |
-| <code>getURL</code> (required) | Return the public URL for a stored file. |
+| <code>getURL</code> (optional) | Return the public URL for a stored file, with optional dynamic transformations. |
 | <code>resolve</code> (required) | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
 
 
@@ -23211,7 +23696,9 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+If an action requires user input (like selecting a seat, entering notes, or recording a payment), declare `fields` to automatically generate an input modal.
+
+When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 
@@ -23219,19 +23706,97 @@ If an action requires user input (like selecting a seat or entering notes), decl
 export const assignTableAction = defineAction({
   name: "assignTable",
   label: "Assign Table",
+  submitLabel: "Save Seating", // Customizes modal button (defaults to "Run")
   icon: "Table2",
   type: "row",
   fields: [
     defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
-    defineTextField({ name: "notes", label: "Seating Notes" }),
+    defineTextField({ name: "seatingNotes", label: "Seating Notes" }),
   ],
-  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.seatingNotes" },
 });
 ```
 
 Expressions like `"input.tableNumber"` extract values submitted through the dialog.
 
-### 3. Bulk and header actions
+### 3. Dynamic defaults and live modal reactivity
+
+Action modal fields support the exact same reactivity engine and hooks as document edit forms:
+
+- **Dynamic `defaultValue` (Initial Prefill)**: Compute initial field values using targeted record data (`doc`), bulk records (`docs`), or the authenticated editor (`user`).
+- **Live `admin.hooks.onChange`**: Automatically recalculate calculated totals, summary strings, or reference codes as the editor types inside the modal.
+- **Dynamic `admin.hooks.options`**: Cascading dropdown choices that update live as sibling inputs change.
+- **Conditional Visibility (`admin.condition`)**: Dynamically show or hide modal inputs based on sibling choices or targeted row properties.
+
+Here is a complete example of a payment recording action modal with dynamic prefilling, live total calculation, and conditional cheque inputs:
+
+```ts
+
+  defineAction,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  expr,
+} from "@dyrected/core";
+
+export const recordPaymentAction = defineAction({
+  name: "recordPayment",
+  label: "Record Payment",
+  submitLabel: "Process Payment",
+  icon: "CreditCard",
+  type: "row",
+  fields: [
+    defineSelectField({
+      name: "paymentMethod",
+      label: "Payment Method",
+      required: true,
+      defaultValue: "transfer",
+      options: [
+        { label: "Bank Transfer", value: "transfer" },
+        { label: "Cash", value: "cash" },
+        { label: "Cheque", value: "cheque" },
+      ],
+    }),
+    defineTextField({
+      name: "chequeNumber",
+      label: "Cheque Number",
+      admin: {
+        // Shows only when 'cheque' is selected in the modal
+        condition: expr.sibling("paymentMethod").equals("cheque"),
+      },
+    }),
+    defineNumberField({
+      name: "amount",
+      label: "Amount (₦)",
+      required: true,
+      // 1. Initial prefill: Remaining balance from the targeted record
+      defaultValue: ({ doc }) => (doc?.totalDue || 0) - (doc?.amountPaid || 0),
+    }),
+    defineNumberField({
+      name: "balanceAfter",
+      label: "Remaining Balance After Payment (₦)",
+      admin: {
+        readOnly: true,
+        // 2. Live reactivity: Updates continuously as the editor edits 'amount'
+        hooks: {
+          onChange: ({ siblingData, doc }) => {
+            const remaining = (doc?.totalDue || 0) - (doc?.amountPaid || 0);
+            return Math.max(0, remaining - (Number(siblingData.amount) || 0));
+          },
+        },
+      },
+    }),
+  ],
+  mutation: {
+    amountPaid: "doc.amountPaid + input.amount",
+    paymentMethod: "input.paymentMethod",
+    chequeNumber: "input.chequeNumber",
+    lastPaymentAt: "now()",
+  },
+});
+```
+
+### 4. Bulk and header actions
 
 Define actions that operate across multiple selected documents or view-wide:
 
@@ -23241,6 +23806,7 @@ Define actions that operate across multiple selected documents or view-wide:
 export const markSelectedPaidAction = defineAction({
   name: "markSelectedPaid",
   label: "Mark Paid",
+  submitLabel: "Confirm Payment",
   type: "bulk",
   mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
 });
@@ -23248,6 +23814,7 @@ export const markSelectedPaidAction = defineAction({
 export const sendReminderAction = defineAction({
   name: "sendReminder",
   label: "Send Reminders",
+  submitLabel: "Send Message",
   icon: "BellRing",
   type: "header",
   confirm: "Send a payment reminder to all guests with pending requests?",
@@ -23256,20 +23823,17 @@ export const sendReminderAction = defineAction({
 ```
 
 
-## Configuration options
-
-| Option | Type | Description |
-| --- | --- | --- |
-| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
-| `label` | `string` **required** | Button text displayed to editors. |
-| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
-| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
-| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
-| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. |
-
-
+## Configuration options| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
 ## Button placement and ordering
 
 - **Row actions (`type: "row"`)**: Surface on table rows, kanban cards, calendar detail sheets, and gallery card tiles.
@@ -23277,6 +23841,7 @@ export const sendReminderAction = defineAction({
 - **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
 
 To customize the order and visibility of built-in vs custom buttons on a view:
+
 ```ts
 defineView({
   slug: "attending-guests",
@@ -23342,6 +23907,30 @@ export const attendingGuests = defineView({
 
 Dyrected synthesizes a table with search, sorting, and faceted filters. Layout defaults to `table` if you omit it.
 
+### Compound filters with `OR` and `AND`
+
+To create specialized views matching multiple conditions or alternative criteria, use compound `OR` or `AND` clauses in your `filter`:
+
+```ts
+
+
+export const pendingLogistics = defineView({
+  slug: "pending-logistics",
+  label: "Pending Logistics",
+  icon: "Package",
+  layout: "table",
+  filter: {
+    OR: [
+      { asoebiPaymentStatus: { equals: "pending" } },
+      { asoebiOrderStatus: { equals: "unfulfilled" } },
+    ],
+  },
+  columns: ["name", "asoebiPaymentStatus", "asoebiOrderStatus", "asoebiAmountPaid"],
+});
+```
+
+Logical operators are case-insensitive (`OR` / `or`, `AND` / `and`) and can be combined with field-level filters.
+
 ## Kanban board view
 
 Kanban views require a `groupBy` field to determine which field values represent the board's columns:
@@ -23385,6 +23974,30 @@ export const tastingSchedule = defineView({
 });
 ```
 
+## Adding view-specific component slots
+
+If you want a custom widget, header banner, or toolbar extension on a **specific view** rather than across the whole collection, declare `components` directly inside `defineView`:
+
+```ts
+
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+  components: {
+    beforeViewHeader: ["fulfillment-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["fulfillment-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order: collection banners render first, followed by view-specific extensions.
+
 ## Setting a default view
 
 To make a view the default landing page for a collection, set `defaultView` on the collection config pointing to the view's `slug`:
@@ -23426,7 +24039,7 @@ All options are optional except `slug` and `label`:
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
 | `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
-| `filter` | `Record<string, unknown> \| string` | Base filter applied before toolbar filters. Object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
+| `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
 | `startDateField` / `endDateField` | `string` | Start and end dates for timeline bars. | Required for `"gantt"` |
@@ -23436,6 +24049,7 @@ All options are optional except `slug` and `label`:
 | `features` | `ViewActionFeatures` | Toggles for built-in buttons: `view`, `edit`, `duplicate`, `delete`, `exportSelected`. | To hide built-ins (e.g. `delete: false`) |
 | `actionOrder` | `string[]` | Explicit button order mixing custom action names and built-in verbs. | When button order conveys workflow priority |
 | `metrics` | `ViewMetric[]` | KPI summary cards displayed above the view. See [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics). | For high-level aggregations and counts |
+| `components` | `ViewComponentSlots` | Custom component slots rendered around this operational view (`beforeViewHeader`, `afterViewHeader`, `beforeViewContent`, `afterViewContent`). | When you need custom widgets scoped to this view only |
 | `access` | `AccessConfig` | Role-based permissions controlling who can see or act on this view. | When a view is role-restricted |
 
 ## Defaults and fallbacks
@@ -24356,6 +24970,8 @@ You can inject custom React components into operational views using slot keys:
 - `afterViewHeader`: Injected between the header and metrics.
 - `beforeViewContent`: Injected above the active layout grid/table.
 - `afterViewContent`: Injected below the active layout.
+
+Slots can be declared collection-wide under `admin.components` (rendered across all views in that collection) or view-specifically inside `defineView({ components: { ... } })` (rendered on that single view only). When both are present, collection-wide slots render first. For registration details and slot props, see [List view components](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Next steps
 
@@ -25384,6 +26000,59 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.12.0
+
+- - **Digital Asset Management (DAM)**: Added folder hierarchy tree with desktop sticky sidebar and mobile pill carousel, Move to Folder modal, in-place asset replacement, MIME type filter chips, and full-width `MediaLibraryDialog`.
+  - **Focal Point & Smart Cropping**: Integrated focal point picker in Media Inspector with automatic CSS `object-position` calculations in `<DyrectedMedia>` and dynamic CDN crop parameters in Cloudinary/API transformations.
+  - **Spreadsheet Grid Cell Editors**: Added full in-cell editing for select, multi-select, link, date/datetime, media/image, and relationship pickers.
+  - **Action Dialog & Form Engine Parity**: Added async hook support, `setValue(fieldName, value)` sibling mutation support, functional `defaultValue: ({ doc, docs, user }) => ...` serialization/client-evaluation, and unified document context across action dialog modals and collection forms.
+  - **Sticky Table Headers & Mobile Scroll Container**: Consolidated table view scrolling into a single unified scroll container with pinned sticky header rows and sticky selection checkbox columns for smooth vertical and horizontal navigation on desktop and mobile. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`, `@dyrected/storage-cloudinary`)
+
+- Add `expr` expression builder with `expr.ifElse`, concise shorthands (`expr.empty`, `expr.notEmpty`, `expr.equals`), and fluent transforms (`.slugify()`, `.lower()`, `.upper()`, `.trim()`). Improve `dyrected upgrade` CLI command with sanitized environment execution and streamlined manifest updates. (`dyrected`, `@dyrected/core`)
+
+---
+
+## v2.11.0
+
+- Support dynamic and JEXL `defaultValue` evaluation, `admin.hooks.onChange` live reactivity, `admin.hooks.options` cascading dropdowns, and `admin.condition` visibility inside `ActionFormDialog` and `FormEngine`. (`@dyrected/admin`, `@dyrected/core`)
+
+- - Fix Admin UI session staleness and authentication desynchronization:
+  - Add proactive background token refresh timer scheduled 5 minutes before JWT expiration.
+  - Refresh token on browser tab `focus` and `visibilitychange` when returning to an open dashboard.
+  - Dispatch `dyrected:auth-unauthorized` and support `onAuthError` callback in `@dyrected/sdk` on 401 responses.
+  - Automatically attempt token refresh on 401s in Admin UI, falling back to instant login gate transition if session is expired or revoked.
+  - Fix user state leak bug in `DyrectedProvider` that prevented logout and login page rendering.
+  - Call backend `POST /api/collections/:slug/logout` to revoke server session in `__auth_sessions` during logout.
+  - Allow operational view component slots (`afterViewHeader`, `beforeViewHeader`, `beforeViewContent`, `afterViewContent`) to resolve components registered under either `components.collectionView` or `components.collectionList`.
+  - Enhance action and confirmation dialogs for mobile and tall content:
+    - Render as a mobile bottom-sheet (`max-sm:bottom-0`, slide from bottom, top grab handle) on small viewports.
+    - Constrain all fields and custom modal components within the device viewport width (`w-full min-w-0 overflow-x-hidden`).
+    - Enable independent vertical scrolling (`overflow-y-auto`) with fixed, docked headers and action footer buttons.
+  - Add operational view Refresh button in [ViewHeader](file:///Users/busola/Work/dyrected/packages/admin/src/pages/collections/views/view-header.tsx) and mobile action menu:
+    - Refetches both collection/view data and summary metrics in the background.
+    - Keeps current datasets and stats on screen while displaying spinning and pulsing refetch indicators.
+  - Update back button navigation on document edit and global editor pages to use browser history when available, preserving active operational view filters, sorting, and pagination. (`@dyrected/admin`, `dyrected`, `@dyrected/sdk`)
+
+---
+
+## v2.10.1
+
+- - Support `submitLabel` on operational view actions to customize the modal submit/run button text.
+  - Automatically prefill action modal forms with the target document's current field values when executing row actions.
+  - Normalize logical operators (`AND`/`and`, `OR`/`or`) case-insensitively in `where-sanitizer`.
+  - Apply schema default values on `create()` before persisting to the database.
+  - Strictly type operational view filters as `WhereClause | string`.
+  - Add thorough JSDoc documentation across all operational view types and interfaces.
+  - Add architecture specs for `npx dyrected doctor` diagnostics and multi-adapter automatic field promotion. (`@dyrected/admin`, `dyrected`, `@dyrected/core`)
+
+- - Added type-safe `when` declarative condition and expression builder to `@dyrected/sdk` and `@dyrected/core`.
+  - Added framework parity for `useDyPath()` and `useDyPathHelper()` in `@dyrected/vue` and auto-imported in `@dyrected/nuxt`.
+  - Enhanced CLI `upgrade` command to automatically refresh `.dyrected/ai-rules.md` with the latest canonical rules when upgrading packages.
+  - Added Marketing Site Page Builder Architecture, Array Field Object Shape Contract, and Type Synchronization Workflow to `@dyrected/knowledge` prompt templates and AI rules.
+  - Added `/docs/[...slug]` legacy catch-all redirect route in documentation.
+
+---
+
 ## v2.10.0
 
 - - **Aggregate Engine Expansion (`countDistinct`, `distinct`, `groupBy`)**:
@@ -26127,40 +26796,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/sdk@2.5.47 (`dyrected`, `@dyrected/next`)
 
 - @dyrected/react@2.5.47 (`@dyrected/next`)
-
----
-
-## v2.5.46
-
-- Add low-impact dark mode support to the admin UI with system, light, and dark theme preferences.
-  - @dyrected/core@2.5.46
-  - @dyrected/sdk@2.5.46 (`@dyrected/admin`)
-
-- @dyrected/core@2.5.46
-
-- @dyrected/sdk@2.5.46 (`dyrected`, `@dyrected/next`)
-
-- @dyrected/react@2.5.46 (`@dyrected/next`)
-
----
-
-## v2.5.45
-
-- feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks (`@dyrected/core`, `@dyrected/db-postgres`)
-
-- @dyrected/sdk@2.5.45 (`@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/admin@2.5.45 (`@dyrected/react`, `@dyrected/vue`)
-
----
-
-## v2.5.44
-
-- Add provider membership hooks type definitions and collection controller delegation logic to redirect authentication collection CRUD requests. (`@dyrected/core`)
-
-- @dyrected/sdk@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/admin@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 
@@ -28029,6 +28664,71 @@ curl -X POST https://example.com/api/collections/orders/aggregate \
 
 Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate).
 
+## Media and uploads
+
+Upload-enabled collections expose dedicated routes for file ingestion and atomic in-place replacement:
+
+### Upload a new file
+
+Send a `multipart/form-data` request with the `file` field and optional document fields:
+
+```bash
+curl -X POST https://example.com/api/collections/media/upload \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/hero.jpg" \
+  -F "alt=Hero campaign banner" \
+  -F "folderId=marketing-folder-id"
+```
+
+### Replace an asset in-place
+
+Replace the physical file bytes for an existing asset without changing its document ID or breaking relations:
+
+```bash
+curl -X POST https://example.com/api/collections/media/asset-123/file \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/new-hero.jpg"
+```
+
+Dyrected replaces the stored file in your storage adapter, recalculates dimensions, aspect ratio, and BlurHash, and returns the updated document.
+
+## Media folders
+
+Organize upload collections into nested hierarchical folders:
+
+```bash
+GET /api/collections/:slug/folders
+POST /api/collections/:slug/folders
+PATCH /api/collections/:slug/folders/:id
+DELETE /api/collections/:slug/folders/:id
+```
+
+### Create a folder
+
+```bash
+curl -X POST https://example.com/api/collections/media/folders \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Summer 2026",
+    "parentId": "marketing-folder-id",
+    "color": "#3b82f6"
+  }'
+```
+
+### Batch delete assets
+
+Delete multiple assets in a single atomic request:
+
+```bash
+curl -X DELETE https://example.com/api/collections/media/delete-many \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "ids": ["asset-1", "asset-2", "asset-3"]
+  }'
+```
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.
@@ -28585,6 +29285,35 @@ const { docs } = await client.collection("posts").find({
 
 Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
 
+## Managing media & folders
+
+Organize upload collections, manipulate folders, and replace asset files in-place:
+
+```ts
+// 1. Create a media folder
+const folder = await client.createFolder("media", {
+  name: "Summer Campaign",
+  color: "#3b82f6",
+});
+
+// 2. List all folders in a collection
+const { docs: folders } = await client.listFolders("media");
+
+// 3. Upload a file directly into a folder
+const asset = await client.collection("media").upload(myFile, {
+  folderId: folder.id,
+  alt: "Summer campaign banner",
+});
+
+// 4. Replace an existing file in-place (keeps the same document ID)
+const updatedAsset = await client.replaceMedia(asset.id, newFile);
+
+// 5. Delete multiple assets in batch
+await client.deleteMany("media", {
+  ids: ["asset-1", "asset-2"],
+});
+```
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
@@ -28687,7 +29416,12 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
+| <code>listFolders</code> (required) | List all media folders in an upload-enabled collection. |
+| <code>createFolder</code> (optional) | Create a new media folder in an upload-enabled collection. |
+| <code>updateFolder</code> (optional) | Update an existing media folder in an upload-enabled collection. |
+| <code>deleteFolder</code> (required) | Delete a media folder from an upload-enabled collection. |
 | <code>uploadMedia</code> (required) |  |
+| <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
 
 
@@ -28702,6 +29436,10 @@ export interface DyrectedClientConfig {
   siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
+  /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
   /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
@@ -28718,6 +29456,7 @@ export interface DyrectedClientConfig {
 | <code>siteId</code> (optional) |  |
 | <code>headers</code> (optional) |  |
 | <code>fetch</code> (optional) |  |
+| <code>onAuthError</code> (optional) | Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint. |
 | <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
 
 
@@ -28769,6 +29508,37 @@ export type InferSchema<
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
 };
 ```
+
+
+## MediaFolder
+
+Shape of a media folder document in the DAM system.
+
+```ts
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>name</code> (required) |  |
+| <code>slug</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>parentId</code> (required) |  |
+| <code>path</code> (required) |  |
+| <code>color</code> (optional) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM
@@ -29773,6 +30543,10 @@ client.setToken(token)
 
 An expired token cannot refresh itself, so schedule the refresh while the current token is still good.
 
+<Callout type="info">
+The built-in Dyrected Admin UI handles this automatically — it schedules a background refresh 5 minutes before expiration and checks token freshness whenever the browser tab regains focus or visibility.
+</Callout>
+
 ## Sending the token
 
 Dyrected reads the token from one place: the `Authorization` header, using the `Bearer` scheme.
@@ -30445,13 +31219,57 @@ Keep `renameTo` until you've confirmed every production document has been writte
 
 ## Defaults and backfilling
 
-`defaultValue` fills in a value when a document doesn't have one, which makes it the natural partner to a rename and a safe way to introduce a new required field:
+`defaultValue` ensures documents always have a value when a field is omitted. When creating new documents via the SDK, API, or admin forms, Dyrected applies the `defaultValue` automatically before writing to the database:
 
 ```ts
-defineSelectField({ name: 'status', label: 'Status', options: ['draft', 'published'], defaultValue: 'draft' })
+defineSelectField({
+  name: 'status',
+  label: 'Status',
+  options: ['pending', 'active', 'archived'],
+  defaultValue: 'pending',
+})
 ```
 
-Some field types also fall back to a sensible empty value when nothing is set — booleans default to `false` and array fields default to an empty list — so existing documents read predictably even before they're rewritten.
+Some field types also fall back to sensible empty defaults when omitted — booleans default to `false` and array fields default to an empty list.
+
+### Backfilling defaults on existing collections
+
+When you add a new `defaultValue` to an existing collection that already contains historical records, a subtle schema/data drift occurs:
+
+1. **In-memory reads** surface the default value when loading documents.
+2. **Database grouping and filtering** (such as operational view Kanban columns, grouped tables, or raw SQL queries) query the physical database directly, where historical rows still store `NULL`. Consequently, historical records may appear in an "Unassigned" bucket rather than their expected default status column.
+
+To align historical records with your new default, run a one-time backfill migration:
+
+```ts
+// scripts/backfill-status-defaults.ts
+
+
+async function main() {
+  const { docs } = await client.collection("orders").find({
+    where: { status: { equals: null } },
+    limit: 1000,
+  });
+
+  for (const doc of docs) {
+    await client.collection("orders").update(doc.id, {
+      status: "pending",
+    });
+  }
+  console.log(`Backfilled status default on ${docs.length} orders.`);
+}
+
+main();
+```
+
+Or execute a direct SQL query against your database adapter:
+
+```sql
+-- PostgreSQL
+UPDATE collection_orders
+SET data = jsonb_set(data, '{status}', '"pending"')
+WHERE data->>'status' IS NULL;
+```
 
 ## Promoting a field on an existing collection
 
@@ -32889,9 +33707,12 @@ It receives:
 - `value` for the current field
 - `siblingData` for fields at the same nesting level
 - `data` for the whole form
+- `doc` for the targeted record (in action modals and document forms)
+- `docs` for bulk action records
+- `user` for the authenticated editor
 - `setValue` for imperative updates when the logic is async or multi-step
 
-Use it for slug generation, computed totals, or other immediate form feedback.
+Use it for slug generation, computed totals, or real-time form and action modal feedback.
 
 When you want the same admin behavior to survive Cloud schema sync, use the declarative string form instead of a function:
 
@@ -33532,8 +34353,14 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
   siblingData: Record<string, unknown>;
   /** Current values for the entire form. */
   data: Record<string, unknown>;
-  /** Imperative setter for async or derived updates. */
-  setValue: (value: unknown) => void;
+  /** The targeted record / document when available. */
+  doc?: Record<string, unknown>;
+  /** Array of targeted records for bulk action operations. */
+  docs?: Record<string, unknown>[];
+  /** Current authenticated user. */
+  user?: unknown;
+  /** Imperative setter for current field or sibling fields. */
+  setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void;
 }
 ```
 
@@ -33542,7 +34369,10 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
 | <code>value</code> (required) | Current field value in the form state. |
 | <code>siblingData</code> (required) | Current values for sibling fields at the same nesting level. |
 | <code>data</code> (required) | Current values for the entire form. |
-| <code>setValue</code> (required) | Imperative setter for async or derived updates. |
+| <code>doc</code> (optional) | The targeted record / document when available. |
+| <code>docs</code> (optional) | Array of targeted records for bulk action operations. |
+| <code>user</code> (optional) | Current authenticated user. |
+| <code>setValue</code> (optional) | Imperative setter for current field or sibling fields. |
 
 
 ## FieldAdminOptionsHook
@@ -33562,17 +34392,29 @@ Exported interface from @dyrected/core.
 
 ```ts
 export interface FieldAdminOptionsHookArgs {
+  /** Current field value in the form state (if set). */
+  value?: unknown;
   /** Current values for sibling fields at the same nesting level. */
   siblingData: Record<string, unknown>;
   /** Current values for the entire form. */
   data: Record<string, unknown>;
+  /** The targeted record / document when available. */
+  doc?: Record<string, unknown>;
+  /** Array of targeted records for bulk action operations. */
+  docs?: Record<string, unknown>[];
+  /** Current authenticated user. */
+  user?: unknown;
 }
 ```
 
 | Option | Description |
 | --- | --- |
+| <code>value</code> (optional) | Current field value in the form state (if set). |
 | <code>siblingData</code> (required) | Current values for sibling fields at the same nesting level. |
 | <code>data</code> (required) | Current values for the entire form. |
+| <code>doc</code> (optional) | The targeted record / document when available. |
+| <code>docs</code> (optional) | Array of targeted records for bulk action operations. |
+| <code>user</code> (optional) | Current authenticated user. |
 
 
 ## FieldAdminOptionsHookResult
@@ -34336,6 +35178,39 @@ The registry key is the slot-key name you declared (`"posts-header"`), not the c
   These slots also appear on upload (media) collections — a `upload: true` collection's list uses the same four slots,
   declared the same way on its `admin.components`.
 </Callout>
+
+## View-specific component slots (`defineView`)
+
+If a collection has multiple operational views (such as a Kanban pipeline, a Calendar schedule, and a standard Table), you might only want a custom widget on a **single view** rather than all of them.
+
+You can declare component slots directly inside [`defineView`](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/define-view):
+
+```ts
+
+
+export const kanbanPipeline = defineView({
+  slug: "pipeline",
+  label: "Pipeline",
+  layout: "kanban",
+  groupBy: "status",
+  components: {
+    beforeViewHeader: ["kanban-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["kanban-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order (collection banners render first, followed by view-specific widgets). Register the components under `components.collectionView` or `components.collectionList` in `<DyrectedAdmin />`.
+
+### Collection-wide vs. View-specific slots
+
+| Scope | Where to declare | Use case |
+| --- | --- | --- |
+| **Collection-wide** | `collection.admin.components` | Notices, banners, or actions that should appear across **all views** in this collection (e.g. an "Archived collection" banner). |
+| **View-specific** | `defineView({ components: { ... } })` | Widgets that **only make sense for a single view layout** (e.g. a Kanban legend, a Calendar date switcher). |
+
 
 ## What your component receives
 
@@ -35217,16 +36092,18 @@ displayField("deliveryNotes", {
 
 ### 5. Progressive conditional disclosure with `visible`
 
-Clean dashboards omit irrelevant data. Use JEXL visibility expressions to conditionally hide entire sections or fields when they do not apply to the current record.
+Clean dashboards omit irrelevant data. Use the `expr` expression builder (or a serializable JEXL expression) to conditionally hide entire sections or fields when they do not apply to the current record.
 
 ```ts
+
+
 // Hide the entire fulfillment card if the guest didn't place an order
 displaySection("Order & Fulfillment", [
   // ... fields
 ], {
   span: 12,
   icon: "Package",
-  visible: "doc.wantsAsoebi || doc.wantsAsoOke",
+  visible: expr.any(expr.isTrue("wantsAsoebi"), expr.isTrue("wantsAsoOke")),
 }),
 ```
 
@@ -36610,14 +37487,37 @@ This is the right API for:
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
 
-## Built-in Declarative Jexl Helpers
+## Declarative Field Transforms & `expr` Builder
 
-Dyrected provides a zero-dependency helper utility suite for declarative `admin.hooks.onChange`, field conditions, and access control rules:
+For reactive field transforms in the Admin form (such as auto-generating slugs or sanitizing inputs), declare serializable `admin.hooks.onChange` expressions with the type-safe `expr` expression builder:
+
+```typescript
+
+
+defineTextField({
+  name: "slug",
+  label: "Slug",
+  admin: {
+    hooks: {
+      // Auto-generates slug from title when empty
+      onChange: expr.ifElse(
+        expr.empty("value"),
+        expr.slugify("siblingData.title"),
+        "value"
+      ),
+    },
+  },
+});
+```
+
+### Global JEXL Runtime Functions
+
+The `expr` expression builder compiles to JEXL expressions evaluated with 30+ globally registered helper functions:
 
 ### String Helpers
-- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`).
-- `lower(str)` / `upper(str)`: Converts string casing.
-- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word.
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`). Available via `expr.slugify(field)`.
+- `lower(str)` / `upper(str)`: Converts string casing. Available via `expr.lower(field)` and `expr.upper(field)`.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word. Available via `expr.trim(field)`.
 - `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
 - `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
 - `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.
@@ -36674,6 +37574,8 @@ If a collection has a `status` field, a status column is added automatically so 
 ## Shaping the table
 
 The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields — or from the view's `columns` when you're in an operational view (`defineView({ columns: [...] })`). Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person via `layout:collections:${slug}:view:${viewSlug}` (see [Routing and preferences](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/routing-and-preferences) for legacy `view-columns:` fallback). Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](https://docs.dyrected.com/docs/self-hosted/editor-experience/preferences) for the full cascade and how to set defaults.
+
+The table uses a single unified scroll container with a sticky header row and sticky selection column. As editors scroll long lists or wide schemas horizontally and vertically on desktop and mobile, column headers and selection controls stay pinned in view.
 
 ```ts
 
@@ -37844,20 +38746,30 @@ const { data: page, isLive } = useLivePreview({
 
 ## Click-to-edit with `useDyPath`
 
-Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. Call `useDyPath()` once at the top of your component to get a path annotator helper (`dy`), then call `dy('fieldName')` directly on your elements:
 
 ```tsx
 // React / Next.js
 
 
-function Hero({ heading, subheading }: any) {
-  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+function Hero({ heading, subheading, cta, items }: any) {
+  // Call useDyPath() once at the top of the component
+  const dy = useDyPath();
+
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading && <p {...dySubheading}>{subheading}</p>}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading && <p {...dy("subheading")}>{subheading}</p>}
+      {cta && <button {...dy("cta")}>{cta}</button>}
+
+      
+      <ul>
+        {items?.map((item: any, idx: number) => (
+          <li key={idx} {...dy(`items.${idx}.title`)}>
+            {item.title}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -37866,15 +38778,28 @@ function Hero({ heading, subheading }: any) {
 ```vue
 <!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>();
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+defineProps<{
+  heading: string;
+  subheading?: string;
+  cta?: string;
+  items?: Array<{ title: string }>;
+}>();
+
+// Call useDyPath() once in setup
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
+    <button v-if="cta" v-bind="dy('cta')">{{ cta }}</button>
+
+    <ul>
+      <li v-for="(item, idx) in items" :key="idx" v-bind="dy(`items.${idx}.title`)">
+        {{ item.title }}
+      </li>
+    </ul>
   </section>
 </template>
 ```
@@ -40385,12 +41310,14 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
 - [Chat-to-order AI proposals](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/chat-to-order-proposal) — Problem: Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation. Summary: Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.
+- [Compute fields and calculate totals live](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/computed-fields-and-totals) — Problem: You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database. Summary: Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/cross-field-validation) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
 - [Custom business logic AI tools](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-ai-tools) — Problem: The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations. Summary: Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
+- [Calculate field values and format strings live](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/declarative-reactive-hooks) — Problem: You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code. Summary: Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/dependent-dropdown) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
 - [Create a document download library](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
@@ -40416,9 +41343,6 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 ## Archive records instead of deleting them
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/archive-instead-of-delete
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.
 
@@ -40471,9 +41395,6 @@ export const Announcements = defineCollection({
 ## Generate a slug from a title
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/auto-slug
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
 
@@ -40530,8 +41451,11 @@ export const Posts = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange:
-            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.ifElse(expr.notEmpty("siblingData.title"), expr.slugify("siblingData.title"), "value"),
+            "value",
+          ),
         },
       },
     }),
@@ -40544,9 +41468,6 @@ export const Posts = defineCollection({
 ## Create a category taxonomy for content
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/category-taxonomy
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use a reusable categories collection and a has-many relationship from content entries that need tagging.
 
@@ -40686,12 +41607,128 @@ export const config: DyrectedConfig = {
 
 ---
 
+## Compute fields and calculate totals live
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/computed-fields-and-totals
+
+Automatically compute field values, totals, and balances with server-side guarantees and instant Admin UI reactivity.
+
+## Use this when
+
+- calculate order totals from sibling inputs
+- compute remaining balances automatically
+- update field values live as an editor types
+- guarantee computed values in the database
+
+## Dyrected concepts
+
+`beforeChange`, `admin.hooks.onChange`, `defaultValue`, `readOnly`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+
+export function calculateOrderTotals(item: Record<string, any> = {}) {
+  const quantity = Number(item.quantity) || 0;
+  const unitPrice = Number(item.unitPrice) || 0;
+  const discount = Number(item.discount) || 0;
+  const subtotal = quantity * unitPrice;
+  const total = Math.max(0, subtotal - discount);
+  return { subtotal, total };
+}
+
+export const Orders = defineCollection({
+  slug: "orders",
+  hooks: {
+    beforeChange: [
+      ({ data, doc, operation }) => {
+        const merged = { ...(doc || {}), ...data };
+        const { total } = calculateOrderTotals(merged);
+        return {
+          ...data,
+          totalAmount: total,
+        };
+      },
+    ],
+  },
+  fields: [
+    defineNumberField({
+      name: "quantity",
+      label: "Quantity",
+      required: true,
+      defaultValue: 1,
+    }),
+    defineNumberField({
+      name: "unitPrice",
+      label: "Unit Price (₦)",
+      required: true,
+      defaultValue: 10000,
+    }),
+    defineNumberField({
+      name: "discount",
+      label: "Discount (₦)",
+      defaultValue: 0,
+    }),
+    defineNumberField({
+      name: "totalAmount",
+      label: "Total Amount (₦)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: ({ siblingData }) => calculateOrderTotals(siblingData).total,
+        },
+      },
+    }),
+    defineSelectField({
+      name: "paymentStatus",
+      label: "Payment Status",
+      defaultValue: "pending",
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "Partial", value: "partial" },
+        { label: "Paid", value: "paid" },
+      ],
+    }),
+    defineNumberField({
+      name: "amountPaid",
+      label: "Amount Paid (₦)",
+      admin: {
+        hooks: {
+          onChange: ({ value, siblingData }) => {
+            const { total } = calculateOrderTotals(siblingData);
+            const status = siblingData.paymentStatus;
+
+            if (status === "pending") return 0;
+            if (status === "paid") return total;
+            if (status === "partial") {
+              if (typeof value === "number" && value > 0 && value !== total) {
+                return value;
+              }
+              return total;
+            }
+            return value;
+          },
+        },
+      },
+    }),
+  ],
+});
+```
+
+---
+
 ## Show an Admin field only when it is relevant
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/conditional-admin-field
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use a serializable Admin condition to reveal a field from the editor's current form values.
 
@@ -40726,7 +41763,7 @@ export const Orders = defineCollection({
     defineNumberField({
       name: "discountPercent",
       label: "Discount percentage",
-      admin: { condition: "couponCode != null && couponCode != ''" },
+      admin: { condition: expr.notEmpty("couponCode") },
     }),
   ],
 });
@@ -40737,9 +41774,6 @@ export const Orders = defineCollection({
 ## Validate related fields before saving
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/cross-field-validation
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Reject invalid combinations of field values before they reach the database.
 
@@ -40894,9 +41928,6 @@ export const config: DyrectedConfig = {
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-field-editor
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.
 
 ## Use this when
@@ -41041,9 +42072,6 @@ export default function CustomerComplaintRoute() {
 ## Build a media picker directly into a page
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-page-media-picker
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
 
@@ -41207,9 +42235,6 @@ export default function ComplaintAttachmentRoute() {
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/custom-theme-shell
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
 
 ## Use this when
@@ -41272,12 +42297,116 @@ export default function DashboardRoute() {
 
 ---
 
+## Calculate field values and format strings live
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/declarative-reactive-hooks
+
+Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.
+
+## Use this when
+
+- build reactive form transforms that survive Cloud schema sync
+- compute field values without writing raw JavaScript functions
+- calculate status-based pricing or conditional totals declaratively
+- format reference codes or IDs from sibling inputs in real-time
+
+## Dyrected concepts
+
+`admin.hooks.onChange`, `when.then`, `when.match`, `when.sibling`, `when.concat`, `when.slugify`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  expr,
+} from "@dyrected/core";
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Invoice Title",
+      required: true,
+    }),
+
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      admin: {
+        hooks: {
+          onChange: expr.ifElse(
+            expr.empty("value"),
+            expr.slugify("siblingData.title"),
+            "value"
+          ),
+        },
+      },
+    }),
+
+    defineSelectField({
+      name: "planTier",
+      label: "Plan Tier",
+      defaultValue: "standard",
+      options: [
+        { label: "Free Trial", value: "trial" },
+        { label: "Standard", value: "standard" },
+        { label: "Enterprise", value: "enterprise" },
+      ],
+    }),
+
+    defineNumberField({
+      name: "basePrice",
+      label: "Base Price (₦)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: expr.match()
+            .case(expr.sibling("planTier").equals("trial"), 0)
+            .case(expr.sibling("planTier").equals("standard"), 25000)
+            .case(expr.sibling("planTier").equals("enterprise"), 100000)
+            .otherwise(25000),
+        },
+      },
+    }),
+
+    defineTextField({
+      name: "referenceCode",
+      label: "Payment Reference",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: expr.concat(
+            "INV-",
+            expr.upper("siblingData.planTier"),
+            "-",
+            expr.slugify("siblingData.title")
+          ),
+        },
+      },
+    }),
+  ],
+});
+```
+
+---
+
 ## Update a dropdown from another field
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/dependent-dropdown
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Change available Admin UI options immediately when an editor changes a related field.
 
@@ -41343,9 +42472,6 @@ export const Locations = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/document-download-library
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.
 
 ## Use this when
@@ -41396,9 +42522,6 @@ export const Documents = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/editorial-publishing-workflow
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
 
 ## Use this when
@@ -41440,9 +42563,6 @@ export const Posts = defineCollection({
 ## Create a navigation global with nested links
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/navigation-global-links
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Model reusable navigation links in one global, including one level of child links for grouped menus.
 
@@ -41499,9 +42619,6 @@ export const Navigation = defineGlobal({
 ## Let owners edit records while admins manage everything
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/owner-or-admin-access
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Combine ownership rules with an admin override so ordinary users stay scoped while administrators can intervene.
 
@@ -41570,9 +42687,6 @@ export const Tickets = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/owner-scoped-access
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Return a where constraint from access control so authenticated users only read their own records.
 
 ## Use this when
@@ -41634,9 +42748,6 @@ export const Projects = defineCollection({
 ## Build flexible pages from reusable blocks
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/page-builder-blocks
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
 
@@ -41701,9 +42812,6 @@ export const Pages = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/preview-url-token-mode
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Set a preview URL expression and postMessage live preview mode for routable frontend content.
 
 ## Use this when
@@ -41734,7 +42842,7 @@ export const Docs = defineCollection({
   slug: "docs",
   admin: {
     useAsTitle: "title",
-    previewUrl: "slug ? '/docs/' + slug : null",
+    previewUrl: expr.ifElse("slug", expr.concat("/docs/", "slug"), null),
     previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
@@ -41750,9 +42858,6 @@ export const Docs = defineCollection({
 ## Model a relationship and its reverse lookup
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/relationship-and-reverse-join
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Store an author relationship on posts and expose the author's posts through a virtual join field.
 
@@ -41815,9 +42920,6 @@ export const Posts = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/responsive-image-library
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.
 
 ## Use this when
@@ -41869,9 +42971,6 @@ export const Media = defineCollection({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/role-based-access
 
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
-
 Allow public reads, editor writes, and administrator deletion with collection access rules.
 
 ## Use this when
@@ -41915,9 +43014,6 @@ export const Articles = defineCollection({
 ## Rename a field without orphaning existing data
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/safe-field-rename
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Use renameTo and a safe default while documents migrate lazily to a new field name.
 
@@ -41964,9 +43060,6 @@ export const Customers = defineCollection({
 ## Group SEO fields into an Admin tab
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/seo-tab-fields
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep secondary metadata together under an SEO tab so the main editing form stays focused.
 
@@ -42017,9 +43110,6 @@ export const Pages = defineCollection({
 ## Create a site settings global
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/site-settings-global
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Keep shared site-wide values in a single global instead of scattering them across collections.
 
@@ -42075,9 +43165,6 @@ export const SiteSettings = defineGlobal({
 ## Scope content to the current workspace
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/tenant-scoped-access
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Stamp a workspace identifier onto new records and filter reads and writes to that tenant boundary.
 
@@ -42161,9 +43248,6 @@ export const Projects = defineCollection({
 ## Create a media upload collection
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/upload-collection
-
-This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
-
 
 Enable file uploads and capture accessible metadata in a dedicated media collection.
 
@@ -42835,6 +43919,7 @@ When you need live preview or rendering helpers, the Next package is still the e
 - `useLivePreview`
 - `Blocks`
 - `useDyPath`
+- `useDyPathHelper`
 - `DyrectedImage`
 - `DyrectedMedia`
 - `DyrectedIcon`
@@ -44238,9 +45323,31 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
+   * table or cards view navigates directly to the editing form with Live Preview.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array using display helpers (`displaySection`, `displayField`, `displayTabs`, etc.) for a
+   * custom operational dashboard layout.
+   *
+   * @default false
+   * @example
+   * ```ts
+   * // Enable automatic summary detail view
+   * detail: true
+   *
+   * // Or define a custom operational detail view
+   * detail: [
+   *   displaySection("Customer Overview", [
+   *     displayField("name", { span: 8 }),
+   *     displayField("status", { span: 4, display: "badge" }),
+   *   ]),
+   * ]
+   * ```
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 
   /**
    * Slug of the operational view to render by default when navigating to `/collections/:slug`.
@@ -44305,7 +45412,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
 | <code>ai</code> (optional) | Optional custom AI assistant instructions and RAG indexing options for this collection. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, collections are **Edit-First** (&#96;detail: false&#96;). Clicking a record in the table or cards view navigates directly to the editing form with Live Preview.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array using display helpers (&#96;displaySection&#96;, &#96;displayField&#96;, &#96;displayTabs&#96;, etc.) for a custom operational dashboard layout. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
 
@@ -44474,22 +45581,18 @@ When a collection is routable, the collection config and the frontend route need
 - `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
 - a real frontend route that can fetch and render the document
 
-`admin.previewUrl` can be either:
+`admin.previewUrl` can be configured using:
 
-- a Jexl string evaluated against the document, usually the best default
-- a function that returns the URL from the document data
+- the `expr` expression builder (or serializable JEXL string), which is the recommended default
+- a custom function that returns the URL from document data (self-hosted only)
 
-Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+Prefer the `expr` builder (`expr.concat`, `expr.ifElse`, or `expr.match`). It keeps your configuration 100% serializable, provides TypeScript autocomplete, and runs safely across Dyrected Cloud and headless runtimes.
 
-`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+`admin.urlPattern` is different: it is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
 
-For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+### Dynamic Preview Routing Examples
 
-```ts
-previewUrl: "slug == 'home' ? '/' : '/' + slug";
-```
-
-Here is a typical blog-style example using Jexl:
+For single-prefix collections, use `expr.concat`:
 
 ```ts
 
@@ -44498,7 +45601,8 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
-    previewUrl: "'/blog/' + slug",
+    // Generates: '/blog/' + slug
+    previewUrl: expr.concat("/blog/", "slug"),
     urlPattern: "/blog/{slug}",
   },
   fields: [
@@ -44506,6 +45610,23 @@ export const Posts = defineCollection({
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
+```
+
+For conditional fallback routing (such as routing a `home` slug directly to `/`), use `expr.ifElse`:
+
+```ts
+// Routes 'home' to '/', and all other pages to '/slug'
+previewUrl: expr.ifElse(expr("slug").equals("home"), "/", expr.concat("/", "slug")),
+```
+
+For multi-branch category routing, use `expr.match`:
+
+```ts
+previewUrl: expr.match()
+  .case(expr("slug").equals("home"), "/")
+  .case(expr("category").equals("news"), expr.concat("/news/", "slug"))
+  .case(expr("category").equals("portal"), expr.concat("/portals/", "slug"))
+  .otherwise(expr.concat("/", "slug")),
 ```
 
 If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:
@@ -44788,9 +45909,17 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 
   /**
-   * Custom detail view layout configuration for the Admin UI.
+   * Detail view layout configuration for the Admin UI.
+   *
+   * By default, globals are **Edit-First** (`detail: false`). Clicking the global in the
+   * sidebar navigates directly to the editing form.
+   *
+   * Set to `true` to enable the automatic read-only summary layout, or provide a `DetailSchema`
+   * array for a custom operational dashboard layout.
+   *
+   * @default false
    */
-  detail?: DetailSchema<TDoc> | false;
+  detail?: DetailSchema<TDoc> | boolean;
 }
 ```
 
@@ -44806,7 +45935,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>ai</code> (optional) | Optional custom AI assistant instructions for this global singleton. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
-| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
+| <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, globals are **Edit-First** (&#96;detail: false&#96;). Clicking the global in the sidebar navigates directly to the editing form.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array for a custom operational dashboard layout. |
 
 
 ## Global options in practice
@@ -45155,6 +46284,16 @@ export interface DyrectedConfig<
   image?: ImageService;
 
   /**
+   * Media management, dynamic transformations, and transformation preset configurations.
+   */
+  media?: {
+    /** Whether to restrict dynamic transformations to registered preset keys in production. */
+    restrictTransforms?: boolean;
+    /** Named transformation presets available via `?key=name`. */
+    presets?: Record<string, ImageTransformOptions>;
+  };
+
+  /**
    * Runtime logger configuration. Accepts either logger options/destination or
    * a fully-instantiated Pino logger.
    */
@@ -45306,6 +46445,7 @@ export interface DyrectedConfig<
 | <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
 | <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>media</code> (optional) | Media management, dynamic transformations, and transformation preset configurations. |
 | <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
 | <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
@@ -45676,17 +46816,19 @@ Field rules are enforced in two places at once:
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) for the shared model, then use this page for the field-specific behavior.For self-hosted Dyrected, field access can also use function rules when a field decision needs local runtime code. Use Jexl strings when the same behavior should stay visible in the admin form.
 ## The shape
 
-Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use the `expr` expression builder (or a serializable JEXL expression) for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
-{
-  name: 'internalNotes',
-  type: 'textarea',
+
+
+defineTextareaField({
+  name: "internalNotes",
+  label: "Internal Notes",
   access: {
-    read: "'admin' in user.roles",
-    update: "'admin' in user.roles",
+    read: expr.access.isAdmin(),
+    update: expr.access.isAdmin(),
   },
-}
+});
 ```
 
 Omit a rule (or set it to `true`) to leave the field fully available.<Note>
@@ -46395,9 +47537,11 @@ The first variant is the default. Like block slugs, keep variant slugs stable on
 
 ### Showing a field only for some variants
 
-Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Because the selected variant lives on the block row under the reserved `variant` key, any sibling field can read it in an `admin.condition`:
+Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Use the `expr` expression builder to declare clean variant visibility in your field's `admin.condition`:
 
 ```ts
+
+
 defineBlock({
   slug: "testimonial",
   labels: { singular: "Testimonial", plural: "Testimonials" },
@@ -46411,13 +47555,13 @@ defineBlock({
       name: "avatar",
       label: "Avatar",
       relationTo: "media",
-      admin: { condition: "variant == 'card'" },
+      admin: { condition: expr.variant("card") },
     }),
   ],
 });
 ```
 
-Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+Now the avatar picker appears only while the card variant is selected. The `expr.variant("card")` condition generates a serializable expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can also match multiple variants with `expr.variant("card", "split")` or everything except a variant with `expr.notVariant("quote")`.
 
 <Note>
 Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
@@ -48956,6 +50100,139 @@ export interface UrlLinkValue {
 
 ---
 
+## Managing Media & Folders
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/media/digital-asset-management
+
+Use this page to learn how to organize, search, replace, and transform digital assets in your Dyrected media library. By the end of this guide, you will know how to create folder hierarchies, organize files, filter assets, replace images in-place without breaking relationships, and use URL transform presets.
+
+## The mental model
+
+As your project grows, media libraries quickly accumulate hundreds or thousands of assets. Dyrected includes a built-in Digital Asset Management (DAM) system that organizes assets without altering their public delivery URLs or storage paths:
+
+- **Folders are organizational taxonomy**: A folder is metadata that groups files inside an upload collection. Moving a file between folders updates its organizational `folderId` but preserves its public CDN URL and database document ID.
+- **In-place replacement protects relationships**: When you update a product photo, banner, or document, replacing the asset updates the underlying file bytes while keeping the original document ID intact so referenced pages and records do not break.
+- **Universal availability**: The same folder hierarchy, search, and type filters available in the full Media Page are accessible inside document form fields via the Media Picker dialog.
+
+## Creating and navigating folders
+
+Folders can be nested to any depth, allowing you to structure assets by department, campaign, year, or page section (for example: `/Marketing/2026/Summer-Launch`).
+
+### Desktop folder navigation
+
+In the desktop admin interface, the left sidebar displays your complete folder tree:
+
+1. Click **+ New Folder** at the root or hover over an existing folder to add a subfolder.
+2. Provide a name and optional color tag to help team members quickly scan categories.
+3. Click any folder to filter the workspace view to only assets within that folder.
+4. Use the **All Media** item at the top to view your complete library across all folders.
+
+### Mobile & tablet navigation
+
+On mobile phones and tablet viewports, the folder tree transforms into a horizontal **Folder Pill Carousel** with breadcrumb navigation. Tap any pill to jump into a subfolder, or tap the breadcrumb trail to return to parent levels.
+
+## Organizing assets into folders
+
+You can assign an asset to a folder when uploading or move existing assets at any time.
+
+### Moving a single asset
+
+To move an individual file:
+
+1. Hover over the asset card in grid view (or click the row in table view).
+2. Click the folder icon or open the three-dots menu (**···**) and select **Move to Folder...**.
+3. Choose the target folder from the dropdown tree and confirm.
+
+### Moving multiple assets in batch
+
+To organize multiple files at once:
+
+1. Switch to table view or enable multi-selection in the Media Library dialog.
+2. Select the checkbox for each asset you want to move.
+3. Click **Move Selected** in the action bar, choose the destination folder, and click **Move Assets**.
+
+## Filtering and searching assets
+
+The media filter bar helps you quickly find assets across large libraries:
+
+- **Search by filename**: Type any part of the original or stored filename in the search box.
+- **MIME type chips**: Filter instantly between `All`, `Images` (JPEG, PNG, WebP, SVG, GIF), `Videos` (MP4, WebM, YouTube, Vimeo), `Audio` (MP3, WAV), and `Documents` (PDF, DOCX, TXT).
+- **Aspect ratio filter**: Toggle between `Square (1:1)`, `Widescreen (16:9)`, and `Original` aspect ratio views to inspect thumbnails accurately.
+- **View modes**: Switch between the visual **Grid View** and the detailed **Table View** (which shows file size, MIME type, upload date, and quick action buttons).
+
+## Replacing assets in-place
+
+When a design asset or document is updated, you usually want to replace the file without having to find and update every content document that references it.
+
+Dyrected supports atomic in-place asset replacement:
+
+1. Open the asset in the **Media Inspector** sidebar (or click **Inspect Asset**).
+2. Click **Replace File**.
+3. Choose the new file from your computer. Dyrected automatically restricts the file picker to matching MIME types (for example, only allowing images to replace an existing image).
+4. The storage adapter replaces the stored file bytes and recalculates dimensions, aspect ratio, filesize, and BlurHash while **preserving the original document ID**.
+
+All relations in other collections pointing to this asset immediately resolve to the new file with zero broken links.
+
+## Focal point and responsive crop
+
+When displaying the same image across multiple aspect ratios (such as mobile portrait cards and desktop landscape banners), critical subject matter can be inadvertently cropped out.
+
+1. In the **Media Inspector**, view the image preview.
+2. Click anywhere on the image to set the **Focal Point** (represented by a central target indicator).
+3. Dyrected saves the normalized coordinate (`x` and `y` between 0.0 and 1.0) on the asset document.
+4. Your frontend components (such as `DyrectedImage` or custom CSS `object-position: {x}% {y}%`) use this coordinate to position crops centered around the subject.
+
+## Dynamic URL transformations
+
+For projects utilizing dynamic image transformations, the Media Inspector provides one-click copy buttons for standard delivery presets:
+
+- **Thumbnail**: Copies a pre-configured 300px thumbnail transformation URL.
+- **Banner**: Copies a 1200px widescreen banner URL.
+- **WebP**: Copies the next-gen WebP format conversion URL.
+
+These presets leverage your root `image` service configuration to serve optimized, device-appropriate assets to visitors globally.
+
+## Using folders in the SDK
+
+You can also manage folders and query assets programmatically using the `@dyrected/sdk` client:
+
+```ts
+
+
+const client = createClient({
+  baseUrl: "https://cms.example.com",
+  apiKey: process.env.DYRECTED_API_KEY,
+});
+
+// 1. Create a campaign folder
+const folder = await client.createFolder("media", {
+  name: "Summer 2026",
+  color: "#3b82f6",
+});
+
+// 2. Fetch all media assets inside that folder
+const { docs: summerAssets } = await client.collection("media").find({
+  where: {
+    folderId: { equals: folder.id },
+  },
+  sort: "-createdAt",
+});
+
+// 3. Replace an existing asset in-place
+const updatedAsset = await client.replaceMedia(summerAssets[0].id, newFile);
+```
+
+## Success check
+
+You are ready to manage project assets when you can:
+
+- Create and navigate nested folders in desktop and mobile views.
+- Move assets between folders individually and in batch.
+- Replace an existing image in-place without altering its database ID.
+- Set focal points for responsive frontend cropping.
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/media/overview
@@ -49369,12 +50646,15 @@ Stored on the document in upload collections.
 ```ts
 export interface FileData {
   filename: string;
+  originalFilename?: string;
   filesize?: number;
   mimeType: string;
   /** Public URL of the stored file. */
   url: string;
   width?: number;
   height?: number;
+  aspectRatio?: number;
+  folderId?: string | null;
   focalPoint?: { x: number; y: number };
   /** Base64-encoded BlurHash string for progressive image loading. */
   blurhash?: string;
@@ -49382,6 +50662,7 @@ export interface FileData {
   type?: "upload" | "external";
   provider?: string;
   provider_metadata?: unknown;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
 ```
@@ -49389,16 +50670,20 @@ export interface FileData {
 | Option | Description |
 | --- | --- |
 | <code>filename</code> (required) |  |
+| <code>originalFilename</code> (optional) |  |
 | <code>filesize</code> (optional) |  |
 | <code>mimeType</code> (required) |  |
 | <code>url</code> (required) | Public URL of the stored file. |
 | <code>width</code> (optional) |  |
 | <code>height</code> (optional) |  |
+| <code>aspectRatio</code> (optional) |  |
+| <code>folderId</code> (optional) |  |
 | <code>focalPoint</code> (optional) |  |
 | <code>blurhash</code> (optional) | Base64-encoded BlurHash string for progressive image loading. |
 | <code>type</code> (optional) | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
 | <code>provider</code> (optional) |  |
 | <code>provider_metadata</code> (optional) |  |
+| <code>metadata</code> (optional) |  |
 
 
 ## ImageService
@@ -49450,8 +50735,8 @@ export interface StorageAdapter {
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
 
-  /** Return the public URL for a stored file. */
-  getURL(args: { filename: string }): string;
+  /** Return the public URL for a stored file, with optional dynamic transformations. */
+  getURL(args: { filename: string; transform?: ImageTransformOptions }): string;
 
   /**
    * Retrieve the file's raw bytes and MIME type for serving via the API.
@@ -49467,7 +50752,7 @@ export interface StorageAdapter {
 | --- | --- |
 | <code>upload</code> (optional) | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
 | <code>delete</code> (required) | Delete a file by its stored filename. |
-| <code>getURL</code> (required) | Return the public URL for a stored file. |
+| <code>getURL</code> (optional) | Return the public URL for a stored file, with optional dynamic transformations. |
 | <code>resolve</code> (required) | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
 
 
@@ -49533,7 +50818,9 @@ The `"now()"` expression is evaluated on the server to an ISO timestamp. Declara
 
 ### 2. Row action with an input dialog
 
-If an action requires user input (like selecting a seat or entering notes), declare `fields` to automatically generate an input modal:
+If an action requires user input (like selecting a seat, entering notes, or recording a payment), declare `fields` to automatically generate an input modal.
+
+When triggered on a row, the dialog automatically **prefills with the document's current values**, allowing editors to inspect and tweak existing data rather than typing from scratch:
 
 ```ts
 
@@ -49541,19 +50828,97 @@ If an action requires user input (like selecting a seat or entering notes), decl
 export const assignTableAction = defineAction({
   name: "assignTable",
   label: "Assign Table",
+  submitLabel: "Save Seating", // Customizes modal button (defaults to "Run")
   icon: "Table2",
   type: "row",
   fields: [
     defineNumberField({ name: "tableNumber", label: "Table Number", required: true }),
-    defineTextField({ name: "notes", label: "Seating Notes" }),
+    defineTextField({ name: "seatingNotes", label: "Seating Notes" }),
   ],
-  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.notes" },
+  mutation: { tableNumber: "input.tableNumber", seatingNotes: "input.seatingNotes" },
 });
 ```
 
 Expressions like `"input.tableNumber"` extract values submitted through the dialog.
 
-### 3. Bulk and header actions
+### 3. Dynamic defaults and live modal reactivity
+
+Action modal fields support the exact same reactivity engine and hooks as document edit forms:
+
+- **Dynamic `defaultValue` (Initial Prefill)**: Compute initial field values using targeted record data (`doc`), bulk records (`docs`), or the authenticated editor (`user`).
+- **Live `admin.hooks.onChange`**: Automatically recalculate calculated totals, summary strings, or reference codes as the editor types inside the modal.
+- **Dynamic `admin.hooks.options`**: Cascading dropdown choices that update live as sibling inputs change.
+- **Conditional Visibility (`admin.condition`)**: Dynamically show or hide modal inputs based on sibling choices or targeted row properties.
+
+Here is a complete example of a payment recording action modal with dynamic prefilling, live total calculation, and conditional cheque inputs:
+
+```ts
+
+  defineAction,
+  defineNumberField,
+  defineSelectField,
+  defineTextField,
+  expr,
+} from "@dyrected/core";
+
+export const recordPaymentAction = defineAction({
+  name: "recordPayment",
+  label: "Record Payment",
+  submitLabel: "Process Payment",
+  icon: "CreditCard",
+  type: "row",
+  fields: [
+    defineSelectField({
+      name: "paymentMethod",
+      label: "Payment Method",
+      required: true,
+      defaultValue: "transfer",
+      options: [
+        { label: "Bank Transfer", value: "transfer" },
+        { label: "Cash", value: "cash" },
+        { label: "Cheque", value: "cheque" },
+      ],
+    }),
+    defineTextField({
+      name: "chequeNumber",
+      label: "Cheque Number",
+      admin: {
+        // Shows only when 'cheque' is selected in the modal
+        condition: expr.sibling("paymentMethod").equals("cheque"),
+      },
+    }),
+    defineNumberField({
+      name: "amount",
+      label: "Amount (₦)",
+      required: true,
+      // 1. Initial prefill: Remaining balance from the targeted record
+      defaultValue: ({ doc }) => (doc?.totalDue || 0) - (doc?.amountPaid || 0),
+    }),
+    defineNumberField({
+      name: "balanceAfter",
+      label: "Remaining Balance After Payment (₦)",
+      admin: {
+        readOnly: true,
+        // 2. Live reactivity: Updates continuously as the editor edits 'amount'
+        hooks: {
+          onChange: ({ siblingData, doc }) => {
+            const remaining = (doc?.totalDue || 0) - (doc?.amountPaid || 0);
+            return Math.max(0, remaining - (Number(siblingData.amount) || 0));
+          },
+        },
+      },
+    }),
+  ],
+  mutation: {
+    amountPaid: "doc.amountPaid + input.amount",
+    paymentMethod: "input.paymentMethod",
+    chequeNumber: "input.chequeNumber",
+    lastPaymentAt: "now()",
+  },
+});
+```
+
+### 4. Bulk and header actions
 
 Define actions that operate across multiple selected documents or view-wide:
 
@@ -49563,6 +50928,7 @@ Define actions that operate across multiple selected documents or view-wide:
 export const markSelectedPaidAction = defineAction({
   name: "markSelectedPaid",
   label: "Mark Paid",
+  submitLabel: "Confirm Payment",
   type: "bulk",
   mutation: { asoebiStatus: "paid", asoebiPaidAt: "now()" },
 });
@@ -49570,6 +50936,7 @@ export const markSelectedPaidAction = defineAction({
 export const sendReminderAction = defineAction({
   name: "sendReminder",
   label: "Send Reminders",
+  submitLabel: "Send Message",
   icon: "BellRing",
   type: "header",
   confirm: "Send a payment reminder to all guests with pending requests?",
@@ -49585,6 +50952,7 @@ In self-hosted projects where Dyrected runs inside your Node.js server, you can 
 export const chargeGuestAction = defineAction({
   name: "chargeGuest",
   label: "Charge Outfit",
+  submitLabel: "Process Charge",
   icon: "CreditCard",
   type: "row",
   handler: async ({ doc, input }) => {
@@ -49598,20 +50966,18 @@ export const chargeGuestAction = defineAction({
 ```
 
 The data returned from `handler` automatically merges into the document through the collection's validation and hook pipeline.
-## Configuration options
-
-| Option | Type | Description |
-| --- | --- | --- |
-| `name` | `string` **required** | Unique identifier used for ordering, logging, and SDK triggers. |
-| `label` | `string` **required** | Button text displayed to editors. |
-| `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`). |
-| `type` | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`. |
-| `confirm` | `string` | Prompt text that triggers a confirmation modal before execution. |
-| `fields` | `Field[]` | Input fields rendered in a modal before the action runs. Reuses Dyrected's central field rendering engine. |
-| `mutation` | `Record<string, unknown>` | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`). |
-| `access` | `AccessConfig` | Permissions controlling who can see or run the action. || Self-Hosted Option | Type | Description |
-| --- | --- | --- |
-| `handler` | `(ctx) => Promise<Partial<Doc>>` | Custom async TypeScript handler for server-side workflows and third-party API integration. |
+## Configuration options| Option        | Type                              | Description                                                                                                                              |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string` **required**             | Unique identifier used for ordering, logging, and SDK triggers.                                                                          |
+| `label`       | `string` **required**             | Button text displayed to editors.                                                                                                        |
+| `submitLabel` | `string`                          | Custom label for the modal confirmation / submission button (defaults to `"Run"` for form dialogs, `"Confirm"` for confirmation modals). |
+| `icon`        | `string`                          | Lucide icon name (e.g. `"UserCheck"`, `"Table2"`).                                                                                       |
+| `type`        | `"row"` \| `"bulk"` \| `"header"` | Where the button appears. Defaults to `"row"`.                                                                                           |
+| `confirm`     | `string`                          | Prompt text that triggers a confirmation modal before execution.                                                                         |
+| `fields`      | `Field[]`                         | Input fields rendered in a modal before the action runs. For row actions, fields automatically prefill from the targeted document.       |
+| `mutation`    | `Record<string, unknown>`         | Declarative mutation object with expressions (`"now()"`, `"input.fieldName"`, `"doc.fieldName"`).                                        |
+| `access`      | `AccessConfig`                    | Permissions controlling who can see or run the action.                                                                                   |
+| `handler`     | `(ctx) => Promise<Partial<Doc>>`  | Custom async TypeScript handler for server-side workflows and third-party API integration.                                               |
 ## Button placement and ordering
 
 - **Row actions (`type: "row"`)**: Surface on table rows, kanban cards, calendar detail sheets, and gallery card tiles.
@@ -49619,6 +50985,7 @@ The data returned from `handler` automatically merges into the document through 
 - **Header actions (`type: "header"`)**: Positioned at the top of the view alongside search and filter controls.
 
 To customize the order and visibility of built-in vs custom buttons on a view:
+
 ```ts
 defineView({
   slug: "attending-guests",
@@ -49684,6 +51051,30 @@ export const attendingGuests = defineView({
 
 Dyrected synthesizes a table with search, sorting, and faceted filters. Layout defaults to `table` if you omit it.
 
+### Compound filters with `OR` and `AND`
+
+To create specialized views matching multiple conditions or alternative criteria, use compound `OR` or `AND` clauses in your `filter`:
+
+```ts
+
+
+export const pendingLogistics = defineView({
+  slug: "pending-logistics",
+  label: "Pending Logistics",
+  icon: "Package",
+  layout: "table",
+  filter: {
+    OR: [
+      { asoebiPaymentStatus: { equals: "pending" } },
+      { asoebiOrderStatus: { equals: "unfulfilled" } },
+    ],
+  },
+  columns: ["name", "asoebiPaymentStatus", "asoebiOrderStatus", "asoebiAmountPaid"],
+});
+```
+
+Logical operators are case-insensitive (`OR` / `or`, `AND` / `and`) and can be combined with field-level filters.
+
 ## Kanban board view
 
 Kanban views require a `groupBy` field to determine which field values represent the board's columns:
@@ -49727,6 +51118,30 @@ export const tastingSchedule = defineView({
 });
 ```
 
+## Adding view-specific component slots
+
+If you want a custom widget, header banner, or toolbar extension on a **specific view** rather than across the whole collection, declare `components` directly inside `defineView`:
+
+```ts
+
+
+export const asoebiPipeline = defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+  components: {
+    beforeViewHeader: ["fulfillment-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["fulfillment-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order: collection banners render first, followed by view-specific extensions.
+
 ## Setting a default view
 
 To make a view the default landing page for a collection, set `defaultView` on the collection config pointing to the view's `slug`:
@@ -49768,7 +51183,7 @@ All options are optional except `slug` and `label`:
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
 | `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
-| `filter` | `Record<string, unknown> \| string` | Base filter applied before toolbar filters. Object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
+| `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
 | `startDateField` / `endDateField` | `string` | Start and end dates for timeline bars. | Required for `"gantt"` |
@@ -49778,6 +51193,7 @@ All options are optional except `slug` and `label`:
 | `features` | `ViewActionFeatures` | Toggles for built-in buttons: `view`, `edit`, `duplicate`, `delete`, `exportSelected`. | To hide built-ins (e.g. `delete: false`) |
 | `actionOrder` | `string[]` | Explicit button order mixing custom action names and built-in verbs. | When button order conveys workflow priority |
 | `metrics` | `ViewMetric[]` | KPI summary cards displayed above the view. See [Metrics](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/metrics). | For high-level aggregations and counts |
+| `components` | `ViewComponentSlots` | Custom component slots rendered around this operational view (`beforeViewHeader`, `afterViewHeader`, `beforeViewContent`, `afterViewContent`). | When you need custom widgets scoped to this view only |
 | `access` | `AccessConfig` | Role-based permissions controlling who can see or act on this view. | When a view is role-restricted |
 
 ## Defaults and fallbacks
@@ -50698,6 +52114,8 @@ You can inject custom React components into operational views using slot keys:
 - `afterViewHeader`: Injected between the header and metrics.
 - `beforeViewContent`: Injected above the active layout grid/table.
 - `afterViewContent`: Injected below the active layout.
+
+Slots can be declared collection-wide under `admin.components` (rendered across all views in that collection) or view-specifically inside `defineView({ components: { ... } })` (rendered on that single view only). When both are present, collection-wide slots render first. For registration details and slot props, see [List view components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view).
 
 ## Next steps
 
@@ -51726,6 +53144,59 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.12.0
+
+- - **Digital Asset Management (DAM)**: Added folder hierarchy tree with desktop sticky sidebar and mobile pill carousel, Move to Folder modal, in-place asset replacement, MIME type filter chips, and full-width `MediaLibraryDialog`.
+  - **Focal Point & Smart Cropping**: Integrated focal point picker in Media Inspector with automatic CSS `object-position` calculations in `<DyrectedMedia>` and dynamic CDN crop parameters in Cloudinary/API transformations.
+  - **Spreadsheet Grid Cell Editors**: Added full in-cell editing for select, multi-select, link, date/datetime, media/image, and relationship pickers.
+  - **Action Dialog & Form Engine Parity**: Added async hook support, `setValue(fieldName, value)` sibling mutation support, functional `defaultValue: ({ doc, docs, user }) => ...` serialization/client-evaluation, and unified document context across action dialog modals and collection forms.
+  - **Sticky Table Headers & Mobile Scroll Container**: Consolidated table view scrolling into a single unified scroll container with pinned sticky header rows and sticky selection checkbox columns for smooth vertical and horizontal navigation on desktop and mobile. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`, `@dyrected/storage-cloudinary`)
+
+- Add `expr` expression builder with `expr.ifElse`, concise shorthands (`expr.empty`, `expr.notEmpty`, `expr.equals`), and fluent transforms (`.slugify()`, `.lower()`, `.upper()`, `.trim()`). Improve `dyrected upgrade` CLI command with sanitized environment execution and streamlined manifest updates. (`dyrected`, `@dyrected/core`)
+
+---
+
+## v2.11.0
+
+- Support dynamic and JEXL `defaultValue` evaluation, `admin.hooks.onChange` live reactivity, `admin.hooks.options` cascading dropdowns, and `admin.condition` visibility inside `ActionFormDialog` and `FormEngine`. (`@dyrected/admin`, `@dyrected/core`)
+
+- - Fix Admin UI session staleness and authentication desynchronization:
+  - Add proactive background token refresh timer scheduled 5 minutes before JWT expiration.
+  - Refresh token on browser tab `focus` and `visibilitychange` when returning to an open dashboard.
+  - Dispatch `dyrected:auth-unauthorized` and support `onAuthError` callback in `@dyrected/sdk` on 401 responses.
+  - Automatically attempt token refresh on 401s in Admin UI, falling back to instant login gate transition if session is expired or revoked.
+  - Fix user state leak bug in `DyrectedProvider` that prevented logout and login page rendering.
+  - Call backend `POST /api/collections/:slug/logout` to revoke server session in `__auth_sessions` during logout.
+  - Allow operational view component slots (`afterViewHeader`, `beforeViewHeader`, `beforeViewContent`, `afterViewContent`) to resolve components registered under either `components.collectionView` or `components.collectionList`.
+  - Enhance action and confirmation dialogs for mobile and tall content:
+    - Render as a mobile bottom-sheet (`max-sm:bottom-0`, slide from bottom, top grab handle) on small viewports.
+    - Constrain all fields and custom modal components within the device viewport width (`w-full min-w-0 overflow-x-hidden`).
+    - Enable independent vertical scrolling (`overflow-y-auto`) with fixed, docked headers and action footer buttons.
+  - Add operational view Refresh button in [ViewHeader](file:///Users/busola/Work/dyrected/packages/admin/src/pages/collections/views/view-header.tsx) and mobile action menu:
+    - Refetches both collection/view data and summary metrics in the background.
+    - Keeps current datasets and stats on screen while displaying spinning and pulsing refetch indicators.
+  - Update back button navigation on document edit and global editor pages to use browser history when available, preserving active operational view filters, sorting, and pagination. (`@dyrected/admin`, `dyrected`, `@dyrected/sdk`)
+
+---
+
+## v2.10.1
+
+- - Support `submitLabel` on operational view actions to customize the modal submit/run button text.
+  - Automatically prefill action modal forms with the target document's current field values when executing row actions.
+  - Normalize logical operators (`AND`/`and`, `OR`/`or`) case-insensitively in `where-sanitizer`.
+  - Apply schema default values on `create()` before persisting to the database.
+  - Strictly type operational view filters as `WhereClause | string`.
+  - Add thorough JSDoc documentation across all operational view types and interfaces.
+  - Add architecture specs for `npx dyrected doctor` diagnostics and multi-adapter automatic field promotion. (`@dyrected/admin`, `dyrected`, `@dyrected/core`)
+
+- - Added type-safe `when` declarative condition and expression builder to `@dyrected/sdk` and `@dyrected/core`.
+  - Added framework parity for `useDyPath()` and `useDyPathHelper()` in `@dyrected/vue` and auto-imported in `@dyrected/nuxt`.
+  - Enhanced CLI `upgrade` command to automatically refresh `.dyrected/ai-rules.md` with the latest canonical rules when upgrading packages.
+  - Added Marketing Site Page Builder Architecture, Array Field Object Shape Contract, and Type Synchronization Workflow to `@dyrected/knowledge` prompt templates and AI rules.
+  - Added `/docs/[...slug]` legacy catch-all redirect route in documentation.
+
+---
+
 ## v2.10.0
 
 - - **Aggregate Engine Expansion (`countDistinct`, `distinct`, `groupBy`)**:
@@ -52469,40 +53940,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/sdk@2.5.47 (`dyrected`, `@dyrected/next`)
 
 - @dyrected/react@2.5.47 (`@dyrected/next`)
-
----
-
-## v2.5.46
-
-- Add low-impact dark mode support to the admin UI with system, light, and dark theme preferences.
-  - @dyrected/core@2.5.46
-  - @dyrected/sdk@2.5.46 (`@dyrected/admin`)
-
-- @dyrected/core@2.5.46
-
-- @dyrected/sdk@2.5.46 (`dyrected`, `@dyrected/next`)
-
-- @dyrected/react@2.5.46 (`@dyrected/next`)
-
----
-
-## v2.5.45
-
-- feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks (`@dyrected/core`, `@dyrected/db-postgres`)
-
-- @dyrected/sdk@2.5.45 (`@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/admin@2.5.45 (`@dyrected/react`, `@dyrected/vue`)
-
----
-
-## v2.5.44
-
-- Add provider membership hooks type definitions and collection controller delegation logic to redirect authentication collection CRUD requests. (`@dyrected/core`)
-
-- @dyrected/sdk@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/admin@2.5.44 (`@dyrected/react`, `@dyrected/vue`)
 
 ---
 

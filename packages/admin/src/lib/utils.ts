@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
+import type { ImageTransformOptions } from "@dyrected/core";
 
 /**
  * tailwind-merge only understands Tailwind v4-style prefixed utilities
@@ -47,7 +48,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param baseUrl - The Dyrected backend base URL, used to build the origin for relative paths.
  * @returns A fully-qualified URL string, or `""` if the value cannot be resolved.
  */
-export function getMediaUrl(val: string | any, baseUrl: string) {
+export function getMediaUrl(val: string | any, baseUrl: string = "") {
   if (!val) {
     return "";
   }
@@ -139,6 +140,103 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
 }
 
 /**
+ * Injects dynamic Cloudinary transformation parameters into a Cloudinary asset URL.
+ */
+export function buildCloudinaryTransformUrl(url: string, options: ImageTransformOptions): string {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/image/upload/")) {
+    return url;
+  }
+  const parts: string[] = [];
+  if (options.width) parts.push(`w_${options.width}`);
+  if (options.height) parts.push(`h_${options.height}`);
+  if (options.aspectRatio) parts.push(`ar_${options.aspectRatio}`);
+  if (options.crop) {
+    const cropVal = options.crop === "cover" ? "fill" : options.crop === "contain" ? "fit" : options.crop;
+    parts.push(`c_${cropVal}`);
+  } else if (options.width || options.height) {
+    parts.push("c_fill");
+  }
+  if (options.focalPoint && typeof options.focalPoint.x === "number" && typeof options.focalPoint.y === "number") {
+    parts.push("g_xy_center");
+    const normX = options.focalPoint.x > 1 ? options.focalPoint.x / 100 : options.focalPoint.x;
+    const normY = options.focalPoint.y > 1 ? options.focalPoint.y / 100 : options.focalPoint.y;
+    parts.push(`x_${Math.round(normX * 100) / 100}`);
+    parts.push(`y_${Math.round(normY * 100) / 100}`);
+  } else if (options.gravity) {
+    const grav = options.gravity === "focal" ? "auto:focal" : options.gravity;
+    parts.push(`g_${grav}`);
+  }
+  if (options.format) parts.push(`f_${options.format}`);
+  if (options.quality) parts.push(`q_${options.quality}`);
+  if (options.blur) parts.push(`e_blur:${options.blur}`);
+  if (options.rotate) parts.push(`a_${options.rotate}`);
+  if (options.dpr) parts.push(`dpr_${options.dpr}`);
+
+  if (parts.length === 0) return url;
+
+  const transformString = parts.join(",");
+  return url.replace("/image/upload/", `/image/upload/${transformString}/`);
+}
+
+/**
+ * Returns a media asset URL with dynamic transformations applied on the fly.
+ */
+export function getTransformedMediaUrl(
+  val: any,
+  transform?: string | ImageTransformOptions,
+  baseUrl?: string
+): string {
+  if (!val) return "";
+
+  // 1. If transform is a string preset name (e.g. 'thumbnail')
+  if (typeof transform === "string") {
+    // Check legacy doc.sizes first
+    if (typeof val === "object" && val !== null && val.sizes?.[transform]?.url) {
+      return val.sizes[transform].url;
+    }
+    transform = { key: transform };
+  }
+
+  const rawUrl = getMediaUrl(val, baseUrl);
+  if (!rawUrl) return "";
+
+  const effectiveTransform: ImageTransformOptions = {
+    ...(typeof transform === "object" ? transform : {}),
+    ...(typeof val === "object" && val?.focalPoint && (!transform || typeof transform !== "object" || !transform.focalPoint)
+      ? { focalPoint: val.focalPoint }
+      : {}),
+  };
+
+  if (!transform && !effectiveTransform.focalPoint) return rawUrl;
+
+  // Cloudinary direct URL transformation
+  if (rawUrl.includes("res.cloudinary.com") && rawUrl.includes("/image/upload/")) {
+    return buildCloudinaryTransformUrl(rawUrl, effectiveTransform);
+  }
+
+  // API endpoint query parameter transformation
+  try {
+    const parsed = new URL(rawUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    if (effectiveTransform.key) parsed.searchParams.set("key", effectiveTransform.key);
+    if (effectiveTransform.width) parsed.searchParams.set("width", String(effectiveTransform.width));
+    if (effectiveTransform.height) parsed.searchParams.set("height", String(effectiveTransform.height));
+    if (effectiveTransform.crop) parsed.searchParams.set("crop", effectiveTransform.crop);
+    if (effectiveTransform.format) parsed.searchParams.set("format", effectiveTransform.format);
+    if (effectiveTransform.quality) parsed.searchParams.set("quality", String(effectiveTransform.quality));
+    if (effectiveTransform.focalPoint) {
+      const normX = effectiveTransform.focalPoint.x > 1 ? effectiveTransform.focalPoint.x / 100 : effectiveTransform.focalPoint.x;
+      const normY = effectiveTransform.focalPoint.y > 1 ? effectiveTransform.focalPoint.y / 100 : effectiveTransform.focalPoint.y;
+      parsed.searchParams.set("fx", String(Math.round(normX * 100) / 100));
+      parsed.searchParams.set("fy", String(Math.round(normY * 100) / 100));
+    }
+
+    return rawUrl.startsWith("http") ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return rawUrl;
+  }
+}
+
+/**
  * Strips the directory prefix from a filename / storage path, returning only the last component (the actual filename).
  * E.g., "dyrected_cloud/j95sv/bcuul/WhatsApp Image 2026-06-20 at 12" -> "WhatsApp Image 2026-06-20 at 12"
  */
@@ -169,3 +267,25 @@ export function getSiteUrl(configuredSiteUrl?: string): string {
   }
   return configuredSiteUrl || (typeof window !== "undefined" ? window.location.origin : "");
 }
+
+/**
+ * Determines whether a collection or global schema has Detail View enabled.
+ *
+ * Detail views are opt-in (`false` by default). They are enabled when:
+ * - `detail: true` (automatic summary layout)
+ * - `detail: [...]` (custom array of display items)
+ * - `detail: { ... }` (custom detail layout object)
+ */
+export function hasDetailView(schema: any): boolean {
+  if (!schema || schema.detail === false || schema.detail === undefined || schema.detail === null) {
+    return false;
+  }
+  if (schema.detail === true) {
+    return true;
+  }
+  if (Array.isArray(schema.detail)) {
+    return schema.detail.length > 0;
+  }
+  return typeof schema.detail === "object";
+}
+

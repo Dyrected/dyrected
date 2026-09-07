@@ -5,6 +5,7 @@ import {
   defineConfig,
   defineDateTimeField,
   defineGlobal,
+  defineJoinField,
   defineNumberField,
   defineObjectField,
   defineRelationshipField,
@@ -21,6 +22,7 @@ import {
   displayComputed,
   displayDivider,
   displayText,
+  defineTab,
   z,
 } from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
@@ -738,25 +740,6 @@ const Services = defineCollection({
     useAsTitle: "name",
     defaultColumns: ["name", "price", "duration", "id"],
   },
-  detail: [
-    displaySection(
-      "Service Overview",
-      [
-        displayField("name", { span: 8 }),
-        displayField("price", { span: 2, display: "badge" }),
-        displayField("duration", { span: 2, display: "badge" }),
-        displayField("id", { span: 12, display: "copyable" }),
-        displayField("description", { span: 12 }),
-      ],
-      { span: 8 },
-    ),
-    displaySection(
-      "Benefits & Highlights",
-      [displayRepeat("benefits", [displayField("benefit", { hideLabel: true })], { layout: "list" })],
-      { span: 4 },
-    ),
-    displayComputed("benefitsCount", "count(doc.benefits)"),
-  ],
   fields: [
     { name: "id", label: "Service ID", type: "text", required: true, unique: true },
     { name: "name", label: "Name", type: "text", required: true },
@@ -804,6 +787,152 @@ const Services = defineCollection({
   },
 });
 
+const ArticleComments = defineCollection({
+  slug: "article-comments",
+  labels: { singular: "Comment", plural: "Comments" },
+  admin: {
+    useAsTitle: "authorName",
+    defaultColumns: ["authorName", "status", "comment"],
+  },
+  fields: [
+    defineRelationshipField({
+      name: "article",
+      label: "Article",
+      relationTo: "blog-articles",
+      required: true,
+    }),
+    defineTextField({ name: "authorName", label: "Author name", required: true }),
+    defineTextField({ name: "authorEmail", label: "Author email", type: "email" }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["pending", "approved", "spam"],
+      defaultValue: "approved",
+    }),
+    defineTextareaField({ name: "comment", label: "Comment", required: true }),
+  ],
+  initialData: [
+    {
+      id: "comm-1",
+      article: "loxyv",
+      authorName: "Sarah Jenkins",
+      authorEmail: "sarah@example.com",
+      status: "approved",
+      comment: "Incredible insights on systemizing daily habits!",
+    },
+    {
+      id: "comm-2",
+      article: "loxyv",
+      authorName: "Marcus Vance",
+      authorEmail: "marcus@example.com",
+      status: "approved",
+      comment: "The done-list concept completely changed my morning routine.",
+    },
+    {
+      id: "comm-3",
+      article: "loxyv",
+      authorName: "Elena Rostova",
+      authorEmail: "elena@example.com",
+      status: "approved",
+      comment: "Bookmarked. Especially love the section on keeping promises to yourself.",
+    },
+    {
+      id: "comm-4",
+      article: "loxyv",
+      authorName: "David Kim",
+      authorEmail: "david@example.com",
+      status: "pending",
+      comment: "Are there printable checklist templates available?",
+    },
+    {
+      id: "comm-5",
+      article: "loxyv",
+      authorName: "Chloe Bennett",
+      authorEmail: "chloe@example.com",
+      status: "approved",
+      comment: "Super clear explanation. Setting up environment filters today.",
+    },
+    {
+      id: "comm-6",
+      article: "loxyv",
+      authorName: "Alex Morgan",
+      authorEmail: "alex@example.com",
+      status: "approved",
+      comment: "Great breakdown of compound daily actions.",
+    },
+    {
+      id: "comm-7",
+      article: "loxyv",
+      authorName: "Liam O'Connor",
+      authorEmail: "liam@example.com",
+      status: "approved",
+      comment: "Very helpful guide from Dr. Tomorrow!",
+    },
+    {
+      id: "comm-8",
+      article: "loxyv",
+      authorName: "Sophia Zhang",
+      authorEmail: "sophia@example.com",
+      status: "approved",
+      comment: "Shared this with my productivity group.",
+    },
+    {
+      id: "comm-9",
+      article: "loxyv",
+      authorName: "Ethan Reed",
+      authorEmail: "ethan@example.com",
+      status: "pending",
+      comment: "Any follow-up webinars on sleep optimization?",
+    },
+    {
+      id: "comm-10",
+      article: "loxyv",
+      authorName: "Olivia Patel",
+      authorEmail: "olivia@example.com",
+      status: "approved",
+      comment: "Loved the seven systems breakdown.",
+    },
+    {
+      id: "comm-11",
+      article: "loxyv",
+      authorName: "Noah Campbell",
+      authorEmail: "noah@example.com",
+      status: "approved",
+      comment: "This 11th comment triggers the load more button in the infinite join list!",
+    },
+    {
+      id: "comm-12",
+      article: "loxyv",
+      authorName: "Emma Watson",
+      authorEmail: "emma@example.com",
+      status: "approved",
+      comment: "12th comment verifying page 2 results.",
+    },
+    {
+      id: "comm-13",
+      article: "loxyv",
+      authorName: "Lucas Grey",
+      authorEmail: "lucas@example.com",
+      status: "approved",
+      comment: "13th comment testing drawer in-place editing.",
+    },
+    {
+      id: "comm-14",
+      article: "why-motivation-keeps-ghosting-you",
+      authorName: "Maya Lin",
+      authorEmail: "maya@example.com",
+      status: "approved",
+      comment: "The 2-minute starter ritual works wonders!",
+    },
+  ],
+  access: {
+    read: publicRead,
+    create: publicRead,
+    update: staffWrite,
+    delete: adminOnly,
+  },
+});
+
 const BlogArticles = defineCollection({
   slug: "blog-articles",
   labels: { singular: "Blog article", plural: "Blog articles" },
@@ -815,31 +944,37 @@ const BlogArticles = defineCollection({
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "date", "category", "readTime"],
   },
-  detail: [
-    displayField("title", { span: 12 }),
-    displayField("slug", { span: 6, display: "copyable" }),
-    displayField("date", { span: 6 }),
-    displayField("category", { span: 6, display: "badge" }),
-    displayField("readTime", { span: 6, display: "badge" }),
-    displayField("excerpt", { span: 12 }),
-    displaySection("Content Body", [displayField("body", { span: 12 })], { span: 12 }),
-  ],
   fields: [
-    { name: "slug", label: "Slug", type: "text", required: true, unique: true },
-    { name: "title", label: "Title", type: "text", required: true },
-    {
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineSelectField({
       name: "category",
       label: "Category",
-      type: "select",
       options: blogContent.categories.filter((category) => category !== "All"),
       required: true,
-    },
-    { name: "readTime", label: "Read time", type: "text", required: true },
-    { name: "date", label: "Display date", type: "text", required: true },
-    { name: "excerpt", label: "Excerpt", type: "textarea", required: true },
+    }),
+    defineTextField({ name: "readTime", label: "Read time", required: true }),
+    defineTextField({ name: "date", label: "Display date", required: true }),
+    defineTextareaField({ name: "excerpt", label: "Excerpt", required: true }),
     { name: "body", label: "Body", type: "richText", required: true },
+    ...defineTab({
+      label: "Comments",
+      fields: [
+        defineJoinField({
+          name: "comments",
+          label: "Reader Comments",
+          collection: "article-comments" as const,
+          on: "article" as const,
+          admin: {
+            layout: "table",
+            columns: ["authorName", "status", "comment"],
+          },
+        }),
+      ],
+    }),
   ],
   initialData: blogContent.articles.map(({ bodyHtml, ...article }) => ({
+    id: article.slug,
     ...article,
     body: richTextFromHtml(bodyHtml),
   })),
@@ -969,14 +1104,71 @@ const assignTableAction = defineAction({
   },
 });
 
-const markPaidAction = defineAction({
-  name: "markPaid",
-  label: "Mark Paid",
+const recordPaymentAction = defineAction({
+  name: "recordPayment",
+  label: "Record Payment",
   icon: "CreditCard",
   type: "row",
-  fields: [defineSelectField({ name: "method", label: "Payment Method", options: ["transfer", "cash", "card"] })],
+  fields: [
+    defineSelectField({
+      name: "asoebiStatus",
+      label: "Payment Status",
+      options: [
+        { label: "Paid in Full", value: "paid" },
+        { label: "Partially Paid", value: "partial" },
+        { label: "Waived / Complimentary", value: "waived" },
+      ],
+      defaultValue: "paid",
+      admin: {
+        hooks: {
+          onChange: ({ value, doc, setValue, siblingData, data }) => {
+            const unitPrice = 25000;
+            const quantity = Number(doc?.asoebiQuantity ?? data?.asoebiQuantity) || 1;
+            const fullTotal = quantity * unitPrice;
+
+            if (value === "paid") {
+              setValue("amountPaid", fullTotal);
+            } else if (value === "waived") {
+              setValue("amountPaid", 0);
+            }
+          },
+        },
+      },
+    }),
+    defineNumberField({
+      name: "amountPaid",
+      label: "Amount Paid (NGN)",
+      required: true,
+      defaultValue: (context: { doc?: Record<string, any>; docs?: Record<string, any>[]; user?: any; siblingData?: any; data?: any }) => {
+        const quantity = Number(context?.doc?.asoebiQuantity ?? context?.data?.asoebiQuantity) || 1;
+        return quantity * 25000;
+      },
+      admin: {
+        condition: "siblingData.asoebiStatus != 'waived'",
+      },
+    }),
+    defineSelectField({
+      name: "paymentMethod",
+      label: "Payment Method",
+      options: [
+        { label: "Bank Transfer", value: "transfer" },
+        { label: "POS / Card", value: "card" },
+        { label: "Cash", value: "cash" },
+      ],
+      defaultValue: "transfer",
+      admin: {
+        condition: "siblingData.asoebiStatus != 'waived'",
+      },
+    }),
+    defineTextField({
+      name: "notes",
+      label: "Payment Notes",
+    }),
+  ],
   mutation: {
-    asoebiStatus: "paid",
+    asoebiStatus: "input.asoebiStatus",
+    asoebiAmountPaid: "input.amountPaid",
+    asoebiPaymentMethod: "input.paymentMethod",
     asoebiPaidAt: "now()",
   },
 });
@@ -1043,16 +1235,58 @@ const GuestResponses = defineCollection({
     defineSelectField({
       name: "asoebiStatus",
       label: "Asoebi Status",
-      options: ["requested", "paid", "collected"],
+      options: [
+        { label: "Requested", value: "requested" },
+        { label: "Paid in Full", value: "paid" },
+        { label: "Partially Paid", value: "partial" },
+        { label: "Waived / Complimentary", value: "waived" },
+        { label: "Collected", value: "collected" },
+      ],
       defaultValue: "requested",
       promoted: true,
+      admin: {
+        hooks: {
+          onChange: ({ value, siblingData, setValue }) => {
+            const quantity = Number(siblingData?.asoebiQuantity) || 1;
+            const fullPrice = quantity * 25000;
+            if (value === "paid" || value === "collected") {
+              setValue("asoebiAmountPaid", fullPrice);
+            } else if (value === "requested" || value === "waived") {
+              setValue("asoebiAmountPaid", 0);
+            }
+          },
+        },
+      },
     }),
     defineSelectField({
       name: "asoebiSize",
       label: "Asoebi Size",
       options: ["S", "M", "L", "XL", "XXL"],
     }),
-    defineNumberField({ name: "asoebiQuantity", label: "Quantity", defaultValue: 1 }),
+    defineNumberField({
+      name: "asoebiQuantity",
+      label: "Quantity",
+      defaultValue: 1,
+      admin: {
+        hooks: {
+          onChange: ({ value, siblingData, setValue }) => {
+            const quantity = Number(value) || 1;
+            const fullPrice = quantity * 25000;
+            const status = siblingData?.asoebiStatus;
+            if (status === "paid" || status === "collected") {
+              setValue("asoebiAmountPaid", fullPrice);
+            }
+          },
+        },
+      },
+    }),
+    defineNumberField({ name: "asoebiAmountPaid", label: "Amount Paid (NGN)", defaultValue: 0, promoted: true }),
+    defineSelectField({
+      name: "asoebiPaymentMethod",
+      label: "Payment Method",
+      options: ["transfer", "card", "cash"],
+    }),
+    defineDateTimeField({ name: "asoebiPaidAt", label: "Paid At" }),
 
     // Appointments & notes
     defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
@@ -1070,7 +1304,14 @@ const GuestResponses = defineCollection({
       filter: { attending: { equals: true } },
       columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
       sort: { field: "name", direction: "asc" },
-      actions: [checkInAction, undoCheckInAction, assignTableAction, markSelectedPaidAction, sendReminderAction],
+      actions: [
+        checkInAction,
+        undoCheckInAction,
+        assignTableAction,
+        recordPaymentAction,
+        markSelectedPaidAction,
+        sendReminderAction,
+      ],
       metrics: [
         {
           label: "Attending Guests",
@@ -1161,10 +1402,12 @@ const GuestResponses = defineCollection({
       label: "Asoebi Fulfillment",
       icon: "Shirt",
       layout: "kanban",
-      filter: { asoebi: { equals: true } },
+      filter: {
+        AND: [{ asoebi: { equals: true } }, { asoebiSize: { in: ["M", "L", "XL", "XXL"] } }],
+      },
       groupBy: "asoebiStatus",
       columns: ["name", "asoebiSize", "asoebiQuantity"],
-      actions: [markPaidAction, markCollectedAction],
+      actions: [recordPaymentAction, markCollectedAction],
       metrics: [
         {
           label: "Total Orders",
@@ -1522,7 +1765,7 @@ export default defineConfig({
     collectionSlug: "__admins",
     providers: [],
   },
-  collections: [Admins, Media, Pages, Services, BlogArticles, GuestResponses],
+  collections: [Admins, Media, Pages, Services, BlogArticles, ArticleComments, GuestResponses],
   globals: [SiteSettings, AssessmentCategories],
   ai: {
     systemPrompt:

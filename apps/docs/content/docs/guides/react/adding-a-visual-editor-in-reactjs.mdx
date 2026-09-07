@@ -77,13 +77,12 @@ For block content, that usually means rendering through `Blocks` and using `useD
 import { useDyPath } from "@dyrected/react";
 
 export function HeroBlock({ heading, subheading }: { heading: string; subheading?: string }) {
-  const dyHeading = useDyPath("heading");
-  const dySubheading = useDyPath("subheading");
+  const dy = useDyPath();
 
   return (
     <section>
-      <h1 {...dyHeading}>{heading}</h1>
-      {subheading ? <p {...dySubheading}>{subheading}</p> : null}
+      <h1 {...dy("heading")}>{heading}</h1>
+      {subheading ? <p {...dy("subheading")}>{subheading}</p> : null}
     </section>
   );
 }

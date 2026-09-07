@@ -1,7 +1,7 @@
 import * as React from "react"
 import type { Table } from "@tanstack/react-table"
 
-import type { CellPosition } from "./data-grid-types"
+import type { CellPosition, DataUpdateEvent } from "./data-grid-types"
 import { isInRect, parseClipboardTSV, selectionRect, serializeToTSV } from "./data-grid-utils"
 
 interface UseDataGridOptions<TData> {
@@ -12,7 +12,7 @@ interface UseDataGridOptions<TData> {
   rowCount: number
   /** Ref to the focusable grid container, owned by the rendering component. */
   containerRef: React.RefObject<HTMLDivElement | null>
-  onDataUpdate?: (event: { rowIndex: number; columnId: string; value: unknown }) => void
+  onDataUpdate?: (event: DataUpdateEvent) => void
 }
 
 const isEditableKey = (event: React.KeyboardEvent) =>

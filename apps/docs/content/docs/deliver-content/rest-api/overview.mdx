@@ -72,6 +72,71 @@ curl -X POST https://example.com/api/collections/orders/aggregate \
 
 Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](/docs/deliver-content/sdk-api/aggregate).
 
+## Media and uploads
+
+Upload-enabled collections expose dedicated routes for file ingestion and atomic in-place replacement:
+
+### Upload a new file
+
+Send a `multipart/form-data` request with the `file` field and optional document fields:
+
+```bash
+curl -X POST https://example.com/api/collections/media/upload \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/hero.jpg" \
+  -F "alt=Hero campaign banner" \
+  -F "folderId=marketing-folder-id"
+```
+
+### Replace an asset in-place
+
+Replace the physical file bytes for an existing asset without changing its document ID or breaking relations:
+
+```bash
+curl -X POST https://example.com/api/collections/media/asset-123/file \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/new-hero.jpg"
+```
+
+Dyrected replaces the stored file in your storage adapter, recalculates dimensions, aspect ratio, and BlurHash, and returns the updated document.
+
+## Media folders
+
+Organize upload collections into nested hierarchical folders:
+
+```bash
+GET /api/collections/:slug/folders
+POST /api/collections/:slug/folders
+PATCH /api/collections/:slug/folders/:id
+DELETE /api/collections/:slug/folders/:id
+```
+
+### Create a folder
+
+```bash
+curl -X POST https://example.com/api/collections/media/folders \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Summer 2026",
+    "parentId": "marketing-folder-id",
+    "color": "#3b82f6"
+  }'
+```
+
+### Batch delete assets
+
+Delete multiple assets in a single atomic request:
+
+```bash
+curl -X DELETE https://example.com/api/collections/media/delete-many \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "ids": ["asset-1", "asset-2", "asset-3"]
+  }'
+```
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.

@@ -57,6 +57,35 @@ const { docs } = await client.collection("posts").find({
 
 Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
 
+## Managing media & folders
+
+Organize upload collections, manipulate folders, and replace asset files in-place:
+
+```ts
+// 1. Create a media folder
+const folder = await client.createFolder("media", {
+  name: "Summer Campaign",
+  color: "#3b82f6",
+});
+
+// 2. List all folders in a collection
+const { docs: folders } = await client.listFolders("media");
+
+// 3. Upload a file directly into a folder
+const asset = await client.collection("media").upload(myFile, {
+  folderId: folder.id,
+  alt: "Summer campaign banner",
+});
+
+// 4. Replace an existing file in-place (keeps the same document ID)
+const updatedAsset = await client.replaceMedia(asset.id, newFile);
+
+// 5. Delete multiple assets in batch
+await client.deleteMany("media", {
+  ids: ["asset-1", "asset-2"],
+});
+```
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
@@ -159,7 +188,12 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
+| <code>listFolders</code> (required) | List all media folders in an upload-enabled collection. |
+| <code>createFolder</code> (optional) | Create a new media folder in an upload-enabled collection. |
+| <code>updateFolder</code> (optional) | Update an existing media folder in an upload-enabled collection. |
+| <code>deleteFolder</code> (required) | Delete a media folder from an upload-enabled collection. |
 | <code>uploadMedia</code> (required) |  |
+| <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
 
 
@@ -174,6 +208,10 @@ export interface DyrectedClientConfig {
   siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
+  /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
   /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
@@ -190,6 +228,7 @@ export interface DyrectedClientConfig {
 | <code>siteId</code> (optional) |  |
 | <code>headers</code> (optional) |  |
 | <code>fetch</code> (optional) |  |
+| <code>onAuthError</code> (optional) | Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint. |
 | <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
 
 
@@ -241,6 +280,37 @@ export type InferSchema<
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
 };
 ```
+
+
+## MediaFolder
+
+Shape of a media folder document in the DAM system.
+
+```ts
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>name</code> (required) |  |
+| <code>slug</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>parentId</code> (required) |  |
+| <code>path</code> (required) |  |
+| <code>color</code> (optional) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM

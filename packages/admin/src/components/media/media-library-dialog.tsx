@@ -23,30 +23,35 @@ import {
   Upload,
   Library,
   Check,
-  Link as LinkIcon,
   Globe,
-  Info,
   Sparkles,
   FileIcon,
+  Copy,
+  Music,
+  FileText,
+  HardDrive,
+  AlertCircle,
   RotateCw,
   X,
-  AlertCircle,
-  HardDrive
+  Link as LinkIcon,
+  Info
 } from "lucide-react"
-import { ScrollArea } from "../ui/scroll-area"
 import { Input } from "../ui/input"
-import { cn, getDisplayFilename } from "../../lib/utils"
+import { cn, getDisplayFilename, getTransformedMediaUrl } from "../../lib/utils"
 import { getMediaPreviewUrl } from "../../lib/external-media"
 import { getMediaSourceInfo, resolveActiveMediaCollection, isStorageNotConfiguredError } from "../../lib/media-utils"
 import { StorageNotConfiguredNotice } from "./storage-notice"
 import { useMediaLibrary } from "../../hooks/use-media-library"
 import { useMediaURL } from "../../hooks/use-media-url"
 import { useMediaUpload } from "../../hooks/use-media-upload"
+import { useMediaFolders } from "../../hooks/use-media-folders"
+import { FolderPillCarousel } from "./folder-pill-carousel"
+import { type MimeFilterType } from "./media-filter-bar"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../ui/progress"
+import { Blurhash } from "react-blurhash"
 import { toast } from "sonner"
 import type { Media } from "@dyrected/sdk"
-
 
 interface MediaLibraryDialogProps {
   collection: string
@@ -57,6 +62,14 @@ interface MediaLibraryDialogProps {
   multiple?: boolean
   onConfirm?: (selectedIds: string[], selectedItems?: Media[]) => void
 }
+
+const MIME_CHIPS: Array<{ key: MimeFilterType; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  { key: "all", label: "All", icon: Library },
+  { key: "image", label: "Images", icon: ImageIcon },
+  { key: "video", label: "Videos", icon: Video },
+  { key: "audio", label: "Audio", icon: Music },
+  { key: "document", label: "Docs", icon: FileText },
+]
 
 export function MediaLibraryDialog({
   collection,
@@ -82,7 +95,17 @@ export function MediaLibraryDialog({
   )
   const [searchQuery, setSearchQuery] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("library")
+  const [mimeFilter, setMimeFilter] = React.useState<MimeFilterType>("all")
   const [selectedItem, setSelectedItem] = React.useState<(Media & { id?: string }) | null>(null)
+
+  const {
+    folders,
+    activeFolderId,
+    setActiveFolderId,
+    createFolder,
+    getBreadcrumbs,
+  } = useMediaFolders(activeMediaCollection)
+
   const getIdentifier = React.useCallback((v: unknown): string => {
     if (!v) return ""
     if (typeof v === "object" && v !== null) {
@@ -96,14 +119,20 @@ export function MediaLibraryDialog({
     return strVal
   }, [])
 
-  const sVals = React.useMemo(() => {
-    return (selectedValues || []).map(getIdentifier).filter(Boolean)
+  const sValsKey = React.useMemo(() => {
+    return (selectedValues || []).map(getIdentifier).filter(Boolean).join(",")
   }, [selectedValues, getIdentifier])
+
+  const sVals = React.useMemo(() => {
+    return sValsKey ? sValsKey.split(",") : []
+  }, [sValsKey])
 
   const {
     items: media,
     load,
     search,
+    setFolder,
+    setMimeFilter: setControllerMimeFilter,
     loadNextPage,
     hasNextPage,
     isLoading: isFetchingMedia,
@@ -115,7 +144,8 @@ export function MediaLibraryDialog({
     clearSelection,
   } = useMediaLibrary({
     collection: activeMediaCollection,
-    initialSelectedIds: sVals,
+    initialFolderId: activeFolderId,
+    initialMimeFilter: mimeFilter,
   })
 
   React.useEffect(() => {
@@ -124,8 +154,19 @@ export function MediaLibraryDialog({
   }, [isOpen, load, search, searchQuery])
 
   React.useEffect(() => {
+    if (!isOpen) return
+    void setFolder(activeFolderId)
+  }, [isOpen, activeFolderId, setFolder])
+
+  React.useEffect(() => {
+    if (!isOpen) return
+    void setControllerMimeFilter(mimeFilter)
+  }, [isOpen, mimeFilter, setControllerMimeFilter])
+
+  React.useEffect(() => {
+    if (!isOpen) return
     setSelectedIds(sVals)
-  }, [sVals, setSelectedIds])
+  }, [isOpen, sValsKey, setSelectedIds, sVals])
 
   const observerRef = React.useRef<IntersectionObserver | null>(null)
 
@@ -151,6 +192,25 @@ export function MediaLibraryDialog({
     [hasNextPage, isFetchingMedia, loadNextPage]
   )
 
+  const uploadConfig = typeof schema?.upload === "object" ? (schema.upload as { mimeTypes?: string[] }) : undefined
+  const allowedMimeTypes = uploadConfig?.mimeTypes
+
+  const dropzoneAccept = React.useMemo(() => {
+    if (allowedMimeTypes && allowedMimeTypes.length > 0) {
+      const acceptMap: Record<string, string[]> = {}
+      for (const mime of allowedMimeTypes) {
+        acceptMap[mime] = []
+      }
+      return acceptMap
+    }
+    return {
+      "image/*": [],
+      "video/*": [],
+      "audio/*": [],
+      "application/pdf": [],
+    }
+  }, [allowedMimeTypes])
+
   const {
     queue,
     uploadFiles,
@@ -158,13 +218,17 @@ export function MediaLibraryDialog({
     removeQueueItem,
     clearQueue,
   } = useMediaUpload({
-
     collectionSlug: activeMediaCollection,
-    onCompletedItem: async (result) => {
+    onCompletedItem: async (_result) => {
       await (searchQuery ? search(searchQuery) : load())
-      onSelect(result.id, result)
-      setSelectedItem(result)
-      toast.success("Media uploaded successfully!")
+    },
+    onAllCompleted: async (results) => {
+      await (searchQuery ? search(searchQuery) : load())
+      if (results.length > 0) {
+        setSelectedItem(results[results.length - 1])
+      }
+      setActiveTab("library")
+      toast.success(`Uploaded ${results.length} asset${results.length > 1 ? "s" : ""} to library! Select any to insert.`)
     },
   })
 
@@ -233,11 +297,7 @@ export function MediaLibraryDialog({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "image/*": [],
-      "video/*": [],
-      "application/pdf": [],
-    },
+    accept: dropzoneAccept,
   })
 
   const {
@@ -256,7 +316,7 @@ export function MediaLibraryDialog({
     onError: () => alert("Failed to add URL. Please make sure it is valid."),
   })
 
-  const getPreviewUrl = (item: { url?: string; mimeType?: string; [key: string]: unknown }) =>
+  const getPreviewUrl = (item: { url?: string; mimeType?: string;[key: string]: unknown }) =>
     getMediaPreviewUrl(item, client?.getBaseUrl() || "")
 
   const handleConfirm = () => {
@@ -268,9 +328,9 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent onPaste={handlePaste} className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[900px]">
+      <DialogContent onPaste={handlePaste} className="dy-h-[94dvh] dy-w-[calc(100vw)] !dy-max-w-[calc(100vw)] sm:dy-w-[96vw] sm:!dy-max-w-[96vw] md:dy-w-[96vw] md:!dy-max-w-[96vw] lg:dy-w-[96vw] lg:!dy-max-w-[1600px] dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl dy-rounded-xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-h-full dy-flex-col">
-          <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
+          <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
             <div className="dy-flex dy-min-w-0 dy-items-center dy-gap-3 sm:dy-gap-4">
               <DialogTitle className="dy-min-w-0 dy-truncate dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight sm:dy-text-xl">{collectionLabel}</DialogTitle>
               {multiple && sVals.length > 0 && (
@@ -306,47 +366,77 @@ export function MediaLibraryDialog({
             </div>
           )}
 
-          <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden">
+          <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden dy-relative">
+            <TabsContent value="library" className="data-[state=active]:dy-flex dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0 dy-overflow-hidden">
+              <div className="dy-flex dy-h-full dy-w-full dy-flex-col lg:dy-flex-row dy-overflow-hidden">
+                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-3 dy-border-b dy-p-3 sm:dy-p-4 lg:dy-border-b-0 lg:dy-border-r dy-border-border dy-overflow-hidden">
+                  {/* Folders Navigation Pill Carousel */}
+                  <FolderPillCarousel
+                    folders={folders}
+                    activeFolderId={activeFolderId}
+                    breadcrumbs={getBreadcrumbs(activeFolderId)}
+                    onSelectFolder={setActiveFolderId}
+                    onCreateFolder={(name, parentId) => createFolder(name, parentId)}
+                  />
 
-            <TabsContent value="library" className="dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0">
-              <div className="dy-flex dy-h-full dy-flex-col md:dy-flex-row">
-                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-4 dy-border-b dy-p-4 md:dy-border-b-0 md:dy-border-r md:dy-p-6">
-                  <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center sm:dy-gap-4">
+                  {/* Search and MIME Chips */}
+                  <div className="dy-flex dy-flex-col dy-gap-2 sm:dy-flex-row sm:dy-items-center">
                     <div className="dy-relative dy-flex-1 dy-group">
-                      <Search className="dy-absolute dy-left-3.5 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground dy-group-focus-within:dy-text-primary dy-transition-colors" />
+                      <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground dy-group-focus-within:dy-text-primary dy-transition-colors" />
                       <Input
-                        placeholder="Search your media library..."
-                        className="dy-pl-11 dy-h-11 dy-rounded-lg dy-border-muted dy-bg-muted/10 focus:dy-bg-background dy-transition-all"
+                        placeholder="Search assets..."
+                        className="dy-pl-9 dy-h-9 dy-text-xs dy-rounded-lg dy-border-muted dy-bg-muted/10 focus:dy-bg-background dy-transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    <span className="dy-hidden md:dy-inline-flex dy-items-center dy-gap-1.5 dy-text-[11px] dy-text-muted-foreground/70 dy-font-medium dy-px-3 dy-py-2 dy-bg-muted/40 dy-rounded-lg dy-border dy-border-border/30 dy-flex-shrink-0">
-                      <kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-background dy-px-1.5 dy-py-0.5 dy-rounded dy-shadow-xs">⌘V</kbd>
-                      <span>Paste image to upload</span>
-                    </span>
+
+                    {/* MIME Filter Chips */}
+                    <div className="dy-flex dy-items-center dy-gap-1 dy-overflow-x-auto dy-pb-1 sm:dy-pb-0">
+                      {MIME_CHIPS.map((chip) => {
+                        const Icon = chip.icon
+                        const isActive = mimeFilter === chip.key
+                        return (
+                          <button
+                            key={chip.key}
+                            type="button"
+                            onClick={() => setMimeFilter(chip.key)}
+                            className={cn(
+                              "dy-flex dy-items-center dy-gap-1 dy-px-2.5 dy-py-1 dy-rounded-full dy-text-[11px] dy-font-medium dy-transition-all dy-shrink-0",
+                              isActive
+                                ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+                                : "dy-bg-muted/40 dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground"
+                            )}
+                          >
+                            <Icon className="dy-h-3 dy-w-3" />
+                            <span>{chip.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+
                     {multiple && (
-                      <div className="dy-grid dy-grid-cols-2 dy-items-center dy-gap-1 dy-rounded-lg dy-bg-muted/30 dy-p-1 sm:dy-flex">
+                      <div className="dy-flex dy-items-center dy-gap-1 dy-rounded-lg dy-bg-muted/30 dy-p-0.5 sm:dy-ml-auto">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
+                          className="dy-h-7 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-2 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
-                              media?.forEach((item: LooseMediaRecord) => {
-                                if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
-                                  select(item.id!)
-                                  onSelect(item.id!, item as unknown as Media)
-                                }
-                              })
+                            media?.forEach((item: LooseMediaRecord) => {
+                              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
+                                select(item.id!)
+                                onSelect(item.id!, item as unknown as Media)
+                              }
+                            })
                           }}
                         >
-                          Select All
+                          All
                         </Button>
-                        <div className="dy-hidden dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1 sm:dy-block" />
+                        <div className="dy-w-px dy-h-3 dy-bg-border/50" />
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
+                          className="dy-h-7 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-2 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
                           onClick={() => {
                             clearSelection()
                             sVals.forEach(val => {
@@ -360,10 +450,12 @@ export function MediaLibraryDialog({
                       </div>
                     )}
                   </div>
-                  <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-2 dy-px-2">
-                    <div className="dy-grid dy-grid-cols-[repeat(auto-fill,minmax(140px,1fr))] dy-gap-3 dy-pb-4 lg:dy-gap-4">
+
+                  <div className="dy-min-h-0 dy-max-h-[60vh] lg:dy-max-h-[68vh] dy-flex-1 dy-overflow-y-auto dy-overscroll-contain dy--mx-1 dy-px-1">
+                    <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 xl:dy-grid-cols-6 2xl:dy-grid-cols-7">
                       {media?.map((item: LooseMediaRecord) => {
                         const sourceInfo = getMediaSourceInfo(item)
+                        const previewUrl = getPreviewUrl(item)
                         return (
                           <button
                             key={item.id}
@@ -393,17 +485,37 @@ export function MediaLibraryDialog({
                                 : "dy-border-border/40 hover:dy-border-border"
                             )}
                           >
+                            {item.blurhash ? (
+                              <div className="dy-absolute dy-inset-0 dy-z-0">
+                                <Blurhash
+                                  hash={item.blurhash as string}
+                                  width="100%"
+                                  height="100%"
+                                  resolutionX={32}
+                                  resolutionY={32}
+                                  punch={1}
+                                />
+                              </div>
+                            ) : null}
                             <img
-                              src={getPreviewUrl(item)}
+                              src={previewUrl}
                               alt={String(item.filename ?? "")}
-                              className="dy-object-cover dy-w-full dy-h-full"
+                              style={
+                                item.focalPoint && typeof item.focalPoint.x === "number" && typeof item.focalPoint.y === "number"
+                                  ? {
+                                      objectPosition: `${item.focalPoint.x <= 1 ? item.focalPoint.x * 100 : item.focalPoint.x}% ${item.focalPoint.y <= 1 ? item.focalPoint.y * 100 : item.focalPoint.y}%`,
+                                    }
+                                  : undefined
+                              }
+                              className="dy-object-cover dy-w-full dy-h-full dy-relative dy-z-10"
+                              loading="lazy"
                             />
                             {/* External vs Storage Source Badge */}
-                            <div className="dy-absolute dy-top-2 dy-left-2 dy-z-10">
+                            <div className="dy-absolute dy-top-1.5 dy-left-1.5 dy-z-20">
                               {sourceInfo.source === "external" ? (
-                                <span className="dy-inline-flex dy-items-center dy-gap-1 dy-px-2 dy-py-0.5 dy-rounded-md dy-bg-sky-950/80 dy-backdrop-blur-md dy-text-sky-300 dy-text-[9px] dy-font-black dy-uppercase dy-tracking-wider dy-border dy-border-sky-400/30 dy-shadow-md">
+                                <span className="dy-inline-flex dy-items-center dy-gap-1 dy-px-1.5 dy-py-0.5 dy-rounded-md dy-bg-sky-950/80 dy-backdrop-blur-md dy-text-sky-300 dy-text-[8px] dy-font-black dy-uppercase dy-tracking-wider dy-border dy-border-sky-400/30 dy-shadow-md">
                                   <Globe className="dy-h-2.5 dy-w-2.5" />
-                                  {sourceInfo.type === "youtube" ? "YOUTUBE" : sourceInfo.type === "vimeo" ? "VIMEO" : "EXTERNAL"}
+                                  {sourceInfo.type === "youtube" ? "YT" : sourceInfo.type === "vimeo" ? "VIM" : "EXT"}
                                 </span>
                               ) : (
                                 <span className="dy-inline-flex dy-items-center dy-gap-1 dy-px-1.5 dy-py-0.5 dy-rounded-md dy-bg-black/60 dy-backdrop-blur-md dy-text-white/90 dy-text-[8px] dy-font-bold dy-uppercase dy-tracking-wider dy-border dy-border-white/20">
@@ -413,19 +525,19 @@ export function MediaLibraryDialog({
                             </div>
 
                             {sVals.some(v => v === item.id || v === item.filename || v === item.url) && (
-                              <div className="dy-absolute dy-top-2.5 dy-right-2.5 dy-z-20 dy-h-7 dy-w-7 dy-bg-primary dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-white dy-shadow-xl dy-animate-in dy-zoom-in dy-border-2 dy-border-white">
-                                <Check className="dy-h-4 dy-w-4" />
+                              <div className="dy-absolute dy-top-2 dy-right-2 dy-z-30 dy-h-6 dy-w-6 dy-bg-primary dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-white dy-shadow-xl dy-animate-in dy-zoom-in dy-border-2 dy-border-white">
+                                <Check className="dy-h-3.5 dy-w-3.5" />
                               </div>
                             )}
                             {(typeof item.mimeType === 'string' && item.mimeType.startsWith('video/') || item.mimeType === 'video/youtube' || item.mimeType === 'video/vimeo' || item.mimeType === 'video/external') && (
-                              <div className="dy-absolute dy-inset-0 dy-flex dy-items-center dy-justify-center dy-bg-black/20 dy-group-hover:dy-bg-black/40 dy-transition-colors">
-                                <div className="dy-h-10 dy-w-10 dy-bg-background/20 dy-backdrop-blur-md dy-rounded-full dy-flex dy-items-center dy-justify-center dy-border dy-border-white/30 dy-shadow-2xl">
-                                  <Video className="dy-h-5 dy-w-5 dy-text-white" />
+                              <div className="dy-absolute dy-inset-0 dy-z-20 dy-flex dy-items-center dy-justify-center dy-bg-black/20 dy-group-hover:dy-bg-black/40 dy-transition-colors">
+                                <div className="dy-h-9 dy-w-9 dy-bg-background/30 dy-backdrop-blur-md dy-rounded-full dy-flex dy-items-center dy-justify-center dy-border dy-border-white/30 dy-shadow-2xl">
+                                  <Video className="dy-h-4 dy-w-4 dy-text-white" />
                                 </div>
                               </div>
                             )}
-                            <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2.5 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
-                              <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{getDisplayFilename(String(item.filename ?? ""))}</p>
+                            <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-z-20 dy-p-2 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
+                              <p className="dy-text-[9px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{getDisplayFilename(String(item.filename ?? ""))}</p>
                             </div>
                           </button>
                         )
@@ -443,43 +555,87 @@ export function MediaLibraryDialog({
                           </div>
                         </div>
                       )}
-                      {/* Sentinel for infinite scroll */}
-                      <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
-                        {isFetchingMedia && (
-                          <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
+                      {/* Pagination & Load More */}
+                      <div className="dy-w-full dy-col-span-full dy-flex dy-flex-col dy-items-center dy-justify-center dy-py-6 dy-gap-2">
+                        {hasNextPage && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="dy-rounded-full dy-px-6 dy-h-9 dy-text-xs dy-font-bold dy-shadow-xs hover:dy-bg-muted dy-border-border"
+                            onClick={() => void loadNextPage()}
+                            disabled={isFetchingMedia}
+                          >
+                            {isFetchingMedia ? (
+                              <span className="dy-flex dy-items-center dy-gap-2">
+                                <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-3.5 dy-w-3.5"></div>
+                                Loading more...
+                              </span>
+                            ) : (
+                              "Load more"
+                            )}
+                          </Button>
                         )}
+                        {!hasNextPage && (media?.length ?? 0) > 0 && !isFetchingMedia && (
+                          <p className="dy-text-[11px] dy-font-medium dy-text-muted-foreground/50">
+                            Showing all {media?.length} {media?.length === 1 ? 'asset' : 'assets'}
+                          </p>
+                        )}
+                        <div ref={sentinelRef} className="dy-h-1 dy-w-full" />
                       </div>
                     </div>
-                  </ScrollArea>
+                  </div>
+
+                  {/* Mobile / Tablet Sticky Selection Footer */}
+                  {multiple && sVals.length > 0 && (
+                    <div className="lg:dy-hidden dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-background/95 dy-backdrop-blur-md dy-border dy-border-border dy-rounded-xl dy-shadow-xl dy-sticky dy-bottom-2 dy-z-30">
+                      <span className="dy-text-xs dy-font-bold dy-text-foreground">{sVals.length} {sVals.length === 1 ? 'asset' : 'assets'} selected</span>
+                      <Button size="sm" className="dy-h-8 dy-font-bold dy-text-xs dy-bg-primary" onClick={handleConfirm}>
+                        Confirm {sVals.length} {sVals.length === 1 ? 'Asset' : 'Assets'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                <div className="dy-flex dy-max-h-[42dvh] dy-w-full dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 md:dy-h-full md:dy-max-h-none md:dy-w-80 md:dy-gap-6 md:dy-border-l md:dy-p-6">
+                {/* Right Inspector Column - Visible on lg screens */}
+                <div className="dy-hidden lg:dy-flex lg:dy-w-80 xl:dy-w-96 dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 xl:dy-p-5 lg:dy-border-l">
                   {selectedItem ? (
                     <>
-                      <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-4 md:dy-block md:dy-space-y-5">
-                        <div className="dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border dy-bg-background dy-shadow-xl dy-group dy-relative dy-ring-1 dy-ring-border/50 md:dy-rounded-3xl md:dy-shadow-2xl">
-                          <img
-                            src={getPreviewUrl(selectedItem)}
-                            className="dy-w-full dy-h-full dy-object-contain dy-p-2"
-                            alt=""
-                          />
-                          <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity dy-flex dy-items-center dy-justify-center dy-backdrop-blur-sm">
-                            <Button variant="secondary" size="sm" className="dy-rounded-full dy-shadow-lg dy-font-bold" onClick={() => window.open(getPreviewUrl(selectedItem), '_blank')}>
-                              View Full
-                            </Button>
-                          </div>
+                      <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-3 lg:dy-block lg:dy-space-y-4">
+                        <div className="dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border dy-bg-background dy-shadow-md dy-group dy-relative dy-ring-1 dy-ring-border/50">
+                          {getPreviewUrl(selectedItem) ? (
+                            <img
+                              src={getPreviewUrl(selectedItem)}
+                              className="dy-w-full dy-h-full dy-object-contain dy-p-1"
+                              alt=""
+                            />
+                          ) : (
+                            <div className="dy-w-full dy-h-full dy-flex dy-items-center dy-justify-center dy-bg-muted/20">
+                              <ImageIcon className="dy-h-8 dy-w-8 dy-text-muted-foreground/30" />
+                            </div>
+                          )}
+                          {/* Focal Point Indicator */}
+                          {selectedItem.focalPoint && (
+                            <div
+                              className="dy-absolute dy-w-3 dy-h-3 dy-rounded-full dy-border-2 dy-border-white dy-bg-primary dy-shadow-sm dy-pointer-events-none"
+                              style={{
+                                left: `${(selectedItem.focalPoint as { x: number; y: number }).x * 100}%`,
+                                top: `${(selectedItem.focalPoint as { x: number; y: number }).y * 100}%`,
+                                transform: "translate(-50%, -50%)",
+                              }}
+                            />
+                          )}
                         </div>
-                        <div className="dy-space-y-2">
-                          <h4 className="dy-font-bold dy-text-sm dy-truncate dy-leading-tight" title={selectedItem.filename}>
+                        <div className="dy-space-y-1.5">
+                          <h4 className="dy-font-bold dy-text-xs dy-truncate dy-leading-tight" title={selectedItem.filename}>
                             {getDisplayFilename(selectedItem.filename)}
                           </h4>
-                          <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
-                            {/* Source Badge */}
+                          <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-1.5">
                             {(() => {
                               const sInfo = getMediaSourceInfo(selectedItem)
                               return (
                                 <span className={cn(
-                                  "dy-text-[9px] dy-font-black dy-uppercase dy-tracking-widest dy-px-2 dy-py-1 dy-rounded-md dy-border",
+                                  "dy-text-[9px] dy-font-black dy-uppercase dy-tracking-widest dy-px-1.5 dy-py-0.5 dy-rounded-md dy-border",
                                   sInfo.source === "external"
                                     ? "dy-bg-sky-500/10 dy-text-sky-600 dy-border-sky-500/20"
                                     : "dy-bg-primary/10 dy-text-primary dy-border-primary/10"
@@ -488,46 +644,103 @@ export function MediaLibraryDialog({
                                 </span>
                               )
                             })()}
-                            <span className="dy-text-[10px] dy-font-bold dy-text-muted-foreground/60">
-                              {selectedItem.filesize ? `${(selectedItem.filesize / 1024).toFixed(1)} KB` : 'External Asset'}
+                            <span className="dy-text-[10px] dy-font-medium dy-text-muted-foreground">
+                              {selectedItem.filesize ? `${(selectedItem.filesize / 1024).toFixed(1)} KB` : 'External'}
                             </span>
+                            {selectedItem.width && selectedItem.height && (
+                              <span className="dy-text-[10px] dy-font-mono dy-text-muted-foreground">
+                                {selectedItem.width}×{selectedItem.height}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="dy-space-y-3 dy-border-t dy-border-muted/20 dy-pt-4 md:dy-pt-6">
+                      {/* Quick Transform Copy Actions */}
+                      {client && selectedItem.filename && (
+                        <div className="dy-space-y-1.5 dy-border-t dy-border-muted/20 dy-pt-3">
+                          <span className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/70">Transform URLs</span>
+                          <div className="dy-grid dy-grid-cols-3 dy-gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="dy-h-7 dy-px-1 dy-text-[10px]"
+                              onClick={() => {
+                                const url = getTransformedMediaUrl(selectedItem, { key: "thumbnail" }, client.getBaseUrl())
+                                navigator.clipboard.writeText(url)
+                                toast.success("Thumbnail URL copied!")
+                              }}
+                            >
+                              <Copy className="dy-h-2.5 dy-w-2.5 dy-mr-1" /> Thumb
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="dy-h-7 dy-px-1 dy-text-[10px]"
+                              onClick={() => {
+                                const url = getTransformedMediaUrl(selectedItem, { key: "banner" }, client.getBaseUrl())
+                                navigator.clipboard.writeText(url)
+                                toast.success("Banner URL copied!")
+                              }}
+                            >
+                              <Copy className="dy-h-2.5 dy-w-2.5 dy-mr-1" /> Banner
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="dy-h-7 dy-px-1 dy-text-[10px]"
+                              onClick={() => {
+                                const url = getTransformedMediaUrl(selectedItem, { format: "webp" }, client.getBaseUrl())
+                                navigator.clipboard.writeText(url)
+                                toast.success("WebP URL copied!")
+                              }}
+                            >
+                              <Copy className="dy-h-2.5 dy-w-2.5 dy-mr-1" /> WebP
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="dy-space-y-2.5 dy-border-t dy-border-muted/20 dy-pt-3 lg:dy-pt-4">
                         {multiple ? (
                           <>
                             <Button
-                              className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
+                              className="dy-w-full dy-h-10 dy-rounded-lg dy-shadow-xs dy-font-bold dy-text-xs dy-tracking-tight dy-transition-all"
                               variant={sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "outline" : "default"}
                               onClick={() => {
-                                if (sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url)) {
-                                  deselect(selectedItem.id!)
-                                } else {
-                                  select(selectedItem.id!)
+                                if (selectedItem.id) {
+                                  if (sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url)) {
+                                    deselect(selectedItem.id)
+                                  } else {
+                                    select(selectedItem.id)
+                                  }
+                                  onSelect(selectedItem.id, selectedItem)
                                 }
-                                onSelect(selectedItem.id, selectedItem)
                               }}
                             >
                               {sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "Deselect Item" : "Add to Selection"}
                             </Button>
                             {sVals.length > 0 && (
                               <Button
-                                className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-xl dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-tracking-tight dy-transition-all dy-group"
+                                className="dy-w-full dy-h-10 dy-rounded-lg dy-shadow-lg dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-text-xs dy-tracking-tight dy-transition-all dy-group"
                                 onClick={handleConfirm}
                               >
                                 <span>Confirm {sVals.length} {sVals.length === 1 ? 'Asset' : 'Assets'}</span>
-                                <Sparkles className="dy-ml-2 dy-h-4 dy-w-4 dy-opacity-50 dy-group-hover:dy-opacity-100 dy-group-hover:dy-scale-110 dy-transition-all" />
+                                <Sparkles className="dy-ml-1.5 dy-h-3.5 dy-w-3.5 dy-opacity-50 dy-group-hover:dy-opacity-100 dy-group-hover:dy-scale-110 dy-transition-all" />
                               </Button>
                             )}
                           </>
                         ) : (
                           <Button
-                            className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-lg dy-font-bold dy-tracking-tight dy-bg-primary hover:dy-bg-primary/90 dy-transition-all"
+                            className="dy-w-full dy-h-10 dy-rounded-lg dy-shadow-md dy-font-bold dy-text-xs dy-tracking-tight dy-bg-primary hover:dy-bg-primary/90 dy-transition-all"
                             onClick={() => {
-                              onSelect(selectedItem.id, selectedItem)
-                              onOpenChange(false)
+                              if (selectedItem.id) {
+                                onSelect(selectedItem.id, selectedItem)
+                                onOpenChange(false)
+                              }
                             }}
                           >
                             Select Media
@@ -536,13 +749,13 @@ export function MediaLibraryDialog({
                       </div>
                     </>
                   ) : (
-                    <div className="dy-flex-1 dy-flex dy-flex-col dy-items-center dy-justify-center dy-text-center dy-space-y-5 dy-text-muted-foreground/30">
-                      <div className="dy-p-6 dy-bg-muted/10 dy-rounded-full dy-border dy-border-muted/20 dy-shadow-inner">
-                        <ImageIcon className="dy-h-10 dy-w-10" />
+                    <div className="dy-flex-1 dy-flex dy-flex-col dy-items-center dy-justify-center dy-text-center dy-space-y-3 dy-text-muted-foreground/30">
+                      <div className="dy-p-4 dy-bg-muted/10 dy-rounded-full dy-border dy-border-muted/20">
+                        <ImageIcon className="dy-h-7 dy-w-7" />
                       </div>
-                      <div className="dy-space-y-1">
+                      <div className="dy-space-y-0.5">
                         <p className="dy-text-xs dy-font-bold dy-uppercase dy-tracking-widest">No Selection</p>
-                        <p className="dy-text-[10px] dy-font-medium dy-max-w-[150px] dy-leading-relaxed">Select an item from the library to view details and metadata</p>
+                        <p className="dy-text-[10px] dy-font-medium dy-max-w-[140px] dy-leading-relaxed">Select an item from the library to view details and metadata</p>
                       </div>
                     </div>
                   )}
@@ -550,8 +763,8 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="upload" className="dy-h-full dy-m-0 dy-p-4 focus-visible:dy-ring-0 sm:dy-p-6 dy-overflow-y-auto">
-              <div className="dy-max-w-2xl dy-mx-auto dy-space-y-6">
+            <TabsContent value="upload" className="data-[state=active]:dy-flex data-[state=active]:dy-flex-col dy-h-full dy-m-0 dy-p-4 focus-visible:dy-ring-0 sm:dy-p-6 dy-overflow-y-auto dy-overscroll-contain">
+              <div className="dy-max-w-2xl dy-w-full dy-mx-auto dy-space-y-6 dy-pb-16">
                 {/* Drag & Drop Zone */}
                 <div
                   {...getRootProps()}
@@ -571,7 +784,11 @@ export function MediaLibraryDialog({
                     <p className="dy-text-xs dy-text-muted-foreground/70 dy-font-medium sm:dy-text-sm">
                       Drag & drop files here, browse, or <span className="dy-text-foreground dy-font-semibold">paste from clipboard (<kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-muted/60 dy-px-1 dy-py-0.5 dy-rounded">⌘V</kbd> / <kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-muted/60 dy-px-1 dy-py-0.5 dy-rounded">Ctrl+V</kbd>)</span>
                     </p>
-                    <p className="dy-text-[10px] dy-text-muted-foreground/50">Supports JPEG, PNG, WebP, GIF, MP4, WebM, PDF. Images are automatically compressed.</p>
+                    <p className="dy-text-[10px] dy-text-muted-foreground/50">
+                      {allowedMimeTypes && allowedMimeTypes.length > 0
+                        ? `Allowed types: ${allowedMimeTypes.join(", ")}. Images are automatically compressed.`
+                        : "Supports JPEG, PNG, WebP, GIF, MP4, WebM, PDF. Images are automatically compressed."}
+                    </p>
                   </div>
                   <Button variant="secondary" size="sm" className="dy-mt-4 dy-rounded-full dy-px-6 dy-font-bold dy-pointer-events-none">
                     Choose Files
@@ -675,8 +892,8 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="external" className="dy-h-full dy-m-0 dy-overflow-y-auto dy-p-4 focus-visible:dy-ring-0 sm:dy-p-12">
-              <div className="dy-mx-auto dy-max-w-2xl dy-space-y-6 dy-pt-2 sm:dy-space-y-10 sm:dy-pt-4">
+            <TabsContent value="external" className="data-[state=active]:dy-flex data-[state=active]:dy-flex-col dy-h-full dy-m-0 dy-overflow-y-auto dy-overscroll-contain dy-p-4 focus-visible:dy-ring-0 sm:dy-p-12">
+              <div className="dy-mx-auto dy-max-w-2xl dy-w-full dy-space-y-6 dy-pt-2 sm:dy-space-y-10 sm:dy-pt-4 dy-pb-16">
                 <div className="dy-text-center dy-space-y-3 sm:dy-space-y-4">
                   <div className="dy-h-16 dy-w-16 dy-bg-primary/10 dy-text-primary dy-rounded-lg dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4 dy-shadow-sm dy-rotate-3 sm:dy-h-20 sm:dy-w-20 sm:dy-rounded-3xl sm:dy-mb-6">
                     <Globe className="dy-h-8 dy-w-8 sm:dy-h-10 sm:dy-w-10" />

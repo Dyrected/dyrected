@@ -45,13 +45,57 @@ Keep `renameTo` until you've confirmed every production document has been writte
 
 ## Defaults and backfilling
 
-`defaultValue` fills in a value when a document doesn't have one, which makes it the natural partner to a rename and a safe way to introduce a new required field:
+`defaultValue` ensures documents always have a value when a field is omitted. When creating new documents via the SDK, API, or admin forms, Dyrected applies the `defaultValue` automatically before writing to the database:
 
 ```ts
-defineSelectField({ name: 'status', label: 'Status', options: ['draft', 'published'], defaultValue: 'draft' })
+defineSelectField({
+  name: 'status',
+  label: 'Status',
+  options: ['pending', 'active', 'archived'],
+  defaultValue: 'pending',
+})
 ```
 
-Some field types also fall back to a sensible empty value when nothing is set — booleans default to `false` and array fields default to an empty list — so existing documents read predictably even before they're rewritten.
+Some field types also fall back to sensible empty defaults when omitted — booleans default to `false` and array fields default to an empty list.
+
+### Backfilling defaults on existing collections
+
+When you add a new `defaultValue` to an existing collection that already contains historical records, a subtle schema/data drift occurs:
+
+1. **In-memory reads** surface the default value when loading documents.
+2. **Database grouping and filtering** (such as operational view Kanban columns, grouped tables, or raw SQL queries) query the physical database directly, where historical rows still store `NULL`. Consequently, historical records may appear in an "Unassigned" bucket rather than their expected default status column.
+
+To align historical records with your new default, run a one-time backfill migration:
+
+```ts
+// scripts/backfill-status-defaults.ts
+import { client } from "../server/db";
+
+async function main() {
+  const { docs } = await client.collection("orders").find({
+    where: { status: { equals: null } },
+    limit: 1000,
+  });
+
+  for (const doc of docs) {
+    await client.collection("orders").update(doc.id, {
+      status: "pending",
+    });
+  }
+  console.log(`Backfilled status default on ${docs.length} orders.`);
+}
+
+main();
+```
+
+Or execute a direct SQL query against your database adapter:
+
+```sql
+-- PostgreSQL
+UPDATE collection_orders
+SET data = jsonb_set(data, '{status}', '"pending"')
+WHERE data->>'status' IS NULL;
+```
 
 ## Promoting a field on an existing collection
 

@@ -68,6 +68,39 @@ The registry key is the slot-key name you declared (`"posts-header"`), not the c
   declared the same way on its `admin.components`.
 </Callout>
 
+## View-specific component slots (`defineView`)
+
+If a collection has multiple operational views (such as a Kanban pipeline, a Calendar schedule, and a standard Table), you might only want a custom widget on a **single view** rather than all of them.
+
+You can declare component slots directly inside [`defineView`](/docs/model-content/operational-views/define-view):
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const kanbanPipeline = defineView({
+  slug: "pipeline",
+  label: "Pipeline",
+  layout: "kanban",
+  groupBy: "status",
+  components: {
+    beforeViewHeader: ["kanban-legend"],
+    afterViewHeader: ["pipeline-kpi-summary"],
+    beforeViewContent: ["kanban-filter-banner"],
+    afterViewContent: ["kanban-footer-stats"],
+  },
+});
+```
+
+When both collection-wide slots (`collection.admin.components`) and view-specific slots (`view.components`) are defined, Dyrected cleanly merges them in hierarchical order (collection banners render first, followed by view-specific widgets). Register the components under `components.collectionView` or `components.collectionList` in `<DyrectedAdmin />`.
+
+### Collection-wide vs. View-specific slots
+
+| Scope | Where to declare | Use case |
+| --- | --- | --- |
+| **Collection-wide** | `collection.admin.components` | Notices, banners, or actions that should appear across **all views** in this collection (e.g. an "Archived collection" banner). |
+| **View-specific** | `defineView({ components: { ... } })` | Widgets that **only make sense for a single view layout** (e.g. a Kanban legend, a Calendar date switcher). |
+
+
 ## What your component receives
 
 List slot components get everything about the current list — the data, its loading and pagination state, the user's permissions, and links — so they can render summaries, actions, or context without re-fetching:

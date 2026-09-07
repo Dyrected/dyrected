@@ -493,6 +493,11 @@ export function registerJexlHelpers(jexlInstance: typeof jexl = jexl) {
   try {
     jexlInstance.addBinaryOp("and", 20, (left: any, right: any) => Boolean(left && right));
     jexlInstance.addBinaryOp("or", 10, (left: any, right: any) => Boolean(left || right));
+    jexlInstance.addBinaryOp("in", 30, (left: any, right: any) => {
+      if (Array.isArray(right)) return right.includes(left);
+      if (typeof right === "string") return right.includes(String(left ?? ""));
+      return false;
+    });
   } catch {
     // Ignore if already registered
   }

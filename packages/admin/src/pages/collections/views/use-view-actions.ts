@@ -12,6 +12,7 @@ export interface PendingAction {
   actionName: string
   label: string
   confirm?: string
+  submitLabel?: string
   fields?: any[]
   /** Document ids the action targets. */
   ids: string[]
@@ -26,6 +27,7 @@ interface ActionLike {
   name: string
   label: string
   confirm?: string
+  submitLabel?: string
   fields?: any[]
 }
 
@@ -85,6 +87,7 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
         actionName: action.name,
         label: action.label,
         confirm: action.confirm,
+        submitLabel: action.submitLabel,
         fields: action.fields,
         ids,
         doc: targetContext?.doc,

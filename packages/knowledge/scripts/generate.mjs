@@ -74,6 +74,8 @@ const recipeDocsPathMap = {
   "operational-metrics": "/docs/examples-and-recipes/library/operational-metrics",
   "chat-to-order-proposal": "/docs/examples-and-recipes/library/chat-to-order-proposal",
   "custom-ai-tools": "/docs/examples-and-recipes/library/custom-ai-tools",
+  "computed-fields-and-totals": "/docs/examples-and-recipes/library/computed-fields-and-totals",
+  "declarative-reactive-hooks": "/docs/examples-and-recipes/library/declarative-reactive-hooks",
 };
 
 function fail(message) {

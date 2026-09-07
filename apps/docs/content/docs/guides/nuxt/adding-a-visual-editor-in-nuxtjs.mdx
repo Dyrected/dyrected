@@ -99,14 +99,13 @@ For block content, that usually means rendering through `<DyrectedBlocks>` and u
 <script setup lang="ts">
 defineProps<{ heading: string; subheading?: string }>();
 
-const dyHeading = useDyPath("heading");
-const dySubheading = useDyPath("subheading");
+const dy = useDyPath();
 </script>
 
 <template>
   <section>
-    <h1 v-bind="dyHeading">{{ heading }}</h1>
-    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <h1 v-bind="dy('heading')">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dy('subheading')">{{ subheading }}</p>
   </section>
 </template>
 ```

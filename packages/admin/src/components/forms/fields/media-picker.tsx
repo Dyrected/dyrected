@@ -413,21 +413,16 @@ export function MediaPicker({
           {selectedValues.map((val, index) => {
             const valId = getIdentifier(val)
             const item = localMediaCache.find((m: any) => m.id === valId || m.filename === valId || m.url === valId)
+            const preview = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
             return (
               <div key={valId} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
                 <div className={cn(
                   "dy-relative dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border-2 dy-bg-muted/20 dy-transition-all dy-shadow-sm",
                   index === 0 ? "dy-border-primary dy-ring-4 dy-ring-primary/10" : "dy-border-border/40 hover:dy-border-border/80"
                 )}>
-                  {item ? (
+                  {preview ? (
                     <img
-                      src={getPreviewUrl(item)}
-                      alt=""
-                      className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
-                    />
-                  ) : val ? (
-                    <img
-                      src={getMediaUrl(val, client?.getBaseUrl() || "")}
+                      src={preview}
                       alt=""
                       className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
                     />
@@ -441,6 +436,17 @@ export function MediaPicker({
                     <div className="dy-absolute dy-top-0 dy-left-0 dy-w-full dy-text-center dy-z-10 dy-px-3 dy-py-1 dy-bg-primary dy-text-white dy-text-[9px] dy-font-black dy-uppercase dy-tracking-widest dy-shadow-primary/20">
                       Main Image
                     </div>
+                  )}
+
+                  {item?.focalPoint && (
+                    <div
+                      className="dy-absolute dy-w-2.5 dy-h-2.5 dy-rounded-full dy-border-2 dy-border-white dy-bg-primary dy-shadow-sm dy-pointer-events-none dy-z-10"
+                      style={{
+                        left: `${(item.focalPoint as { x: number; y: number }).x * 100}%`,
+                        top: `${(item.focalPoint as { x: number; y: number }).y * 100}%`,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    />
                   )}
 
                   <div className="dy-absolute dy-inset-0 dy-flex dy-items-start dy-justify-end dy-gap-1 dy-bg-black/25 dy-p-1.5 dy-opacity-100 dy-transition-all sm:dy-bg-black/40 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 sm:dy-backdrop-blur-[2px]">
@@ -583,6 +589,17 @@ export function MediaPicker({
                         </div>
                       )}
                     </button>
+
+                    {item?.focalPoint && (
+                      <div
+                        className="dy-absolute dy-w-2.5 dy-h-2.5 dy-rounded-full dy-border-2 dy-border-white dy-bg-primary dy-shadow-sm dy-pointer-events-none dy-z-10"
+                        style={{
+                          left: `${(item.focalPoint as { x: number; y: number }).x * 100}%`,
+                          top: `${(item.focalPoint as { x: number; y: number }).y * 100}%`,
+                          transform: "translate(-50%, -50%)",
+                        }}
+                      />
+                    )}
 
                     {!disabled && (
                       <div className="dy-pointer-events-none dy-absolute dy-inset-0 dy-flex dy-items-start dy-justify-end dy-gap-1 dy-bg-black/25 dy-p-1.5 dy-opacity-100 dy-transition-all sm:dy-bg-black/40 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 sm:dy-backdrop-blur-[2px]">

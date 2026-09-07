@@ -121,4 +121,70 @@ describe('DyrectedClient', () => {
     });
     expect(result).toEqual(expectedResponse);
   });
+
+  it('invokes onAuthError and dispatches dyrected:auth-unauthorized event on 401 response', async () => {
+    const onAuthError = vi.fn();
+    const eventHandler = vi.fn();
+    const listeners: Record<string, ((e: any) => void)[]> = {};
+    const originalWindow = (globalThis as any).window;
+
+    (globalThis as any).window = {
+      addEventListener: (type: string, cb: any) => {
+        listeners[type] = listeners[type] || [];
+        listeners[type].push(cb);
+      },
+      removeEventListener: (type: string, cb: any) => {
+        listeners[type] = (listeners[type] || []).filter((fn) => fn !== cb);
+      },
+      dispatchEvent: (evt: any) => {
+        listeners[evt.type]?.forEach((fn) => fn(evt));
+      },
+    };
+    (globalThis as any).CustomEvent = class {
+      type: string;
+      detail: any;
+      constructor(type: string, init?: any) {
+        this.type = type;
+        this.detail = init?.detail;
+      }
+    };
+
+    (globalThis as any).window.addEventListener('dyrected:auth-unauthorized', eventHandler);
+
+    const authClient = new DyrectedClient({
+      baseUrl: 'http://api.test',
+      fetch: mockFetch as any,
+      onAuthError,
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ message: 'Invalid or expired token.', code: 'invalid_token' }),
+    });
+
+    await expect(authClient.getPreference('theme')).rejects.toThrow('Invalid or expired token.');
+
+    expect(onAuthError).toHaveBeenCalledTimes(1);
+    expect(onAuthError.mock.calls[0][0].statusCode).toBe(401);
+    expect(eventHandler).toHaveBeenCalledTimes(1);
+
+    (globalThis as any).window = originalWindow;
+  });
+
+  it('sends DELETE /api/collections/:slug/delete-many with JSON stringified ids', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ message: 'Deleted', deleted: ['id-1', 'id-2'] }),
+    });
+
+    const res = await client.collection('posts').deleteMany(['id-1', 'id-2']);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('http://api.test/api/collections/posts/delete-many');
+    expect(init.method).toBe('DELETE');
+    expect(init.body).toBe(JSON.stringify({ ids: ['id-1', 'id-2'] }));
+    expect(res).toEqual({ message: 'Deleted', deleted: ['id-1', 'id-2'] });
+  });
 });

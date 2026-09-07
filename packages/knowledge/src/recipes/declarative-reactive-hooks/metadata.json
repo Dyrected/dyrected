@@ -1,0 +1,30 @@
+{
+  "id": "declarative-reactive-hooks",
+  "title": "Calculate field values and format strings live",
+  "description": "Automatically calculate prices, format reference codes, and transform field values in real time without custom JavaScript functions.",
+  "problem": "You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code.",
+  "summary": "Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.",
+  "category": "data-lifecycle",
+  "runtime": "shared",
+  "runtimeNotes": "Uses declarative JEXL expressions with the when helper, compatible with both Cloud and self-hosted runtimes.",
+  "intents": [
+    "build reactive form transforms that survive Cloud schema sync",
+    "compute field values without writing raw JavaScript functions",
+    "calculate status-based pricing or conditional totals declaratively",
+    "format reference codes or IDs from sibling inputs in real-time"
+  ],
+  "concepts": [
+    "admin.hooks.onChange",
+    "when.then",
+    "when.match",
+    "when.sibling",
+    "when.concat",
+    "when.slugify"
+  ],
+  "canonicalDocs": [
+    "/docs/model-content/content-rules/declarative-expressions",
+    "/docs/model-content/content-rules/cloud-safe-hooks",
+    "/docs/deployment-and-operations/server-runtime/hooks/fields"
+  ],
+  "requires": []
+}

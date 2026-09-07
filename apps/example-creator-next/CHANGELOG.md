@@ -1,5 +1,47 @@
 # example-creator-next
 
+## 0.1.35
+
+### Patch Changes
+
+- Updated dependencies [cdc2abe]
+- Updated dependencies [e601008]
+  - @dyrected/core@2.12.0
+  - @dyrected/admin@2.12.0
+  - @dyrected/storage-cloudinary@2.12.0
+  - @dyrected/sdk@2.12.0
+  - @dyrected/db-postgres@2.12.0
+  - @dyrected/next@2.12.0
+  - @dyrected/react@2.12.0
+
+## 0.1.34
+
+### Patch Changes
+
+- Updated dependencies [e0246ed]
+- Updated dependencies [0ecdf5c]
+  - @dyrected/admin@2.11.0
+  - @dyrected/core@2.11.0
+  - @dyrected/sdk@2.11.0
+  - @dyrected/react@2.11.0
+  - @dyrected/db-postgres@2.11.0
+  - @dyrected/next@2.11.0
+  - @dyrected/storage-cloudinary@2.11.0
+
+## 0.1.33
+
+### Patch Changes
+
+- Updated dependencies [558341d]
+- Updated dependencies [2720377]
+  - @dyrected/core@2.10.1
+  - @dyrected/admin@2.10.1
+  - @dyrected/sdk@2.10.1
+  - @dyrected/react@2.10.1
+  - @dyrected/next@2.10.1
+  - @dyrected/db-postgres@2.10.1
+  - @dyrected/storage-cloudinary@2.10.1
+
 ## 0.1.32
 
 ### Patch Changes

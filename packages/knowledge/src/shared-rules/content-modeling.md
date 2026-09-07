@@ -81,9 +81,12 @@ Promote it to a Collection when editors need to manage the items independently.
 
 ## Pages and Page Sections
 
-When the project contains public content pages, model each appropriate page as
-an entry in a Pages collection. Do not make each page a separate Global or a
-separate collection.
+When modeling marketing websites or content-driven applications:
+
+- **Always default to a `Pages` collection with an ordered `blocks` field** rather than hardcoding section composition in `page.tsx` or `pages/[slug].vue`.
+- **Define a cohesive block registry** (`Hero`, `TwoColumnFeature`, `CardGrid`, `PricingTierGrid`, `Timeline`, `FinalCTA`, etc.) in `dyrected.config.ts`.
+- **Dynamic Route Fetching**: Routes should fetch via `getPageByPath(pathname, fallbackData)` or `client.collection('pages').findBySlug(slug)` and render through `<Blocks items={page.layout} path="layout" />` with `useDyPath` click-to-edit support.
+- **Preserve Existing Layouts**: The block registry must 100% reflect the design, typography, spacing, and responsive behavior of the existing site.
 
 A page normally contains:
 
@@ -181,8 +184,23 @@ and other long-form content.
 
 Reference: https://docs.dyrected.com/docs/model-content/fields/rich-text
 
-Use arrays for real repeatable items such as steps, FAQs, links, features, or
-cards, not as a substitute for rich text.
+## Array Fields & Object Shape Contract (Crucial)
+
+- In Dyrected, `defineArrayField({ name: "checklist", fields: [defineTextField({ name: "item" })] })` **ALWAYS produces and expects an array of objects**, e.g.:
+
+  ```ts
+  checklist: [{ item: "First point" }, { item: "Second point" }]
+  ```
+
+- **Never pass primitive arrays** (e.g. `checklist: ["First point", "Second point"]`) in fallback data, seed scripts, or SDK mutations, as CMS schema validation will drop them.
+- When rendering in frontend components, always defensively normalize items to support live-preview edits and fallbacks:
+
+  ```tsx
+  const text = typeof item === 'string' ? item : item?.item || item?.text || '';
+  ```
+
+- Use arrays for real repeatable items such as steps, FAQs, links, features, or
+  cards, not as a substitute for rich text.
 
 ## Interactive Content
 

@@ -107,6 +107,8 @@ export interface MediaLibraryControllerState {
   items: MediaRecord[]
   selectedIds: string[]
   searchQuery: string
+  folderId: string | null
+  mimeFilter: string | null
   page: number
   hasNextPage: boolean
   isLoading: boolean
@@ -120,6 +122,8 @@ export interface MediaLibraryControllerOptions {
   pageSize?: number
   initialSearchQuery?: string
   initialSelectedIds?: string[]
+  initialFolderId?: string | null
+  initialMimeFilter?: string | null
 }
 
 /**
@@ -131,6 +135,8 @@ export interface MediaLibraryController {
   subscribe(listener: Listener): () => void
   load(): Promise<MediaRecord[]>
   search(query: string): Promise<MediaRecord[]>
+  setFolder(folderId: string | null): Promise<MediaRecord[]>
+  setMimeFilter(filter: string | null): Promise<MediaRecord[]>
   loadNextPage(): Promise<MediaRecord[]>
   setSelectedIds(ids: string[]): void
   select(id: string): void
@@ -456,6 +462,8 @@ export function createMediaLibraryController({
   pageSize = 12,
   initialSearchQuery = "",
   initialSelectedIds = [],
+  initialFolderId = null,
+  initialMimeFilter = null,
 }: MediaLibraryControllerOptions): MediaLibraryController {
   const activeCollection = resolveActiveMediaCollection(schemas, collection)
   const store = createStore<MediaLibraryControllerState>({
@@ -463,6 +471,8 @@ export function createMediaLibraryController({
     items: [],
     selectedIds: initialSelectedIds,
     searchQuery: initialSearchQuery,
+    folderId: initialFolderId,
+    mimeFilter: initialMimeFilter,
     page: 1,
     hasNextPage: false,
     isLoading: false,
@@ -481,11 +491,40 @@ export function createMediaLibraryController({
     })
 
     try {
+      const whereConditions: Record<string, unknown>[] = []
+      if (currentState.searchQuery) {
+        whereConditions.push({ filename: { contains: currentState.searchQuery } })
+      }
+      if (currentState.folderId) {
+        whereConditions.push({ folderId: { equals: currentState.folderId } })
+      }
+      if (currentState.mimeFilter && currentState.mimeFilter !== "all") {
+        if (currentState.mimeFilter === "document") {
+          whereConditions.push({
+            mimeType: {
+              in: [
+                "application/pdf",
+                "text/plain",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ],
+            },
+          })
+        } else {
+          whereConditions.push({ mimeType: { contains: currentState.mimeFilter } })
+        }
+      }
+
+      const where =
+        whereConditions.length > 1
+          ? { AND: whereConditions }
+          : whereConditions.length === 1
+          ? whereConditions[0]
+          : undefined
+
       const response = await sdkClient.listMedia(
         {
-          where: currentState.searchQuery
-            ? { filename: { contains: currentState.searchQuery } }
-            : undefined,
+          where,
           limit: pageSize,
           page,
         },
@@ -528,6 +567,28 @@ export function createMediaLibraryController({
       }))
       return loadPage(1, false)
     },
+    setFolder(folderId) {
+      if (store.getState().folderId === folderId) {
+        return Promise.resolve([])
+      }
+      store.setState((state) => ({
+        ...state,
+        folderId,
+        page: 1,
+      }))
+      return loadPage(1, false)
+    },
+    setMimeFilter(filter) {
+      if (store.getState().mimeFilter === filter) {
+        return Promise.resolve([])
+      }
+      store.setState((state) => ({
+        ...state,
+        mimeFilter: filter,
+        page: 1,
+      }))
+      return loadPage(1, false)
+    },
     loadNextPage() {
       const state = store.getState()
       if (state.isLoading || !state.hasNextPage) {
@@ -536,7 +597,15 @@ export function createMediaLibraryController({
       return loadPage(state.page + 1, true)
     },
     setSelectedIds(ids) {
-      store.setState((state) => ({ ...state, selectedIds: ids }))
+      store.setState((state) => {
+        if (
+          state.selectedIds.length === ids.length &&
+          state.selectedIds.every((val, idx) => val === ids[idx])
+        ) {
+          return state
+        }
+        return { ...state, selectedIds: ids }
+      })
     },
     select(id) {
       store.setState((state) => ({
@@ -561,7 +630,10 @@ export function createMediaLibraryController({
       }))
     },
     clearSelection() {
-      store.setState((state) => ({ ...state, selectedIds: [] }))
+      store.setState((state) => {
+        if (state.selectedIds.length === 0) return state
+        return { ...state, selectedIds: [] }
+      })
     },
   }
 }

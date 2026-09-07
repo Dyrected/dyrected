@@ -1,4 +1,12 @@
 import { stringify, stringifyQuery } from "./utils/stringify.js";
+export {
+  when,
+  formatJexlValue,
+  MatchBuilder,
+  FieldConditionBuilder,
+  type WhenFunction,
+  type AccessConditions,
+} from "@dyrected/core";
 import type {
   AdminConfig,
   PublicAdminAuthConfig,
@@ -41,7 +49,6 @@ type SchemaResponse = {
   };
 };
 
-
 export type {
   PaginatedResult,
   Media,
@@ -60,6 +67,19 @@ export type {
   WorkflowMetadata,
   LifecycleEvent,
 };
+
+/** Shape of a media folder document in the DAM system. */
+export interface MediaFolder {
+  id: string;
+  name: string;
+  slug: string;
+  collection: string;
+  parentId: string | null;
+  path: string;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 /** Shape of a document returned from a workflow-enabled collection. */
 export interface WorkflowDocument {
@@ -186,6 +206,10 @@ export interface DyrectedClientConfig {
   headers?: Record<string, string>;
   fetch?: typeof fetch;
   /**
+   * Callback invoked when a 401 Unauthorized response is returned from an authenticated endpoint.
+   */
+  onAuthError?: (error: DyrectedError) => void;
+  /**
    * Default relationship population depth applied to document reads
    * (`find`, `findOne`, `global().get()`, and media listing) when a call
    * does not pass its own `depth`. Defaults to `1`.
@@ -267,11 +291,13 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   private headers: Record<string, string>;
   private fetch: typeof fetch;
   private defaultDepth: number;
+  private onAuthError?: (error: DyrectedError) => void;
 
   constructor(config: DyrectedClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
     this.fetch = (config.fetch || fetch).bind(globalThis);
     this.defaultDepth = config.defaultDepth ?? 1;
+    this.onAuthError = config.onAuthError;
     this.headers = {
       "Content-Type": "application/json",
       ...(config.apiKey ? { "x-api-key": config.apiKey } : {}),
@@ -497,6 +523,11 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
         data?: Record<string, string>,
         options?: UploadOptions,
       ) => this._upload(slug, file, data, options),
+      /**
+       * Replace the file of an existing asset in-place without creating a duplicate record.
+       */
+      replaceFile: (id: string, file: File | Blob) =>
+        this.replaceMedia(id, file, slug),
       // ---- Auth methods (only meaningful when the collection has auth: true) ----
       /**
        * Log in with email + password. Returns a JWT token and the user document.
@@ -670,6 +701,26 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             body: JSON.stringify(input),
           },
         ),
+      /**
+       * List media folders for this upload-enabled collection.
+       */
+      listFolders: (): Promise<PaginatedResult<MediaFolder>> =>
+        this.listFolders(slug),
+      /**
+       * Create a media folder in this collection.
+       */
+      createFolder: (data: { name: string; parentId?: string | null; color?: string | null }): Promise<MediaFolder> =>
+        this.createFolder(slug, data),
+      /**
+       * Update an existing media folder in this collection.
+       */
+      updateFolder: (id: string, data: { name?: string; parentId?: string | null; color?: string | null }): Promise<MediaFolder> =>
+        this.updateFolder(slug, id, data),
+      /**
+       * Delete a media folder from this collection.
+       */
+      deleteFolder: (id: string): Promise<{ success: boolean; id: string }> =>
+        this.deleteFolder(slug, id),
       /**
        * Run an operational view action (`defineAction`) against one or more documents.
        *
@@ -863,7 +914,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   ): Promise<{ message: string }> {
     return this.request(`/api/collections/${collection}/delete-many`, {
       method: "DELETE",
-      body: stringify({ ids }),
+      body: JSON.stringify({ ids }),
     });
   }
 
@@ -940,9 +991,77 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     );
   }
 
+  /**
+   * List all media folders in an upload-enabled collection.
+   */
+  async listFolders(collection: string = "media"): Promise<PaginatedResult<MediaFolder>> {
+    return this.request<PaginatedResult<MediaFolder>>(
+      `/api/collections/${collection}/folders`,
+    );
+  }
+
+  /**
+   * Create a new media folder in an upload-enabled collection.
+   */
+  async createFolder(
+    collection: string = "media",
+    data: { name: string; parentId?: string | null; color?: string | null },
+  ): Promise<MediaFolder> {
+    return this.request<MediaFolder>(`/api/collections/${collection}/folders`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update an existing media folder in an upload-enabled collection.
+   */
+  async updateFolder(
+    collection: string = "media",
+    id: string,
+    data: { name?: string; parentId?: string | null; color?: string | null },
+  ): Promise<MediaFolder> {
+    return this.request<MediaFolder>(`/api/collections/${collection}/folders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a media folder from an upload-enabled collection.
+   */
+  async deleteFolder(
+    collection: string = "media",
+    id: string,
+  ): Promise<{ success: boolean; id: string }> {
+    return this.request<{ success: boolean; id: string }>(
+      `/api/collections/${collection}/folders/${id}`,
+      {
+        method: "DELETE",
+      },
+    );
+  }
+
   /** @deprecated Use client.collection('media').upload(file, data) instead */
   async uploadMedia(file: File, collection: string = "media"): Promise<Media> {
     return this._upload(collection, file);
+  }
+
+  /**
+   * Replace the underlying file of an existing media document in-place without creating a duplicate record.
+   */
+  async replaceMedia(
+    id: string,
+    file: File | Blob,
+    collection: string = "media",
+  ): Promise<Media> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return this.request<Media>(`/api/collections/${collection}/media/${id}/file`, {
+      method: "POST",
+      headers: { "Content-Type": undefined } as unknown as HeadersInit,
+      body: formData,
+    });
   }
 
   /**
@@ -1093,12 +1212,28 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             }),
           );
         }
-        console.log("[DyrectedError]", body, res.status);
-        throw new DyrectedError(
+        const error = new DyrectedError(
           body.message || `Request failed with status ${res.status}`,
           res.status,
           body.code,
         );
+        if (
+          res.status === 401 &&
+          !path.endsWith("/login") &&
+          !path.endsWith("/init") &&
+          !path.endsWith("/first-user")
+        ) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("dyrected:auth-unauthorized", {
+                detail: { message: body.message, code: body.code, path },
+              }),
+            );
+          }
+          this.onAuthError?.(error);
+        }
+        console.log("[DyrectedError]", body, res.status);
+        throw error;
       }
       return res.json() as Promise<T>;
     }

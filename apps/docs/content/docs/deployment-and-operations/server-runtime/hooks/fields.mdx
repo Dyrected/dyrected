@@ -127,9 +127,12 @@ It receives:
 - `value` for the current field
 - `siblingData` for fields at the same nesting level
 - `data` for the whole form
+- `doc` for the targeted record (in action modals and document forms)
+- `docs` for bulk action records
+- `user` for the authenticated editor
 - `setValue` for imperative updates when the logic is async or multi-step
 
-Use it for slug generation, computed totals, or other immediate form feedback.
+Use it for slug generation, computed totals, or real-time form and action modal feedback.
 
 When you want the same admin behavior to survive Cloud schema sync, use the declarative string form instead of a function:
 

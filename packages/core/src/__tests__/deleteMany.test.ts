@@ -81,4 +81,24 @@ describe('DELETE /delete-many', () => {
     const data = await res.json();
     expect(data.deleted).toContain('3');
   });
+
+  it('supports raw JSON array body', async () => {
+    const res = await app.request('/api/collections/posts/delete-many', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(['1', '2']),
+    });
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data.deleted).toEqual(expect.arrayContaining(['1', '2']));
+  });
+
+  it('supports query string ids parameter', async () => {
+    const res = await app.request('/api/collections/posts/delete-many?ids=1&ids=2', {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data.deleted).toEqual(expect.arrayContaining(['1', '2']));
+  });
 });

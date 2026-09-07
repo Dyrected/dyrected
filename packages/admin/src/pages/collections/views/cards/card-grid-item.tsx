@@ -7,7 +7,7 @@ import { RenderCell } from "../../../../components/ui/render-cell"
 import { getMediaUrl } from "../../../../lib/utils"
 import { RowActionsCell } from "../row-actions-cell"
 import type { SerializedAction, SerializedView } from "../types"
-import { resolveDocumentTitle } from "@/lib/document-title"
+import { resolveDocumentTitle } from "../../../../lib/document-title"
 
 interface CardGridItemProps {
   slug: string
@@ -17,7 +17,7 @@ interface CardGridItemProps {
   schemas: unknown
   view: SerializedView
   actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
   /**
    * Field names to render on the card body, in order (from the layout's

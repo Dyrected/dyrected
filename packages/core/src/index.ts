@@ -857,5 +857,6 @@ export * from "./services/rag/rag.service.js";
 export * from "./services/rag/normalizer.js";
 export * from "./services/rag/chunker.js";
 export * from "./services/rag/embedding.service.js";
+export * from "./utils/conditions.js";
 export { z } from "zod";
 

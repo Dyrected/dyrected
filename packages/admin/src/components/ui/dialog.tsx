@@ -43,7 +43,14 @@ const DialogContent = React.forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "dy-fixed dy-left-[50%] dy-top-[50%] dy-z-50 dy-grid dy-w-full dy-max-w-lg dy-translate-x-[-50%] dy-translate-y-[-50%] dy-gap-4 dy-border dy-bg-background dy-p-6 dy-shadow-2xl dy-duration-200 data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0 data-[state=closed]:dy-zoom-out-95 data-[state=open]:dy-zoom-in-95 data-[state=closed]:dy-slide-out-to-left-1/2 data-[state=closed]:dy-slide-out-to-top-[48%] data-[state=open]:dy-slide-in-from-left-1/2 data-[state=open]:dy-slide-in-from-top-[48%] sm:dy-rounded-xl",
+            "dy-fixed dy-z-50 dy-grid dy-w-full dy-gap-4 dy-border dy-bg-background dy-p-6 dy-shadow-2xl dy-duration-200",
+            // Mobile: bottom sheet style, pinned to bottom, rounded top
+            "max-sm:dy-bottom-0 max-sm:dy-left-0 max-sm:dy-right-0 max-sm:dy-top-auto max-sm:dy-max-h-[92dvh] max-sm:dy-max-w-none max-sm:dy-rounded-t-2xl max-sm:dy-rounded-b-none max-sm:dy-border-b-0 max-sm:dy-translate-x-0 max-sm:dy-translate-y-0",
+            "max-sm:data-[state=open]:dy-slide-in-from-bottom max-sm:data-[state=closed]:dy-slide-out-to-bottom",
+            // Desktop: centered modal
+            "sm:dy-left-[50%] sm:dy-top-[50%] sm:dy-max-w-lg sm:dy-translate-x-[-50%] sm:dy-translate-y-[-50%] sm:dy-max-h-[90vh] sm:dy-rounded-xl",
+            "sm:data-[state=open]:dy-zoom-in-95 sm:data-[state=closed]:dy-zoom-out-95 sm:data-[state=open]:dy-slide-in-from-left-1/2 sm:data-[state=open]:dy-slide-in-from-top-[48%] sm:data-[state=closed]:dy-slide-out-to-left-1/2 sm:data-[state=closed]:dy-slide-out-to-top-[48%]",
+            "data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0",
             className
           )}
           {...props}

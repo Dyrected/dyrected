@@ -36,6 +36,8 @@ feature being implemented:
 
 - Documentation index: https://docs.dyrected.com/llms.txt
 - Documentation home: https://docs.dyrected.com
+- Cloud concise index: https://docs.dyrected.com/llms-cloud.txt
+- Self-hosted concise index: https://docs.dyrected.com/llms-self-hosted.txt
 - Existing-site agent workflow: https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt
 - Installation: https://docs.dyrected.com/docs/start-here/installation
 - CLI and schema synchronization: https://docs.dyrected.com/docs/reference/cli
@@ -155,8 +157,9 @@ structured editable content.
 - Use a small explicit adapter when Dyrected data shapes differ from existing
   component props.
 - Keep state, event handlers, calculations, validation behaviour,
-  authentication, submissions, dashboards, analytics, and user data in
-  application code unless explicitly approved.
+  authentication, dashboards, analytics, and private user data in
+  application code unless explicitly approved (incoming form submissions,
+  leads, and contact requests may be stored in an approved collection).
 - Pass only serializable data across server/client boundaries. Resolve icons,
   components, functions, classes, and other executable values inside the
   appropriate code boundary.
@@ -218,6 +221,29 @@ synchronizes. Completion requires a verified edit from Dyrected through the
 real frontend.
 <!-- GENERATED:INTEGRATION_CONTRACT:END -->
 
+## Core Architecture & Modeling Invariants
+
+1. **Marketing Site Default: Page Builder Architecture**
+   - When modeling marketing websites or content-driven applications, **always default to a `Pages` collection with an ordered `blocks` field** (`defineBlocksField({ name: "layout", blocks: [...] })`) rather than hardcoding section layouts in `page.tsx` or `pages/[slug].vue`.
+   - Define a cohesive block registry (`Hero`, `TwoColumnFeature`, `CardGrid`, `PricingTierGrid`, `Timeline`, `FinalCTA`, etc.) in `dyrected.config.ts`.
+   - Routes must query `getPageByPath(pathname, fallbackData)` or `client.collection('pages').findBySlug(slug)` and render through `<Blocks items={page.layout} path="layout" />` with `useDyPath` click-to-edit support.
+   - 100% preserve existing design, typography, spacing, and responsive styling.
+
+2. **Array Field Object Shape Contract (Crucial)**
+   - In Dyrected, `defineArrayField({ name: "checklist", fields: [defineTextField({ name: "item" })] })` **ALWAYS produces and expects an array of objects**, e.g.:
+     ```ts
+     checklist: [{ item: "First point" }, { item: "Second point" }]
+     ```
+   - **Never pass primitive arrays** (e.g. `checklist: ["First point", "Second point"]`) in fallback data, seed scripts, or SDK mutations, as CMS schema validation will drop them.
+   - In frontend components, always defensively normalize items: `const text = typeof item === 'string' ? item : item?.item || item?.text || '';`.
+
+3. **Type Safety Workflow**
+   - Immediately after creating or updating `dyrected.config.ts`, always run:
+     ```bash
+     npx dyrected generate:types
+     ```
+   - Import generated interfaces into seed scripts, page components, and block definitions to catch schema mismatches at compile time.
+
 ## API and Security Invariants
 
 - Import public APIs from `@dyrected/core`, `@dyrected/sdk`, and the documented
@@ -235,8 +261,10 @@ real frontend.
   be the only enforcement layer.
 - Enforce access and validation on the server. Admin visibility is not
   authorization.
-- Use serializable Jexl conditions, hooks, access rules, and preview expressions
-  when configuration must synchronize with Dyrected Cloud.
+- Use the type-safe `when` condition builder (or serializable Jexl strings) for
+  `admin.condition`, `admin.previewUrl`, `access.*`, and `admin.hooks.onChange`
+  when configuration synchronizes with Dyrected Cloud. JavaScript/TypeScript
+  functions are supported in self-hosted runtimes only.
 - Keep API keys, database credentials, encryption keys, and storage credentials
   out of browser code.
 - Use `relationship` for a stored owning reference and `join` for a virtual
@@ -349,9 +377,12 @@ Promote it to a Collection when editors need to manage the items independently.
 
 ## Pages and Page Sections
 
-When the project contains public content pages, model each appropriate page as
-an entry in a Pages collection. Do not make each page a separate Global or a
-separate collection.
+When modeling marketing websites or content-driven applications:
+
+- **Always default to a `Pages` collection with an ordered `blocks` field** rather than hardcoding section composition in `page.tsx` or `pages/[slug].vue`.
+- **Define a cohesive block registry** (`Hero`, `TwoColumnFeature`, `CardGrid`, `PricingTierGrid`, `Timeline`, `FinalCTA`, etc.) in `dyrected.config.ts`.
+- **Dynamic Route Fetching**: Routes should fetch via `getPageByPath(pathname, fallbackData)` or `client.collection('pages').findBySlug(slug)` and render through `<Blocks items={page.layout} path="layout" />` with `useDyPath` click-to-edit support.
+- **Preserve Existing Layouts**: The block registry must 100% reflect the design, typography, spacing, and responsive behavior of the existing site.
 
 A page normally contains:
 
@@ -449,8 +480,23 @@ and other long-form content.
 
 Reference: https://docs.dyrected.com/docs/model-content/fields/rich-text
 
-Use arrays for real repeatable items such as steps, FAQs, links, features, or
-cards, not as a substitute for rich text.
+## Array Fields & Object Shape Contract (Crucial)
+
+- In Dyrected, `defineArrayField({ name: "checklist", fields: [defineTextField({ name: "item" })] })` **ALWAYS produces and expects an array of objects**, e.g.:
+
+  ```ts
+  checklist: [{ item: "First point" }, { item: "Second point" }]
+  ```
+
+- **Never pass primitive arrays** (e.g. `checklist: ["First point", "Second point"]`) in fallback data, seed scripts, or SDK mutations, as CMS schema validation will drop them.
+- When rendering in frontend components, always defensively normalize items to support live-preview edits and fallbacks:
+
+  ```tsx
+  const text = typeof item === 'string' ? item : item?.item || item?.text || '';
+  ```
+
+- Use arrays for real repeatable items such as steps, FAQs, links, features, or
+  cards, not as a substitute for rich text.
 
 ## Interactive Content
 
@@ -627,6 +673,18 @@ Grant the smallest permissions required by the approved editing plan.
 - Use serializable declarative conditions, hooks, and access values when the
   schema must synchronize to Dyrected Cloud.
 
+## Type Synchronization Workflow
+
+Immediately after creating or editing `dyrected.config.ts`, synchronize TypeScript types:
+
+```bash
+npx dyrected generate:types
+```
+
+- `npx dyrected generate:types` outputs `dyrected-types.ts` into your application source directory.
+- `npx dyrected sync:schema` also auto-runs type generation upon successful synchronization.
+- **Always import generated interfaces** into seed scripts, page components, and block definitions to catch schema mismatches (such as array shape errors) at compile time before committing code.
+
 ## Schema and Seed Safety
 
 Before changing a schema:
@@ -635,7 +693,7 @@ Before changing a schema:
 2. Identify persisted slugs, fields, blocks, variants, relationships, and URL
    patterns affected by the change.
 3. Add or evolve one related batch at a time.
-4. Generate types and validate the local schema.
+4. Generate types (`npx dyrected generate:types`) and validate the local schema.
 5. Review changes that could affect stored documents.
 6. Synchronize only after local validation passes.
 
@@ -854,12 +912,14 @@ For every connected area, prove:
 - [Set up a Calendar schedule view](https://docs.dyrected.com/docs/examples-and-recipes/library/calendar-schedule-view) — Problem: Event coordinators need to schedule tasting sessions and inspection bookings across calendar slots without overlapping dates. Summary: Configure a Calendar operational view using defineView with layout: 'calendar' and dateField pointed to an ISO datetime field.
 - [Create a category taxonomy for content](https://docs.dyrected.com/docs/examples-and-recipes/library/category-taxonomy) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
 - [Chat-to-order AI proposals](https://docs.dyrected.com/docs/examples-and-recipes/library/chat-to-order-proposal) — Problem: Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation. Summary: Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.
+- [Compute fields and calculate totals live](https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals) — Problem: You want multi-field calculations (like price totals and remaining balances) to calculate live in the Admin UI while guaranteeing consistency in the database. Summary: Use beforeChange for server-side persistence guarantees combined with admin.hooks.onChange for instant live reactivity as editors type.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/examples-and-recipes/library/conditional-admin-field) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/examples-and-recipes/library/cross-field-validation) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
 - [Custom business logic AI tools](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-ai-tools) — Problem: The AI assistant needs to invoke custom server logic beyond basic collection CRUD operations. Summary: Register custom tools in config.ai.tools with Zod parameter validation and server execution handlers.
 - [Build a field editor directly into a page](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-page-field-editor) — Problem: A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling. Summary: Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.
 - [Build a media picker directly into a page](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-page-media-picker) — Problem: Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app. Summary: Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.
 - [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-theme-shell) — Problem: The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode. Summary: Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.
+- [Calculate field values and format strings live](https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks) — Problem: You want live form calculations, dynamic pricing, or auto-slug generation that syncs across environments and works in Dyrected Cloud without server-side function code. Summary: Use the when fluent builder to produce declarative, sandboxed JEXL expressions that calculate values live as editors type.
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/examples-and-recipes/library/dependent-dropdown) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
 - [Create a document download library](https://docs.dyrected.com/docs/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
@@ -904,6 +964,10 @@ For every connected area, prove:
 - “parse whatsapp conversation to quote” → [Chat-to-order AI proposals](https://docs.dyrected.com/docs/examples-and-recipes/library/chat-to-order-proposal)
 - “telegram bot order creation” → [Chat-to-order AI proposals](https://docs.dyrected.com/docs/examples-and-recipes/library/chat-to-order-proposal)
 - “automate deposit calculation from chat” → [Chat-to-order AI proposals](https://docs.dyrected.com/docs/examples-and-recipes/library/chat-to-order-proposal)
+- “calculate order totals from sibling inputs” → [Compute fields and calculate totals live](https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals)
+- “compute remaining balances automatically” → [Compute fields and calculate totals live](https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals)
+- “update field values live as an editor types” → [Compute fields and calculate totals live](https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals)
+- “guarantee computed values in the database” → [Compute fields and calculate totals live](https://docs.dyrected.com/docs/examples-and-recipes/library/computed-fields-and-totals)
 - “show a field conditionally” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/examples-and-recipes/library/conditional-admin-field)
 - “hide irrelevant form fields” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/examples-and-recipes/library/conditional-admin-field)
 - “show discount only with a coupon” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/examples-and-recipes/library/conditional-admin-field)
@@ -928,6 +992,10 @@ For every connected area, prove:
 - “share dyrected theme state across a dashboard” → [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-theme-shell)
 - “add a dyrected theme switcher to my app shell” → [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-theme-shell)
 - “keep my product page and dyrected ui on the same theme” → [Build a theme-aware shell around Dyrected UI](https://docs.dyrected.com/docs/examples-and-recipes/library/custom-theme-shell)
+- “build reactive form transforms that survive Cloud schema sync” → [Calculate field values and format strings live](https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks)
+- “compute field values without writing raw JavaScript functions” → [Calculate field values and format strings live](https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks)
+- “calculate status-based pricing or conditional totals declaratively” → [Calculate field values and format strings live](https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks)
+- “format reference codes or IDs from sibling inputs in real-time” → [Calculate field values and format strings live](https://docs.dyrected.com/docs/examples-and-recipes/library/declarative-reactive-hooks)
 - “make one dropdown depend on another” → [Update a dropdown from another field](https://docs.dyrected.com/docs/examples-and-recipes/library/dependent-dropdown)
 - “show states based on the selected country” → [Update a dropdown from another field](https://docs.dyrected.com/docs/examples-and-recipes/library/dependent-dropdown)
 - “create a cascading dropdown” → [Update a dropdown from another field](https://docs.dyrected.com/docs/examples-and-recipes/library/dependent-dropdown)

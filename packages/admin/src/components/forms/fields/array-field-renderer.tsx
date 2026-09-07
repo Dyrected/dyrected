@@ -644,7 +644,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
 
   return (
     <div className="dy-space-y-4 dy-transition-all">
-      <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
+      <div className="dy-flex dy-flex-wrap dy-justify-between dy-items-end dy-pb-2">
         <div className="dy-space-y-1">
           <div className="dy-flex dy-items-center dy-gap-2">
             <Layers className="dy-h-4 dy-w-4 dy-text-primary" />

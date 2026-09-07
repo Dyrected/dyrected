@@ -1,5 +1,46 @@
 # @dyrected/sdk
 
+## 2.12.0
+
+### Patch Changes
+
+- e601008: - **Digital Asset Management (DAM)**: Added folder hierarchy tree with desktop sticky sidebar and mobile pill carousel, Move to Folder modal, in-place asset replacement, MIME type filter chips, and full-width `MediaLibraryDialog`.
+  - **Focal Point & Smart Cropping**: Integrated focal point picker in Media Inspector with automatic CSS `object-position` calculations in `<DyrectedMedia>` and dynamic CDN crop parameters in Cloudinary/API transformations.
+  - **Spreadsheet Grid Cell Editors**: Added full in-cell editing for select, multi-select, link, date/datetime, media/image, and relationship pickers.
+  - **Action Dialog & Form Engine Parity**: Added async hook support, `setValue(fieldName, value)` sibling mutation support, functional `defaultValue: ({ doc, docs, user }) => ...` serialization/client-evaluation, and unified document context across action dialog modals and collection forms.
+  - **Sticky Table Headers & Mobile Scroll Container**: Consolidated table view scrolling into a single unified scroll container with pinned sticky header rows and sticky selection checkbox columns for smooth vertical and horizontal navigation on desktop and mobile.
+
+## 2.11.0
+
+### Patch Changes
+
+- 0ecdf5c: - Fix Admin UI session staleness and authentication desynchronization:
+  - Add proactive background token refresh timer scheduled 5 minutes before JWT expiration.
+  - Refresh token on browser tab `focus` and `visibilitychange` when returning to an open dashboard.
+  - Dispatch `dyrected:auth-unauthorized` and support `onAuthError` callback in `@dyrected/sdk` on 401 responses.
+  - Automatically attempt token refresh on 401s in Admin UI, falling back to instant login gate transition if session is expired or revoked.
+  - Fix user state leak bug in `DyrectedProvider` that prevented logout and login page rendering.
+  - Call backend `POST /api/collections/:slug/logout` to revoke server session in `__auth_sessions` during logout.
+  - Allow operational view component slots (`afterViewHeader`, `beforeViewHeader`, `beforeViewContent`, `afterViewContent`) to resolve components registered under either `components.collectionView` or `components.collectionList`.
+  - Enhance action and confirmation dialogs for mobile and tall content:
+    - Render as a mobile bottom-sheet (`max-sm:bottom-0`, slide from bottom, top grab handle) on small viewports.
+    - Constrain all fields and custom modal components within the device viewport width (`w-full min-w-0 overflow-x-hidden`).
+    - Enable independent vertical scrolling (`overflow-y-auto`) with fixed, docked headers and action footer buttons.
+  - Add operational view Refresh button in [ViewHeader](file:///Users/busola/Work/dyrected/packages/admin/src/pages/collections/views/view-header.tsx) and mobile action menu:
+    - Refetches both collection/view data and summary metrics in the background.
+    - Keeps current datasets and stats on screen while displaying spinning and pulsing refetch indicators.
+  - Update back button navigation on document edit and global editor pages to use browser history when available, preserving active operational view filters, sorting, and pagination.
+
+## 2.10.1
+
+### Patch Changes
+
+- 2720377: - Added type-safe `when` declarative condition and expression builder to `@dyrected/sdk` and `@dyrected/core`.
+  - Added framework parity for `useDyPath()` and `useDyPathHelper()` in `@dyrected/vue` and auto-imported in `@dyrected/nuxt`.
+  - Enhanced CLI `upgrade` command to automatically refresh `.dyrected/ai-rules.md` with the latest canonical rules when upgrading packages.
+  - Added Marketing Site Page Builder Architecture, Array Field Object Shape Contract, and Type Synchronization Workflow to `@dyrected/knowledge` prompt templates and AI rules.
+  - Added `/docs/[...slug]` legacy catch-all redirect route in documentation.
+
 ## 2.10.0
 
 ## 2.9.0

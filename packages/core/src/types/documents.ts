@@ -46,12 +46,15 @@ export interface PaginatedResult<T = Record<string, any>> {
  */
 export interface FileData {
   filename: string;
+  originalFilename?: string;
   filesize?: number;
   mimeType: string;
   /** Public URL of the stored file. */
   url: string;
   width?: number;
   height?: number;
+  aspectRatio?: number;
+  folderId?: string | null;
   focalPoint?: { x: number; y: number };
   /** Base64-encoded BlurHash string for progressive image loading. */
   blurhash?: string;
@@ -59,5 +62,6 @@ export interface FileData {
   type?: "upload" | "external";
   provider?: string;
   provider_metadata?: unknown;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }

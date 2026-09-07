@@ -140,6 +140,21 @@ describe("DyrectedMedia & Media Resolution Engine", () => {
       expect(screen.getByText("episode1.mp3")).toBeTruthy()
     })
 
+    it("applies objectPosition style when focalPoint is provided on media or prop", () => {
+      render(
+        <DyrectedMedia
+          media={{
+            url: "https://example.com/portrait.jpg",
+            filename: "portrait.jpg",
+            focalPoint: { x: 0.75, y: 0.25 },
+          }}
+          variant="avatar"
+        />
+      )
+      const img = screen.getByAltText("portrait.jpg")
+      expect(img.style.objectPosition).toBe("75% 25%")
+    })
+
     it("renders download file button for PDFs and documents", () => {
       render(
         <DyrectedMedia

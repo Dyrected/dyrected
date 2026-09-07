@@ -31,6 +31,7 @@ export interface DyrectedMediaProps extends Omit<React.HTMLAttributes<HTMLDivEle
   loading?: "lazy" | "eager"
   aspectRatio?: string
   objectFit?: "cover" | "contain" | "fill" | "scale-down"
+  focalPoint?: { x: number; y: number }
   align?: "left" | "center" | "right"
 }
 
@@ -311,6 +312,7 @@ export const DyrectedMedia = React.forwardRef<HTMLDivElement, DyrectedMediaProps
   loading = "lazy",
   aspectRatio,
   objectFit,
+  focalPoint: focalPointProp,
   align,
   width,
   height,
@@ -318,14 +320,6 @@ export const DyrectedMedia = React.forwardRef<HTMLDivElement, DyrectedMediaProps
 }, ref) => {
   const dyContext = useContext(DyrectedContext)
   const effectiveBaseUrl = baseUrl || dyContext?.client?.getBaseUrl?.() || ""
-
-  const ImgOrCustom = ImageComponent || "img"
-  const mediaStyle: React.CSSProperties = {
-    ...(aspectRatio ? { aspectRatio } : {}),
-    ...(objectFit ? { objectFit } : {}),
-    ...(width ? { width } : {}),
-    ...(height ? { height } : {}),
-  }
 
   const isBareId =
     typeof media === "string" &&
@@ -362,6 +356,20 @@ export const DyrectedMedia = React.forwardRef<HTMLDivElement, DyrectedMediaProps
 
   const currentMedia = isBareId && fetchedMedia ? fetchedMedia : media
   if (!currentMedia) return fallback ? <>{fallback}</> : null
+
+  const ImgOrCustom = ImageComponent || "img"
+  const rawFocal = focalPointProp || (typeof currentMedia === "object" ? currentMedia?.focalPoint : undefined)
+  const objectPosition = rawFocal && typeof rawFocal.x === "number" && typeof rawFocal.y === "number"
+    ? `${rawFocal.x <= 1 ? rawFocal.x * 100 : rawFocal.x}% ${rawFocal.y <= 1 ? rawFocal.y * 100 : rawFocal.y}%`
+    : undefined
+
+  const mediaStyle: React.CSSProperties = {
+    ...(aspectRatio ? { aspectRatio } : {}),
+    ...(objectFit ? { objectFit } : {}),
+    ...(objectPosition ? { objectPosition } : {}),
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  }
 
   const rawUrl = typeof currentMedia === "string" ? currentMedia : currentMedia?.url || currentMedia?.src || currentMedia?.path || currentMedia?.filename || ""
   const filename = typeof currentMedia === "object" ? currentMedia?.filename || currentMedia?.name || currentMedia?.title || currentMedia?.alt || "" : (typeof currentMedia === "string" ? currentMedia.split("/").pop()?.split("?")[0] || "" : "")

@@ -13,7 +13,10 @@ import {
   executeFieldAfterRead,
 } from "../utils/hooks.js";
 import { createReadonlyDb } from "../utils/readonly-db.js";
-import { validateUpload } from "../utils/upload-validation.js";
+import {
+  validateUpload,
+  generateUniqueUploadFilename,
+} from "../utils/upload-validation.js";
 import { resolveAccess } from "../auth/access.js";
 import { getAdminAuthCollection } from "../utils/admin-auth.js";
 import { buildCollectionSearchWhere } from "../utils/collection-search.js";
@@ -543,6 +546,8 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
+    data = DefaultsService.apply(this.collection.fields, data);
+
     if (this.collection.workflow) {
       data = initializeWorkflowDocument(data, this.collection.workflow);
     }
@@ -707,8 +712,10 @@ export class CollectionController {
     const workspaceId = c.get("workspaceId");
     const prefix = workspaceId ? `${workspaceId}/${siteId}` : siteId;
 
+    const uniqueFilename = generateUniqueUploadFilename(file.name);
+
     const fileData = await storage.upload({
-      filename: file.name,
+      filename: uniqueFilename,
       buffer,
       mimeType: file.type,
       prefix,
@@ -1489,15 +1496,39 @@ export class CollectionController {
     const readonlyDb = createReadonlyDb(db);
     const user = c.get("user");
 
-    // ids may arrive as a query-string array (?ids[]=a&ids[]=b) or JSON body
+    // ids may arrive as a query-string array (?ids[]=a&ids[]=b), JSON body ({ ids: [...] } or [...]), or form body
     let ids: string[] = [];
     try {
       const body = await c.req.json().catch(() => null);
       if (body?.ids && Array.isArray(body.ids)) {
         ids = body.ids;
+      } else if (Array.isArray(body)) {
+        ids = body;
       }
     } catch {
-      // fall through to query-string
+      // fall through to parseBody / query-string
+    }
+
+    if (!ids.length) {
+      try {
+        const parsed = await c.req.parseBody().catch(() => null);
+        if (parsed) {
+          if (Array.isArray(parsed.ids)) {
+            ids = parsed.ids.filter((x): x is string => typeof x === "string");
+          } else if (Array.isArray(parsed["ids[]"])) {
+            ids = parsed["ids[]"].filter((x): x is string => typeof x === "string");
+          } else if (typeof parsed.ids === "string") {
+            try {
+              const json = JSON.parse(parsed.ids);
+              if (Array.isArray(json)) ids = json;
+            } catch {
+              ids = [parsed.ids];
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
 
     if (!ids.length) {
