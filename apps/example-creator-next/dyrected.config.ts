@@ -1143,14 +1143,6 @@ const recordPaymentAction = defineAction({
       },
       admin: {
         condition: "siblingData.asoebiStatus != 'waived'",
-        hooks: {
-          onChange: (context: { doc?: Record<string, any>; siblingData?: any }) => {
-            console.log("[recordPaymentAction:amountPaid.onChange] full context:", context);
-            const quantity = Number(context?.doc?.asoebiQuantity);
-            console.log("[recordPaymentAction:amountPaid.onChange] context.doc?.asoebiQuantity raw:", context?.doc?.asoebiQuantity, "parsed quantity:", quantity);
-            return (quantity || 1) * 25000;
-          },
-        },
       },
     }),
     defineSelectField({
