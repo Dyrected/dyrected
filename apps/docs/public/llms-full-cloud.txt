@@ -4200,6 +4200,8 @@ If a collection has a `status` field, a status column is added automatically so 
 
 The columns an editor sees come from `admin.defaultColumns` on the collection, falling back to the first few fields — or from the view's `columns` when you're in an operational view (`defineView({ columns: [...] })`). Editors can then reorder columns or toggle them on and off with the **View** button — and those choices are remembered per person via `layout:collections:${slug}:view:${viewSlug}` (see [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences) for legacy `view-columns:` fallback). Because this is personal (with a team-wide default admins can publish), it has its own page: see [Preferences](https://docs.dyrected.com/docs/cloud/editor-experience/preferences) for the full cascade and how to set defaults.
 
+The table uses a single unified scroll container with a sticky header row and sticky selection column. As editors scroll long lists or wide schemas horizontally and vertically on desktop and mobile, column headers and selection controls stay pinned in view.
+
 ```ts
 
   defineCollection,
