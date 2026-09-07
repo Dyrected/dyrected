@@ -168,15 +168,27 @@ function ActionForm({
 
         if (typeof hook === "function") {
           try {
-            calculatedValue = hook({
+            calculatedValue = await (hook as (args: {
+              value: unknown
+              siblingData: Record<string, unknown>
+              data: Record<string, unknown>
+              doc?: Record<string, unknown>
+              docs?: Record<string, unknown>[]
+              user?: unknown
+              setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void
+            }) => unknown)({
               value: currentValue,
               siblingData: values,
               data: { ...(doc ?? {}), ...values },
               doc,
               docs,
               user,
-              setValue: (val: unknown) => {
-                setValue(field.name, val)
+              setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => {
+                if (typeof nameOrVal === "string" && maybeVal !== undefined) {
+                  setValue(nameOrVal, maybeVal)
+                } else if (field.name) {
+                  setValue(field.name, nameOrVal)
+                }
               },
             })
           } catch (err) {

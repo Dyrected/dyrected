@@ -30,27 +30,65 @@ export function DataTable<TData>({ table, actionBar, onRowClick, isFetching }: D
 
   return (
     <div className="dy-flex dy-w-full dy-flex-col dy-gap-2.5">
-      <div className="dy-relative dy-overflow-x-auto dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
+      <div className="dy-relative dy-w-full dy-overflow-auto dy-max-h-[calc(100vh-220px)] sm:dy-max-h-[640px] dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm [touch-action:auto]">
         {isFetching && (
-          <div className="dy-absolute dy-top-0 dy-left-0 dy-right-0 dy-h-[2px] dy-bg-primary/20 dy-overflow-hidden dy-z-20">
+          <div className="dy-absolute dy-top-0 dy-left-0 dy-right-0 dy-h-[2px] dy-bg-primary/20 dy-overflow-hidden dy-z-30">
             <div className="dy-h-full dy-w-full dy-bg-primary dy-animate-pulse" />
           </div>
         )}
-        <Table className="dy-min-w-[720px]">
-          <TableHeader className="dy-bg-muted/20">
+        <Table
+          className="dy-table-fixed dy-w-full dy-border-collapse dy-caption-bottom dy-text-sm"
+          style={{ width: `${table.getTotalSize()}px`, minWidth: "100%" }}
+        >
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    className="dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground dy-py-3"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
+              <TableRow key={headerGroup.id} className="dy-border-b dy-border-border/60 hover:dy-bg-transparent">
+                {headerGroup.headers.map((header) => {
+                  const isSelect = header.id === "select"
+
+                  return (
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={{
+                        width: isSelect ? "40px" : `${header.getSize()}px`,
+                        minWidth: isSelect ? "40px" : `${header.column.columnDef.minSize ?? 80}px`,
+                        maxWidth: isSelect ? "40px" : undefined,
+                      }}
+                      className={cn(
+                        "dy-group/th dy-sticky dy-top-0 dy-z-20 dy-bg-muted/95 dy-backdrop-blur-sm dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground dy-py-3 dy-border-b dy-border-border/60",
+                        isSelect && "dy-sticky dy-left-0 dy-z-30 dy-bg-muted/95 dy-w-10 dy-min-w-[40px] dy-max-w-[40px] dy-px-3 dy-text-center",
+                      )}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+
+                      {/* Interactive column resize handle */}
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={(e) => {
+                            e.stopPropagation()
+                            header.getResizeHandler()(e)
+                          }}
+                          onTouchStart={(e) => {
+                            e.stopPropagation()
+                            header.getResizeHandler()(e)
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation()
+                            header.column.resetSize()
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={cn(
+                            "dy-absolute dy-top-0 dy-right-0 dy-h-full dy-w-3 dy-cursor-col-resize dy-select-none dy-touch-none group-hover/th:dy-bg-primary/40 hover:!dy-bg-primary dy-z-30",
+                            header.column.getIsResizing() && "dy-bg-primary dy-w-1.5",
+                          )}
+                        />
+                      )}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -66,19 +104,31 @@ export function DataTable<TData>({ table, actionBar, onRowClick, isFetching }: D
                   )}
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="dy-py-2.5 dy-px-4"
-                      onClick={
-                        cell.column.id === "select" || (cell.column.columnDef.meta as any)?.__isActions
-                          ? (event) => event.stopPropagation()
-                          : undefined
-                      }
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const isSelect = cell.column.id === "select"
+
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        style={{
+                          width: isSelect ? "40px" : `${cell.column.getSize()}px`,
+                          minWidth: isSelect ? "40px" : `${cell.column.columnDef.minSize ?? 80}px`,
+                          maxWidth: isSelect ? "40px" : undefined,
+                        }}
+                        className={cn(
+                          "dy-py-2.5 dy-px-4",
+                          isSelect && "dy-sticky dy-left-0 dy-z-10 dy-bg-card/95 dy-backdrop-blur-sm dy-w-10 dy-min-w-[40px] dy-max-w-[40px] dy-px-3 dy-text-center",
+                        )}
+                        onClick={
+                          isSelect || (cell.column.columnDef.meta as any)?.__isActions
+                            ? (event) => event.stopPropagation()
+                            : undefined
+                        }
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    )
+                  })}
                 </TableRow>
               ))
             ) : (

@@ -49,11 +49,22 @@ export interface SpreadsheetLayoutProps {
 }
 
 /** Maps a Dyrected field to the grid editor variant it can support inline. */
-function cellVariantFor(field: any): Pick<CellVariantMeta, "variant" | "options"> {
+function cellVariantFor(field: any, schemas?: any): Pick<CellVariantMeta, "variant" | "options" | "relationTo"> {
+  const relationTo = field?.relationTo || field?.collection
+  const isUploadRel = isUploadCollection(relationTo, schemas)
+
+  if (field?.type === "image" || field?.type === "upload" || (field?.type === "relationship" && isUploadRel && !field?.hasMany)) {
+    return { variant: "image", relationTo: relationTo || "media" }
+  }
+  if (field?.type === "images" || (field?.hasMany && isUploadRel) || (field?.type === "relationship" && isUploadRel && field?.hasMany)) {
+    return { variant: "images", relationTo: relationTo || "media" }
+  }
+
   switch (field?.type) {
     case "text":
     case "email":
     case "url":
+    case "link":
     case "icon":
       return { variant: "text" }
     case "number":
@@ -71,10 +82,26 @@ function cellVariantFor(field: any): Pick<CellVariantMeta, "variant" | "options"
     case "textarea":
     case "richText":
       return { variant: "longText" }
+    case "relationship":
+      if (Array.isArray(field?.options) && field.options.length > 0) {
+        return field?.hasMany
+          ? { variant: "multiSelect", options: normalizeOptions(field) }
+          : { variant: "select", options: normalizeOptions(field) }
+      }
+      return {
+        variant: field?.hasMany ? "relationships" : "relationship",
+        relationTo,
+      }
     default:
-      // Relationships, media, json/blocks/objects open in the document editor.
+      // JSON/blocks/objects open in the document editor.
       return { variant: "readonly" }
   }
+}
+
+function isUploadCollection(slug: string | undefined, schemas: any): boolean {
+  if (!slug) return false
+  const collection = schemas?.collections?.find((c: any) => c?.slug === slug)
+  return !!collection?.upload
 }
 
 const NEW_ROW_PREFIX = "__new__"
@@ -96,9 +123,11 @@ export function SpreadsheetLayout({
   slug,
   schema,
   view,
+  schemas: propsSchemas,
   isLoading: isParentLoading,
 }: SpreadsheetLayoutProps) {
-  const { client, user } = useDyrected()
+  const { client, user, schemas: contextSchemas } = useDyrected()
+  const schemas = propsSchemas || contextSchemas
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -191,6 +220,27 @@ export function SpreadsheetLayout({
     variant: "spreadsheet",
   })
 
+  const [columnSizing, setColumnSizing] = React.useState<Record<string, number>>(
+    () => preferences.preferences.sizing ?? {},
+  )
+
+  React.useEffect(() => {
+    if (preferences.preferences.sizing) {
+      setColumnSizing(preferences.preferences.sizing)
+    }
+  }, [preferences.preferences.sizing])
+
+  const handleColumnSizingChange = React.useCallback(
+    (updater: any) => {
+      setColumnSizing((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        preferences.setSizing(next)
+        return next
+      })
+    },
+    [preferences],
+  )
+
   const columns = React.useMemo<ColumnDef<any, any>[]>(() => {
     const fieldsByName = new Map<string, any>((schema?.fields ?? []).map((f: any) => [f.name, f]))
     return preferences.preferences.order
@@ -198,20 +248,42 @@ export function SpreadsheetLayout({
       .map((fieldName) => {
         const field = fieldsByName.get(fieldName)
         if (!field) return null
+        const cellVariant = cellVariantFor(field, schemas)
+        const size =
+          cellVariant.variant === "checkbox"
+            ? 70
+            : cellVariant.variant === "image"
+            ? 150
+            : cellVariant.variant === "images"
+            ? 170
+            : cellVariant.variant === "relationship"
+            ? 180
+            : cellVariant.variant === "relationships"
+            ? 200
+            : cellVariant.variant === "date" || cellVariant.variant === "number"
+            ? 150
+            : cellVariant.variant === "longText"
+            ? 280
+            : 180
+        const minSize = cellVariant.variant === "checkbox" ? 50 : 80
+
         return {
           id: fieldName,
           accessorKey: fieldName,
           header: field.label || fieldName,
           enableSorting: true,
+          enableResizing: true,
+          size,
+          minSize,
           meta: {
             label: field.label || fieldName,
-            cell: cellVariantFor(field),
+            cell: cellVariant,
             __readOnly: !canUpdate || !!field.admin?.readOnly,
           },
         } satisfies ColumnDef<any, any>
       })
       .filter(Boolean) as ColumnDef<any, any>[]
-  }, [schema, canUpdate, preferences.preferences.order, preferences.preferences.hidden])
+  }, [schema, schemas, canUpdate, preferences.preferences.order, preferences.preferences.hidden])
 
   const serverSort = React.useMemo(() => {
     if (!sorting.length) {
@@ -277,7 +349,10 @@ export function SpreadsheetLayout({
   const table = useReactTable({
     data: gridData,
     columns,
-    state: { sorting, globalFilter, columnFilters, pagination },
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    onColumnSizingChange: handleColumnSizingChange,
+    state: { sorting, globalFilter, columnFilters, pagination, columnSizing },
     onSortingChange: (updater) => {
       setSorting(updater)
       setPagination((prev) => ({ ...prev, pageIndex: 0 }))
@@ -367,11 +442,13 @@ export function SpreadsheetLayout({
    * per-document update set. Reverting to the server value drops the edit.
    */
   const handleDataUpdate = React.useCallback(
-    (event: { rowIndex: number; columnId: string; value: unknown }) => {
+    (event: { rowIndex: number; columnId: string; value: unknown; docId?: string }) => {
       const allDocs = groupBy && groupStates.length > 0 ? groupStates.flatMap((g) => g.docs) : serverDocs
-      const row = gridData[event.rowIndex] ?? allDocs.find((d) => d[event.columnId] !== undefined)
-      if (!row) return
-      const rowId = String(row.id)
+      const rowId =
+        event.docId ||
+        (gridData[event.rowIndex] ? String(gridData[event.rowIndex].id) : undefined) ||
+        (allDocs[event.rowIndex] ? String(allDocs[event.rowIndex].id) : undefined)
+      if (!rowId) return
 
       if (rowId.startsWith(NEW_ROW_PREFIX)) {
         setNewRows((prev) =>
@@ -402,18 +479,42 @@ export function SpreadsheetLayout({
     [gridData, groupBy, groupStates, serverDocs],
   )
 
+  const isDirty = React.useCallback(
+    (docId: string, columnId: string) => {
+      if (docId.startsWith(NEW_ROW_PREFIX)) {
+        const row = newRows.find((r) => r.__tempId === docId)
+        return Boolean(row && row.values[columnId] !== undefined)
+      }
+      return Boolean(updates[docId] && updates[docId][columnId] !== undefined)
+    },
+    [updates, newRows],
+  )
+
   const tableMeta: DataGridTableMeta<any> = React.useMemo(
     () => ({
       readOnly: !canUpdate,
+      updates,
+      newRows,
+      isDirty,
       onDataUpdate: handleDataUpdate,
       onOpenDoc: (docId) => navigate(`/collections/${slug}/${docId}/edit`),
     }),
-    [canUpdate, handleDataUpdate, navigate, slug],
+    [canUpdate, updates, newRows, isDirty, handleDataUpdate, navigate, slug],
   )
 
   const hasPendingChanges =
     Object.keys(updates).length > 0 ||
     newRows.some((row) => Object.keys(row.values).length > 0)
+
+  React.useEffect(() => {
+    if (!hasPendingChanges) return
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ""
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [hasPendingChanges])
 
   const handleAddRow = React.useCallback(() => {
     setNewRows((prev) => [...prev, { __tempId: `${NEW_ROW_PREFIX}${Date.now()}-${prev.length}`, values: {} }])
@@ -440,6 +541,7 @@ export function SpreadsheetLayout({
   const handleDiscard = React.useCallback(() => {
     setUpdates({})
     setNewRows([])
+    toast.info("Changes discarded")
   }, [])
 
   const showSkeleton =
@@ -519,9 +621,19 @@ export function SpreadsheetLayout({
       ) : null}
 
       {hasPendingChanges ? (
-        <div className="dy-fixed dy-inset-x-0 dy-bottom-4 dy-z-50 dy-mx-auto dy-flex dy-w-fit dy-items-center dy-gap-3 dy-rounded-xl dy-border dy-bg-card dy-px-4 dy-py-2.5 dy-shadow-lg">
-          <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">
-            Unsaved changes in this grid
+        <div className="dy-fixed dy-inset-x-4 sm:dy-inset-x-0 sm:dy-w-fit dy-bottom-4 dy-z-50 dy-mx-auto dy-flex dy-items-center dy-justify-between sm:dy-justify-start dy-gap-3.5 dy-rounded-xl dy-border dy-border-border/60 dy-bg-card/95 dy-backdrop-blur-md dy-px-4 dy-py-2.5 dy-shadow-xl">
+          <span className="dy-text-xs dy-font-medium dy-text-foreground">
+            {Object.keys(updates).length > 0 && (
+              <span>
+                {Object.keys(updates).length} {Object.keys(updates).length === 1 ? "record" : "records"} modified
+              </span>
+            )}
+            {Object.keys(updates).length > 0 && newRows.length > 0 && " · "}
+            {newRows.length > 0 && (
+              <span>
+                +{newRows.length} new {newRows.length === 1 ? "row" : "rows"}
+              </span>
+            )}
           </span>
           <div className="dy-flex dy-items-center dy-gap-2">
             <Button variant="outline" size="sm" className="dy-h-8 dy-text-xs" onClick={handleDiscard} disabled={saveMutation.isPending}>

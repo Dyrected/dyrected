@@ -56,8 +56,12 @@ describe("resolveActionMutation", () => {
     });
   });
 
-  it("returns an empty object when no mutation is defined", () => {
-    expect(resolveActionMutation(undefined, ctx)).toEqual({});
+  it("defaults to ctx.input when no explicit mutation map is defined", () => {
+    expect(resolveActionMutation(undefined, ctx)).toEqual({
+      tableNumber: 12,
+      notes: "Near window",
+    });
+    expect(resolveActionMutation(undefined, { ...ctx, input: {} })).toEqual({});
   });
 
   it("keeps plain strings that merely contain dots untouched", () => {

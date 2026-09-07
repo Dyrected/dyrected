@@ -24,7 +24,7 @@ export function resolveActionMutation(
   mutation: Record<string, unknown> | undefined,
   ctx: MutationContext,
 ): Record<string, unknown> {
-  if (!mutation) return {};
+  if (!mutation) return { ...(ctx.input ?? {}) };
   return resolveValue(mutation, ctx) as Record<string, unknown>;
 }
 

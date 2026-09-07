@@ -1448,15 +1448,39 @@ export class CollectionController {
     const readonlyDb = createReadonlyDb(db);
     const user = c.get("user");
 
-    // ids may arrive as a query-string array (?ids[]=a&ids[]=b) or JSON body
+    // ids may arrive as a query-string array (?ids[]=a&ids[]=b), JSON body ({ ids: [...] } or [...]), or form body
     let ids: string[] = [];
     try {
       const body = await c.req.json().catch(() => null);
       if (body?.ids && Array.isArray(body.ids)) {
         ids = body.ids;
+      } else if (Array.isArray(body)) {
+        ids = body;
       }
     } catch {
-      // fall through to query-string
+      // fall through to parseBody / query-string
+    }
+
+    if (!ids.length) {
+      try {
+        const parsed = await c.req.parseBody().catch(() => null);
+        if (parsed) {
+          if (Array.isArray(parsed.ids)) {
+            ids = parsed.ids.filter((x): x is string => typeof x === "string");
+          } else if (Array.isArray(parsed["ids[]"])) {
+            ids = parsed["ids[]"].filter((x): x is string => typeof x === "string");
+          } else if (typeof parsed.ids === "string") {
+            try {
+              const json = JSON.parse(parsed.ids);
+              if (Array.isArray(json)) ids = json;
+            } catch {
+              ids = [parsed.ids];
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
 
     if (!ids.length) {

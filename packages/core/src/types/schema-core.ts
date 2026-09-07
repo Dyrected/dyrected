@@ -239,8 +239,8 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
   docs?: Record<string, unknown>[];
   /** Current authenticated user. */
   user?: unknown;
-  /** Imperative setter for async or derived updates. */
-  setValue: (value: unknown) => void;
+  /** Imperative setter for current field or sibling fields. */
+  setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void;
 }
 
 export type FieldAdminOnChangeHook<TValue = unknown> = (
@@ -618,6 +618,10 @@ export type JoinFieldAdmin = {
   showCreateButton?: boolean;
   /** Whether the join field should show the "View all" action in the Admin UI. Defaults to `true`. */
   showViewButton?: boolean;
+  /** Display layout for the join list: 'list' (default) or 'table'. */
+  layout?: "list" | "table";
+  /** Columns to display when layout is 'table'. */
+  columns?: string[];
 };
 
 export interface UrlLinkValue {

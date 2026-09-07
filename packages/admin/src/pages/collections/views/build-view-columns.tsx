@@ -79,10 +79,17 @@ export function buildViewColumns({
     const field = fieldsByName.get(name)
     const meta = buildColumnMeta(field)
     const isPrimary = name === primaryFieldName
+    const isBoolean = field?.type === "boolean"
+    const size = isBoolean ? 70 : isPrimary ? 240 : field?.type === "date" || field?.type === "datetime" || field?.type === "number" ? 140 : 170
+    const minSize = isBoolean ? 50 : 80
+
     return {
       id: name,
       accessorKey: name,
       header: field.label || name,
+      size,
+      minSize,
+      enableResizing: true,
       meta: { ...meta, __isPrimary: isPrimary } as any,
       // TanStack only falls back to auto-matching when filterFn is the
       // literal string "auto" — an explicit undefined resolves through the

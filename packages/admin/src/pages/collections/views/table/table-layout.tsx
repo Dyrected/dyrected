@@ -220,6 +220,10 @@ export function TableLayout({
       leadingColumns: [
         {
           id: "select",
+          size: 40,
+          minSize: 40,
+          maxSize: 40,
+          enableResizing: false,
           header: ({ table }: any) => (
             <Checkbox
               checked={
@@ -332,9 +336,33 @@ export function TableLayout({
     sort: serverSort,
   })
 
+  const [columnSizing, setColumnSizing] = React.useState<Record<string, number>>(
+    () => columnPreferences.preferences.sizing ?? {},
+  )
+
+  React.useEffect(() => {
+    if (columnPreferences.preferences.sizing) {
+      setColumnSizing(columnPreferences.preferences.sizing)
+    }
+  }, [columnPreferences.preferences.sizing])
+
+  const handleColumnSizingChange = React.useCallback(
+    (updater: any) => {
+      setColumnSizing((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        columnPreferences.setSizing(next)
+        return next
+      })
+    },
+    [columnPreferences],
+  )
+
   const table = useReactTable({
     data: serverDocs,
     columns,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    onColumnSizingChange: handleColumnSizingChange,
     state: {
       sorting,
       columnFilters,
@@ -342,6 +370,7 @@ export function TableLayout({
       columnOrder,
       columnVisibility,
       pagination,
+      columnSizing,
     },
     onSortingChange: (updater) => {
       handleSortingChange(updater as any)

@@ -21,6 +21,8 @@ export interface ColumnPreferences {
   hidden: string[];
   /** @internal per-field label visibility for card/kanban; ids in this list show `Label: Value`. */
   showLabel?: string[];
+  /** Persisted column widths keyed by column id (pixels). */
+  sizing?: Record<string, number>;
 }
 
 interface UseColumnPreferencesOptions {
@@ -39,6 +41,14 @@ interface UseColumnPreferencesOptions {
   variant?: string;
 }
 
+function sameSizing(a?: Record<string, number>, b?: Record<string, number>): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  return aKeys.length === bKeys.length && aKeys.every((k) => a[k] === b[k]);
+}
+
 function samePreferences(a: ColumnPreferences, b: ColumnPreferences): boolean {
   const aLabels = a.showLabel ?? []
   const bLabels = b.showLabel ?? []
@@ -48,7 +58,8 @@ function samePreferences(a: ColumnPreferences, b: ColumnPreferences): boolean {
     a.hidden.length === b.hidden.length &&
     a.hidden.every((id) => b.hidden.includes(id)) &&
     aLabels.length === bLabels.length &&
-    aLabels.every((id) => bLabels.includes(id))
+    aLabels.every((id) => bLabels.includes(id)) &&
+    sameSizing(a.sizing, b.sizing)
   );
 }
 
@@ -64,6 +75,9 @@ function reconcile(raw: unknown, columnIds: string[], defaultHidden: string[] = 
   const rawShowLabel = Array.isArray((rawObj as any).showLabel)
     ? (rawObj as any).showLabel.filter((id: unknown): id is string => typeof id === "string")
     : [];
+  const rawSizing = (rawObj.sizing && typeof rawObj.sizing === "object" ? rawObj.sizing : undefined) as
+    | Record<string, number>
+    | undefined;
 
   const knownOrder = rawOrder.filter((id) => valid.has(id));
   const missing = columnIds.filter((id) => !knownOrder.includes(id));
@@ -81,7 +95,18 @@ function reconcile(raw: unknown, columnIds: string[], defaultHidden: string[] = 
     : new Set([...rawHiddenSet, ...missing.filter((id) => defaultHiddenSet.has(id))]);
 
   const showLabel = rawShowLabel.filter((id: string) => valid.has(id) && !hiddenSet.has(id));
-  return { order, hidden: order.filter((id) => hiddenSet.has(id)), showLabel };
+
+  let sizing: Record<string, number> | undefined;
+  if (rawSizing) {
+    sizing = {};
+    for (const [colId, width] of Object.entries(rawSizing)) {
+      if (valid.has(colId) && typeof width === "number" && !Number.isNaN(width)) {
+        sizing[colId] = width;
+      }
+    }
+  }
+
+  return { order, hidden: order.filter((id) => hiddenSet.has(id)), showLabel, sizing };
 }
 
 /**
@@ -194,7 +219,14 @@ export function useColumnPreferences({
           ? effective.showLabel
           : [...(effective.showLabel ?? []), id]
         : (effective.showLabel ?? []).filter((v) => v !== id)
-      applyEdit(reconcile({ order: effective.order, hidden: effective.hidden, showLabel: next }, columnIds))
+      applyEdit(reconcile({ order: effective.order, hidden: effective.hidden, showLabel: next, sizing: effective.sizing }, columnIds))
+    },
+    [applyEdit, columnIds, effective],
+  );
+
+  const setSizing = useCallback(
+    (sizing: Record<string, number>) => {
+      applyEdit(reconcile({ order: effective.order, hidden: effective.hidden, showLabel: effective.showLabel, sizing }, columnIds))
     },
     [applyEdit, columnIds, effective],
   );
@@ -232,6 +264,8 @@ export function useColumnPreferences({
       preferences: effective,
       isDirty: !!edits,
       setOrder,
+      setHidden,
+      setSizing,
       toggleVisibility,
       toggleLabel,
       showAll,
@@ -242,7 +276,7 @@ export function useColumnPreferences({
       isSaving: saveMutation.isPending || resetMutation.isPending,
       isAdmin: !!isAdmin,
     }),
-    [effective, edits, setOrder, toggleVisibility, toggleLabel, showAll, hideAllExcept, saveMutation, resetMutation, isAdmin],
+    [effective, edits, setOrder, setHidden, setSizing, toggleVisibility, toggleLabel, showAll, hideAllExcept, saveMutation, resetMutation, isAdmin],
   );
 }
 

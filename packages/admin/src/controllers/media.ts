@@ -568,6 +568,9 @@ export function createMediaLibraryController({
       return loadPage(1, false)
     },
     setFolder(folderId) {
+      if (store.getState().folderId === folderId) {
+        return Promise.resolve([])
+      }
       store.setState((state) => ({
         ...state,
         folderId,
@@ -576,6 +579,9 @@ export function createMediaLibraryController({
       return loadPage(1, false)
     },
     setMimeFilter(filter) {
+      if (store.getState().mimeFilter === filter) {
+        return Promise.resolve([])
+      }
       store.setState((state) => ({
         ...state,
         mimeFilter: filter,
@@ -591,7 +597,15 @@ export function createMediaLibraryController({
       return loadPage(state.page + 1, true)
     },
     setSelectedIds(ids) {
-      store.setState((state) => ({ ...state, selectedIds: ids }))
+      store.setState((state) => {
+        if (
+          state.selectedIds.length === ids.length &&
+          state.selectedIds.every((val, idx) => val === ids[idx])
+        ) {
+          return state
+        }
+        return { ...state, selectedIds: ids }
+      })
     },
     select(id) {
       store.setState((state) => ({
@@ -616,7 +630,10 @@ export function createMediaLibraryController({
       }))
     },
     clearSelection() {
-      store.setState((state) => ({ ...state, selectedIds: [] }))
+      store.setState((state) => {
+        if (state.selectedIds.length === 0) return state
+        return { ...state, selectedIds: [] }
+      })
     },
   }
 }

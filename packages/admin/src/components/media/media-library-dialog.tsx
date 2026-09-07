@@ -119,9 +119,13 @@ export function MediaLibraryDialog({
     return strVal
   }, [])
 
-  const sVals = React.useMemo(() => {
-    return (selectedValues || []).map(getIdentifier).filter(Boolean)
+  const sValsKey = React.useMemo(() => {
+    return (selectedValues || []).map(getIdentifier).filter(Boolean).join(",")
   }, [selectedValues, getIdentifier])
+
+  const sVals = React.useMemo(() => {
+    return sValsKey ? sValsKey.split(",") : []
+  }, [sValsKey])
 
   const {
     items: media,
@@ -160,8 +164,9 @@ export function MediaLibraryDialog({
   }, [isOpen, mimeFilter, setControllerMimeFilter])
 
   React.useEffect(() => {
+    if (!isOpen) return
     setSelectedIds(sVals)
-  }, [sVals, setSelectedIds])
+  }, [isOpen, sValsKey, setSelectedIds, sVals])
 
   const observerRef = React.useRef<IntersectionObserver | null>(null)
 

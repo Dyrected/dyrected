@@ -914,7 +914,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   ): Promise<{ message: string }> {
     return this.request(`/api/collections/${collection}/delete-many`, {
       method: "DELETE",
-      body: stringify({ ids }),
+      body: JSON.stringify({ ids }),
     });
   }
 

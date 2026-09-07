@@ -514,23 +514,25 @@ function FormEngineInner({
 
         if (typeof hook === "function") {
           try {
-            calculatedValue = (hook as (args: {
+            calculatedValue = await (hook as (args: {
               value: unknown
               siblingData: Record<string, unknown>
               data: Record<string, unknown>
               doc?: Record<string, unknown>
               user?: unknown
-              setValue: (value: unknown) => void
+              setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void
             }) => unknown)({
               value: currentValue,
               siblingData: watchedValues,
               data: mergedData,
               doc: defaultValues,
               user,
-              setValue: (val: unknown) => {
-                if (field.name) {
-                  const setValueFn = form.setValue as unknown as (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void
-                  setValueFn(field.name, val, { shouldDirty: true })
+              setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => {
+                const setValueFn = form.setValue as unknown as (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void
+                if (typeof nameOrVal === "string" && maybeVal !== undefined) {
+                  setValueFn(nameOrVal, maybeVal, { shouldDirty: true })
+                } else if (field.name) {
+                  setValueFn(field.name, nameOrVal, { shouldDirty: true })
                 }
               },
             })

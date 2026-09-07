@@ -10,7 +10,7 @@ import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
 import { getWorkflowBadgePresentation, /*WORKFLOW_BADGE_COLORS */ } from "../../lib/workflow-badge"
 import { resolvePreviewUrl } from "../../lib/preview-url"
-import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2, AlertCircle } from "lucide-react"
+import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2, AlertCircle, Trash2 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
@@ -22,6 +22,7 @@ import { WorkflowPanel } from "../../components/workflow/WorkflowPanel"
 import { WorkflowTransitionSplitButton } from "../../components/workflow/workflow-transition-controls"
 import { resolveDocumentTitle } from "../../lib/document-title"
 import { DraftLiveCompareSheet } from "../../components/workflow/draft-live-compare-sheet"
+import { DeleteEntriesDialog } from "./views/delete-entries-dialog"
 import {
   resolveWorkflowAutosaveSettings,
   type WorkflowAutosaveState,
@@ -653,6 +654,42 @@ export function EditEntryPage() {
     }
   }
 
+  const deleteAccess = (schema?.access as Record<string, unknown> | undefined)?.delete
+  let canDelete = true
+  if (deleteAccess === false) {
+    canDelete = false
+  } else if (typeof deleteAccess === 'string') {
+    try {
+      canDelete = jexl.evalSync(deleteAccess, { user, ...(previewData || entry || {}) })
+    } catch (e) {
+      console.warn("Delete access eval failed:", e)
+    }
+  }
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deleteConfirmationValue, setDeleteConfirmationValue] = useState("")
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
+
+  const handleConfirmDelete = async () => {
+    if (!client || !slug || !id) return
+    setIsDeletingEntry(true)
+    try {
+      await client.collection(slug).delete(id)
+      toast.success(`${schema?.labels?.singular || schema?.slug || "Entry"} deleted`)
+      setIsDeleteDialogOpen(false)
+      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["collections", slug] })
+      navigate(`/collections/${slug}`)
+    } catch (err: unknown) {
+      toast.error(`Failed to delete ${schema?.labels?.singular || schema?.slug || "entry"}`, {
+        description: (err as any)?.message,
+      })
+    } finally {
+      setIsDeletingEntry(false)
+    }
+  }
+
   // Evaluate collection-level audit log access
   const auditAccess = (schema?.access as any)?.readAudit ?? readAccess
   let canReadAudit = true
@@ -1082,6 +1119,15 @@ export function EditEntryPage() {
                 disabled={sendingReset}
                 title={`Send password reset link to ${entry.email}`}
                 onClick={handleSendResetLink}
+              />
+            )}
+            {isEdit && canDelete && (
+              <HeaderAction
+                icon={Trash2}
+                label="Delete"
+                title={`Delete this ${schema?.labels?.singular || schema?.slug || "entry"}`}
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="hover:dy-text-destructive hover:dy-bg-destructive/10"
               />
             )}
             {/* Document metadata popover */}
@@ -1520,6 +1566,27 @@ export function EditEntryPage() {
           open={compareSheetOpen}
           onOpenChange={setCompareSheetOpen}
           comparison={draftLiveComparison}
+        />
+      )}
+      {isDeleteDialogOpen && id && (
+        <DeleteEntriesDialog
+          state={{
+            open: isDeleteDialogOpen,
+            mode: "single",
+            ids: [id],
+            title: `Delete ${schema?.labels?.singular || schema?.slug || "entry"}`,
+            description: `Are you sure you want to delete this ${schema?.labels?.singular || schema?.slug || "entry"}? This action cannot be undone.`,
+            requiresTypedConfirmation: Boolean(schema?.auth),
+            expectedValue: schema?.auth ? String((entry as any)?.email || (entry as any)?.name || id) : "",
+          }}
+          confirmationValue={deleteConfirmationValue}
+          onConfirmationValueChange={setDeleteConfirmationValue}
+          isPending={isDeletingEntry}
+          onCancel={() => {
+            setIsDeleteDialogOpen(false)
+            setDeleteConfirmationValue("")
+          }}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </NestedEditorProvider>
