@@ -2,6 +2,18 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.12.0
+
+- - **Digital Asset Management (DAM)**: Added folder hierarchy tree with desktop sticky sidebar and mobile pill carousel, Move to Folder modal, in-place asset replacement, MIME type filter chips, and full-width `MediaLibraryDialog`.
+  - **Focal Point & Smart Cropping**: Integrated focal point picker in Media Inspector with automatic CSS `object-position` calculations in `<DyrectedMedia>` and dynamic CDN crop parameters in Cloudinary/API transformations.
+  - **Spreadsheet Grid Cell Editors**: Added full in-cell editing for select, multi-select, link, date/datetime, media/image, and relationship pickers.
+  - **Action Dialog & Form Engine Parity**: Added async hook support, `setValue(fieldName, value)` sibling mutation support, functional `defaultValue: ({ doc, docs, user }) => ...` serialization/client-evaluation, and unified document context across action dialog modals and collection forms.
+  - **Sticky Table Headers & Mobile Scroll Container**: Consolidated table view scrolling into a single unified scroll container with pinned sticky header rows and sticky selection checkbox columns for smooth vertical and horizontal navigation on desktop and mobile. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`, `@dyrected/storage-cloudinary`)
+
+- Add `expr` expression builder with `expr.ifElse`, concise shorthands (`expr.empty`, `expr.notEmpty`, `expr.equals`), and fluent transforms (`.slugify()`, `.lower()`, `.upper()`, `.trim()`). Improve `dyrected upgrade` CLI command with sanitized environment execution and streamlined manifest updates. (`dyrected`, `@dyrected/core`)
+
+---
+
 ## v2.11.0
 
 - Support dynamic and JEXL `defaultValue` evaluation, `admin.hooks.onChange` live reactivity, `admin.hooks.options` cascading dropdowns, and `admin.condition` visibility inside `ActionFormDialog` and `FormEngine`. (`@dyrected/admin`, `@dyrected/core`)
@@ -1903,6 +1915,18 @@ All notable changes to the Dyrected platform are documented in this file.
   - Update your server entry points to use the new `createDyrectedApp` factory function.
   - If you have custom integrations targeting internal endpoints, ensure your base URL paths are updated to reflect the removal of the mandatory `/api` prefix.
   - If upgrading an existing installation, migrate your administrative users from the `users` collection to the new `__admins` collection.
+
+---
+
+## v0.4.2
+
+- Add `expr` expression builder with `expr.ifElse`, concise shorthands (`expr.empty`, `expr.notEmpty`, `expr.equals`), and fluent transforms (`.slugify()`, `.lower()`, `.upper()`, `.trim()`). Improve `dyrected upgrade` CLI command with sanitized environment execution and streamlined manifest updates. (`@dyrected/knowledge`)
+
+- - **Digital Asset Management (DAM)**: Added folder hierarchy tree with desktop sticky sidebar and mobile pill carousel, Move to Folder modal, in-place asset replacement, MIME type filter chips, and full-width `MediaLibraryDialog`.
+  - **Focal Point & Smart Cropping**: Integrated focal point picker in Media Inspector with automatic CSS `object-position` calculations in `<DyrectedMedia>` and dynamic CDN crop parameters in Cloudinary/API transformations.
+  - **Spreadsheet Grid Cell Editors**: Added full in-cell editing for select, multi-select, link, date/datetime, media/image, and relationship pickers.
+  - **Action Dialog & Form Engine Parity**: Added async hook support, `setValue(fieldName, value)` sibling mutation support, functional `defaultValue: ({ doc, docs, user }) => ...` serialization/client-evaluation, and unified document context across action dialog modals and collection forms.
+  - **Sticky Table Headers & Mobile Scroll Container**: Consolidated table view scrolling into a single unified scroll container with pinned sticky header rows and sticky selection checkbox columns for smooth vertical and horizontal navigation on desktop and mobile. (`@dyrected/knowledge`)
 
 ---
 
