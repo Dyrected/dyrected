@@ -23,7 +23,7 @@ export interface PrimaryColumnLink {
   resolvePreview?: (doc: Record<string, any>) => string | null
   /** Resolved row actions rendered as compact links under the title. */
   actions?: SerializedAction[]
-  onRunAction?: (action: SerializedAction, ids: string[]) => void
+  onRunAction?: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   /** Returns true while this action × selection is executing. */
   isRunning?: (action: SerializedAction, ids: string[]) => boolean
 }

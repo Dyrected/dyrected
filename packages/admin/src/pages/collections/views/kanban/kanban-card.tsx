@@ -18,7 +18,7 @@ interface KanbanCardProps {
   schemas: unknown
   view: SerializedView
   rowActions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   /** Returns true while an action × selection is executing (drives loading states). */
   isRunning?: (action: SerializedAction, ids: string[]) => boolean
   /**

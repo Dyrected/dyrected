@@ -34,7 +34,7 @@ export interface CardsLayoutProps {
   client: unknown
   schemas: unknown
   actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
 }
 
 /**

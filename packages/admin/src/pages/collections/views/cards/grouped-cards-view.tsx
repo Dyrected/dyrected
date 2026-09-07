@@ -14,7 +14,7 @@ interface GroupedCardsViewProps {
   client: unknown
   schemas: unknown
   actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   groupStates: TableGroupState[]
   visibleFieldIds?: string[]
   showLabels?: string[]
@@ -72,7 +72,7 @@ interface GroupCardSectionProps {
   client: unknown
   schemas: unknown
   actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   group: TableGroupState
   isCollapsed: boolean
   onToggle: () => void

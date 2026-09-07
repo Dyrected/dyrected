@@ -1160,7 +1160,7 @@ const recordPaymentAction = defineAction({
     }),
   ],
   mutation: {
-    asoebiStatus: "input.asoebiStatus == 'waived' ? 'paid' : input.asoebiStatus",
+    asoebiStatus: "input.asoebiStatus",
     asoebiAmountPaid: "input.amountPaid",
     asoebiPaymentMethod: "input.paymentMethod",
     asoebiPaidAt: "now()",
@@ -1229,7 +1229,13 @@ const GuestResponses = defineCollection({
     defineSelectField({
       name: "asoebiStatus",
       label: "Asoebi Status",
-      options: ["requested", "paid", "collected"],
+      options: [
+        { label: "Requested", value: "requested" },
+        { label: "Paid in Full", value: "paid" },
+        { label: "Partially Paid", value: "partial" },
+        { label: "Waived / Complimentary", value: "waived" },
+        { label: "Collected", value: "collected" },
+      ],
       defaultValue: "requested",
       promoted: true,
       admin: {
@@ -1238,11 +1244,8 @@ const GuestResponses = defineCollection({
             const quantity = Number(siblingData?.asoebiQuantity) || 1;
             const fullPrice = quantity * 25000;
             if (value === "paid" || value === "collected") {
-              const currentPaid = Number(siblingData?.asoebiAmountPaid) || 0;
-              if (currentPaid === 0) {
-                setValue("asoebiAmountPaid", fullPrice);
-              }
-            } else if (value === "requested") {
+              setValue("asoebiAmountPaid", fullPrice);
+            } else if (value === "requested" || value === "waived") {
               setValue("asoebiAmountPaid", 0);
             }
           },
@@ -1254,7 +1257,23 @@ const GuestResponses = defineCollection({
       label: "Asoebi Size",
       options: ["S", "M", "L", "XL", "XXL"],
     }),
-    defineNumberField({ name: "asoebiQuantity", label: "Quantity", defaultValue: 1 }),
+    defineNumberField({
+      name: "asoebiQuantity",
+      label: "Quantity",
+      defaultValue: 1,
+      admin: {
+        hooks: {
+          onChange: ({ value, siblingData, setValue }) => {
+            const quantity = Number(value) || 1;
+            const fullPrice = quantity * 25000;
+            const status = siblingData?.asoebiStatus;
+            if (status === "paid" || status === "collected") {
+              setValue("asoebiAmountPaid", fullPrice);
+            }
+          },
+        },
+      },
+    }),
     defineNumberField({ name: "asoebiAmountPaid", label: "Amount Paid (NGN)", defaultValue: 0, promoted: true }),
     defineSelectField({
       name: "asoebiPaymentMethod",
@@ -1378,7 +1397,7 @@ const GuestResponses = defineCollection({
       icon: "Shirt",
       layout: "kanban",
       filter: {
-        OR: [{ asoebi: { equals: true } }, { asoebiSize: { in: ["M", "L", "XL", "XXL"] } }],
+        AND: [{ asoebi: { equals: true } }, { asoebiSize: { in: ["M", "L", "XL", "XXL"] } }],
       },
       groupBy: "asoebiStatus",
       columns: ["name", "asoebiSize", "asoebiQuantity"],

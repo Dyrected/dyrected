@@ -17,7 +17,7 @@ interface CardGridItemProps {
   schemas: unknown
   view: SerializedView
   actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[]) => void
+  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
   isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
   /**
    * Field names to render on the card body, in order (from the layout's
