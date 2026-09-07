@@ -1,6 +1,5 @@
 import * as React from "react";
 import {
-  X,
   Copy,
   Check,
   Trash2,
@@ -174,7 +173,7 @@ function MediaInspectorForm({
       />
 
       {/* Header */}
-      <SheetHeader className="dy-p-4 dy-border-b dy-border-border/60 dy-flex dy-flex-row dy-items-center dy-justify-between">
+      <SheetHeader className="dy-p-4 dy-pr-12 dy-border-b dy-border-border/60 dy-flex dy-flex-row dy-items-center dy-justify-between">
         <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
           <SheetTitle className="dy-text-sm dy-font-semibold dy-truncate">
             {item.originalFilename || item.filename}
@@ -185,14 +184,6 @@ function MediaInspectorForm({
             </Badge>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="dy-h-7 dy-w-7 dy-rounded-full"
-          onClick={onClose}
-        >
-          <X className="dy-h-4 dy-w-4" />
-        </Button>
       </SheetHeader>
 
       {/* Scrollable Content */}

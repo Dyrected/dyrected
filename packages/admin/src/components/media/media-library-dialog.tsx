@@ -500,6 +500,13 @@ export function MediaLibraryDialog({
                             <img
                               src={previewUrl}
                               alt={String(item.filename ?? "")}
+                              style={
+                                item.focalPoint && typeof item.focalPoint.x === "number" && typeof item.focalPoint.y === "number"
+                                  ? {
+                                      objectPosition: `${item.focalPoint.x <= 1 ? item.focalPoint.x * 100 : item.focalPoint.x}% ${item.focalPoint.y <= 1 ? item.focalPoint.y * 100 : item.focalPoint.y}%`,
+                                    }
+                                  : undefined
+                              }
                               className="dy-object-cover dy-w-full dy-h-full dy-relative dy-z-10"
                               loading="lazy"
                             />

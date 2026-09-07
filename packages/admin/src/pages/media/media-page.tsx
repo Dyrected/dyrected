@@ -323,7 +323,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
 
 
   return (
-    <div {...getRootProps()} onPaste={handlePaste} className="dy-min-h-full dy-space-y-6 dy-animate-in dy-relative lg:dy-space-y-8">
+    <div {...getRootProps()} onPaste={handlePaste} className="dy-min-h-full dy-animate-in dy-relative lg:dy-space-y-8">
       <input {...getInputProps()} />
 
       {isDragActive && (
@@ -347,7 +347,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
         registry={components?.collectionList}
         componentProps={collectionComponentProps}
       />
-      <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border/50 dy-pb-5 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between sm:dy-pb-6">
+      <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border/50 dy-pb-5 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between sm:dy-pb-6 !dy-mt-0">
         <div className="dy-min-w-0">
           <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
             <ImageIcon className="dy-h-5 dy-w-5 dy-flex-shrink-0 dy-text-primary" />
@@ -388,7 +388,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
 
       <div className="dy-flex dy-flex-col md:dy-flex-row dy-gap-4 dy-min-h-[calc(100vh-220px)]">
         {/* Desktop Sidebar Folder Tree */}
-        <div className="dy-hidden md:dy-block">
+        <div className="dy-hidden md:dy-block dy-self-start dy-sticky dy-top-4">
           <FolderTree
             folders={folders}
             activeFolderId={activeFolderId}
@@ -397,7 +397,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             onRenameFolder={renameFolder}
             onDeleteFolder={deleteFolder}
             totalAssetCount={slotResponse?.total}
-            className="dy-h-full dy-rounded-xl dy-border"
+            className="dy-h-auto dy-max-h-[calc(100dvh-8rem)] dy-rounded-xl dy-border"
           />
         </div>
 

@@ -124,6 +124,13 @@ export function MediaCard({
           src={previewUrl}
           alt={item.alt || item.filename}
           onLoad={() => setIsLoaded(true)}
+          style={
+            item.focalPoint && typeof item.focalPoint.x === "number" && typeof item.focalPoint.y === "number"
+              ? {
+                  objectPosition: `${item.focalPoint.x <= 1 ? item.focalPoint.x * 100 : item.focalPoint.x}% ${item.focalPoint.y <= 1 ? item.focalPoint.y * 100 : item.focalPoint.y}%`,
+                }
+              : undefined
+          }
           className={cn(
             "dy-w-full dy-h-full dy-object-cover dy-transition-all dy-duration-500 group-hover:dy-scale-105",
             item.blurhash && !isLoaded ? "dy-opacity-0" : "dy-opacity-100"

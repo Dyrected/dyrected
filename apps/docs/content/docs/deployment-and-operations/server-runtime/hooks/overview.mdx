@@ -388,8 +388,8 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
   docs?: Record<string, unknown>[];
   /** Current authenticated user. */
   user?: unknown;
-  /** Imperative setter for async or derived updates. */
-  setValue: (value: unknown) => void;
+  /** Imperative setter for current field or sibling fields. */
+  setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void;
 }
 ```
 
@@ -401,7 +401,7 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
 | <code>doc</code> (optional) | The targeted record / document when available. |
 | <code>docs</code> (optional) | Array of targeted records for bulk action operations. |
 | <code>user</code> (optional) | Current authenticated user. |
-| <code>setValue</code> (required) | Imperative setter for async or derived updates. |
+| <code>setValue</code> (optional) | Imperative setter for current field or sibling fields. |
 
 
 ## FieldAdminOptionsHook

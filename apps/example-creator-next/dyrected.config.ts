@@ -1136,6 +1136,9 @@ const recordPaymentAction = defineAction({
       defaultValue: ({ doc }: { doc?: Record<string, any> }) => (Number(doc?.asoebiQuantity) || 1) * 25000,
       admin: {
         condition: "siblingData.asoebiStatus != 'waived'",
+        hooks: {
+          onChange: ({ doc }: { doc?: Record<string, any> }) => (Number(doc?.asoebiQuantity) || 1) * 25000,
+        },
       },
     }),
     defineSelectField({
@@ -1276,7 +1279,14 @@ const GuestResponses = defineCollection({
       filter: { attending: { equals: true } },
       columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
       sort: { field: "name", direction: "asc" },
-      actions: [checkInAction, undoCheckInAction, assignTableAction, recordPaymentAction, markSelectedPaidAction, sendReminderAction],
+      actions: [
+        checkInAction,
+        undoCheckInAction,
+        assignTableAction,
+        recordPaymentAction,
+        markSelectedPaidAction,
+        sendReminderAction,
+      ],
       metrics: [
         {
           label: "Attending Guests",

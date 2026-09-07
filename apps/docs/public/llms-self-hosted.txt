@@ -185,6 +185,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Textarea](https://docs.dyrected.com/docs/self-hosted/model-content/fields/textarea): A multi-line plain-text field for longer, unformatted content.
 - [Time](https://docs.dyrected.com/docs/self-hosted/model-content/fields/time): A field for a local time of day, used when the date is modeled elsewhere.
 - [URL](https://docs.dyrected.com/docs/self-hosted/model-content/fields/url): A link field that stores a structured link object for external URLs or internal document references.
+- [Managing Media & Folders](https://docs.dyrected.com/docs/self-hosted/model-content/media/digital-asset-management): Organize your digital assets with nested folders, move files, filter by media type, replace assets in-place, and generate URL transforms.
 - [Overview](https://docs.dyrected.com/docs/self-hosted/model-content/media/overview): Understand how upload collections, storage adapters, and file options fit together in Dyrected.
 - [Storage Adapters](https://docs.dyrected.com/docs/self-hosted/model-content/media/storage-adapters): Storage adapters decide where uploaded files live and how their URLs are resolved.
 - [Actions](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/actions): Verbs for operational views — row, bulk, and header actions with confirm, input forms, and Cloud-safe mutations.

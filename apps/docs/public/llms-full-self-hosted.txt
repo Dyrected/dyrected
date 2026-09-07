@@ -270,6 +270,71 @@ curl -X POST https://example.com/api/collections/orders/aggregate \
 
 Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate).
 
+## Media and uploads
+
+Upload-enabled collections expose dedicated routes for file ingestion and atomic in-place replacement:
+
+### Upload a new file
+
+Send a `multipart/form-data` request with the `file` field and optional document fields:
+
+```bash
+curl -X POST https://example.com/api/collections/media/upload \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/hero.jpg" \
+  -F "alt=Hero campaign banner" \
+  -F "folderId=marketing-folder-id"
+```
+
+### Replace an asset in-place
+
+Replace the physical file bytes for an existing asset without changing its document ID or breaking relations:
+
+```bash
+curl -X POST https://example.com/api/collections/media/asset-123/file \
+  -H "x-api-key: your-api-key" \
+  -F "file=@/path/to/new-hero.jpg"
+```
+
+Dyrected replaces the stored file in your storage adapter, recalculates dimensions, aspect ratio, and BlurHash, and returns the updated document.
+
+## Media folders
+
+Organize upload collections into nested hierarchical folders:
+
+```bash
+GET /api/collections/:slug/folders
+POST /api/collections/:slug/folders
+PATCH /api/collections/:slug/folders/:id
+DELETE /api/collections/:slug/folders/:id
+```
+
+### Create a folder
+
+```bash
+curl -X POST https://example.com/api/collections/media/folders \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Summer 2026",
+    "parentId": "marketing-folder-id",
+    "color": "#3b82f6"
+  }'
+```
+
+### Batch delete assets
+
+Delete multiple assets in a single atomic request:
+
+```bash
+curl -X DELETE https://example.com/api/collections/media/delete-many \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "ids": ["asset-1", "asset-2", "asset-3"]
+  }'
+```
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.
@@ -813,6 +878,35 @@ const { docs } = await client.collection("posts").find({
 ```
 
 Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
+
+## Managing media & folders
+
+Organize upload collections, manipulate folders, and replace asset files in-place:
+
+```ts
+// 1. Create a media folder
+const folder = await client.createFolder("media", {
+  name: "Summer Campaign",
+  color: "#3b82f6",
+});
+
+// 2. List all folders in a collection
+const { docs: folders } = await client.listFolders("media");
+
+// 3. Upload a file directly into a folder
+const asset = await client.collection("media").upload(myFile, {
+  folderId: folder.id,
+  alt: "Summer campaign banner",
+});
+
+// 4. Replace an existing file in-place (keeps the same document ID)
+const updatedAsset = await client.replaceMedia(asset.id, newFile);
+
+// 5. Delete multiple assets in batch
+await client.deleteMany("media", {
+  ids: ["asset-1", "asset-2"],
+});
+```
 
 ## Handling errors
 
@@ -5859,8 +5953,8 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
   docs?: Record<string, unknown>[];
   /** Current authenticated user. */
   user?: unknown;
-  /** Imperative setter for async or derived updates. */
-  setValue: (value: unknown) => void;
+  /** Imperative setter for current field or sibling fields. */
+  setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void;
 }
 ```
 
@@ -5872,7 +5966,7 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
 | <code>doc</code> (optional) | The targeted record / document when available. |
 | <code>docs</code> (optional) | Array of targeted records for bulk action operations. |
 | <code>user</code> (optional) | Current authenticated user. |
-| <code>setValue</code> (required) | Imperative setter for async or derived updates. |
+| <code>setValue</code> (optional) | Imperative setter for current field or sibling fields. |
 
 
 ## FieldAdminOptionsHook
@@ -21015,6 +21109,139 @@ export interface UrlLinkValue {
 | <code>relationTo</code> (optional) | For internal links, the collection slug of the referenced document. |
 | <code>value</code> (optional) | For internal links, the ID of the referenced document. |
 | <code>label</code> (optional) | Optional display label shown for the link. |
+
+---
+
+## Managing Media & Folders
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/media/digital-asset-management
+
+Use this page to learn how to organize, search, replace, and transform digital assets in your Dyrected media library. By the end of this guide, you will know how to create folder hierarchies, organize files, filter assets, replace images in-place without breaking relationships, and use URL transform presets.
+
+## The mental model
+
+As your project grows, media libraries quickly accumulate hundreds or thousands of assets. Dyrected includes a built-in Digital Asset Management (DAM) system that organizes assets without altering their public delivery URLs or storage paths:
+
+- **Folders are organizational taxonomy**: A folder is metadata that groups files inside an upload collection. Moving a file between folders updates its organizational `folderId` but preserves its public CDN URL and database document ID.
+- **In-place replacement protects relationships**: When you update a product photo, banner, or document, replacing the asset updates the underlying file bytes while keeping the original document ID intact so referenced pages and records do not break.
+- **Universal availability**: The same folder hierarchy, search, and type filters available in the full Media Page are accessible inside document form fields via the Media Picker dialog.
+
+## Creating and navigating folders
+
+Folders can be nested to any depth, allowing you to structure assets by department, campaign, year, or page section (for example: `/Marketing/2026/Summer-Launch`).
+
+### Desktop folder navigation
+
+In the desktop admin interface, the left sidebar displays your complete folder tree:
+
+1. Click **+ New Folder** at the root or hover over an existing folder to add a subfolder.
+2. Provide a name and optional color tag to help team members quickly scan categories.
+3. Click any folder to filter the workspace view to only assets within that folder.
+4. Use the **All Media** item at the top to view your complete library across all folders.
+
+### Mobile & tablet navigation
+
+On mobile phones and tablet viewports, the folder tree transforms into a horizontal **Folder Pill Carousel** with breadcrumb navigation. Tap any pill to jump into a subfolder, or tap the breadcrumb trail to return to parent levels.
+
+## Organizing assets into folders
+
+You can assign an asset to a folder when uploading or move existing assets at any time.
+
+### Moving a single asset
+
+To move an individual file:
+
+1. Hover over the asset card in grid view (or click the row in table view).
+2. Click the folder icon or open the three-dots menu (**···**) and select **Move to Folder...**.
+3. Choose the target folder from the dropdown tree and confirm.
+
+### Moving multiple assets in batch
+
+To organize multiple files at once:
+
+1. Switch to table view or enable multi-selection in the Media Library dialog.
+2. Select the checkbox for each asset you want to move.
+3. Click **Move Selected** in the action bar, choose the destination folder, and click **Move Assets**.
+
+## Filtering and searching assets
+
+The media filter bar helps you quickly find assets across large libraries:
+
+- **Search by filename**: Type any part of the original or stored filename in the search box.
+- **MIME type chips**: Filter instantly between `All`, `Images` (JPEG, PNG, WebP, SVG, GIF), `Videos` (MP4, WebM, YouTube, Vimeo), `Audio` (MP3, WAV), and `Documents` (PDF, DOCX, TXT).
+- **Aspect ratio filter**: Toggle between `Square (1:1)`, `Widescreen (16:9)`, and `Original` aspect ratio views to inspect thumbnails accurately.
+- **View modes**: Switch between the visual **Grid View** and the detailed **Table View** (which shows file size, MIME type, upload date, and quick action buttons).
+
+## Replacing assets in-place
+
+When a design asset or document is updated, you usually want to replace the file without having to find and update every content document that references it.
+
+Dyrected supports atomic in-place asset replacement:
+
+1. Open the asset in the **Media Inspector** sidebar (or click **Inspect Asset**).
+2. Click **Replace File**.
+3. Choose the new file from your computer. Dyrected automatically restricts the file picker to matching MIME types (for example, only allowing images to replace an existing image).
+4. The storage adapter replaces the stored file bytes and recalculates dimensions, aspect ratio, filesize, and BlurHash while **preserving the original document ID**.
+
+All relations in other collections pointing to this asset immediately resolve to the new file with zero broken links.
+
+## Focal point and responsive crop
+
+When displaying the same image across multiple aspect ratios (such as mobile portrait cards and desktop landscape banners), critical subject matter can be inadvertently cropped out.
+
+1. In the **Media Inspector**, view the image preview.
+2. Click anywhere on the image to set the **Focal Point** (represented by a central target indicator).
+3. Dyrected saves the normalized coordinate (`x` and `y` between 0.0 and 1.0) on the asset document.
+4. Your frontend components (such as `DyrectedImage` or custom CSS `object-position: {x}% {y}%`) use this coordinate to position crops centered around the subject.
+
+## Dynamic URL transformations
+
+For projects utilizing dynamic image transformations, the Media Inspector provides one-click copy buttons for standard delivery presets:
+
+- **Thumbnail**: Copies a pre-configured 300px thumbnail transformation URL.
+- **Banner**: Copies a 1200px widescreen banner URL.
+- **WebP**: Copies the next-gen WebP format conversion URL.
+
+These presets leverage your root `image` service configuration to serve optimized, device-appropriate assets to visitors globally.
+
+## Using folders in the SDK
+
+You can also manage folders and query assets programmatically using the `@dyrected/sdk` client:
+
+```ts
+
+
+const client = createClient({
+  baseUrl: "https://cms.example.com",
+  apiKey: process.env.DYRECTED_API_KEY,
+});
+
+// 1. Create a campaign folder
+const folder = await client.createFolder("media", {
+  name: "Summer 2026",
+  color: "#3b82f6",
+});
+
+// 2. Fetch all media assets inside that folder
+const { docs: summerAssets } = await client.collection("media").find({
+  where: {
+    folderId: { equals: folder.id },
+  },
+  sort: "-createdAt",
+});
+
+// 3. Replace an existing asset in-place
+const updatedAsset = await client.replaceMedia(summerAssets[0].id, newFile);
+```
+
+## Success check
+
+You are ready to manage project assets when you can:
+
+- Create and navigate nested folders in desktop and mobile views.
+- Move assets between folders individually and in batch.
+- Replace an existing image in-place without altering its database ID.
+- Set focal points for responsive frontend cropping.
 
 ---
 

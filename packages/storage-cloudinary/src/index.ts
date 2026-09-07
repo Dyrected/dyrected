@@ -103,10 +103,12 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
       options.crop = 'fill';
     }
 
-    if (transform.focalPoint) {
+    if (transform.focalPoint && typeof transform.focalPoint.x === 'number' && typeof transform.focalPoint.y === 'number') {
       options.gravity = 'xy_center';
-      options.x = Math.round(transform.focalPoint.x * 100) / 100;
-      options.y = Math.round(transform.focalPoint.y * 100) / 100;
+      const normX = transform.focalPoint.x > 1 ? transform.focalPoint.x / 100 : transform.focalPoint.x;
+      const normY = transform.focalPoint.y > 1 ? transform.focalPoint.y / 100 : transform.focalPoint.y;
+      options.x = Math.round(normX * 100) / 100;
+      options.y = Math.round(normY * 100) / 100;
     } else if (transform.gravity) {
       options.gravity =
         transform.gravity === 'focal' ? 'auto:focal' : transform.gravity;

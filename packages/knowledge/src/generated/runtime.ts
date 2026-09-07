@@ -3228,6 +3228,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "model-content--media--digital-asset-management",
+    "relativePath": "model-content/media/digital-asset-management",
+    "title": "Managing Media & Folders",
+    "description": "Organize your digital assets with nested folders, move files, filter by media type, replace assets in-place, and generate URL transforms.",
+    "runtime": "variant",
+    "runtimeGroup": "media-dam",
+    "runtimeNotes": "Cloud and self-hosted projects share the same DAM organization, folder hierarchy, and asset inspection capabilities.",
+    "sectionPath": "model-content/media",
+    "sourceFile": "apps/docs/content/docs/model-content/media/digital-asset-management.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/model-content/media/digital-asset-management",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/media/digital-asset-management",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/media/digital-asset-management",
+    "status": "classified"
+  },
+  {
     "id": "model-content--media--overview",
     "relativePath": "model-content/media/overview",
     "title": "Overview",

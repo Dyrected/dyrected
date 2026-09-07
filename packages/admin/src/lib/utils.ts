@@ -156,10 +156,12 @@ export function buildCloudinaryTransformUrl(url: string, options: ImageTransform
   } else if (options.width || options.height) {
     parts.push("c_fill");
   }
-  if (options.focalPoint) {
+  if (options.focalPoint && typeof options.focalPoint.x === "number" && typeof options.focalPoint.y === "number") {
     parts.push("g_xy_center");
-    parts.push(`x_${Math.round(options.focalPoint.x * 100) / 100}`);
-    parts.push(`y_${Math.round(options.focalPoint.y * 100) / 100}`);
+    const normX = options.focalPoint.x > 1 ? options.focalPoint.x / 100 : options.focalPoint.x;
+    const normY = options.focalPoint.y > 1 ? options.focalPoint.y / 100 : options.focalPoint.y;
+    parts.push(`x_${Math.round(normX * 100) / 100}`);
+    parts.push(`y_${Math.round(normY * 100) / 100}`);
   } else if (options.gravity) {
     const grav = options.gravity === "focal" ? "auto:focal" : options.gravity;
     parts.push(`g_${grav}`);
@@ -198,22 +200,35 @@ export function getTransformedMediaUrl(
   const rawUrl = getMediaUrl(val, baseUrl);
   if (!rawUrl) return "";
 
-  if (!transform) return rawUrl;
+  const effectiveTransform: ImageTransformOptions = {
+    ...(typeof transform === "object" ? transform : {}),
+    ...(typeof val === "object" && val?.focalPoint && (!transform || typeof transform !== "object" || !transform.focalPoint)
+      ? { focalPoint: val.focalPoint }
+      : {}),
+  };
+
+  if (!transform && !effectiveTransform.focalPoint) return rawUrl;
 
   // Cloudinary direct URL transformation
   if (rawUrl.includes("res.cloudinary.com") && rawUrl.includes("/image/upload/")) {
-    return buildCloudinaryTransformUrl(rawUrl, transform);
+    return buildCloudinaryTransformUrl(rawUrl, effectiveTransform);
   }
 
   // API endpoint query parameter transformation
   try {
     const parsed = new URL(rawUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-    if (transform.key) parsed.searchParams.set("key", transform.key);
-    if (transform.width) parsed.searchParams.set("width", String(transform.width));
-    if (transform.height) parsed.searchParams.set("height", String(transform.height));
-    if (transform.crop) parsed.searchParams.set("crop", transform.crop);
-    if (transform.format) parsed.searchParams.set("format", transform.format);
-    if (transform.quality) parsed.searchParams.set("quality", String(transform.quality));
+    if (effectiveTransform.key) parsed.searchParams.set("key", effectiveTransform.key);
+    if (effectiveTransform.width) parsed.searchParams.set("width", String(effectiveTransform.width));
+    if (effectiveTransform.height) parsed.searchParams.set("height", String(effectiveTransform.height));
+    if (effectiveTransform.crop) parsed.searchParams.set("crop", effectiveTransform.crop);
+    if (effectiveTransform.format) parsed.searchParams.set("format", effectiveTransform.format);
+    if (effectiveTransform.quality) parsed.searchParams.set("quality", String(effectiveTransform.quality));
+    if (effectiveTransform.focalPoint) {
+      const normX = effectiveTransform.focalPoint.x > 1 ? effectiveTransform.focalPoint.x / 100 : effectiveTransform.focalPoint.x;
+      const normY = effectiveTransform.focalPoint.y > 1 ? effectiveTransform.focalPoint.y / 100 : effectiveTransform.focalPoint.y;
+      parsed.searchParams.set("fx", String(Math.round(normX * 100) / 100));
+      parsed.searchParams.set("fy", String(Math.round(normY * 100) / 100));
+    }
 
     return rawUrl.startsWith("http") ? parsed.toString() : `${parsed.pathname}${parsed.search}`;
   } catch {

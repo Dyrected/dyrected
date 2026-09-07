@@ -2117,7 +2117,7 @@
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldAdminOnChangeHookArgs<TValue = unknown> {\n  /** Current field value in the form state. */\n  value: TValue;\n  /** Current values for sibling fields at the same nesting level. */\n  siblingData: Record<string, unknown>;\n  /** Current values for the entire form. */\n  data: Record<string, unknown>;\n  /** The targeted record / document when available. */\n  doc?: Record<string, unknown>;\n  /** Array of targeted records for bulk action operations. */\n  docs?: Record<string, unknown>[];\n  /** Current authenticated user. */\n  user?: unknown;\n  /** Imperative setter for async or derived updates. */\n  setValue: (value: unknown) => void;\n}",
+    "signature": "export interface FieldAdminOnChangeHookArgs<TValue = unknown> {\n  /** Current field value in the form state. */\n  value: TValue;\n  /** Current values for sibling fields at the same nesting level. */\n  siblingData: Record<string, unknown>;\n  /** Current values for the entire form. */\n  data: Record<string, unknown>;\n  /** The targeted record / document when available. */\n  doc?: Record<string, unknown>;\n  /** Array of targeted records for bulk action operations. */\n  docs?: Record<string, unknown>[];\n  /** Current authenticated user. */\n  user?: unknown;\n  /** Imperative setter for current field or sibling fields. */\n  setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void;\n}",
     "members": [
       {
         "name": "value",
@@ -2151,8 +2151,8 @@
       },
       {
         "name": "setValue",
-        "signature": "setValue: (value: unknown) => void",
-        "description": "Imperative setter for async or derived updates."
+        "signature": "setValue: (nameOrVal: string | unknown, maybeVal?: unknown) => void",
+        "description": "Imperative setter for current field or sibling fields."
       }
     ]
   },
