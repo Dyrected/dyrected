@@ -35,6 +35,33 @@ describe("ActionFormDialog Reactivity and Dynamic Defaults", () => {
     vi.clearAllMocks()
   })
 
+  it("evaluates function defaultValue using doc context even if doc has field of same name", () => {
+    const fields = [
+      {
+        name: "amountPaid",
+        type: "number",
+        label: "Amount Paid",
+        defaultValue: ({ doc }: any) => (Number(doc?.asoebiQuantity) || 1) * 25000,
+      },
+    ]
+
+    renderWithProviders(
+      <ActionFormDialog
+        open={true}
+        label="Record Payment"
+        fields={fields}
+        doc={{ asoebiQuantity: 2, amountPaid: 0 }}
+        isRunning={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    )
+
+    const input = document.querySelector('input[name="amountPaid"]') as HTMLInputElement
+    expect(input).not.toBeNull()
+    expect(input.value).toBe("50000")
+  })
+
   it("evaluates function defaultValue using doc context on open", () => {
     const fields = [
       {

@@ -99,9 +99,7 @@ function buildDefaults(
 ): Record<string, unknown> {
   const defaults: Record<string, unknown> = {}
   for (const field of fields ?? []) {
-    if (doc && doc[field.name] !== undefined && doc[field.name] !== null) {
-      defaults[field.name] = doc[field.name]
-    } else {
+    if (field.defaultValue !== undefined) {
       const evaluated = evaluateDefaultValue(field.defaultValue, {
         doc,
         docs,
@@ -111,6 +109,10 @@ function buildDefaults(
       })
       defaults[field.name] =
         evaluated !== undefined ? evaluated : field.type === "boolean" ? false : ""
+    } else if (doc && doc[field.name] !== undefined && doc[field.name] !== null) {
+      defaults[field.name] = doc[field.name]
+    } else {
+      defaults[field.name] = field.type === "boolean" ? false : ""
     }
   }
   return defaults
