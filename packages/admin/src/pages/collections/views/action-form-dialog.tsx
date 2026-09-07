@@ -98,7 +98,6 @@ function buildDefaults(
   docs?: Record<string, any>[],
 ): Record<string, unknown> {
   const defaults: Record<string, unknown> = {}
-  console.log("[ActionFormDialog:buildDefaults] starting defaults with doc context:", { doc, docs, user, fieldNames: (fields ?? []).map(f => f.name) })
   for (const field of fields ?? []) {
     if (field.defaultValue !== undefined) {
       const evalContext = {
@@ -109,7 +108,6 @@ function buildDefaults(
         data: { ...(doc ?? {}), ...defaults },
       }
       const evaluated = evaluateDefaultValue(field.defaultValue, evalContext)
-      console.log(`[ActionFormDialog:buildDefaults] field "${field.name}" evaluated defaultValue:`, evaluated, "from context:", evalContext)
       defaults[field.name] =
         evaluated !== undefined ? evaluated : field.type === "boolean" ? false : ""
     } else if (doc && doc[field.name] !== undefined && doc[field.name] !== null) {
@@ -118,7 +116,6 @@ function buildDefaults(
       defaults[field.name] = field.type === "boolean" ? false : ""
     }
   }
-  console.log("[ActionFormDialog:buildDefaults] final defaults:", defaults)
   return defaults
 }
 

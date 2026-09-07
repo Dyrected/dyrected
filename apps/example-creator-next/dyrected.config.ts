@@ -1240,11 +1240,9 @@ const GuestResponses = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange: ({ value, siblingData, setValue, doc, data }) => {
-            console.log("[GuestResponses:asoebiStatus.onChange] full context:", { value, siblingData, doc, data });
-            const quantity = Number(siblingData?.asoebiQuantity);
-            console.log("[GuestResponses:asoebiStatus.onChange] siblingData?.asoebiQuantity raw:", siblingData?.asoebiQuantity, "parsed quantity:", quantity);
-            const fullPrice = (quantity || 1) * 25000;
+          onChange: ({ value, siblingData, setValue }) => {
+            const quantity = Number(siblingData?.asoebiQuantity) || 1;
+            const fullPrice = quantity * 25000;
             if (value === "paid" || value === "collected") {
               setValue("asoebiAmountPaid", fullPrice);
             } else if (value === "requested" || value === "waived") {
@@ -1265,11 +1263,9 @@ const GuestResponses = defineCollection({
       defaultValue: 1,
       admin: {
         hooks: {
-          onChange: ({ value, siblingData, setValue, doc, data }) => {
-            console.log("[GuestResponses:asoebiQuantity.onChange] full context:", { value, siblingData, doc, data });
-            const quantity = Number(value);
-            console.log("[GuestResponses:asoebiQuantity.onChange] new quantity raw:", value, "parsed quantity:", quantity);
-            const fullPrice = (quantity || 1) * 25000;
+          onChange: ({ value, siblingData, setValue }) => {
+            const quantity = Number(value) || 1;
+            const fullPrice = quantity * 25000;
             const status = siblingData?.asoebiStatus;
             if (status === "paid" || status === "collected") {
               setValue("asoebiAmountPaid", fullPrice);
