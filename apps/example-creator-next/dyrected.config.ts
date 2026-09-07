@@ -1115,10 +1115,12 @@ const recordPaymentAction = defineAction({
       defaultValue: "paid",
       admin: {
         hooks: {
-          onChange: ({ value, doc, setValue }) => {
+          onChange: ({ value, doc, setValue, siblingData, data }) => {
+            console.log("[recordPaymentAction:asoebiStatus.onChange] full context:", { value, doc, siblingData, data });
             const unitPrice = 25000;
-            const quantity = Number(doc?.asoebiQuantity) || 1;
-            const fullTotal = quantity * unitPrice;
+            const quantity = Number(doc?.asoebiQuantity);
+            console.log("[recordPaymentAction:asoebiStatus.onChange] doc?.asoebiQuantity raw:", doc?.asoebiQuantity, "parsed quantity:", quantity);
+            const fullTotal = (quantity || 1) * unitPrice;
 
             if (value === "paid") {
               setValue("amountPaid", fullTotal);
@@ -1133,11 +1135,21 @@ const recordPaymentAction = defineAction({
       name: "amountPaid",
       label: "Amount Paid (NGN)",
       required: true,
-      defaultValue: ({ doc }: { doc?: Record<string, any> }) => (Number(doc?.asoebiQuantity) || 1) * 25000,
+      defaultValue: (context: { doc?: Record<string, any>; docs?: Record<string, any>[]; user?: any; siblingData?: any }) => {
+        console.log("[recordPaymentAction:amountPaid.defaultValue] full context:", context);
+        const quantity = Number(context?.doc?.asoebiQuantity);
+        console.log("[recordPaymentAction:amountPaid.defaultValue] context.doc?.asoebiQuantity raw:", context?.doc?.asoebiQuantity, "parsed quantity:", quantity);
+        return (quantity || 1) * 25000;
+      },
       admin: {
         condition: "siblingData.asoebiStatus != 'waived'",
         hooks: {
-          onChange: ({ doc }: { doc?: Record<string, any> }) => (Number(doc?.asoebiQuantity) || 1) * 25000,
+          onChange: (context: { doc?: Record<string, any>; siblingData?: any }) => {
+            console.log("[recordPaymentAction:amountPaid.onChange] full context:", context);
+            const quantity = Number(context?.doc?.asoebiQuantity);
+            console.log("[recordPaymentAction:amountPaid.onChange] context.doc?.asoebiQuantity raw:", context?.doc?.asoebiQuantity, "parsed quantity:", quantity);
+            return (quantity || 1) * 25000;
+          },
         },
       },
     }),
@@ -1240,9 +1252,11 @@ const GuestResponses = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange: ({ value, siblingData, setValue }) => {
-            const quantity = Number(siblingData?.asoebiQuantity) || 1;
-            const fullPrice = quantity * 25000;
+          onChange: ({ value, siblingData, setValue, doc, data }) => {
+            console.log("[GuestResponses:asoebiStatus.onChange] full context:", { value, siblingData, doc, data });
+            const quantity = Number(siblingData?.asoebiQuantity);
+            console.log("[GuestResponses:asoebiStatus.onChange] siblingData?.asoebiQuantity raw:", siblingData?.asoebiQuantity, "parsed quantity:", quantity);
+            const fullPrice = (quantity || 1) * 25000;
             if (value === "paid" || value === "collected") {
               setValue("asoebiAmountPaid", fullPrice);
             } else if (value === "requested" || value === "waived") {
@@ -1263,9 +1277,11 @@ const GuestResponses = defineCollection({
       defaultValue: 1,
       admin: {
         hooks: {
-          onChange: ({ value, siblingData, setValue }) => {
-            const quantity = Number(value) || 1;
-            const fullPrice = quantity * 25000;
+          onChange: ({ value, siblingData, setValue, doc, data }) => {
+            console.log("[GuestResponses:asoebiQuantity.onChange] full context:", { value, siblingData, doc, data });
+            const quantity = Number(value);
+            console.log("[GuestResponses:asoebiQuantity.onChange] new quantity raw:", value, "parsed quantity:", quantity);
+            const fullPrice = (quantity || 1) * 25000;
             const status = siblingData?.asoebiStatus;
             if (status === "paid" || status === "collected") {
               setValue("asoebiAmountPaid", fullPrice);
