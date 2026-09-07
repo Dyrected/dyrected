@@ -30,17 +30,18 @@ export function DataTable<TData>({ table, actionBar, onRowClick, isFetching }: D
 
   return (
     <div className="dy-flex dy-w-full dy-flex-col dy-gap-2.5">
-      <div className="dy-relative dy-w-full dy-overflow-auto dy-max-h-[calc(100vh-220px)] sm:dy-max-h-[640px] dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm [touch-action:auto]">
+      <div className="dy-relative dy-w-full">
         {isFetching && (
-          <div className="dy-absolute dy-top-0 dy-left-0 dy-right-0 dy-h-[2px] dy-bg-primary/20 dy-overflow-hidden dy-z-30">
+          <div className="dy-absolute dy-top-0 dy-left-0 dy-right-0 dy-h-[2px] dy-bg-primary/20 dy-overflow-hidden dy-z-40">
             <div className="dy-h-full dy-w-full dy-bg-primary dy-animate-pulse" />
           </div>
         )}
         <Table
+          containerClassName="dy-max-h-[calc(100dvh-220px)] sm:dy-max-h-[640px] dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm [touch-action:auto]"
           className="dy-table-fixed dy-w-full dy-border-collapse dy-caption-bottom dy-text-sm"
           style={{ width: `${table.getTotalSize()}px`, minWidth: "100%" }}
         >
-          <TableHeader>
+          <TableHeader className="dy-sticky dy-top-0 dy-z-20 dy-bg-muted/95 dy-backdrop-blur-sm">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="dy-border-b dy-border-border/60 hover:dy-bg-transparent">
                 {headerGroup.headers.map((header) => {
