@@ -60,6 +60,9 @@ function accessGate(
 function serializeFieldForApi(f: any): any {
   if (!f) return f;
   const serialized = { ...f };
+  if (typeof serialized.defaultValue === "function") {
+    serialized.defaultValue = `${SERIALIZED_ADMIN_HOOK_PREFIX}${serialized.defaultValue.toString()}`;
+  }
   if (serialized.admin?.hooks) {
     const hooks: Record<string, unknown> = { ...serialized.admin.hooks };
     if (typeof hooks.onChange === "function") {

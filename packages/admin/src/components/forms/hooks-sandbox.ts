@@ -69,10 +69,10 @@ function initSandbox() {
     <head>
       <script>
         window.addEventListener('message', async (event) => {
-          const { hookId, code, value, siblingData, data } = event.data;
+          const { hookId, code, value, siblingData, data, doc, docs, user } = event.data;
           try {
-            const fn = new Function('context', 'const { value, siblingData, data } = context; return (' + code + ')(context);');
-            const result = await fn({ value, siblingData, data });
+            const fn = new Function('context', 'const { value, siblingData, data, doc, docs, user } = context; return (' + code + ')(context);');
+            const result = await fn({ value, siblingData, data, doc: doc ?? data, docs, user });
             window.parent.postMessage({ hookId, result }, '*');
           } catch (err) {
             window.parent.postMessage({ hookId, error: err.message }, '*');
@@ -107,14 +107,24 @@ export function runHookSandboxed(
   hookCode: string,
   value: any,
   siblingData: any,
-  data: any
+  data: any,
+  contextExtra?: { doc?: any; docs?: any[]; user?: any }
 ): Promise<any> {
   initSandbox()
   const hookId = Math.random().toString(36).substring(7)
   return new Promise((resolve) => {
     messageHandlers.set(hookId, resolve)
     sandboxIframe?.contentWindow?.postMessage(
-      { hookId, code: hookCode, value, siblingData, data },
+      {
+        hookId,
+        code: hookCode,
+        value,
+        siblingData,
+        data,
+        doc: contextExtra?.doc ?? data,
+        docs: contextExtra?.docs,
+        user: contextExtra?.user,
+      },
       "*"
     )
   })

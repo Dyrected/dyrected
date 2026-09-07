@@ -166,6 +166,23 @@ export function evaluateDefaultValue(
     }
   }
 
+  if (typeof defaultValue === "string" && defaultValue.startsWith("__dyrected_fn__:")) {
+    try {
+      const code = defaultValue.slice("__dyrected_fn__:".length)
+      const fn = new Function("context", "return (" + code + ")(context);")
+      const result = fn({
+        doc: context.doc,
+        docs: context.docs,
+        user: context.user,
+        siblingData: context.siblingData ?? {},
+        data: context.data ?? context.doc ?? {},
+      })
+      if (result !== undefined) return result
+    } catch (err) {
+      console.error("[evaluateDefaultValue] error evaluating serialized function:", err)
+    }
+  }
+
   if (
     typeof defaultValue === "string" &&
     (defaultValue.includes("doc.") ||

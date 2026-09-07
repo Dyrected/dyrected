@@ -1116,11 +1116,9 @@ const recordPaymentAction = defineAction({
       admin: {
         hooks: {
           onChange: ({ value, doc, setValue, siblingData, data }) => {
-            console.log("[recordPaymentAction:asoebiStatus.onChange] full context:", { value, doc, siblingData, data });
             const unitPrice = 25000;
-            const quantity = Number(doc?.asoebiQuantity);
-            console.log("[recordPaymentAction:asoebiStatus.onChange] doc?.asoebiQuantity raw:", doc?.asoebiQuantity, "parsed quantity:", quantity);
-            const fullTotal = (quantity || 1) * unitPrice;
+            const quantity = Number(doc?.asoebiQuantity ?? data?.asoebiQuantity) || 1;
+            const fullTotal = quantity * unitPrice;
 
             if (value === "paid") {
               setValue("amountPaid", fullTotal);
@@ -1135,11 +1133,9 @@ const recordPaymentAction = defineAction({
       name: "amountPaid",
       label: "Amount Paid (NGN)",
       required: true,
-      defaultValue: (context: { doc?: Record<string, any>; docs?: Record<string, any>[]; user?: any; siblingData?: any }) => {
-        console.log("[recordPaymentAction:amountPaid.defaultValue] full context:", context);
-        const quantity = Number(context?.doc?.asoebiQuantity);
-        console.log("[recordPaymentAction:amountPaid.defaultValue] context.doc?.asoebiQuantity raw:", context?.doc?.asoebiQuantity, "parsed quantity:", quantity);
-        return (quantity || 1) * 25000;
+      defaultValue: (context: { doc?: Record<string, any>; docs?: Record<string, any>[]; user?: any; siblingData?: any; data?: any }) => {
+        const quantity = Number(context?.doc?.asoebiQuantity ?? context?.data?.asoebiQuantity) || 1;
+        return quantity * 25000;
       },
       admin: {
         condition: "siblingData.asoebiStatus != 'waived'",

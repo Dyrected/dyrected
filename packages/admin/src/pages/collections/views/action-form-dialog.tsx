@@ -211,6 +211,7 @@ function ActionForm({
                   currentValue,
                   values,
                   { ...(doc ?? {}), ...values },
+                  { doc, docs, user },
                 )
               : runDeclarativeHookExpression(
                   hook,
