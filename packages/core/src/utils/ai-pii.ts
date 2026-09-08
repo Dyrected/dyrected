@@ -11,6 +11,15 @@ export const NON_NEGOTIABLE_CREDENTIAL_FIELDS = new Set([
   "secret",
   "accessToken",
   "refreshToken",
+  "privateKey",
+  "private_key",
+  "webhookSecret",
+  "webhook_secret",
+  "authSecret",
+  "auth_secret",
+  "cvv",
+  "cvc",
+  "pin",
 ]);
 
 /**
@@ -45,14 +54,34 @@ export function maskPhone(phone: string, strategy: "mask" | "token" = "mask"): s
 /**
  * High-performance regex patterns for common PII.
  */
-export const PII_REGEX_PATTERNS = {
+export const PII_REGEX_PATTERNS: Record<string, RegExp> = {
   email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-  phone_number: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
-  phoneNumber: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
-  phone: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
+  phone_number: /(?:\+?\d{1,3}[-\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-\s]?\d{4}\b/g,
+  phoneNumber: /(?:\+?\d{1,3}[-\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-\s]?\d{4}\b/g,
+  phone: /(?:\+?\d{1,3}[-\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-\s]?\d{4}\b/g,
   credit_card: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g,
   ssn: /\b\d{3}-\d{2}-\d{4}\b/g,
   ipv4: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+  ipv6: /(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}/g,
+  iban: /\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}([A-Z0-9]?){0,16}\b/g,
+  api_key: /\b(?:sk_(?:live|test)_[0-9a-zA-Z_]{16,}|ghp_[0-9a-zA-Z_]{20,}|AKIA[0-9A-Z]{16})\b/g,
+  jwt: /\beyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g,
+  passport: /\b[A-Z]{1,2}[0-9]{6,9}\b/g,
+};
+
+const PII_PATTERN_PRIORITY: Record<string, number> = {
+  api_key: 1,
+  jwt: 2,
+  iban: 3,
+  credit_card: 4,
+  ipv6: 5,
+  ipv4: 6,
+  email: 7,
+  passport: 8,
+  ssn: 9,
+  phone: 10,
+  phone_number: 10,
+  phoneNumber: 10,
 };
 
 /**
@@ -64,7 +93,20 @@ export function maskTextPII(text: string, piiConfig?: AIPIIConfig): string {
 
   let result = text;
   const strategy = piiConfig.strategy || "mask";
-  const patterns = piiConfig.patterns || ["email", "phone", "ssn", "credit_card", "ipv4"];
+  const rawPatterns = piiConfig.patterns || [
+    "email",
+    "phone",
+    "phone_number",
+    "phoneNumber",
+    "ssn",
+    "credit_card",
+    "ipv4",
+  ];
+
+  // Execute in order of specificity so structured tokens/IPs/cards are scrubbed before phone/ssn
+  const patterns = [...rawPatterns].sort(
+    (a, b) => (PII_PATTERN_PRIORITY[a] ?? 99) - (PII_PATTERN_PRIORITY[b] ?? 99)
+  );
 
   for (const patternName of patterns) {
     const regex = PII_REGEX_PATTERNS[patternName];
@@ -75,6 +117,8 @@ export function maskTextPII(text: string, piiConfig?: AIPIIConfig): string {
         case "email":
           return maskEmail(match, strategy);
         case "phone":
+        case "phone_number":
+        case "phoneNumber":
           return maskPhone(match, strategy);
         case "credit_card":
           return strategy === "token"
@@ -84,6 +128,18 @@ export function maskTextPII(text: string, piiConfig?: AIPIIConfig): string {
           return strategy === "token" ? "[REDACTED_SSN]" : "***-**-" + match.replace(/\D/g, "").slice(-4);
         case "ipv4":
           return "[REDACTED_IP]";
+        case "ipv6":
+          return "[REDACTED_IPV6]";
+        case "iban":
+          return strategy === "token"
+            ? "[REDACTED_IBAN]"
+            : "****-****-" + match.replace(/\s/g, "").slice(-4);
+        case "api_key":
+          return "[REDACTED_API_KEY]";
+        case "jwt":
+          return "[REDACTED_JWT]";
+        case "passport":
+          return strategy === "token" ? "[REDACTED_PASSPORT]" : "***" + match.slice(-3);
         default:
           return "[REDACTED]";
       }
@@ -146,19 +202,26 @@ export function sanitizeDocForAI(options: SanitizeDocForAIOptions): Record<strin
     }
 
     const val = copy[fieldName];
-    const isEmail = field.type === "email" || fieldName.toLowerCase() === "email";
-    const isPhone = fieldName.toLowerCase() === "phone" || fieldName.toLowerCase() === "phonenumber";
+    const normalizedName = fieldName.toLowerCase().replace(/[_\s-]/g, "");
+    const isEmail = field.type === "email" || normalizedName.includes("email");
+    const isPhone =
+      (field.type as string) === "phone" ||
+      normalizedName.includes("phone") ||
+      normalizedName === "tel" ||
+      normalizedName === "telephone" ||
+      normalizedName === "mobile" ||
+      normalizedName === "cell";
 
     // B. Typed PII: default opt-out masking unless allowRaw === true or global pii.enabled === false
     if (isEmail) {
-      if (globalAIConfig?.pii?.enabled !== false && field.ai?.allowRaw !== true && typeof val === 'string') {
+      if (globalAIConfig?.pii?.enabled !== false && field.ai?.allowRaw !== true && typeof val === "string") {
         copy[fieldName] = maskEmail(val, globalAIConfig?.pii?.strategy);
       }
       continue;
     }
 
     if (isPhone) {
-      if (globalAIConfig?.pii?.enabled !== false && field.ai?.allowRaw !== true && typeof val === 'string') {
+      if (globalAIConfig?.pii?.enabled !== false && field.ai?.allowRaw !== true && typeof val === "string") {
         copy[fieldName] = maskPhone(val, globalAIConfig?.pii?.strategy);
       }
       continue;

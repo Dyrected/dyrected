@@ -62,10 +62,13 @@ describe('AI PII Redaction & De-identification Pipeline', () => {
       password: 'argon2_hashed_secret',
       salt: 'random_salt',
       hash: 'secret_hash',
-      apiKey: 'sk_live_123456789',
+      apiKey: 'mock_api_key_123456789',
       resetPasswordToken: 'tok_abc',
       billingAddress: '123 Main St, Springfield',
       ssn: '000-12-3456',
+      privateKey: 'rsa_private_key_content',
+      webhookSecret: 'whsec_secret_123',
+      cvv: '123',
       notes: 'Customer called from 10.0.0.1 requesting a password reset',
     };
 
@@ -218,6 +221,35 @@ describe('AI PII Redaction & De-identification Pipeline', () => {
 
       expect(sanitized.notes).toContain('[REDACTED_IP]');
       expect(sanitized.notes).not.toContain('10.0.0.1');
+    });
+
+    it('scrubs extended PII patterns: iban, jwt, api_key, ipv6, passport', () => {
+      const collectionConfig: CollectionConfig = {
+        slug: 'customers',
+        fields: [{ name: 'text', type: 'text' }],
+      } as any;
+
+      const testDoc = {
+        id: 'doc_1',
+        text: 'Pay to GB29XABC10203012345678, token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sF_abc, key sk_test_dummy_mock_secret_key_123456789, IP 2001:0db8:85a3:0000:0000:8a2e:0370:7334, pass A12345678',
+      };
+
+      const sanitized = sanitizeDocForAI({
+        doc: testDoc,
+        collectionConfig,
+        globalAIConfig: {
+          pii: {
+            enabled: true,
+            patterns: ['iban', 'jwt', 'api_key', 'ipv6', 'passport'],
+          },
+        },
+      });
+
+      expect(sanitized.text).toContain('****-****-5678');
+      expect(sanitized.text).toContain('[REDACTED_JWT]');
+      expect(sanitized.text).toContain('[REDACTED_API_KEY]');
+      expect(sanitized.text).toContain('[REDACTED_IPV6]');
+      expect(sanitized.text).toContain('***678');
     });
   });
 

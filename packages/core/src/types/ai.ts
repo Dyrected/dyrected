@@ -167,7 +167,19 @@ export interface AIConfig {
   tools?: Record<string, AIToolDefinition>;
 }
 
-export type AIPIIPattern = 'email' | 'phone' | 'ssn' | 'credit_card' | 'ipv4';
+export type AIPIIPattern =
+  | "email"
+  | "phone"
+  | "phone_number"
+  | "phoneNumber"
+  | "ssn"
+  | "credit_card"
+  | "ipv4"
+  | "ipv6"
+  | "iban"
+  | "api_key"
+  | "jwt"
+  | "passport";
 
 export interface AIPIIConfig {
   /** If true, automatically scrubs known PII from unstructured text before AI embedding or inference. */
