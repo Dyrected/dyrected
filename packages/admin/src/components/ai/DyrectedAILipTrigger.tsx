@@ -351,14 +351,8 @@ function AIReasoningAccordion({
   thinking: string;
   isStillThinking?: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(isStillThinking);
-
-  // If streaming and currently thinking, keep open
-  useEffect(() => {
-    if (isStillThinking) {
-      setIsOpen(true);
-    }
-  }, [isStillThinking]);
+  const [userToggled, setUserToggled] = useState<boolean | null>(null);
+  const isOpen = userToggled !== null ? userToggled : Boolean(isStillThinking);
 
   if (!thinking && !isStillThinking) return null;
 
@@ -366,7 +360,7 @@ function AIReasoningAccordion({
     <div className="dy-mb-2.5 dy-rounded-lg dy-border dy-border-border/60 dy-bg-muted/20 dy-overflow-hidden dy-text-xs dy-transition-all">
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => setUserToggled(!isOpen)}
         className="dy-w-full dy-px-3 dy-py-1.5 dy-flex dy-items-center dy-justify-between dy-gap-2 dy-text-left hover:dy-bg-muted/40 dy-transition-colors group"
       >
         <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">

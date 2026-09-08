@@ -14,7 +14,6 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Sparkles,
   Sun,
   Lock,
   Shield,
@@ -813,30 +812,6 @@ function SidebarInner({
             collapsed={collapsed}
             onClick={onNavigate}
           />
-          {schemas?.ai?.enabled !== false && (
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("dyrected:ai-open"));
-                onNavigate?.();
-              }}
-              className={cn(
-                "dy-group dy-relative dy-flex dy-w-full dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-1.5 dy-text-xs dy-transition-all dy-duration-150 dy-text-muted-foreground hover:dy-bg-primary/10 hover:dy-text-primary",
-                collapsed ? "dy-justify-center dy-px-2" : ""
-              )}
-              aria-label="AI Assistant (Cmd+J)"
-            >
-              <Sparkles className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-text-primary" />
-              {!collapsed && (
-                <div className="dy-flex dy-items-center dy-justify-between dy-w-full dy-min-w-0">
-                  <span className="dy-truncate dy-font-medium">AI Assistant</span>
-                  <kbd className="dy-text-[9px] dy-bg-muted dy-text-muted-foreground dy-px-1.5 dy-py-0.5 dy-rounded dy-font-mono">
-                    ⌘J
-                  </kbd>
-                </div>
-              )}
-            </button>
-          )}
         </div>
 
         {uploadCollections.length > 0 && (
