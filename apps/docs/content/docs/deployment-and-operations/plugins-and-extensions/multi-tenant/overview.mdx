@@ -1,0 +1,77 @@
+---
+title: Multi-Tenant Architecture Overview
+description: Understand the three multi-tenancy models supported by Dyrected and learn which pattern best fits your product architecture.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Multi-tenancy in Dyrected allows you to isolate content across organizations, clients, or distinct websites without having to deploy and maintain separate CMS servers for each one.
+
+Instead of forcing a one-size-fits-all approach, Dyrected supports three distinct multi-tenancy patterns. You can use any of them on their own, or combine them as your product scales.
+
+---
+
+## The Three Patterns at a Glance
+
+Before configuring your collections, review the three architectural options to see where your application fits:
+
+| Pattern | Best For | How Data Is Isolated | License Tier | Dedicated Guide |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Row-Level Scoping** | SaaS apps, team workspaces, B2B portals | Shared collections with `tenantId` fields and access control rules | **Community (MIT)** | [Row-Level Multi-Tenancy](./row-level) |
+| **2. Header-Scoped Sites** | Multi-brand networks, regional websites | Collections and globals tagged with `siteId`, routed via `X-Site-Id` header | **Community (MIT)** | [Header-Scoped Sites](./header-scoped) |
+| **3. Dynamic Schemas** | Custom per-tenant fields, white-label CMS SaaS | Dynamic schema resolution at runtime via the `onSchemaFetch` hook | **Dyrected Platform License** | [Dynamic Tenant Schemas](./dynamic-schemas) |
+
+<Callout type="info">
+**Licensing Distinction:** Row-level multi-tenancy (Pattern 1) and header-scoped site collections (Pattern 2) are 100% open-source under the MIT license. Dynamic schema loading (`onSchemaFetch`) and reselling Dyrected as a managed multi-tenant CMS service require a commercial Dyrected Platform License.
+</Callout>
+
+---
+
+## When to Choose Pattern 1: Row-Level Scoping
+
+Choose **Row-Level Scoping** if:
+- You are building a B2B SaaS application where customers have teams, accounts, or workspaces.
+- Every tenant shares the exact same content model (for example, every team has articles, comments, and assets).
+- You want all tenant data stored in the same database tables, separated by an indexed `tenantId` column.
+- You want fine-grained role-based access rules (e.g., standard members only see their own organization's posts, while superadmins can inspect all rows).
+
+**Ready to implement?** Follow the step-by-step setup in the [Row-Level Multi-Tenancy Guide](./row-level).
+
+---
+
+## When to Choose Pattern 2: Header-Scoped Sites
+
+Choose **Header-Scoped Sites** if:
+- You run a single Dyrected backend that powers multiple distinct websites, regional domains, or subsidiary brands (e.g. `brand-us.example.com` and `brand-eu.example.com`).
+- Some collections and globals are shared across all sites (like common FAQs or author profiles), while others are unique to a specific brand.
+- Your frontend applications can send an `X-Site-Id` HTTP header to specify which site context they want to read.
+- You need server-side anti-spoofing so users can only access the specific sites they are assigned to.
+
+**Ready to implement?** Follow the step-by-step setup in the [Header-Scoped Sites Guide](./header-scoped).
+
+---
+
+## When to Choose Pattern 3: Dynamic Tenant Schemas
+
+Choose **Dynamic Tenant Schemas** if:
+- You are building a white-label CMS platform or multi-tenant SaaS where each customer can have their own custom fields, custom collections, or custom globals.
+- Tenant schemas cannot be hardcoded in a static configuration file because they are created or modified at runtime by customers.
+- You need the `/api/schemas` endpoint, REST endpoints, and the AI Content Assistant to dynamically load and merge custom collections for the requesting tenant.
+
+**Ready to implement?** Follow the step-by-step setup in the [Dynamic Tenant Schemas Guide](./dynamic-schemas).
+
+---
+
+## Combining Patterns
+
+Dyrected patterns are composable. For example, a digital agency can use **Header-Scoped Sites (Pattern 2)** to separate client websites, while simultaneously using **Row-Level Scoping (Pattern 1)** inside each client's site so their regional editorial teams only edit their assigned articles.
+
+---
+
+## AI Content Assistant & Tenant Safety
+
+Regardless of which pattern you choose, Dyrected's AI Content Assistant respects tenant boundaries natively:
+- **Schema Discovery:** The AI only inspects collections and fields accessible to the active tenant.
+- **RAG Vector Search:** Content embeddings and search snippets are partitioned by `siteId`.
+- **Query Grounding:** Tool calls (`queryCollection`, `getDocument`, `aggregateCollection`) inject and enforce both `siteId` scoping and row-level access control rules.
+- **Mutation Safety:** All proposed updates (`proposeCreateDocument`, `proposeUpdateDocument`, `proposeDeleteDocument`) require approval from an authenticated user authorized for that tenant.

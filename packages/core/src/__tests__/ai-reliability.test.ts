@@ -207,6 +207,46 @@ describe('Dyrected AI Day 6: Reliability, Resilience & Tenant Isolation', () => 
       const c6 = mockContext(testUserId, 6);
       await expect(middleware(c6 as any, nextFn)).rejects.toThrow(DyrectedAIError);
     });
+
+    it('delegates to custom AIRateLimitStore (e.g. Redis) when configured', async () => {
+      const mockCustomStore = {
+        consume: vi.fn(async (key: string, limit: number, windowMs: number) => {
+          if (key.includes('blocked_user')) {
+            return { allowed: false, remaining: 0, resetTimeSec: 123456, retryAfter: 45 };
+          }
+          return { allowed: true, remaining: limit - 1, resetTimeSec: 123456 };
+        }),
+      };
+
+      const customConfig = {
+        ...mockConfig,
+        ai: {
+          ...mockConfig.ai,
+          rateLimit: {
+            userMax: 10,
+            projectMax: 20,
+            store: mockCustomStore,
+          },
+        },
+      };
+
+      const middleware = aiRateLimit(customConfig as any);
+      const nextFn = vi.fn(async () => {});
+
+      const mockCtx = (userId: string) => ({
+        get: (key: string) => (key === 'config' ? customConfig : key === 'user' ? { id: userId } : null),
+        req: { header: () => 'proj_custom' },
+        header: vi.fn(),
+      });
+
+      // Allowed user passes and invokes custom store
+      await middleware(mockCtx('allowed_user') as any, nextFn);
+      expect(mockCustomStore.consume).toHaveBeenCalledWith('user:allowed_user', 10, 60000);
+      expect(nextFn).toHaveBeenCalled();
+
+      // Blocked user throws DyrectedAIError with store retryAfter
+      await expect(middleware(mockCtx('blocked_user') as any, nextFn)).rejects.toThrow(DyrectedAIError);
+    });
   });
 
   describe('4. Typed DyrectedAIError Taxonomy', () => {

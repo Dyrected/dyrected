@@ -1,30 +1,66 @@
 import type { Context, Next } from 'hono';
 import type { DyrectedContext } from '../app.js';
 import type { DyrectedConfig } from '../types/index.js';
+import type { AIRateLimitStore, AIRateLimitResult } from '../types/ai.js';
 import { DyrectedAIError } from '../types/ai-errors.js';
 
 interface RateLimitRecord {
   timestamps: number[];
 }
 
-const userWindows = new Map<string, RateLimitRecord>();
-const projectWindows = new Map<string, RateLimitRecord>();
+export class InMemoryRateLimitStore implements AIRateLimitStore {
+  private windows = new Map<string, RateLimitRecord>();
 
-// Cleanup stale records periodically (every 5 minutes)
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
+  constructor() {
+    if (typeof setInterval !== 'undefined') {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const windowMs = 60 * 1000;
+        for (const [key, record] of this.windows.entries()) {
+          record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
+          if (record.timestamps.length === 0) this.windows.delete(key);
+        }
+      }, 5 * 60 * 1000);
+      if (typeof (interval as any)?.unref === 'function') {
+        (interval as any).unref();
+      }
+    }
+  }
+
+  async consume(key: string, limit: number, windowMs: number): Promise<AIRateLimitResult> {
     const now = Date.now();
-    const windowMs = 60 * 1000;
-    for (const [key, record] of userWindows.entries()) {
-      record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
-      if (record.timestamps.length === 0) userWindows.delete(key);
+    let record = this.windows.get(key);
+    if (!record) {
+      record = { timestamps: [] };
+      this.windows.set(key, record);
     }
-    for (const [key, record] of projectWindows.entries()) {
-      record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
-      if (record.timestamps.length === 0) projectWindows.delete(key);
+    record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
+
+    const resetTimeSec = Math.ceil((now + windowMs) / 1000);
+
+    if (record.timestamps.length >= limit) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTimeSec,
+        retryAfter: Math.ceil((record.timestamps[0] + windowMs - now) / 1000),
+      };
     }
-  }, 5 * 60 * 1000);
+
+    record.timestamps.push(now);
+    return {
+      allowed: true,
+      remaining: Math.max(0, limit - record.timestamps.length),
+      resetTimeSec,
+    };
+  }
+
+  clear(): void {
+    this.windows.clear();
+  }
 }
+
+const defaultInMemoryStore = new InMemoryRateLimitStore();
 
 export function aiRateLimit(config?: DyrectedConfig) {
   return async (c: Context<DyrectedContext>, next: Next) => {
@@ -33,10 +69,10 @@ export function aiRateLimit(config?: DyrectedConfig) {
       return next();
     }
 
-    const userLimit = (aiConfig as any)?.rateLimit?.userMax ?? 30; // requests per minute
-    const projectLimit = (aiConfig as any)?.rateLimit?.projectMax ?? 60; // requests per minute
+    const store: AIRateLimitStore = aiConfig?.rateLimit?.store ?? defaultInMemoryStore;
+    const userLimit = aiConfig?.rateLimit?.userMax ?? 30; // requests per minute
+    const projectLimit = aiConfig?.rateLimit?.projectMax ?? 60; // requests per minute
     const windowMs = 60 * 1000;
-    const now = Date.now();
 
     const user = c.get('user') as any;
     const tokenPayload = c.get('authTokenPayload') as any;
@@ -52,48 +88,30 @@ export function aiRateLimit(config?: DyrectedConfig) {
     const projectId = c.req.header('X-Site-Id') || c.get('siteId') || 'default';
 
     // 1. Check user rate limit
-    let userRec = userWindows.get(userId);
-    if (!userRec) {
-      userRec = { timestamps: [] };
-      userWindows.set(userId, userRec);
-    }
-    userRec.timestamps = userRec.timestamps.filter((ts) => now - ts < windowMs);
-
-    // 2. Check project rate limit
-    let projRec = projectWindows.get(projectId);
-    if (!projRec) {
-      projRec = { timestamps: [] };
-      projectWindows.set(projectId, projRec);
-    }
-    projRec.timestamps = projRec.timestamps.filter((ts) => now - ts < windowMs);
-
-    const remainingUser = Math.max(0, userLimit - userRec.timestamps.length);
-    const resetTimeSec = Math.ceil((now + windowMs) / 1000);
-
+    const userResult = await store.consume(`user:${userId}`, userLimit, windowMs);
     c.header('X-RateLimit-Limit', String(userLimit));
-    c.header('X-RateLimit-Remaining', String(remainingUser));
-    c.header('X-RateLimit-Reset', String(resetTimeSec));
+    c.header('X-RateLimit-Remaining', String(userResult.remaining));
+    c.header('X-RateLimit-Reset', String(userResult.resetTimeSec));
 
-    if (userRec.timestamps.length >= userLimit) {
+    if (!userResult.allowed) {
       throw new DyrectedAIError(
         'AI_RATE_LIMITED',
         `Rate limit exceeded: maximum ${userLimit} requests per minute. Please wait before retrying.`,
         429,
-        { retryAfter: Math.ceil((userRec.timestamps[0] + windowMs - now) / 1000) }
+        { retryAfter: userResult.retryAfter }
       );
     }
 
-    if (projRec.timestamps.length >= projectLimit) {
+    // 2. Check project rate limit
+    const projResult = await store.consume(`project:${projectId}`, projectLimit, windowMs);
+    if (!projResult.allowed) {
       throw new DyrectedAIError(
         'AI_RATE_LIMITED',
         `Project burst limit reached: maximum ${projectLimit} requests per minute across all users.`,
         429,
-        { retryAfter: Math.ceil((projRec.timestamps[0] + windowMs - now) / 1000) }
+        { retryAfter: projResult.retryAfter }
       );
     }
-
-    userRec.timestamps.push(now);
-    projRec.timestamps.push(now);
 
     return next();
   };

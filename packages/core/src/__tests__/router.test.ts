@@ -101,6 +101,8 @@ describe("Dynamic Router", async () => {
     );
     expect(layoutField.blockReferences).toEqual(["hero"]);
     expect(layoutField.blocks).toBeUndefined();
+    expect(data.ai).toMatchObject({ enabled: true });
+    expect(data.collections[0]).toHaveProperty("shared");
   });
 
   it("should register collection routes", async () => {

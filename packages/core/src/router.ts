@@ -25,8 +25,26 @@ import {
   collectConfigDiagnostics,
 } from "./utils/declarative-hooks.js";
 import { getConfigLogger, getRequestLogger } from "./observability.js";
+import { HTTPException } from "hono/http-exception";
+import { getAllowedSitesForUser, resolveAuthorizedSiteId } from "./utils/tenant.js";
 
 const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:";
+
+function getAuthorizedSiteIdSafe(c: any): { siteId?: string; errorResponse?: any } {
+  try {
+    const hasSiteHeader = Boolean(c.req.header("X-Site-Id") || c.get("siteId"));
+    const allowedSites = getAllowedSitesForUser(c.get("user"), c.get("authTokenPayload"));
+    if (hasSiteHeader || (allowedSites && allowedSites.length > 0)) {
+      return { siteId: resolveAuthorizedSiteId(c) };
+    }
+    return {};
+  } catch (err: any) {
+    if (err instanceof HTTPException) {
+      return { errorResponse: c.json({ error: true, message: err.message }, err.status as any) };
+    }
+    throw err;
+  }
+}
 
 /**
  * Access gate middleware for granular permissions using Jexl.
@@ -238,7 +256,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   // 1. Schema Endpoints
   // Used by the SDK and Admin to understand the content structure
   app.get("/api/schemas", optionalAuth(config), async (c) => {
-    const siteId = c.req.header("X-Site-Id");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+
     const requestConfig =
       siteId && config.onSchemaFetch ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId)) : config;
     assertValidDeclarativeHooksInConfig(requestConfig, "/api/schemas");
@@ -269,6 +289,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         .map(async (col) => ({
           slug: col.slug,
           labels: col.labels,
+          shared: !!col.shared,
+          siteId: col.siteId,
+          ai: col.ai,
           access: {
             read: await serializeAccess(col.access?.read),
             create: await serializeAccess(col.access?.create),
@@ -281,6 +304,18 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
               type: f.type,
               label: f.label,
               required: f.required,
+              unique: f.unique,
+              min: f.min,
+              max: f.max,
+              step: f.step,
+              minLength: f.minLength,
+              maxLength: f.maxLength,
+              pattern: f.pattern,
+              allowedTypes: f.allowedTypes,
+              maxSize: f.maxSize,
+              virtual: f.virtual,
+              promoted: f.promoted,
+              ai: f.ai,
               defaultValue: f.defaultValue,
               options: f.options,
               relationTo: f.relationTo,
@@ -333,6 +368,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         .map(async (glb) => ({
           slug: glb.slug,
           label: glb.label,
+          shared: !!glb.shared,
+          siteId: glb.siteId,
           access: {
             read: await serializeAccess(glb.access?.read),
             update: await serializeAccess(glb.access?.update),
@@ -343,6 +380,18 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
               type: f.type,
               label: f.label,
               required: f.required,
+              unique: f.unique,
+              min: f.min,
+              max: f.max,
+              step: f.step,
+              minLength: f.minLength,
+              maxLength: f.maxLength,
+              pattern: f.pattern,
+              allowedTypes: f.allowedTypes,
+              maxSize: f.maxSize,
+              virtual: f.virtual,
+              promoted: f.promoted,
+              ai: f.ai,
               defaultValue: f.defaultValue,
               options: f.options,
               relationTo: f.relationTo,
@@ -365,6 +414,18 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         })),
     );
 
+    const effectiveAi = requestConfig.ai;
+    const aiEnabled = effectiveAi?.enabled !== false;
+    const aiProvider =
+      effectiveAi?.provider ||
+      (process.env.AGENTROUTER_API_KEY
+        ? "agentrouter"
+        : process.env.OPENROUTER_API_KEY
+        ? "openrouter"
+        : process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY
+        ? "openai"
+        : "google");
+
     return c.json({
       blocks: requestConfig.blocks?.map(serializeBlockForApi),
       collections: filteredCollections,
@@ -373,6 +434,11 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       adminAuth: getPublicAdminAuthConfig(requestConfig.adminAuth, collections),
       hasStorage: !!requestConfig.storage,
       configDiagnostics: collectConfigDiagnostics(requestConfig),
+      ai: {
+        enabled: aiEnabled,
+        provider: aiProvider,
+        model: effectiveAi?.model,
+      },
       adminHealth: {
         emailConfigured: !!requestConfig.email,
         secureAuthSecretConfigured: !!process.env.DYRECTED_JWT_SECRET,
@@ -384,7 +450,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   app.get("/api/dyrected/options/:collection/:field", optionalAuth(config), async (c) => {
     const { collection: colSlug, field: fieldName } = c.req.param();
-    const siteId = c.req.header("X-Site-Id");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
 
     // Resolve collections
     const requestConfig =
@@ -845,7 +912,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   //          GET  /api/collections/:slug/:id/workflow-history
   app.get("/api/collections/:slug/__audit", async (c) => {
     const slug = c.req.param("slug");
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
     const config = c.get("config");
 
     if (config.collections.some((col) => col.slug === slug)) {
@@ -867,7 +935,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   app.post("/api/collections/:slug/:id/transitions/:transition", requireAuth(config), async (c) => {
     const slug = c.req.param("slug");
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
     const config = c.get("config");
 
     // Skip if static — static workflow routes are registered directly above;
@@ -892,7 +961,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   app.get("/api/collections/:slug/:id/workflow-history", requireAuth(config), async (c) => {
     const slug = c.req.param("slug");
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
     const config = c.get("config");
 
     if (config.collections.some((col) => col.slug === slug)) {
@@ -917,7 +987,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.all("/api/collections/:slug/:id?", async (c) => {
     const slug = c.req.param("slug");
     const id = c.req.param("id");
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
     const config = c.get("config");
 
     // Skip if static (already handled by routes above)
@@ -973,7 +1044,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.all("/api/globals/:slug/:id?", async (c) => {
     const slug = c.req.param("slug");
     const id = c.req.param("id");
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
     const config = c.get("config");
 
     // Skip if static

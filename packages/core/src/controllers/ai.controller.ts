@@ -3,6 +3,8 @@ import { HTTPException } from "hono/http-exception";
 import type { DyrectedContext } from "../app.js";
 import type { DyrectedConfig } from "../types/index.js";
 import { AIAgent } from "../services/ai.service.js";
+import { resolveAuthorizedSiteId, isSiteAuthorized } from "../utils/tenant.js";
+import { mergeDynamicConfig } from "../utils/block-references.js";
 
 export class AIController {
   private config: DyrectedConfig;
@@ -11,14 +13,20 @@ export class AIController {
     this.config = config;
   }
 
-  private getAgent(c: Context<DyrectedContext>): AIAgent {
+  private async getAgent(c: Context<DyrectedContext>): Promise<AIAgent> {
     const user = c.get("user") as any;
     const tokenPayload = c.get("authTokenPayload") as any;
-    const projectId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+    const projectId = resolveAuthorizedSiteId(c);
     const db = c.get("config")?.db || this.config.db;
 
     if (!db) {
       throw new HTTPException(500, { message: "Database not initialized" });
+    }
+
+    let activeConfig = c.get("config") || this.config;
+    if (activeConfig.onSchemaFetch && projectId && projectId !== "default") {
+      const dynamicConfig = await activeConfig.onSchemaFetch(projectId);
+      activeConfig = mergeDynamicConfig(activeConfig, dynamicConfig);
     }
 
     const userId = user?.id || user?.sub || user?._id || tokenPayload?.sub || tokenPayload?.id || "anonymous";
@@ -30,7 +38,7 @@ export class AIController {
 
     return new AIAgent({
       db,
-      config: this.config,
+      config: activeConfig,
       projectId,
       userId,
       userName,
@@ -40,7 +48,7 @@ export class AIController {
   }
 
   async chat(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const body = await c.req.json().catch(() => ({}));
 
     const threadId = typeof body.threadId === "string" ? body.threadId : undefined;
@@ -85,21 +93,21 @@ export class AIController {
   }
 
   async createThread(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const body = await c.req.json().catch(() => ({}));
     const thread = await agent.createThread(typeof body.title === "string" ? body.title : undefined);
     return c.json({ thread }, 201);
   }
 
   async listThreads(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const limit = parseInt(c.req.query("limit") || "20", 10);
     const threads = await agent.listThreads(limit);
     return c.json({ threads });
   }
 
   async getThread(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const threadId = c.req.param("threadId");
     if (!threadId) {
       throw new HTTPException(400, { message: "Thread ID required" });
@@ -115,7 +123,7 @@ export class AIController {
   }
 
   async postMessage(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const threadId = c.req.param("threadId");
     if (!threadId) {
       throw new HTTPException(400, { message: "Thread ID required" });
@@ -145,7 +153,7 @@ export class AIController {
     if (!thread.title || thread.title === "New Conversation") {
       agent
         .generateTitle(content)
-        .then((title) => {
+        .then((title: string) => {
           agent.updateThreadTitle(threadId, title).catch(console.error);
         })
         .catch(console.error);
@@ -155,7 +163,7 @@ export class AIController {
   }
 
   async deleteThread(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const threadId = c.req.param("threadId");
     if (!threadId) {
       throw new HTTPException(400, { message: "Thread ID required" });
@@ -165,7 +173,7 @@ export class AIController {
   }
 
   async clearThreads(c: Context<DyrectedContext>) {
-    const agent = this.getAgent(c);
+    const agent = await this.getAgent(c);
     const count = await agent.clearAllThreads();
     return c.json({ success: true, count });
   }
@@ -176,7 +184,13 @@ export class AIController {
       throw new HTTPException(500, { message: "Database not initialized" });
     }
 
-    const projectId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+    const projectId = resolveAuthorizedSiteId(c);
+    let activeConfig = c.get("config") || this.config;
+    if (activeConfig.onSchemaFetch && projectId && projectId !== "default") {
+      const dynamicConfig = await activeConfig.onSchemaFetch(projectId);
+      activeConfig = mergeDynamicConfig(activeConfig, dynamicConfig);
+    }
+
     const body = await c.req.json().catch(() => ({}));
     const targetCollection = typeof body.collection === "string" ? body.collection : undefined;
     const force = !!body.force;
@@ -186,7 +200,7 @@ export class AIController {
     if (targetCollection) {
       const stats = await RAGService.reindexCollection({
         db,
-        config: this.config,
+        config: activeConfig,
         collection: targetCollection,
         projectId,
         force,
@@ -196,7 +210,7 @@ export class AIController {
 
     const result = await RAGService.reindexAll({
       db,
-      config: this.config,
+      config: activeConfig,
       projectId,
       force,
     });
@@ -211,7 +225,13 @@ export class AIController {
     }
 
     const user = c.get("user");
-    const projectId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+    const projectId = resolveAuthorizedSiteId(c);
+    let activeConfig = c.get("config") || this.config;
+    if (activeConfig.onSchemaFetch && projectId && projectId !== "default") {
+      const dynamicConfig = await activeConfig.onSchemaFetch(projectId);
+      activeConfig = mergeDynamicConfig(activeConfig, dynamicConfig);
+    }
+
     const body = await c.req.json().catch(() => ({}));
     const query = typeof body.query === "string" ? body.query : "";
     const collections = Array.isArray(body.collections) ? body.collections : undefined;
@@ -225,7 +245,7 @@ export class AIController {
     const { RAGService } = await import("../services/rag/rag.service.js");
     const result = await RAGService.search({
       db,
-      config: this.config,
+      config: activeConfig,
       query,
       projectId,
       collections,
@@ -243,6 +263,7 @@ export class AIController {
       throw new HTTPException(500, { message: "Database not initialized" });
     }
 
+    const projectId = resolveAuthorizedSiteId(c);
     const actionId = c.req.param("actionId");
     if (!actionId) {
       throw new HTTPException(400, { message: "Action ID required" });
@@ -254,7 +275,7 @@ export class AIController {
       id: actionId,
     });
 
-    if (!action) {
+    if (!action || (action.projectId && projectId !== "default" && action.projectId !== projectId)) {
       throw new HTTPException(404, { message: `Action "${actionId}" not found` });
     }
 
@@ -267,8 +288,9 @@ export class AIController {
       throw new HTTPException(500, { message: "Database not initialized" });
     }
 
-    const user = c.get("user");
-    const projectId = c.req.header("X-Site-Id") || c.get("siteId") || "default";
+    const user = typeof c.get === "function" ? (c.get("user") as any) : undefined;
+    const tokenPayload = typeof c.get === "function" ? (c.get("authTokenPayload") as any) : undefined;
+    const projectId = resolveAuthorizedSiteId(c);
     const actionId = c.req.param("actionId");
     if (!actionId) {
       throw new HTTPException(400, { message: "Action ID required" });
@@ -282,6 +304,14 @@ export class AIController {
 
     if (!action) {
       throw new HTTPException(404, { message: `Action "${actionId}" not found` });
+    }
+
+    if (action.projectId && projectId !== "default" && action.projectId !== projectId) {
+      throw new HTTPException(403, { message: `Forbidden: Action "${actionId}" belongs to another site` });
+    }
+
+    if (action.projectId && !isSiteAuthorized(action.projectId, user, tokenPayload)) {
+      throw new HTTPException(403, { message: `Forbidden: User is not authorized to execute actions for site "${action.projectId}"` });
     }
 
     if (action.status === "executing") {
@@ -311,11 +341,31 @@ export class AIController {
       });
     }
 
+    // Acquire atomic execution lock immediately to close the concurrency window
+    await db.update({
+      collection: AI_ACTIONS_COLLECTION,
+      id: actionId,
+      data: { status: "executing" },
+    });
+
+    let activeConfig = c.get("config") || this.config;
+    if (activeConfig.onSchemaFetch && projectId && projectId !== "default") {
+      const dynamicConfig = await activeConfig.onSchemaFetch(projectId);
+      activeConfig = mergeDynamicConfig(activeConfig, dynamicConfig);
+    }
+
     // Dual-gate authorization verification
     const { isAccessAllowed } = await import("../auth/access.js");
+    const { validatePayloadAgainstFields } = await import("../services/ai-tools.js");
+
     if (action.targetCollection) {
-      const col = this.config.collections?.find((c) => c.slug === action.targetCollection);
+      const col = activeConfig.collections?.find((c) => c.slug === action.targetCollection);
       if (!col) {
+        await db.update({
+          collection: AI_ACTIONS_COLLECTION,
+          id: actionId,
+          data: { status: "failed", errorMessage: `Target collection "${action.targetCollection}" no longer exists` },
+        });
         throw new HTTPException(404, { message: `Target collection "${action.targetCollection}" not found` });
       }
 
@@ -323,7 +373,7 @@ export class AIController {
       if (action.type === "createDocument") opAccess = col.access?.create;
       else if (action.type === "deleteDocument") opAccess = col.access?.delete;
 
-      const allowed = await isAccessAllowed(this.config, opAccess, {
+      const allowed = await isAccessAllowed(activeConfig, opAccess, {
         req: { user, siteId: projectId } as any,
         user: user as any,
         data: action.proposedData,
@@ -331,18 +381,62 @@ export class AIController {
       });
 
       if (!allowed) {
+        await db.update({
+          collection: AI_ACTIONS_COLLECTION,
+          id: actionId,
+          data: { status: "pending" },
+        });
         throw new HTTPException(403, {
           message: `Access denied: you do not have permission to execute ${action.type} on "${action.targetCollection}"`,
         });
       }
+
+      // Re-validate against current live schema to protect against schema drift
+      if (action.type === "createDocument" || action.type === "updateDocument") {
+        const fields = col.fields?.map((f: any) => ({ name: f.name, type: f.type, required: !!f.required })) || [];
+        const validation = validatePayloadAgainstFields(fields, action.proposedData || {}, action.type === "updateDocument");
+        if (!validation.valid) {
+          await db.update({
+            collection: AI_ACTIONS_COLLECTION,
+            id: actionId,
+            data: { status: "failed", errorMessage: `Schema drift: ${validation.error}` },
+          });
+          throw new HTTPException(400, {
+            message: `Cannot execute action due to schema drift: ${validation.error}. Please ask the assistant to propose a fresh update.`,
+          });
+        }
+      }
     }
 
-    // Acquire atomic execution lock to prevent double-clicks
-    await db.update({
-      collection: AI_ACTIONS_COLLECTION,
-      id: actionId,
-      data: { status: "executing" },
-    });
+    if (action.targetGlobal) {
+      const glb = activeConfig.globals?.find((g) => g.slug === action.targetGlobal);
+      if (!glb) {
+        await db.update({
+          collection: AI_ACTIONS_COLLECTION,
+          id: actionId,
+          data: { status: "failed", errorMessage: `Target global "${action.targetGlobal}" no longer exists` },
+        });
+        throw new HTTPException(404, { message: `Target global "${action.targetGlobal}" not found` });
+      }
+
+      const allowed = await isAccessAllowed(activeConfig, glb.access?.update, {
+        req: { user, siteId: projectId } as any,
+        user: user as any,
+        data: action.proposedData,
+        doc: action.beforeSnapshot,
+      });
+
+      if (!allowed) {
+        await db.update({
+          collection: AI_ACTIONS_COLLECTION,
+          id: actionId,
+          data: { status: "pending" },
+        });
+        throw new HTTPException(403, {
+          message: `Access denied: you do not have permission to execute update on global "${action.targetGlobal}"`,
+        });
+      }
+    }
 
     let snapshotAfter: any = null;
     let rollbackPayload: any = null;
@@ -456,12 +550,15 @@ export class AIController {
       throw new HTTPException(500, { message: "Database not initialized" });
     }
 
+    const user = typeof c.get === "function" ? (c.get("user") as any) : undefined;
+    const tokenPayload = typeof c.get === "function" ? (c.get("authTokenPayload") as any) : undefined;
+    const projectId = resolveAuthorizedSiteId(c);
     const actionId = c.req.param("actionId");
     if (!actionId) {
       throw new HTTPException(400, { message: "Action ID required" });
     }
 
-    const { AI_ACTIONS_COLLECTION } = await import("../types/ai.js");
+    const { AI_ACTIONS_COLLECTION, AI_AUDIT_COLLECTION } = await import("../types/ai.js");
     const action = await db.findOne({
       collection: AI_ACTIONS_COLLECTION,
       id: actionId,
@@ -469,6 +566,14 @@ export class AIController {
 
     if (!action) {
       throw new HTTPException(404, { message: `Action "${actionId}" not found` });
+    }
+
+    if (action.projectId && projectId !== "default" && action.projectId !== projectId) {
+      throw new HTTPException(403, { message: `Forbidden: Action "${actionId}" belongs to another site` });
+    }
+
+    if (action.projectId && !isSiteAuthorized(action.projectId, user, tokenPayload)) {
+      throw new HTTPException(403, { message: `Forbidden: User is not authorized to reject actions for site "${action.projectId}"` });
     }
 
     if (action.status === "executed") {
@@ -482,6 +587,25 @@ export class AIController {
         status: "rejected",
       },
     });
+
+    const auditId = `aud_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+    await db.create({
+      collection: AI_AUDIT_COLLECTION,
+      data: {
+        id: auditId,
+        projectId,
+        actionId,
+        executedBy: user?.id,
+        actionType: "action_rejected",
+        target: action.targetCollection
+          ? `${action.targetCollection}${action.documentId ? "/" + action.documentId : ""}`
+          : `globals/${action.targetGlobal}`,
+        snapshotBefore: action.beforeSnapshot || null,
+        snapshotAfter: null,
+        rollbackPayload: null,
+        createdAt: new Date(),
+      },
+    }).catch((auditErr: any) => console.error("[dyrected/ai] Failed to record rejection audit:", auditErr));
 
     return c.json({ success: true, action: rejectedAction });
   }

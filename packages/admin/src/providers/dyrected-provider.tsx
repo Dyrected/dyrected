@@ -135,13 +135,30 @@ export function DyrectedProvider({
         : null) ||
       undefined,
   );
-  const [siteId, setSiteId] = useState<string | undefined>(
+  const [siteId, setSiteIdState] = useState<string | undefined>(
     () =>
       initialSiteId ||
       (typeof window !== "undefined"
         ? localStorage.getItem("dyrected_site_id")
         : null) ||
       undefined,
+  );
+
+  const queryClient = useQueryClient();
+
+  const setSiteId = useCallback(
+    (newSiteId: string | undefined) => {
+      setSiteIdState(newSiteId);
+      if (typeof window !== "undefined") {
+        if (newSiteId) {
+          localStorage.setItem("dyrected_site_id", newSiteId);
+        } else {
+          localStorage.removeItem("dyrected_site_id");
+        }
+      }
+      void queryClient.invalidateQueries();
+    },
+    [queryClient],
   );
   const [isResolvingStoredSession, setIsResolvingStoredSession] = useState(false);
   const storedToken = useMemo(() => getStoredToken(), []);
@@ -168,7 +185,6 @@ export function DyrectedProvider({
       siteId: siteId || undefined,
     });
   }, [apiKey, baseUrl, siteId]);
-  const queryClient = useQueryClient();
 
   const {
     data: schemas = null,
@@ -237,7 +253,7 @@ export function DyrectedProvider({
       setApiKey(newKey);
       setSiteId(newSiteId);
     },
-    [],
+    [setSiteId],
   );
 
   const setToken = useCallback(
@@ -505,6 +521,7 @@ export function DyrectedProvider({
         client,
         config: { baseUrl, apiKey, siteId, defaultTechStack },
         setAuth,
+        setSiteId,
         setToken,
         logout,
         isAuthenticated: !!baseUrl && !!apiKey,

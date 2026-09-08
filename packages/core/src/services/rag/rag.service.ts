@@ -6,6 +6,7 @@ import { isAccessAllowed } from '../../auth/access.js';
 import { extractTextFromDoc } from './normalizer.js';
 import { chunkText, hashContent } from './chunker.js';
 import { EmbeddingService, cosineSimilarity } from './embedding.service.js';
+import { sanitizeDocForAI } from '../../utils/ai-pii.js';
 
 export interface IndexDocumentOptions {
   db: DatabaseAdapter;
@@ -101,10 +102,16 @@ export class RAGService {
     const targetFields = ragConfig?.fields;
 
     // Resolve document title for citation references
-    const titleField = ragConfig?.titleField || col.admin?.useAsTitle || 'title';
-    const documentTitle = String(doc[titleField] || doc.name || doc.headline || doc.question || `${col.labels?.singular || col.slug} #${docId}`);
+    const sanitizedDoc = sanitizeDocForAI({
+      doc,
+      collectionConfig: col,
+      globalAIConfig: config.ai,
+    });
 
-    const extractedFields = extractTextFromDoc(doc, targetFields);
+    const titleField = ragConfig?.titleField || col.admin?.useAsTitle || 'title';
+    const documentTitle = String(sanitizedDoc[titleField] || sanitizedDoc.name || sanitizedDoc.headline || sanitizedDoc.question || `${col.labels?.singular || col.slug} #${docId}`);
+
+    const extractedFields = extractTextFromDoc(sanitizedDoc, targetFields);
     if (extractedFields.length === 0) {
       // If document has no text, remove any prior chunks
       await this.deleteDocumentChunks({ db, collection: collectionSlug, documentId: docId, projectId });
@@ -395,7 +402,7 @@ export class RAGService {
         title,
         field: chunk.field,
         score: Number(score.toFixed(3)),
-        text: chunk.text,
+        text: `<untrusted_content>\n${chunk.text}\n</untrusted_content>`,
         url,
         metadata: chunk.metadata,
       };

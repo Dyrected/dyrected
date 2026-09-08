@@ -287,7 +287,9 @@ export function bindObservabilityRuntime(
   runtime: DyrectedObservabilityRuntime,
 ) {
   runtimeByConfig.set(config, runtime);
+  (config as unknown as { __observability?: DyrectedObservabilityRuntime }).__observability = runtime;
 }
+
 
 export function getObservabilityRuntime(
   config: Pick<DyrectedConfig, "logger"> | undefined,

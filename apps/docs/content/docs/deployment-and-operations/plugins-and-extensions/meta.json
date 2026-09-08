@@ -8,7 +8,7 @@
     "__form-builder",
     "__import-export",
     "__mcp",
-    "__multi-tenant",
+    "multi-tenant",
     "__nested-docs",
     "__redirects",
     "__search",

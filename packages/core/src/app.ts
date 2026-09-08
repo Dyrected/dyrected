@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 import type { Level, Logger } from 'pino';
@@ -219,6 +220,9 @@ export async function createDyrectedApp(rawConfig: DyrectedConfig | any) {
 
   // 4. Global Error Handler
   app.onError((err, c) => {
+    if (err instanceof HTTPException) {
+      return c.json({ error: true, message: err.message }, err.status);
+    }
     const logger = getRequestLogger(c, 'core');
     logger.error({
       err,

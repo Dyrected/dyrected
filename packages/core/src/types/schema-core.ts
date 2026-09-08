@@ -147,6 +147,15 @@ export interface FieldBase {
   renameTo?: string;
   /** Whether SQL adapters should promote this field into a first-class column. */
   promoted?: boolean;
+  /** AI assistant privacy and PII redaction settings for this field. */
+  ai?: {
+    /** If true, completely removes this field from AI queries, RAG chunks, and context. */
+    exclude?: boolean;
+    /** If true or 'mask', masks the field value (e.g. b***@example.com) before sending to AI. */
+    redact?: boolean | 'mask';
+    /** If true, opts out of automatic default PII masking (e.g. for email/phone fields). */
+    allowRaw?: boolean;
+  };
 }
 
 export interface BaseFieldAdmin {

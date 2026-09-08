@@ -74,29 +74,37 @@ If you don't want to specify a provider explicitly, Dyrected **automatically det
 
 ### Explicit Provider Configuration
 
-If you want to pin a specific model, change base URLs (e.g. for custom proxies or local models), or specify custom API key names, configure the `ai` block in `dyrected.config.ts`:
+If you want to pin a specific model, change base URLs (e.g. for custom proxies, self-hosted models, or gateways), or specify custom API key names, configure the `ai` block in `dyrected.config.ts`:
 
 ```ts
-// Example: Using OpenAI with GPT-4o
+// 1. Direct OpenAI
 ai: {
   provider: "openai",
   model: "gpt-4o",
   apiKey: process.env.OPENAI_API_KEY,
 }
 
-// Example: Using Google Gemini
+// 2. Google Gemini
 ai: {
   provider: "google",
   model: "gemini-2.5-flash",
   apiKey: process.env.GEMINI_API_KEY,
 }
 
-// Example: Using OpenRouter or a custom OpenAI-compatible endpoint
+// 3. OpenRouter (Access OpenAI, Claude, Llama via one key)
 ai: {
   provider: "openrouter",
-  model: "meta-llama/llama-3.3-70b-instruct",
-  baseURL: "https://openrouter.ai/api/v1",
+  model: "openai/gpt-4o", // or "anthropic/claude-3.5-sonnet", "meta-llama/llama-3.3-70b-instruct"
+  baseURL: "https://openrouter.ai/api/v1", // default
   apiKey: process.env.OPENROUTER_API_KEY,
+}
+
+// 4. Custom OpenAI-compatible Gateway (Ollama, vLLM, Groq, Together)
+ai: {
+  provider: "custom",
+  baseURL: "http://localhost:11434/v1", // or https://api.groq.com/openai/v1
+  apiKey: process.env.CUSTOM_AI_API_KEY || "dummy-key",
+  model: "llama3.2",
 }
 ```
 
@@ -158,3 +166,76 @@ ai: {
 ```
 
 If a user or project exceeds these limits, Dyrected returns a polite `429 Too Many Requests` error with the retry interval.
+
+## Customer privacy and PII protection
+
+Dyrected protects customer data by default before sending any records to an AI model:
+- **Credentials** (`password`, `salt`, `hash`, `token`, `secret`) are permanently stripped.
+- **Emails and phone numbers** are automatically masked (e.g. `a***@example.com`, `***-***-5678`) unless explicitly permitted via `ai: { allowRaw: true }`.
+- **Custom redaction**: You can declare `ai: { exclude: true }` on sensitive fields, attach collection-level `sanitizeDoc` pseudonymization hooks, or enable the global free-text PII scrubber.
+
+For complete guidance and configuration examples, see [AI Privacy & Data Redaction](/docs/model-content/configuration/ai-privacy).
+
+## Using AI with the SDK (`@dyrected/sdk`)
+
+Frontend apps and custom scripts can interact directly with Dyrected's AI assistant through the typed `client.ai` module on `DyrectedClient`.
+
+### 1. Creating threads and messaging
+
+```ts
+import { DyrectedClient } from "@dyrected/sdk";
+
+const client = new DyrectedClient({
+  baseUrl: "http://localhost:3000",
+  apiKey: process.env.DYRECTED_API_KEY,
+});
+
+// Create a thread
+const thread = await client.ai.createThread({ title: "Product Copy Generation" });
+
+// Post a message
+const reply = await client.ai.postMessage(thread.id, {
+  role: "user",
+  content: "Draft a 50-word product description for the Silk Scarf",
+});
+
+// List or get threads
+const threads = await client.ai.listThreads();
+const currentThread = await client.ai.getThread(thread.id);
+```
+
+### 2. Human-in-the-Loop action confirmation
+
+When an AI model proposes a sensitive action (like creating or deleting records), Dyrected creates a pending action that requires explicit approval:
+
+```ts
+// Inspect pending action details
+const action = await client.ai.getAction("act_abc123");
+console.log(action.summary, action.proposedData);
+
+// Approve and execute the proposed change
+await client.ai.executeAction("act_abc123");
+
+// Or reject with an optional reason
+await client.ai.rejectAction("act_abc123", {
+  reason: "Price cannot be zero",
+});
+```
+
+### 3. Semantic RAG vector search
+
+Query indexed content using cosine similarity embeddings:
+
+```ts
+const results = await client.ai.searchRAG({
+  query: "How do return shipping refunds work?",
+  collection: "kb_articles",
+  limit: 5,
+});
+
+for (const match of results) {
+  console.log(`${match.title} (Score: ${match.score}): ${match.text}`);
+}
+```
+
+

@@ -175,6 +175,16 @@ export function DyrectedAILipTrigger() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, activeThreadId, handleOpen, handleClose]);
 
+  // Listen for programmatic open events from Dashboard or Sidebar buttons
+  useEffect(() => {
+    const handleAIOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ threadId?: string; prompt?: string }>;
+      handleOpen(customEvent.detail?.threadId ?? activeThreadId);
+    };
+    window.addEventListener('dyrected:ai-open', handleAIOpen);
+    return () => window.removeEventListener('dyrected:ai-open', handleAIOpen);
+  }, [handleOpen, activeThreadId]);
+
   return (
     <>
       {/* Desktop View */}
@@ -1170,6 +1180,18 @@ export function DyrectedAIChatPanel({
 
   const baseUrl = client?.getBaseUrl() || '';
   const authHeaders = useMemo(() => client?.getAuthHeaders() || {}, [client]);
+
+  // Listen for programmatic prompt dispatch from Dashboard or custom actions
+  useEffect(() => {
+    const handleAIOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ threadId?: string; prompt?: string }>;
+      if (customEvent.detail?.prompt) {
+        setInput(customEvent.detail.prompt);
+      }
+    };
+    window.addEventListener('dyrected:ai-open', handleAIOpen);
+    return () => window.removeEventListener('dyrected:ai-open', handleAIOpen);
+  }, []);
 
   // TanStack Query: Fetch conversation threads list
   const { data: threadsData } = useQuery({

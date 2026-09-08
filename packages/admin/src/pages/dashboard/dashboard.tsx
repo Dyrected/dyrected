@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { AlertCircle, ArrowRight, ChevronDown, Clock3, FileText, Globe, Plus, Settings, Upload } from "lucide-react"
+import { AlertCircle, ArrowRight, ChevronDown, Clock3, FileText, Globe, Plus, Settings, Sparkles, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
@@ -537,7 +537,85 @@ export function Dashboard() {
             </Link>
           </Button>
         )}
+        {schemas?.ai?.enabled !== false && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => window.dispatchEvent(new CustomEvent("dyrected:ai-open"))}
+            className="dy-h-11 dy-justify-start dy-gap-2 dy-rounded-md dy-text-sm dy-border-primary/30 dy-bg-primary/5 hover:dy-bg-primary/10 dy-text-primary"
+          >
+            <Sparkles className="dy-h-4 dy-w-4 dy-shrink-0" />
+            <span className="dy-truncate">Ask AI Assistant</span>
+          </Button>
+        )}
       </div>
+
+      {schemas?.ai?.enabled !== false && (
+        <div className="dy-rounded-xl dy-border dy-border-primary/20 dy-bg-gradient-to-r dy-from-primary/[0.04] dy-via-primary/[0.02] dy-to-transparent dy-p-5 dy-shadow-xs">
+          <div className="dy-flex dy-flex-col dy-gap-4 sm:dy-flex-row sm:dy-items-start sm:dy-justify-between">
+            <div className="dy-space-y-1.5 dy-min-w-0">
+              <div className="dy-flex dy-items-center dy-gap-2">
+                <div className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-lg dy-bg-primary/15 dy-text-primary">
+                  <Sparkles className="dy-h-4 dy-w-4" />
+                </div>
+                <h3 className="dy-text-sm dy-font-semibold dy-text-foreground">
+                  Dyrected AI Assistant
+                </h3>
+                {schemas?.ai?.model && (
+                  <Badge variant="outline" className="dy-text-[10px] dy-font-mono dy-text-primary dy-border-primary/30 dy-bg-primary/5">
+                    {schemas.ai.model}
+                  </Badge>
+                )}
+                {schemas?.ai?.provider && (
+                  <span className="dy-text-[11px] dy-text-muted-foreground capitalize">
+                    ({schemas.ai.provider})
+                  </span>
+                )}
+              </div>
+              <p className="dy-text-xs dy-text-muted-foreground dy-max-w-2xl">
+                Query documents, draft articles, analyze content, run custom business tools, and inspect your schemas with full conversational context.
+              </p>
+            </div>
+
+            <Button
+              size="sm"
+              onClick={() => window.dispatchEvent(new CustomEvent("dyrected:ai-open"))}
+              className="dy-shrink-0 dy-gap-1.5 dy-text-xs dy-h-8"
+            >
+              <Sparkles className="dy-h-3.5 dy-w-3.5" />
+              <span>Open Assistant</span>
+              <kbd className="dy-text-[10px] dy-bg-primary-foreground/20 dy-px-1.5 dy-py-0.5 dy-rounded dy-font-mono dy-ml-1">
+                ⌘J
+              </kbd>
+            </Button>
+          </div>
+
+          <div className="dy-mt-3 dy-flex dy-flex-wrap dy-gap-2">
+            {[
+              "Draft a new blog article",
+              "Check booking consultation availability",
+              "Summarize pending reviews",
+              "Search content with semantic RAG",
+            ].map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("dyrected:ai-open", {
+                      detail: { prompt },
+                    }),
+                  )
+                }
+                className="dy-inline-flex dy-items-center dy-gap-1.5 dy-rounded-md dy-border dy-border-border/60 dy-bg-background/80 dy-px-2.5 dy-py-1 dy-text-[11px] dy-text-muted-foreground hover:dy-border-primary/40 hover:dy-text-primary dy-transition-colors"
+              >
+                <ArrowRight className="dy-h-3 dy-w-3 dy-text-primary/70" />
+                <span>{prompt}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="dy-grid dy-gap-6 xl:dy-grid-cols-[minmax(0,1fr)_360px]">
         <section className="dy-min-w-0 dy-rounded-lg dy-border dy-border-border/60 dy-bg-card/50">

@@ -113,6 +113,21 @@ export interface RAGSearchResult {
   metadata?: Record<string, unknown>;
 }
 
+export interface AIRateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetTimeSec: number;
+  retryAfter?: number;
+}
+
+export interface AIRateLimitStore {
+  consume(
+    key: string,
+    limit: number,
+    windowMs: number
+  ): Promise<AIRateLimitResult> | AIRateLimitResult;
+}
+
 export interface AIConfig {
   /** Master switch to enable/disable AI endpoints. Defaults to true. */
   enabled?: boolean;
@@ -136,6 +151,7 @@ export interface AIConfig {
   rateLimit?: {
     userMax?: number;
     projectMax?: number;
+    store?: AIRateLimitStore;
   };
   /** Global RAG (Retrieval-Augmented Generation) configuration options. */
   rag?: GlobalRAGConfig;
@@ -145,8 +161,23 @@ export interface AIConfig {
     maxMessages?: number;
     recentMessagesCount?: number;
   };
+  /** Automated PII redaction and de-identification settings. */
+  pii?: AIPIIConfig;
   /** Custom developer-defined tools. */
   tools?: Record<string, AIToolDefinition>;
+}
+
+export type AIPIIPattern = 'email' | 'phone' | 'ssn' | 'credit_card' | 'ipv4';
+
+export interface AIPIIConfig {
+  /** If true, automatically scrubs known PII from unstructured text before AI embedding or inference. */
+  enabled?: boolean;
+  /** Patterns to scrub. Defaults to ['email', 'phone', 'ssn', 'credit_card', 'ipv4']. */
+  patterns?: AIPIIPattern[];
+  /** Redaction strategy: 'mask' (e.g. b***@example.com) or 'token' (e.g. [REDACTED_EMAIL]). Defaults to 'mask'. */
+  strategy?: 'mask' | 'token';
+  /** Optional custom scrubber function to transform text before AI consumption. */
+  customScrubber?: (text: string) => string;
 }
 
 export interface CollectionSummaryResult {
@@ -230,16 +261,30 @@ export interface AIAction {
   [key: string]: unknown;
 }
 
+export type AIAuditActionType = AIActionType | 'chat_turn' | 'rag_search' | 'action_rejected';
+
 export interface AIAuditRecord {
   id: string;
   projectId: string;
-  actionId: string;
+  actionId?: string;
+  threadId?: string;
   executedBy?: string;
-  actionType: AIActionType;
+  actionType: AIAuditActionType;
   target: string;
   snapshotBefore?: Record<string, unknown> | null;
   snapshotAfter?: Record<string, unknown> | null;
   rollbackPayload?: Record<string, unknown> | null;
+  tokens?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+  estimatedCostUsd?: number;
+  latencyMs?: {
+    total?: number;
+    retrieval?: number;
+    generation?: number;
+  };
   createdAt: Date | string;
   [key: string]: unknown;
 }

@@ -12,6 +12,7 @@ export interface DyrectedContextType {
     defaultTechStack?: string;
   };
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
+  setSiteId: (siteId: string | undefined) => void;
   logout: () => void;
   isAuthenticated: boolean;
   isResolvingStoredSession: boolean;

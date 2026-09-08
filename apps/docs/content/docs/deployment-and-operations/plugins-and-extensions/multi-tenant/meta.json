@@ -1,0 +1,9 @@
+{
+  "title": "Multi-Tenant Architecture",
+  "pages": [
+    "overview",
+    "row-level",
+    "header-scoped",
+    "dynamic-schemas"
+  ]
+}

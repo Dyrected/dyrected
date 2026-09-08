@@ -1,0 +1,201 @@
+---
+title: "Pattern 1: Row-Level Multi-Tenancy"
+description: Configure workspace and team-level data isolation using collection access control rules and tenantId fields.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+In row-level multi-tenancy, all tenants share the same database tables and collection schemas. Every document belongs to a specific tenant via a `tenantId` field, and access control rules ensure that users can only read, create, update, or delete records belonging to their own organization.
+
+This is the recommended default for B2B SaaS applications, member portals, and collaborative team workspaces.
+
+---
+
+## Mental Model
+
+When a user logs in, their authentication token contains their assigned `tenantId`. Whenever they make a request to the CMS (such as listing articles or editing a post), Dyrected's access engine automatically merges `{ tenantId: { equals: req.user.tenantId } }` into the database query.
+
+Users cannot see, query, or mutate documents belonging to another organization. Attempting to fetch another tenant's document directly by its ID returns a `404 Not Found`.
+
+---
+
+## Complete Configuration Example
+
+Here is a complete, copy-pasteable `dyrected.config.ts` demonstrating row-level scoping with an authentication collection and a multi-tenant `articles` collection:
+
+```ts title="dyrected.config.ts"
+import {
+  defineConfig,
+  defineEmailField,
+  defineSelectField,
+  defineTextField,
+  defineRichTextField,
+} from "@dyrected/core";
+
+export default defineConfig({
+  collections: [
+    // Auth collection storing user credentials and their assigned tenantId
+    {
+      slug: "users",
+      auth: true,
+      fields: [
+        defineEmailField({
+          name: "email",
+          label: "Email Address",
+          required: true,
+        }),
+        defineSelectField({
+          name: "role",
+          label: "Account Role",
+          options: [
+            { label: "Super Admin", value: "superadmin" },
+            { label: "Team Member", value: "member" },
+          ],
+          defaultValue: "member",
+          required: true,
+        }),
+        defineTextField({
+          name: "tenantId",
+          label: "Organization ID",
+          required: true,
+        }),
+      ],
+    },
+
+    // Content collection scoped per tenant
+    {
+      slug: "articles",
+      fields: [
+        defineTextField({
+          name: "title",
+          label: "Article Title",
+          required: true,
+        }),
+        defineRichTextField({
+          name: "content",
+          label: "Article Content",
+        }),
+        defineTextField({
+          name: "tenantId",
+          label: "Organization ID",
+          required: true,
+          admin: {
+            hidden: true, // Automatically populated, hidden from manual editor form
+          },
+        }),
+      ],
+      access: {
+        // Enforce row-level read filtering
+        read: ({ req }) => {
+          if (req.user?.role === "superadmin") return true;
+          if (req.user?.tenantId) {
+            return { tenantId: { equals: req.user.tenantId } };
+          }
+          return false;
+        },
+
+        // Prevent creating records for another tenant
+        create: ({ req, data }) => {
+          if (req.user?.role === "superadmin") return true;
+          return data?.tenantId === req.user?.tenantId;
+        },
+
+        // Restrict updates to records belonging to user's tenant
+        update: ({ req }) => {
+          if (req.user?.role === "superadmin") return true;
+          if (req.user?.tenantId) {
+            return { tenantId: { equals: req.user.tenantId } };
+          }
+          return false;
+        },
+
+        // Restrict deletions to records belonging to user's tenant
+        delete: ({ req }) => {
+          if (req.user?.role === "superadmin") return true;
+          if (req.user?.tenantId) {
+            return { tenantId: { equals: req.user.tenantId } };
+          }
+          return false;
+        },
+      },
+      hooks: {
+        beforeChange: [
+          async ({ req, data, operation }) => {
+            // Automatically assign the user's tenantId on creation
+            if (operation === "create" && req.user?.tenantId) {
+              return { ...data, tenantId: req.user.tenantId };
+            }
+            return data;
+          },
+        ],
+      },
+    },
+  ],
+});
+```
+
+---
+
+## How It Works in Practice
+
+### 1. Document Creation
+When an editor creates a new article via the Admin UI or API:
+1. The `beforeChange` hook inspects `req.user.tenantId` from the authenticated session.
+2. The hook sets `data.tenantId` to the user's tenant ID before saving to the database.
+3. The editor does not have to remember or manually input their organization ID.
+
+### 2. Document Retrieval
+When a user requests `GET /api/collections/articles`:
+1. Dyrected's access rule runs: `({ req }) => ({ tenantId: { equals: req.user.tenantId } })`.
+2. The database adapter adds `WHERE tenantId = ?` to the query.
+3. The response contains only documents belonging to that user's organization.
+
+### 3. Cross-Tenant ID Fetch
+If a user belonging to `org-1` attempts to access `GET /api/collections/articles/doc-of-org-2`:
+1. Dyrected queries the database with `id = 'doc-of-org-2'` AND `tenantId = 'org-1'`.
+2. No matching document is found.
+3. Dyrected returns a `404 Not Found` error, preventing attackers from confirming the existence of another tenant's documents.
+
+---
+
+## Client & SDK Integration
+
+Frontend applications authenticate using the standard login endpoint and fetch collections as usual.
+
+### Using `@dyrected/sdk`
+
+Here is a complete, runnable client example that logs in and queries articles:
+
+```ts title="client.ts"
+import { createClient } from "@dyrected/sdk";
+
+const client = createClient({
+  apiUrl: "https://cms.example.com",
+});
+
+async function loadTenantContent() {
+  // 1. Authenticate user belonging to an organization
+  await client.collection("users").login({
+    email: "editor@tenant-alpha.com",
+    password: "secure-password-123",
+  });
+
+  // 2. Fetch articles — Dyrected automatically filters by tenantId on the server
+  const response = await client.collection("articles").find({
+    limit: 10,
+  });
+
+  console.log("Tenant Articles:", response.docs);
+}
+
+loadTenantContent();
+```
+
+---
+
+## AI Content Assistant Protection
+
+When editors interact with the embedded AI Content Assistant:
+1. Tool executions (`queryCollection`, `getDocument`, `aggregateCollection`) automatically extract the authenticated user's `tenantId` from the session.
+2. The AI tools inject `{ tenantId: { equals: user.tenantId } }` into all database queries before retrieving records.
+3. Even if a user asks the AI: *"Summarize all articles across the platform"*, the AI can only retrieve and summarize records belonging to their active organization.

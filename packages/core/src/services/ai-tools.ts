@@ -8,14 +8,41 @@ import type {
   AIAction,
 } from '../types/ai.js';
 import { isAICollection, AI_ACTIONS_COLLECTION } from '../types/ai.js';
-import { isAccessAllowed } from '../auth/access.js';
+import { isAccessAllowed, resolveAccess } from '../auth/access.js';
+import { mergeWhereConstraint } from '../utils/access-control.js';
 import { RAGService } from './rag/rag.service.js';
+import { sanitizeDocForAI } from '../utils/ai-pii.js';
 
 function generateActionId(): string {
   return `act_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function validatePayloadAgainstFields(
+function isCollectionVisibleToProject(col: { siteId?: string; shared?: boolean }, projectId: string): boolean {
+  if (!col.siteId || col.shared || projectId === 'default') return true;
+  return col.siteId === projectId;
+}
+
+function getAvailableCollectionSlugs(config: DyrectedConfig, projectId?: string): string {
+  return (config.collections || [])
+    .filter((c) => !isAICollection(c.slug) && !c.slug.startsWith('_'))
+    .filter((c) => !projectId || isCollectionVisibleToProject(c, projectId))
+    .map((c) => c.slug)
+    .join(', ');
+}
+
+function isGlobalVisibleToProject(glb: { siteId?: string; shared?: boolean }, projectId: string): boolean {
+  if (!glb.siteId || glb.shared || projectId === 'default') return true;
+  return glb.siteId === projectId;
+}
+
+function getAvailableGlobalSlugs(config: DyrectedConfig, projectId?: string): string {
+  return (config.globals || [])
+    .filter((g) => !projectId || isGlobalVisibleToProject(g, projectId))
+    .map((g) => g.slug)
+    .join(', ');
+}
+
+export function validatePayloadAgainstFields(
   fields: Array<{ name: string; type: string; required?: boolean }>,
   data: Record<string, unknown>,
   isPartial = false
@@ -63,17 +90,6 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000, toolName = 'tool
   });
 }
 
-function getAvailableCollectionSlugs(config: DyrectedConfig): string {
-  return (config.collections || [])
-    .filter((c) => !isAICollection(c.slug) && !c.slug.startsWith('_'))
-    .map((c) => c.slug)
-    .join(', ');
-}
-
-function getAvailableGlobalSlugs(config: DyrectedConfig): string {
-  return (config.globals || []).map((g) => g.slug).join(', ');
-}
-
 export function createDyrectedAITools({
   db,
   config,
@@ -96,6 +112,7 @@ export function createDyrectedAITools({
           (async () => {
             const collections: CollectionSummaryResult[] = (config.collections || [])
               .filter((col) => !isAICollection(col.slug) && !col.slug.startsWith('_'))
+              .filter((col) => isCollectionVisibleToProject(col, projectId))
               .map((col) => ({
                 slug: col.slug,
                 label: col.labels?.singular || col.labels?.plural || col.slug,
@@ -125,15 +142,15 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is private or internal.`,
-                suggestion: `Choose from available public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Choose from available public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
                 error: `Collection "${collection}" not found in project.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}]. Please re-try with a valid collection.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}]. Please re-try with a valid collection.`,
                 recoverable: true,
               };
             }
@@ -168,10 +185,12 @@ export function createDyrectedAITools({
       execute: async () => {
         return withTimeout(
           (async () => {
-            const globals: GlobalSummaryResult[] = (config.globals || []).map((g) => ({
-              slug: g.slug,
-              label: g.label || g.slug,
-            }));
+            const globals: GlobalSummaryResult[] = (config.globals || [])
+              .filter((g) => isGlobalVisibleToProject(g, projectId))
+              .map((g) => ({
+                slug: g.slug,
+                label: g.label || g.slug,
+              }));
             return { globals };
           })(),
           10000,
@@ -193,10 +212,10 @@ export function createDyrectedAITools({
         return withTimeout(
           (async () => {
             const g = config.globals?.find((item) => item.slug === globalSlug);
-            if (!g) {
+            if (!g || !isGlobalVisibleToProject(g, projectId)) {
               return {
                 error: `Global "${globalSlug}" not found.`,
-                suggestion: `Available globals in this project are: [${getAvailableGlobalSlugs(config)}].`,
+                suggestion: `Available globals in this project are: [${getAvailableGlobalSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
@@ -260,49 +279,53 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is private or internal.`,
-                suggestion: `Query public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Query public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
                 error: `Collection "${collection}" does not exist in this project.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}]. Use getCollectionSchema() to inspect valid fields.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}]. Use getCollectionSchema() to inspect valid fields.`,
                 recoverable: true,
               };
             }
 
             // Access check
-            const canRead = await isAccessAllowed(config, col.access?.read, {
+            const accessResult = await resolveAccess(config, col.access?.read, {
               req: { user, siteId: projectId } as any,
               user,
             });
-            if (!canRead) {
+            if (accessResult === false) {
               return {
                 error: `Access denied: user lacks read permission for collection "${collection}".`,
                 recoverable: false,
               };
             }
 
+            let queryWhere = where || {};
+            if (accessResult && typeof accessResult === 'object') {
+              queryWhere = mergeWhereConstraint(queryWhere, accessResult as Record<string, unknown>);
+            }
+
             try {
               const result = await db.find({
                 collection,
-                where: where || {},
+                where: queryWhere,
                 sort,
                 limit,
                 page,
               });
 
-              // Redact sensitive password/salt fields if auth collection
-              const sanitizedDocs = (result.docs || []).map((doc: any) => {
-                const copy = { ...doc };
-                delete copy.password;
-                delete copy.salt;
-                delete copy.hash;
-                delete copy.resetPasswordToken;
-                return copy;
-              });
+              // Deterministically sanitize documents (credentials, PII masking, custom sanitizeDoc)
+              const sanitizedDocs = (result.docs || []).map((doc: any) =>
+                sanitizeDocForAI({
+                  doc,
+                  collectionConfig: col,
+                  globalAIConfig: config.ai,
+                })
+              );
 
               return {
                 collection,
@@ -344,25 +367,25 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is private or internal.`,
-                suggestion: `Retrieve documents from public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Retrieve documents from public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
-                error: `Collection "${collection}" not found.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
 
             // Access check
-            const canRead = await isAccessAllowed(config, col.access?.read, {
+            const accessResult = await resolveAccess(config, col.access?.read, {
               req: { user, siteId: projectId } as any,
               user,
             });
-            if (!canRead) {
+            if (accessResult === false) {
               return {
                 error: `Access denied: you do not have permission to read document "${id}" in "${collection}".`,
                 recoverable: false,
@@ -383,13 +406,40 @@ export function createDyrectedAITools({
                 };
               }
 
-              const copy = { ...doc };
-              delete copy.password;
-              delete copy.salt;
-              delete copy.hash;
-              delete copy.resetPasswordToken;
+              if (accessResult && typeof accessResult === 'object') {
+                const checkMatch = await db.find({
+                  collection,
+                  where: mergeWhereConstraint({ id: { equals: id } }, accessResult as Record<string, unknown>),
+                  limit: 1,
+                });
+                if (checkMatch.total === 0) {
+                  return {
+                    error: `Document "${id}" not found in collection "${collection}".`,
+                    suggestion: 'Verify document ID using queryCollection().',
+                    recoverable: true,
+                  };
+                }
+              }
 
-              return { collection, doc: copy };
+              const docAccess = await resolveAccess(config, col.access?.read, {
+                req: { user, siteId: projectId } as any,
+                user,
+                doc,
+              });
+              if (docAccess === false) {
+                return {
+                  error: `Access denied: you do not have permission to read document "${id}" in "${collection}".`,
+                  recoverable: false,
+                };
+              }
+
+              const sanitizedDoc = sanitizeDocForAI({
+                doc,
+                collectionConfig: col,
+                globalAIConfig: config.ai,
+              });
+
+              return { collection, doc: sanitizedDoc };
             } catch (err: any) {
               return {
                 error: `Failed to fetch document "${id}": ${err.message}`,
@@ -440,35 +490,46 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is private or internal.`,
-                suggestion: `Aggregate public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Aggregate public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
-                error: `Collection "${collection}" not found.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
 
             // Access check
-            const canRead = await isAccessAllowed(config, col.access?.read, {
+            const accessResult = await resolveAccess(config, col.access?.read, {
               req: { user, siteId: projectId } as any,
               user,
             });
-            if (!canRead) {
+            if (accessResult === false) {
               return {
                 error: `Access denied: you do not have permission to aggregate collection "${collection}".`,
                 recoverable: false,
               };
             }
 
+            let effectiveAggregates = aggregates;
+            if (accessResult && typeof accessResult === 'object') {
+              effectiveAggregates = {};
+              for (const [key, op] of Object.entries(aggregates)) {
+                effectiveAggregates[key] = {
+                  ...op,
+                  where: mergeWhereConstraint(op.where, accessResult as Record<string, unknown>),
+                };
+              }
+            }
+
             try {
               const result = await db.aggregate({
                 collection,
-                aggregates,
+                aggregates: effectiveAggregates,
                 groupBy,
               });
 
@@ -576,15 +637,15 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is internal and cannot be modified.`,
-                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
                 error: `Collection "${collection}" not found in project.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
@@ -681,21 +742,42 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is internal and cannot be modified.`,
-                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
                 error: `Collection "${collection}" not found in project.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
 
-            // Fetch current document state for snapshot & access verification
-            const existingDoc = await db.findOne({ collection, id });
+            // Access check: read permission & fetch existing doc
+            const readAccessResult = await resolveAccess(config, col.access?.read, {
+              req: { user, siteId: projectId } as any,
+              user,
+            });
+            if (readAccessResult === false) {
+              return {
+                error: `Access denied: you do not have permission to read document "${id}" in "${collection}".`,
+                recoverable: false,
+              };
+            }
+
+            const existingDoc =
+              readAccessResult && typeof readAccessResult === 'object'
+                ? (
+                    await db.find({
+                      collection,
+                      where: mergeWhereConstraint({ id: { equals: id } }, readAccessResult as Record<string, unknown>),
+                      limit: 1,
+                    })
+                  )?.docs?.[0] || null
+                : await db.findOne({ collection, id });
+
             if (!existingDoc) {
               return {
                 error: `Document "${id}" not found in collection "${collection}".`,
@@ -705,17 +787,30 @@ export function createDyrectedAITools({
             }
 
             // Access check: update permission
-            const canUpdate = await isAccessAllowed(config, col.access?.update, {
+            const updateAccessResult = await resolveAccess(config, col.access?.update, {
               req: { user, siteId: projectId } as any,
               user,
               data,
               doc: existingDoc,
             });
-            if (!canUpdate) {
+            if (updateAccessResult === false) {
               return {
                 error: `Access denied: you do not have permission to update document "${id}" in "${collection}".`,
                 recoverable: false,
               };
+            }
+            if (updateAccessResult && typeof updateAccessResult === 'object') {
+              const matches = await db.find({
+                collection,
+                where: mergeWhereConstraint({ id: { equals: id } }, updateAccessResult as Record<string, unknown>),
+                limit: 1,
+              });
+              if (!matches || !matches.docs || matches.docs.length === 0) {
+                return {
+                  error: `Access denied: you do not have permission to update document "${id}" under current constraints.`,
+                  recoverable: false,
+                };
+              }
             }
 
             // Dry-run field schema validation (partial)
@@ -800,20 +895,42 @@ export function createDyrectedAITools({
             if (isAICollection(collection) || collection.startsWith('_')) {
               return {
                 error: `Collection "${collection}" is internal and cannot be deleted.`,
-                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config)}]`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
                 recoverable: true,
               };
             }
             const col = config.collections?.find((c) => c.slug === collection);
-            if (!col) {
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
               return {
-                error: `Collection "${collection}" not found.`,
-                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config)}].`,
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
 
-            const existingDoc = await db.findOne({ collection, id });
+            // Access check: read permission & fetch existing doc
+            const readAccessResult = await resolveAccess(config, col.access?.read, {
+              req: { user, siteId: projectId } as any,
+              user,
+            });
+            if (readAccessResult === false) {
+              return {
+                error: `Access denied: you do not have permission to read document "${id}" in "${collection}".`,
+                recoverable: false,
+              };
+            }
+
+            const existingDoc =
+              readAccessResult && typeof readAccessResult === 'object'
+                ? (
+                    await db.find({
+                      collection,
+                      where: mergeWhereConstraint({ id: { equals: id } }, readAccessResult as Record<string, unknown>),
+                      limit: 1,
+                    })
+                  )?.docs?.[0] || null
+                : await db.findOne({ collection, id });
+
             if (!existingDoc) {
               return {
                 error: `Document "${id}" not found in collection "${collection}".`,
@@ -823,16 +940,29 @@ export function createDyrectedAITools({
             }
 
             // Access check: delete permission
-            const canDelete = await isAccessAllowed(config, col.access?.delete, {
+            const deleteAccessResult = await resolveAccess(config, col.access?.delete, {
               req: { user, siteId: projectId } as any,
               user,
               doc: existingDoc,
             });
-            if (!canDelete) {
+            if (deleteAccessResult === false) {
               return {
                 error: `Access denied: you do not have permission to delete document "${id}" in "${collection}".`,
                 recoverable: false,
               };
+            }
+            if (deleteAccessResult && typeof deleteAccessResult === 'object') {
+              const matches = await db.find({
+                collection,
+                where: mergeWhereConstraint({ id: { equals: id } }, deleteAccessResult as Record<string, unknown>),
+                limit: 1,
+              });
+              if (!matches || !matches.docs || matches.docs.length === 0) {
+                return {
+                  error: `Access denied: you do not have permission to delete document "${id}" under current constraints.`,
+                  recoverable: false,
+                };
+              }
             }
 
             const actionId = generateActionId();
@@ -901,10 +1031,10 @@ export function createDyrectedAITools({
         return withTimeout(
           (async () => {
             const g = config.globals?.find((item) => item.slug === globalSlug);
-            if (!g) {
+            if (!g || !isGlobalVisibleToProject(g, projectId)) {
               return {
-                error: `Global "${globalSlug}" not found.`,
-                suggestion: `Available globals in this project are: [${getAvailableGlobalSlugs(config)}].`,
+                error: `Global "${globalSlug}" not found in project.`,
+                suggestion: `Available globals in this project are: [${getAvailableGlobalSlugs(config, projectId)}].`,
                 recoverable: true,
               };
             }
