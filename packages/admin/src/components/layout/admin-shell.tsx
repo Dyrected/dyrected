@@ -776,27 +776,6 @@ function SidebarInner({
       {/* Workspace Switcher (renders only in multi-tenant mode) */}
       {!isEmbedded && <WorkspaceSwitcher collapsed={collapsed} />}
 
-      {/* Expand toggle when collapsed */}
-      {collapsed && onToggleCollapse && !isEmbedded && (
-        <div className="dy-flex dy-justify-center dy-mb-1 dy-shrink-0">
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors"
-                aria-label="Expand sidebar"
-              >
-                <PanelLeftOpen className="dy-h-4 dy-w-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
-              Expand sidebar
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-
       {/* Nav */}
       <nav className="dy-flex-1 dy-overflow-y-auto dy-py-2 dy-px-2 dy-space-y-4">
         <div className="dy-space-y-0.5">
@@ -1043,24 +1022,45 @@ export function AdminShell({
               isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-h-[100dvh]"
             )}
           >
-            {/* ... existing sidebar and main content ... */}
-            <aside
-              className={cn(
-                "dy-hidden md:dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
-                collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
+            {/* Desktop Sidebar with Expand Lip Trigger */}
+            <div className="dy-relative dy-hidden md:dy-flex dy-h-full dy-shrink-0">
+              <aside
+                className={cn(
+                  "dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
+                  collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
+                )}
+              >
+                <SidebarInner
+                  schemas={schemas}
+                  isLoading={isLoading}
+                  location={location}
+                  logout={logout}
+                  isEmbedded={isEmbedded}
+                  collapsed={collapsed}
+                  onToggleCollapse={() => setCollapsed((v) => !v)}
+                  updateInfo={updateInfo}
+                />
+              </aside>
+
+              {/* Sidebar Expand Lip Trigger */}
+              {collapsed && !isEmbedded && (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setCollapsed(false)}
+                      className="dy-absolute -dy-right-3.5 dy-top-1/2 -dy-translate-y-1/2 dy-z-30 dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-3.5 hover:dy-w-5 dy-rounded-r-md dy-border-y dy-border-r dy-border-border dy-bg-card dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-accent dy-shadow-md hover:dy-shadow-lg dy-transition-all dy-duration-150 dy-cursor-pointer group"
+                      aria-label="Expand sidebar"
+                    >
+                      <PanelLeftOpen className="dy-h-3 dy-w-3 dy-transition-transform group-hover:dy-scale-110" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+                    Expand sidebar
+                  </TooltipContent>
+                </Tooltip>
               )}
-            >
-              <SidebarInner
-                schemas={schemas}
-                isLoading={isLoading}
-                location={location}
-                logout={logout}
-                isEmbedded={isEmbedded}
-                collapsed={collapsed}
-                onToggleCollapse={() => setCollapsed((v) => !v)}
-                updateInfo={updateInfo}
-              />
-            </aside>
+            </div>
 
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetContent side="left" className="dy-w-[220px] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
