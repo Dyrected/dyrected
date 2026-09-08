@@ -1,5 +1,13 @@
 # @dyrected/storage-cloudinary
 
+## 2.13.0
+
+### Patch Changes
+
+- Updated dependencies [e950c6e]
+- Updated dependencies [d96440d]
+  - @dyrected/core@2.13.0
+
 ## 2.12.0
 
 ### Minor Changes
