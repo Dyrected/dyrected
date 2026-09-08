@@ -136,6 +136,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Concepts](https://docs.dyrected.com/docs/cloud/model-content/concepts): Learn the core Dyrected ideas before you start modeling content.
 - [I18n (Coming Soon)](https://docs.dyrected.com/docs/cloud/model-content/configuration/__i18n): Review status for Dyrected admin interface translation support in the current public configuration surface.
 - [Localization (Coming Soon)](https://docs.dyrected.com/docs/cloud/model-content/configuration/__localization): Review status for multilingual content configuration in the current public Dyrected surface.
+- [AI Privacy & Data Redaction](https://docs.dyrected.com/docs/cloud/model-content/configuration/ai-privacy): How to prevent customer emails, phone numbers, credentials, and sensitive personal information from reaching external AI providers and vector search indexes.
 - [Configuring AI](https://docs.dyrected.com/docs/cloud/model-content/configuration/ai): How to enable and configure schema-aware AI assistants, LLM providers, brand voice directives, and custom tools in dyrected.config.ts.
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections): Use collections for repeatable content such as posts, products, users, and submissions.
 - [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals): Use globals for singleton content such as site settings, navigation, footer content, and SEO defaults.

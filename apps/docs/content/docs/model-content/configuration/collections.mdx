@@ -521,6 +521,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     prompt?: string;
     /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
     rag?: import("./ai.js").CollectionRAGConfig;
+    /** Field names to completely omit from AI context and RAG indexing. */
+    excludeFields?: string[];
+    /** Field names to mask (e.g. j***@example.com) before sending to AI. */
+    redactFields?: string[];
+    /** Custom hook to transform/sanitize/pseudonymize documents before AI inspection. */
+    sanitizeDoc?: (doc: Record<string, unknown>) => Record<string, unknown>;
   };
 
   /**

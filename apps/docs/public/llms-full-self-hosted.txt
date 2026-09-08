@@ -1634,6 +1634,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>deletePreference</code> (optional) |  |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
+| <code>ai</code> (optional) | AI Assistant methods for managing threads, messaging, human-in-the-loop action approvals, semantic RAG search, and AI chat. |
 | <code>find</code> (required) |  |
 | <code>collection</code> (required) | Returns a fluent query builder for a collection. |
 | <code>global</code> (required) | Access a global by its slug with a fluent builder. |
@@ -1829,6 +1830,42 @@ export interface RunActionArgs {
 | <code>input</code> (optional) | Values collected from the action's input form dialog. |
 
 
+## SchemaResponse
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SchemaResponse {
+  blocks?: Block[];
+  collections: CollectionConfig[];
+  globals: GlobalConfig[];
+  admin?: AdminConfig;
+  adminAuth?: PublicAdminAuthConfig;
+  hasStorage?: boolean;
+  configDiagnostics?: ConfigDiagnostic[];
+  ai?: SerializedSchemaAIConfig;
+  adminHealth?: {
+    emailConfigured?: boolean;
+    secureAuthSecretConfigured?: boolean;
+    authCollectionConfigured?: boolean;
+    uploadCollectionConfigured?: boolean;
+  };
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>blocks</code> (optional) |  |
+| <code>collections</code> (required) |  |
+| <code>globals</code> (required) |  |
+| <code>admin</code> (optional) |  |
+| <code>adminAuth</code> (optional) |  |
+| <code>hasStorage</code> (optional) |  |
+| <code>configDiagnostics</code> (optional) |  |
+| <code>ai</code> (optional) |  |
+| <code>adminHealth</code> (optional) |  |
+
+
 ## SchemaShape
 
 Exported interface from @dyrected/sdk.
@@ -1844,6 +1881,184 @@ export interface SchemaShape {
 | --- | --- |
 | <code>collections</code> (required) |  |
 | <code>globals</code> (required) |  |
+
+
+## SerializedCollectionConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedCollectionConfig {
+  slug: string;
+  labels?: { singular?: string; plural?: string };
+  shared?: boolean;
+  siteId?: string;
+  ai?: unknown;
+  access?: {
+    read?: boolean | string;
+    create?: boolean | string;
+    update?: boolean | string;
+    delete?: boolean | string;
+  };
+  fields: SerializedField[];
+  upload?: boolean;
+  auth?: boolean;
+  audit?: boolean;
+  drafts?: boolean;
+  defaultView?: string;
+  views?: unknown[];
+  admin?: Record<string, unknown>;
+  detail?: unknown;
+  workflow?: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) |  |
+| <code>labels</code> (optional) |  |
+| <code>shared</code> (optional) |  |
+| <code>siteId</code> (optional) |  |
+| <code>ai</code> (optional) |  |
+| <code>access</code> (optional) |  |
+| <code>fields</code> (required) |  |
+| <code>upload</code> (optional) |  |
+| <code>auth</code> (optional) |  |
+| <code>audit</code> (optional) |  |
+| <code>drafts</code> (optional) |  |
+| <code>defaultView</code> (optional) |  |
+| <code>views</code> (optional) |  |
+| <code>admin</code> (optional) |  |
+| <code>detail</code> (optional) |  |
+| <code>workflow</code> (optional) |  |
+
+
+## SerializedField
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedField {
+  name: string;
+  type: string;
+  label?: string;
+  required?: boolean;
+  unique?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  allowedTypes?: string[];
+  maxSize?: number;
+  virtual?: boolean;
+  promoted?: boolean;
+  ai?: {
+    exclude?: boolean;
+    redact?: boolean | "mask";
+    allowRaw?: boolean;
+  };
+  defaultValue?: unknown;
+  options?: unknown;
+  relationTo?: string;
+  hasMany?: boolean;
+  fields?: SerializedField[];
+  blocks?: unknown[];
+  blockReferences?: string[];
+  collection?: string;
+  on?: string;
+  limit?: number;
+  admin?: Record<string, unknown>;
+  access?: {
+    read?: boolean | string;
+    create?: boolean | string;
+    update?: boolean | string;
+  };
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>name</code> (required) |  |
+| <code>type</code> (required) |  |
+| <code>label</code> (optional) |  |
+| <code>required</code> (optional) |  |
+| <code>unique</code> (optional) |  |
+| <code>min</code> (optional) |  |
+| <code>max</code> (optional) |  |
+| <code>step</code> (optional) |  |
+| <code>minLength</code> (optional) |  |
+| <code>maxLength</code> (optional) |  |
+| <code>pattern</code> (optional) |  |
+| <code>allowedTypes</code> (optional) |  |
+| <code>maxSize</code> (optional) |  |
+| <code>virtual</code> (optional) |  |
+| <code>promoted</code> (optional) |  |
+| <code>ai</code> (optional) |  |
+| <code>defaultValue</code> (optional) |  |
+| <code>options</code> (optional) |  |
+| <code>relationTo</code> (optional) |  |
+| <code>hasMany</code> (optional) |  |
+| <code>fields</code> (optional) |  |
+| <code>blocks</code> (optional) |  |
+| <code>blockReferences</code> (optional) |  |
+| <code>collection</code> (optional) |  |
+| <code>on</code> (optional) |  |
+| <code>limit</code> (optional) |  |
+| <code>admin</code> (optional) |  |
+| <code>access</code> (optional) |  |
+
+
+## SerializedGlobalConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedGlobalConfig {
+  slug: string;
+  label?: string;
+  shared?: boolean;
+  siteId?: string;
+  access?: {
+    read?: boolean | string;
+    update?: boolean | string;
+  };
+  fields: SerializedField[];
+  admin?: Record<string, unknown>;
+  detail?: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) |  |
+| <code>label</code> (optional) |  |
+| <code>shared</code> (optional) |  |
+| <code>siteId</code> (optional) |  |
+| <code>access</code> (optional) |  |
+| <code>fields</code> (required) |  |
+| <code>admin</code> (optional) |  |
+| <code>detail</code> (optional) |  |
+
+
+## SerializedSchemaAIConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedSchemaAIConfig {
+  enabled: boolean;
+  provider?: string;
+  model?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>enabled</code> (required) |  |
+| <code>provider</code> (optional) |  |
+| <code>model</code> (optional) |  |
 
 
 ## TransitionOptions
@@ -4980,14 +5195,6 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operati
 
 ---
 
-## Multi-Tenant
-
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__multi-tenant
-
-
-
----
-
 ## Nested Docs
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__nested-docs
@@ -5033,6 +5240,700 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operati
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__stripe
 
 
+
+---
+
+## Pattern 3: Dynamic Tenant Schemas
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/dynamic-schemas
+
+In multi-tenant SaaS platforms, agency networks, and white-label applications, individual enterprise customers often need their own custom collections, specialized fields, or unique branding globals.
+
+Because tenant configurations change dynamically as customers sign up or customize their accounts, these schemas cannot be hardcoded in a static TypeScript file. Dyrected solves this with the `onSchemaFetch` hook.
+
+<Callout type="warning">
+**Commercial Feature:** Dynamic schema loading at runtime is part of the **Dyrected Platform License**. It is designed for businesses building multi-tenant SaaS products, agency platforms, and white-label CMS services.
+</Callout>
+
+---
+
+## Mental Model
+
+When a client or editor sends a request with `X-Site-Id: tenant-acme`:
+1. Dyrected intercepts the request and identifies the target tenant (`tenant-acme`).
+2. Dyrected invokes your `onSchemaFetch("tenant-acme")` hook.
+3. Your hook queries your application database (e.g. PostgreSQL, MongoDB, or an external config service) and returns the custom collections and globals for that tenant.
+4. Dyrected dynamically merges the tenant schema with your base static schema.
+5. The merged schema is served to `/api/schemas`, handles dynamic REST routing for `/api/collections/:slug`, and powers the AI Content Assistant.
+
+---
+
+## Complete Configuration Example
+
+Here is a complete, copy-pasteable `dyrected.config.ts` demonstrating how to load dynamic collections and globals based on the requesting `siteId`:
+
+```ts title="dyrected.config.ts"
+
+  defineConfig,
+  defineEmailField,
+  defineTextField,
+  defineRichTextField,
+  defineDateField,
+  CollectionConfig,
+  GlobalConfig,
+} from "@dyrected/core";
+
+// Mock database helper simulating external schema retrieval
+async function fetchTenantCustomSchemasFromDb(siteId: string): Promise<{
+  collections: CollectionConfig[];
+  globals: GlobalConfig[];
+}> {
+  // In a real application, query your database (e.g. Prisma, Drizzle, Mongoose)
+  if (siteId === "tenant-enterprise-acme") {
+    return {
+      collections: [
+        {
+          slug: "audit-logs",
+          fields: [
+            defineTextField({ name: "action", label: "Action Performed", required: true }),
+            defineTextField({ name: "performedBy", label: "User or Service", required: true }),
+            defineDateField({ name: "timestamp", label: "Event Timestamp", required: true }),
+          ],
+        },
+      ],
+      globals: [
+        {
+          slug: "custom-branding",
+          fields: [
+            defineTextField({ name: "primaryColor", label: "Brand Primary Color" }),
+            defineTextField({ name: "companyRegistrationNumber", label: "Company Registration Number" }),
+          ],
+        },
+      ],
+    };
+  }
+
+  // Return empty objects for standard tenants without custom schemas
+  return { collections: [], globals: [] };
+}
+
+export default defineConfig({
+  // Base collections shared by all tenants
+  collections: [
+    {
+      slug: "users",
+      auth: true,
+      fields: [
+        defineEmailField({ name: "email", label: "Email Address", required: true }),
+        defineTextField({ name: "name", label: "Full Name" }),
+      ],
+    },
+    {
+      slug: "articles",
+      fields: [
+        defineTextField({ name: "title", label: "Article Title", required: true }),
+        defineRichTextField({ name: "content", label: "Article Content" }),
+      ],
+    },
+  ],
+
+  // Base globals shared by all tenants
+  globals: [
+    {
+      slug: "site-settings",
+      fields: [
+        defineTextField({ name: "siteName", label: "Site Name", required: true }),
+      ],
+    },
+  ],
+
+  // Dynamic schema hook invoked per tenant request
+  onSchemaFetch: async (siteId: string) => {
+    try {
+      const customSchema = await fetchTenantCustomSchemasFromDb(siteId);
+      return {
+        collections: customSchema.collections,
+        globals: customSchema.globals,
+      };
+    } catch (error) {
+      console.error(`Failed to load dynamic schema for tenant ${siteId}:`, error);
+      return {};
+    }
+  },
+});
+```
+
+---
+
+## Runtime Behavior & Endpoint Resolution
+
+### 1. Dynamic Schema Discovery (`/api/schemas`)
+When the Admin panel or SDK calls `/api/schemas`:
+- **For `tenant-enterprise-acme`:** The response includes `users`, `articles`, and the dynamic `audit-logs` collection.
+- **For standard tenants:** The response contains only `users` and `articles`. The enterprise collection does not exist in their schema.
+
+### 2. Dynamic Collection REST Routes
+Dynamic collections behave exactly like static collections:
+- `POST /api/collections/audit-logs` (with `X-Site-Id: tenant-enterprise-acme`) creates a new audit log record.
+- `GET /api/collections/audit-logs` retrieves the tenant's audit logs.
+- Sending a request for `audit-logs` with a standard tenant's `X-Site-Id` returns `404 Not Found`.
+
+### 3. Dynamic Global REST Routes
+Dynamic globals can be retrieved and updated dynamically:
+- `GET /api/globals/custom-branding` returns the tenant's branding settings.
+- `PATCH /api/globals/custom-branding` updates the fields.
+
+---
+
+## Client Integration with Dynamic Schemas
+
+Frontend applications simply provide the target `X-Site-Id`. The SDK automatically interacts with both base and dynamic collections transparently:
+
+```ts title="client.ts"
+
+
+const client = createClient({
+  apiUrl: "https://cms.example.com",
+  headers: {
+    "X-Site-Id": "tenant-enterprise-acme",
+  },
+});
+
+async function runEnterpriseWorkflow() {
+  // 1. Create a record in the dynamic tenant collection
+  const log = await client.collection("audit-logs").create({
+    action: "user.login",
+    performedBy: "admin@acme.com",
+    timestamp: new Date().toISOString(),
+  });
+
+  // 2. Fetch the dynamic tenant global
+  const branding = await client.global("custom-branding").get();
+
+  console.log("Created dynamic log:", log);
+  console.log("Tenant branding:", branding);
+}
+
+runEnterpriseWorkflow();
+```
+
+---
+
+## AI Assistant & Dynamic Schemas
+
+Dyrected's AI Content Assistant dynamically discovers tenant-specific collections:
+1. When an editor asks a question or requests an action, the AI controller invokes `onSchemaFetch(projectId)` and merges the dynamic collections into the AI context.
+2. The AI tools (`listCollections`, `getCollectionSchema`, `queryCollection`, `proposeCreateDocument`) expose the dynamic collections to the model.
+3. Editors can ask the AI assistant: *"Summarize our recent audit-logs"* or *"Propose a new branding color"*, and the AI generates valid proposals matching the tenant's dynamic field definitions.
+
+---
+
+## Pattern 2: Header-Scoped Sites (X-Site-Id)
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped
+
+When you operate a single Dyrected deployment that powers multiple distinct client websites, regional portals, or sub-brands, you often need separate collections or globals per site alongside shared content.
+
+Dyrected enables this with the `siteId` property on collections and globals, paired with the `X-Site-Id` HTTP header and server-side anti-spoofing verification.
+
+---
+
+## Mental Model
+
+In header-scoped multi-tenancy:
+- **Site-Specific Collections & Globals:** Tagged with `siteId: "site-a"`. Only accessible when requests provide `X-Site-Id: site-a`.
+- **Shared Collections & Globals:** Omit `siteId`. Accessible across all sites.
+- **Client Requests:** Frontend applications or API consumers send the `X-Site-Id` HTTP header to declare their target site.
+- **Security & Anti-Spoofing:** Authenticated users have an `allowedSites` list. If a user attempts to send an `X-Site-Id` they are not permitted to access, Dyrected immediately rejects the request with `403 Forbidden`.
+
+---
+
+## Complete Configuration Example
+
+Here is a complete, copy-pasteable `dyrected.config.ts` defining shared content, site-specific collections, site-specific globals, and an authentication collection with anti-spoofing rules:
+
+```ts title="dyrected.config.ts"
+
+  defineConfig,
+  defineEmailField,
+  defineJsonField,
+  defineTextField,
+  defineRichTextField,
+} from "@dyrected/core";
+
+export default defineConfig({
+  collections: [
+    // 1. Auth collection with allowedSites anti-spoofing validation
+    {
+      slug: "users",
+      auth: true,
+      fields: [
+        defineEmailField({
+          name: "email",
+          label: "Email Address",
+          required: true,
+        }),
+        defineJsonField({
+          name: "allowedSites", // e.g. ["brand-us", "brand-eu"]
+          label: "Allowed Sites",
+          required: true,
+          defaultValue: ["brand-us"],
+        }),
+      ],
+    },
+
+    // 2. Shared collection accessible by all sites
+    {
+      slug: "shared-faqs",
+      fields: [
+        defineTextField({
+          name: "question",
+          label: "FAQ Question",
+          required: true,
+        }),
+        defineRichTextField({
+          name: "answer",
+          label: "FAQ Answer",
+          required: true,
+        }),
+      ],
+    },
+
+    // 3. Articles collection exclusive to Brand US
+    {
+      slug: "articles",
+      siteId: "brand-us",
+      fields: [
+        defineTextField({
+          name: "title",
+          label: "Article Title",
+          required: true,
+        }),
+        defineTextField({
+          name: "usHeadline",
+          label: "US Regional Headline",
+        }),
+      ],
+    },
+
+    // 4. Articles collection exclusive to Brand EU
+    {
+      slug: "articles",
+      siteId: "brand-eu",
+      fields: [
+        defineTextField({
+          name: "title",
+          label: "Article Title",
+          required: true,
+        }),
+        defineTextField({
+          name: "euVatDisclaimer",
+          label: "EU VAT Disclaimer",
+        }),
+      ],
+    },
+  ],
+
+  globals: [
+    // Site-specific navigation global for Brand US
+    {
+      slug: "site-navigation",
+      siteId: "brand-us",
+      fields: [
+        defineTextField({
+          name: "logoUrl",
+          label: "Brand Logo URL",
+        }),
+        defineTextField({
+          name: "tollFreePhone",
+          label: "US Toll-Free Support Phone",
+        }),
+      ],
+    },
+
+    // Site-specific navigation global for Brand EU
+    {
+      slug: "site-navigation",
+      siteId: "brand-eu",
+      fields: [
+        defineTextField({
+          name: "logoUrl",
+          label: "Brand Logo URL",
+        }),
+        defineEmailField({
+          name: "gdprContactEmail",
+          label: "GDPR Privacy Contact Email",
+        }),
+      ],
+    },
+  ],
+});
+```
+
+---
+
+## Anti-Spoofing & Security Verification
+
+Dyrected enforces strict site authorization checks across all dynamic REST endpoints and `/api/schemas`:
+
+### 1. Authorized Site Access
+When an editor with `allowedSites: ["brand-us"]` sends `X-Site-Id: brand-us`:
+- `/api/schemas` returns only `shared-faqs`, `articles` (for `brand-us`), and the `site-navigation` global for `brand-us`.
+- `/api/collections/articles` queries Brand US articles.
+
+### 2. Header Spoofing Rejection (403 Forbidden)
+If the same user attempts to send `X-Site-Id: brand-eu`:
+- Dyrected's `resolveAuthorizedSiteId` middleware compares the header against the authenticated user's `allowedSites`.
+- The request is immediately rejected with `403 Forbidden`:
+
+```json
+{
+  "error": true,
+  "message": "Forbidden: User is not authorized to access site \"brand-eu\"."
+}
+```
+
+### 3. Collection Isolation (404 Not Found)
+If an unauthenticated request (or a consumer without access) tries to query `/api/collections/articles` with `X-Site-Id: brand-eu`, but is only permitted for `brand-us`:
+- Dyrected returns `404 Not Found` rather than leaking information about collections belonging to other sites.
+
+---
+
+## Client & SDK Integration
+
+### Using `@dyrected/sdk`
+
+When configuring the `@dyrected/sdk` client in your frontend application (e.g. Next.js, Remix, Astro, or Vue), specify the `headers` option:
+
+```ts title="lib/cms.ts"
+
+
+// Create client configured for Brand US
+export const cms = createClient({
+  apiUrl: process.env.NEXT_PUBLIC_CMS_URL || "https://cms.example.com",
+  headers: {
+    "X-Site-Id": process.env.NEXT_PUBLIC_SITE_ID || "brand-us",
+  },
+});
+
+async function loadHomePageContent() {
+  // Queries articles belonging to Brand US
+  const articles = await cms.collection("articles").find({ limit: 5 });
+
+  // Reads the site-navigation global for Brand US
+  const navigation = await cms.global("site-navigation").get();
+
+  console.log("Articles:", articles.docs);
+  console.log("Navigation:", navigation);
+}
+
+loadHomePageContent();
+```
+
+### Using Standard Fetch
+
+```ts title="fetch-example.ts"
+async function fetchBrandContent() {
+  const response = await fetch("https://cms.example.com/api/collections/articles", {
+    headers: {
+      "Authorization": `Bearer ${process.env.CMS_TOKEN}`,
+      "X-Site-Id": "brand-us",
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+  return data.docs;
+}
+```
+
+---
+
+## AI Content Assistant & Multi-Site Scoping
+
+When using the AI Content Assistant with header-scoped multi-tenancy:
+1. **Context Initialization:** The AI agent initializes using the resolved `siteId` for the current editor.
+2. **Schema Visibility:** The AI can only inspect collection schemas and globals assigned to the active `siteId` (plus shared ones).
+3. **RAG Vector Scoping:** Semantic search (`searchContent`) only searches text chunks tagged with the active `projectId` / `siteId`.
+4. **Action Approval:** Proposals (`proposeCreateDocument`, `proposeUpdateGlobal`) record the target `projectId`. At execution time, Dyrected verifies that the approving user has permission for that site before applying any database changes.
+
+---
+
+## Multi-Tenant Architecture Overview
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/overview
+
+Multi-tenancy in Dyrected allows you to isolate content across organizations, clients, or distinct websites without having to deploy and maintain separate CMS servers for each one.
+
+Instead of forcing a one-size-fits-all approach, Dyrected supports three distinct multi-tenancy patterns. You can use any of them on their own, or combine them as your product scales.
+
+---
+
+## The Three Patterns at a Glance
+
+Before configuring your collections, review the three architectural options to see where your application fits:
+
+| Pattern | Best For | How Data Is Isolated | License Tier | Dedicated Guide |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Row-Level Scoping** | SaaS apps, team workspaces, B2B portals | Shared collections with `tenantId` fields and access control rules | **Community (MIT)** | [Row-Level Multi-Tenancy](./row-level) |
+| **2. Header-Scoped Sites** | Multi-brand networks, regional websites | Collections and globals tagged with `siteId`, routed via `X-Site-Id` header | **Community (MIT)** | [Header-Scoped Sites](./header-scoped) |
+| **3. Dynamic Schemas** | Custom per-tenant fields, white-label CMS SaaS | Dynamic schema resolution at runtime via the `onSchemaFetch` hook | **Dyrected Platform License** | [Dynamic Tenant Schemas](./dynamic-schemas) |
+
+<Callout type="info">
+**Licensing Distinction:** Row-level multi-tenancy (Pattern 1) and header-scoped site collections (Pattern 2) are 100% open-source under the MIT license. Dynamic schema loading (`onSchemaFetch`) and reselling Dyrected as a managed multi-tenant CMS service require a commercial Dyrected Platform License.
+</Callout>
+
+---
+
+## When to Choose Pattern 1: Row-Level Scoping
+
+Choose **Row-Level Scoping** if:
+- You are building a B2B SaaS application where customers have teams, accounts, or workspaces.
+- Every tenant shares the exact same content model (for example, every team has articles, comments, and assets).
+- You want all tenant data stored in the same database tables, separated by an indexed `tenantId` column.
+- You want fine-grained role-based access rules (e.g., standard members only see their own organization's posts, while superadmins can inspect all rows).
+
+**Ready to implement?** Follow the step-by-step setup in the [Row-Level Multi-Tenancy Guide](./row-level).
+
+---
+
+## When to Choose Pattern 2: Header-Scoped Sites
+
+Choose **Header-Scoped Sites** if:
+- You run a single Dyrected backend that powers multiple distinct websites, regional domains, or subsidiary brands (e.g. `brand-us.example.com` and `brand-eu.example.com`).
+- Some collections and globals are shared across all sites (like common FAQs or author profiles), while others are unique to a specific brand.
+- Your frontend applications can send an `X-Site-Id` HTTP header to specify which site context they want to read.
+- You need server-side anti-spoofing so users can only access the specific sites they are assigned to.
+
+**Ready to implement?** Follow the step-by-step setup in the [Header-Scoped Sites Guide](./header-scoped).
+
+---
+
+## When to Choose Pattern 3: Dynamic Tenant Schemas
+
+Choose **Dynamic Tenant Schemas** if:
+- You are building a white-label CMS platform or multi-tenant SaaS where each customer can have their own custom fields, custom collections, or custom globals.
+- Tenant schemas cannot be hardcoded in a static configuration file because they are created or modified at runtime by customers.
+- You need the `/api/schemas` endpoint, REST endpoints, and the AI Content Assistant to dynamically load and merge custom collections for the requesting tenant.
+
+**Ready to implement?** Follow the step-by-step setup in the [Dynamic Tenant Schemas Guide](./dynamic-schemas).
+
+---
+
+## Combining Patterns
+
+Dyrected patterns are composable. For example, a digital agency can use **Header-Scoped Sites (Pattern 2)** to separate client websites, while simultaneously using **Row-Level Scoping (Pattern 1)** inside each client's site so their regional editorial teams only edit their assigned articles.
+
+---
+
+## AI Content Assistant & Tenant Safety
+
+Regardless of which pattern you choose, Dyrected's AI Content Assistant respects tenant boundaries natively:
+- **Schema Discovery:** The AI only inspects collections and fields accessible to the active tenant.
+- **RAG Vector Search:** Content embeddings and search snippets are partitioned by `siteId`.
+- **Query Grounding:** Tool calls (`queryCollection`, `getDocument`, `aggregateCollection`) inject and enforce both `siteId` scoping and row-level access control rules.
+- **Mutation Safety:** All proposed updates (`proposeCreateDocument`, `proposeUpdateDocument`, `proposeDeleteDocument`) require approval from an authenticated user authorized for that tenant.
+
+---
+
+## Pattern 1: Row-Level Multi-Tenancy
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/row-level
+
+In row-level multi-tenancy, all tenants share the same database tables and collection schemas. Every document belongs to a specific tenant via a `tenantId` field, and access control rules ensure that users can only read, create, update, or delete records belonging to their own organization.
+
+This is the recommended default for B2B SaaS applications, member portals, and collaborative team workspaces.
+
+---
+
+## Mental Model
+
+When a user logs in, their authentication token contains their assigned `tenantId`. Whenever they make a request to the CMS (such as listing articles or editing a post), Dyrected's access engine automatically merges `{ tenantId: { equals: req.user.tenantId } }` into the database query.
+
+Users cannot see, query, or mutate documents belonging to another organization. Attempting to fetch another tenant's document directly by its ID returns a `404 Not Found`.
+
+---
+
+## Complete Configuration Example
+
+Here is a complete, copy-pasteable `dyrected.config.ts` demonstrating row-level scoping with an authentication collection and a multi-tenant `articles` collection:
+
+```ts title="dyrected.config.ts"
+
+  defineConfig,
+  defineEmailField,
+  defineSelectField,
+  defineTextField,
+  defineRichTextField,
+} from "@dyrected/core";
+
+export default defineConfig({
+  collections: [
+    // Auth collection storing user credentials and their assigned tenantId
+    {
+      slug: "users",
+      auth: true,
+      fields: [
+        defineEmailField({
+          name: "email",
+          label: "Email Address",
+          required: true,
+        }),
+        defineSelectField({
+          name: "role",
+          label: "Account Role",
+          options: [
+            { label: "Super Admin", value: "superadmin" },
+            { label: "Team Member", value: "member" },
+          ],
+          defaultValue: "member",
+          required: true,
+        }),
+        defineTextField({
+          name: "tenantId",
+          label: "Organization ID",
+          required: true,
+        }),
+      ],
+    },
+
+    // Content collection scoped per tenant
+    {
+      slug: "articles",
+      fields: [
+        defineTextField({
+          name: "title",
+          label: "Article Title",
+          required: true,
+        }),
+        defineRichTextField({
+          name: "content",
+          label: "Article Content",
+        }),
+        defineTextField({
+          name: "tenantId",
+          label: "Organization ID",
+          required: true,
+          admin: {
+            hidden: true, // Automatically populated, hidden from manual editor form
+          },
+        }),
+      ],
+      access: {
+        // Enforce row-level read filtering
+        read: ({ req }) => {
+          if (req.user?.role === "superadmin") return true;
+          if (req.user?.tenantId) {
+            return { tenantId: { equals: req.user.tenantId } };
+          }
+          return false;
+        },
+
+        // Prevent creating records for another tenant
+        create: ({ req, data }) => {
+          if (req.user?.role === "superadmin") return true;
+          return data?.tenantId === req.user?.tenantId;
+        },
+
+        // Restrict updates to records belonging to user's tenant
+        update: ({ req }) => {
+          if (req.user?.role === "superadmin") return true;
+          if (req.user?.tenantId) {
+            return { tenantId: { equals: req.user.tenantId } };
+          }
+          return false;
+        },
+
+        // Restrict deletions to records belonging to user's tenant
+        delete: ({ req }) => {
+          if (req.user?.role === "superadmin") return true;
+          if (req.user?.tenantId) {
+            return { tenantId: { equals: req.user.tenantId } };
+          }
+          return false;
+        },
+      },
+      hooks: {
+        beforeChange: [
+          async ({ req, data, operation }) => {
+            // Automatically assign the user's tenantId on creation
+            if (operation === "create" && req.user?.tenantId) {
+              return { ...data, tenantId: req.user.tenantId };
+            }
+            return data;
+          },
+        ],
+      },
+    },
+  ],
+});
+```
+
+---
+
+## How It Works in Practice
+
+### 1. Document Creation
+When an editor creates a new article via the Admin UI or API:
+1. The `beforeChange` hook inspects `req.user.tenantId` from the authenticated session.
+2. The hook sets `data.tenantId` to the user's tenant ID before saving to the database.
+3. The editor does not have to remember or manually input their organization ID.
+
+### 2. Document Retrieval
+When a user requests `GET /api/collections/articles`:
+1. Dyrected's access rule runs: `({ req }) => ({ tenantId: { equals: req.user.tenantId } })`.
+2. The database adapter adds `WHERE tenantId = ?` to the query.
+3. The response contains only documents belonging to that user's organization.
+
+### 3. Cross-Tenant ID Fetch
+If a user belonging to `org-1` attempts to access `GET /api/collections/articles/doc-of-org-2`:
+1. Dyrected queries the database with `id = 'doc-of-org-2'` AND `tenantId = 'org-1'`.
+2. No matching document is found.
+3. Dyrected returns a `404 Not Found` error, preventing attackers from confirming the existence of another tenant's documents.
+
+---
+
+## Client & SDK Integration
+
+Frontend applications authenticate using the standard login endpoint and fetch collections as usual.
+
+### Using `@dyrected/sdk`
+
+Here is a complete, runnable client example that logs in and queries articles:
+
+```ts title="client.ts"
+
+
+const client = createClient({
+  apiUrl: "https://cms.example.com",
+});
+
+async function loadTenantContent() {
+  // 1. Authenticate user belonging to an organization
+  await client.collection("users").login({
+    email: "editor@tenant-alpha.com",
+    password: "secure-password-123",
+  });
+
+  // 2. Fetch articles — Dyrected automatically filters by tenantId on the server
+  const response = await client.collection("articles").find({
+    limit: 10,
+  });
+
+  console.log("Tenant Articles:", response.docs);
+}
+
+loadTenantContent();
+```
+
+---
+
+## AI Content Assistant Protection
+
+When editors interact with the embedded AI Content Assistant:
+1. Tool executions (`queryCollection`, `getDocument`, `aggregateCollection`) automatically extract the authenticated user's `tenantId` from the session.
+2. The AI tools inject `{ tenantId: { equals: user.tenantId } }` into all database queries before retrieving records.
+3. Even if a user asks the AI: *"Summarize all articles across the platform"*, the AI can only retrieve and summarize records belonging to their active organization.
 
 ---
 
@@ -16869,6 +17770,302 @@ Documenting localization as if it already exists would invent product behavior. 
 
 ---
 
+## AI Privacy & Data Redaction
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai-privacy
+
+When embedding an AI assistant inside a headless CMS, customer data privacy cannot rely on verbal prompt instructions alone. Prompt injection or model hallucinations can bypass soft rules like _"please ignore customer emails"_.
+
+Dyrected enforces data privacy **deterministically at the backend before any record ever touches an external LLM or vector embedding API**.
+
+By the end of this guide, you will understand how Dyrected protects customer data by default, how to exclude or mask specific fields, how to write custom pseudonymization hooks, and how to scrub personal data from free-form text.
+
+---
+
+## The mental model: secure-by-default hybrid privacy
+
+Dyrected uses a tiered, hybrid approach to AI privacy:
+
+```
+1. Non-Negotiable Credentials (Passwords, tokens, hashes)
+   ↳ Automatically stripped. Zero exceptions. Cannot be opted into.
+
+2. Typed Customer PII (Emails, phone numbers)
+   ↳ Automatically masked by default (e.g. j***@example.com).
+   ↳ Explicit escape hatch: ai: { allowRaw: true } if your workflow requires it.
+
+3. Custom Field & Collection Rules (Addresses, SSNs, financial data)
+   ↳ Declaratively exclude or redact fields in your schema.
+   ↳ Programmatically pseudonymize rows via collection sanitizeDoc hooks.
+
+4. Unstructured Free-Text Scrubbing (Support tickets, blog comments)
+   ↳ High-performance regex scrubber sweeps paragraphs before embedding or inference.
+```
+
+---
+
+## 1. Default protection: zero configuration needed
+
+Out of the box, Dyrected protects your database without requiring any special configuration flags:
+
+1. **Credentials are permanently blocked:** Any field named `password`, `salt`, `hash`, `resetPasswordToken`, `apiKey`, `token`, `secret`, `accessToken`, or `refreshToken` is deleted before the AI assistant sees the record.
+2. **Emails and phone numbers are masked by default:** Any field created with `defineEmailField` or named `email` or `phone` is automatically masked (for example, `alice.smith@example.com` becomes `a***@example.com`, and `+1 555-234-5678` becomes `***-***-5678`).
+
+Here is a standard collection definition:
+
+```ts
+
+
+export const Customers = defineCollection({
+  slug: "customers",
+  labels: { singular: "Customer", plural: "Customers" },
+  fields: [
+    defineTextField({
+      name: "fullName",
+      label: "Customer Name",
+      required: true,
+    }),
+    defineEmailField({
+      name: "email",
+      label: "Customer Email",
+      required: true,
+    }),
+    defineTextField({
+      name: "phone",
+      label: "Phone Number",
+    }),
+  ],
+});
+```
+
+When the AI assistant queries this collection to answer questions or prepare drafts, it receives:
+
+| Field in Database                  | What the AI Assistant Receives                |
+| :--------------------------------- | :-------------------------------------------- |
+| `fullName: "Alice Smith"`          | `"Alice Smith"`                               |
+| `email: "alice.smith@example.com"` | `"a***@example.com"` _(automatically masked)_ |
+| `phone: "+1 555-234-5678"`         | `"***-***-5678"` _(automatically masked)_     |
+| `password: "$argon2id$..."`        | _(omitted completely)_                        |
+
+Your customer emails and phone numbers are protected from third-party model logs without writing a single line of privacy code.
+
+---
+
+## 2. Field-level control: exclude, redact, or allow raw
+
+When you want granular control over individual fields, declare the `ai` property directly in your field definition.
+
+### Completely excluding a field
+
+If a field contains sensitive customer details that the AI has no reason to inspect (such as billing addresses or government IDs), set `ai: { exclude: true }`. The field is stripped entirely from AI inspection tools and RAG vector chunks:
+
+```ts
+
+
+export const Members = defineCollection({
+  slug: "members",
+  fields: [
+    defineTextField({
+      name: "displayName",
+      label: "Display Name",
+      required: true,
+    }),
+    defineTextField({
+      name: "taxId",
+      label: "Tax ID / SSN",
+      ai: {
+        // Completely removed from AI queries, embeddings, and chat context
+        exclude: true,
+      },
+    }),
+  ],
+});
+```
+
+### Allowing raw values (Opting out of default masking)
+
+If you are building a specialized workflow where the AI assistant legitimately needs raw email addresses (for example, an email campaign generator or domain analyzer), set `ai: { allowRaw: true }`:
+
+```ts
+
+
+export const NewsletterSubscribers = defineCollection({
+  slug: "subscribers",
+  fields: [
+    defineEmailField({
+      name: "email",
+      label: "Subscriber Email",
+      ai: {
+        // Disables default masking; sends raw email to AI
+        allowRaw: true,
+      },
+    }),
+  ],
+});
+```
+
+---
+
+## 3. Collection-level control: batch redaction and pseudonymization
+
+For collections handling complex records, you can declare batch rules or programmatic transformations in `collection.ai`.
+
+### Batch field lists
+
+Use `excludeFields` to drop multiple sensitive attributes, and `redactFields` to replace values with `[REDACTED]`:
+
+```ts
+
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  ai: {
+    // Completely drop these fields from AI queries
+    excludeFields: ["bankAccountNumber", "routingNumber", "wireInstructions"],
+    // Replace values with [REDACTED]
+    redactFields: ["internalAuditNotes"],
+  },
+  fields: [
+    defineTextField({ name: "invoiceNumber", label: "Invoice #" }),
+    defineTextField({ name: "bankAccountNumber", label: "Bank Account #" }),
+    defineTextField({ name: "internalAuditNotes", label: "Internal Notes" }),
+  ],
+});
+```
+
+### Programmatic pseudonymization (`sanitizeDoc`)
+
+When you need custom de-identification—such as replacing customer names with anonymous tokens while preserving analytical utility—provide a `sanitizeDoc` function:
+
+```ts
+
+
+export const SupportTickets = defineCollection({
+  slug: "support-tickets",
+  ai: {
+    sanitizeDoc: (doc) => ({
+      ...doc,
+      // Replace personal customer name with an anonymous stable ID
+      customerName: `Customer #${String(doc.id).slice(0, 6)}`,
+      // Retain the ticket issue and category for AI troubleshooting
+      issueSummary: doc.issueSummary,
+    }),
+  },
+  fields: [
+    defineTextField({ name: "customerName", label: "Customer Name" }),
+    defineTextField({ name: "issueSummary", label: "Issue Summary" }),
+  ],
+});
+```
+
+---
+
+## 4. Global unstructured free-text scrubber (`config.ai.pii`)
+
+Customer PII does not only live in structured columns like `email`; customers often type phone numbers, credit card numbers, or email addresses directly into free-text descriptions, notes, or feedback paragraphs.
+
+To scrub unstructured text across all collections before vector embeddings are generated or prompts are streamed, enable the global PII scrubber in `dyrected.config.ts`:
+
+```ts
+// dyrected.config.ts
+
+
+export default defineConfig({
+  ai: {
+    enabled: true,
+    pii: {
+      // Turns on automated regex scrubbing across unstructured text
+      enabled: true,
+      // Patterns to scrub (defaults to all five)
+      patterns: ["email", "phone", "credit_card", "ssn", "ipv4"],
+      // 'mask' (e.g. j***@acme.com) or 'token' (e.g. [REDACTED_EMAIL])
+      strategy: "token",
+      // Optional custom scrubber for proprietary identifiers
+      customScrubber: (text) => {
+        return text.replace(/EMP-[0-9]{5}/g, "[EMPLOYEE_ID]");
+      },
+    },
+  },
+});
+```
+
+### How the scrubber transforms free-text
+
+When an editor or customer writes:
+
+> _"Client John called from 192.168.1.1 asking to update card 4111 1111 1111 1234. Reach him at john@example.com."_
+
+The global scrubber transforms the text before embedding or sending to the AI model:
+
+> _"Client John called from [REDACTED_IP] asking to update card [REDACTED_CREDIT_CARD]. Reach him at [REDACTED_EMAIL]."_
+
+---
+
+## Where redaction is enforced
+
+Dyrected applies privacy sanitization at every point where data leaves your database for an AI provider:
+
+1. **AI Inspection Tools (`queryCollection`, `getDocument`):** When the chat assistant inspects records to answer a user's request, every document passes through `sanitizeDocForAI` before being returned to the model.
+2. **RAG Vector Embedding Pipeline (`RAGService.indexDocument`):** Before text chunks are created or sent to Google or OpenAI embedding models, documents are sanitized and excluded fields are omitted. Raw customer PII is never stored in your vector chunks table (`_dyrected_ai_chunks`).
+3. **Mutation Proposals:** Sensitive fields are scrubbed from proposal diff previews to ensure personal data is not inadvertently displayed in chat thread cards.
+
+---
+
+## Complete runnable configuration
+
+Here is a complete, copy-pasteable `dyrected.config.ts` demonstrating customer privacy protection in practice:
+
+```ts
+// dyrected.config.ts
+
+
+
+export const Customers = defineCollection({
+  slug: "customers",
+  labels: { singular: "Customer", plural: "Customers" },
+  ai: {
+    // Drop internal identifiers
+    excludeFields: ["taxId"],
+    // Pseudonymize customer records for AI assistance
+    sanitizeDoc: (doc) => ({
+      ...doc,
+      fullName: `Customer #${String(doc.id).slice(0, 6)}`,
+    }),
+  },
+  fields: [
+    defineTextField({ name: "fullName", label: "Full Name", required: true }),
+    defineEmailField({ name: "email", label: "Email Address", required: true }), // Auto-masked!
+    defineTextField({ name: "taxId", label: "Tax Identification", ai: { exclude: true } }),
+    defineNumberField({ name: "lifetimeSpend", label: "Lifetime Spend (USD)" }),
+  ],
+});
+
+export default defineConfig({
+  collections: [Customers],
+  db: postgresAdapter({
+    url: process.env.DATABASE_URL || "postgres://localhost:5432/my_app",
+  }),
+  ai: {
+    provider: "google",
+    model: "gemini-2.5-flash",
+    pii: {
+      enabled: true,
+      strategy: "token",
+    },
+  },
+});
+```
+
+---
+
+## Related documentation
+
+- [Configuring AI](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai) — Choosing AI providers, setting brand voice prompts, and rate limits.
+- [Access Control](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/collections#access) — Restricting collection read and write permissions by user role.
+- [Multi-Tenant Architecture](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/overview) — Isolating data and AI assistant scopes across workspaces.
+
+---
+
 ## Configuring AI
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai
@@ -16944,29 +18141,37 @@ If you don't want to specify a provider explicitly, Dyrected **automatically det
 
 ### Explicit Provider Configuration
 
-If you want to pin a specific model, change base URLs (e.g. for custom proxies or local models), or specify custom API key names, configure the `ai` block in `dyrected.config.ts`:
+If you want to pin a specific model, change base URLs (e.g. for custom proxies, self-hosted models, or gateways), or specify custom API key names, configure the `ai` block in `dyrected.config.ts`:
 
 ```ts
-// Example: Using OpenAI with GPT-4o
+// 1. Direct OpenAI
 ai: {
   provider: "openai",
   model: "gpt-4o",
   apiKey: process.env.OPENAI_API_KEY,
 }
 
-// Example: Using Google Gemini
+// 2. Google Gemini
 ai: {
   provider: "google",
   model: "gemini-2.5-flash",
   apiKey: process.env.GEMINI_API_KEY,
 }
 
-// Example: Using OpenRouter or a custom OpenAI-compatible endpoint
+// 3. OpenRouter (Access OpenAI, Claude, Llama via one key)
 ai: {
   provider: "openrouter",
-  model: "meta-llama/llama-3.3-70b-instruct",
-  baseURL: "https://openrouter.ai/api/v1",
+  model: "openai/gpt-4o", // or "anthropic/claude-3.5-sonnet", "meta-llama/llama-3.3-70b-instruct"
+  baseURL: "https://openrouter.ai/api/v1", // default
   apiKey: process.env.OPENROUTER_API_KEY,
+}
+
+// 4. Custom OpenAI-compatible Gateway (Ollama, vLLM, Groq, Together)
+ai: {
+  provider: "custom",
+  baseURL: "http://localhost:11434/v1", // or https://api.groq.com/openai/v1
+  apiKey: process.env.CUSTOM_AI_API_KEY || "dummy-key",
+  model: "llama3.2",
 }
 ```
 
@@ -17028,6 +18233,77 @@ ai: {
 ```
 
 If a user or project exceeds these limits, Dyrected returns a polite `429 Too Many Requests` error with the retry interval.
+
+## Customer privacy and PII protection
+
+Dyrected protects customer data by default before sending any records to an AI model:
+- **Credentials** (`password`, `salt`, `hash`, `token`, `secret`) are permanently stripped.
+- **Emails and phone numbers** are automatically masked (e.g. `a***@example.com`, `***-***-5678`) unless explicitly permitted via `ai: { allowRaw: true }`.
+- **Custom redaction**: You can declare `ai: { exclude: true }` on sensitive fields, attach collection-level `sanitizeDoc` pseudonymization hooks, or enable the global free-text PII scrubber.
+
+For complete guidance and configuration examples, see [AI Privacy & Data Redaction](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai-privacy).
+
+## Using AI with the SDK (`@dyrected/sdk`)
+
+Frontend apps and custom scripts can interact directly with Dyrected's AI assistant through the typed `client.ai` module on `DyrectedClient`.
+
+### 1. Creating threads and messaging
+
+```ts
+
+
+const client = new DyrectedClient({
+  baseUrl: "http://localhost:3000",
+  apiKey: process.env.DYRECTED_API_KEY,
+});
+
+// Create a thread
+const thread = await client.ai.createThread({ title: "Product Copy Generation" });
+
+// Post a message
+const reply = await client.ai.postMessage(thread.id, {
+  role: "user",
+  content: "Draft a 50-word product description for the Silk Scarf",
+});
+
+// List or get threads
+const threads = await client.ai.listThreads();
+const currentThread = await client.ai.getThread(thread.id);
+```
+
+### 2. Human-in-the-Loop action confirmation
+
+When an AI model proposes a sensitive action (like creating or deleting records), Dyrected creates a pending action that requires explicit approval:
+
+```ts
+// Inspect pending action details
+const action = await client.ai.getAction("act_abc123");
+console.log(action.summary, action.proposedData);
+
+// Approve and execute the proposed change
+await client.ai.executeAction("act_abc123");
+
+// Or reject with an optional reason
+await client.ai.rejectAction("act_abc123", {
+  reason: "Price cannot be zero",
+});
+```
+
+### 3. Semantic RAG vector search
+
+Query indexed content using cosine similarity embeddings:
+
+```ts
+const results = await client.ai.searchRAG({
+  query: "How do return shipping refunds work?",
+  collection: "kb_articles",
+  limit: 5,
+});
+
+for (const match of results) {
+  console.log(`${match.title} (Score: ${match.score}): ${match.text}`);
+}
+```
 
 ---
 
@@ -17553,6 +18829,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     prompt?: string;
     /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
     rag?: import("./ai.js").CollectionRAGConfig;
+    /** Field names to completely omit from AI context and RAG indexing. */
+    excludeFields?: string[];
+    /** Field names to mask (e.g. j***@example.com) before sending to AI. */
+    redactFields?: string[];
+    /** Custom hook to transform/sanitize/pseudonymize documents before AI inspection. */
+    sanitizeDoc?: (doc: Record<string, unknown>) => Record<string, unknown>;
   };
 
   /**
@@ -21127,6 +22409,15 @@ export interface FieldBase {
   renameTo?: string;
   /** Whether SQL adapters should promote this field into a first-class column. */
   promoted?: boolean;
+  /** AI assistant privacy and PII redaction settings for this field. */
+  ai?: {
+    /** If true, completely removes this field from AI queries, RAG chunks, and context. */
+    exclude?: boolean;
+    /** If true or 'mask', masks the field value (e.g. b***@example.com) before sending to AI. */
+    redact?: boolean | 'mask';
+    /** If true, opts out of automatic default PII masking (e.g. for email/phone fields). */
+    allowRaw?: boolean;
+  };
 }
 ```
 
@@ -21150,6 +22441,7 @@ export interface FieldBase {
 | <code>admin</code> (optional) | Admin-only presentation options for this field. |
 | <code>renameTo</code> (optional) | Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. |
 | <code>promoted</code> (optional) | Whether SQL adapters should promote this field into a first-class column. |
+| <code>ai</code> (optional) | AI assistant privacy and PII redaction settings for this field. |
 
 
 ## FieldType

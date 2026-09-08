@@ -173,6 +173,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>deletePreference</code> (optional) |  |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
+| <code>ai</code> (optional) | AI Assistant methods for managing threads, messaging, human-in-the-loop action approvals, semantic RAG search, and AI chat. |
 | <code>find</code> (required) |  |
 | <code>collection</code> (required) | Returns a fluent query builder for a collection. |
 | <code>global</code> (required) | Access a global by its slug with a fluent builder. |
@@ -368,6 +369,42 @@ export interface RunActionArgs {
 | <code>input</code> (optional) | Values collected from the action's input form dialog. |
 
 
+## SchemaResponse
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SchemaResponse {
+  blocks?: Block[];
+  collections: CollectionConfig[];
+  globals: GlobalConfig[];
+  admin?: AdminConfig;
+  adminAuth?: PublicAdminAuthConfig;
+  hasStorage?: boolean;
+  configDiagnostics?: ConfigDiagnostic[];
+  ai?: SerializedSchemaAIConfig;
+  adminHealth?: {
+    emailConfigured?: boolean;
+    secureAuthSecretConfigured?: boolean;
+    authCollectionConfigured?: boolean;
+    uploadCollectionConfigured?: boolean;
+  };
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>blocks</code> (optional) |  |
+| <code>collections</code> (required) |  |
+| <code>globals</code> (required) |  |
+| <code>admin</code> (optional) |  |
+| <code>adminAuth</code> (optional) |  |
+| <code>hasStorage</code> (optional) |  |
+| <code>configDiagnostics</code> (optional) |  |
+| <code>ai</code> (optional) |  |
+| <code>adminHealth</code> (optional) |  |
+
+
 ## SchemaShape
 
 Exported interface from @dyrected/sdk.
@@ -383,6 +420,184 @@ export interface SchemaShape {
 | --- | --- |
 | <code>collections</code> (required) |  |
 | <code>globals</code> (required) |  |
+
+
+## SerializedCollectionConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedCollectionConfig {
+  slug: string;
+  labels?: { singular?: string; plural?: string };
+  shared?: boolean;
+  siteId?: string;
+  ai?: unknown;
+  access?: {
+    read?: boolean | string;
+    create?: boolean | string;
+    update?: boolean | string;
+    delete?: boolean | string;
+  };
+  fields: SerializedField[];
+  upload?: boolean;
+  auth?: boolean;
+  audit?: boolean;
+  drafts?: boolean;
+  defaultView?: string;
+  views?: unknown[];
+  admin?: Record<string, unknown>;
+  detail?: unknown;
+  workflow?: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) |  |
+| <code>labels</code> (optional) |  |
+| <code>shared</code> (optional) |  |
+| <code>siteId</code> (optional) |  |
+| <code>ai</code> (optional) |  |
+| <code>access</code> (optional) |  |
+| <code>fields</code> (required) |  |
+| <code>upload</code> (optional) |  |
+| <code>auth</code> (optional) |  |
+| <code>audit</code> (optional) |  |
+| <code>drafts</code> (optional) |  |
+| <code>defaultView</code> (optional) |  |
+| <code>views</code> (optional) |  |
+| <code>admin</code> (optional) |  |
+| <code>detail</code> (optional) |  |
+| <code>workflow</code> (optional) |  |
+
+
+## SerializedField
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedField {
+  name: string;
+  type: string;
+  label?: string;
+  required?: boolean;
+  unique?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  allowedTypes?: string[];
+  maxSize?: number;
+  virtual?: boolean;
+  promoted?: boolean;
+  ai?: {
+    exclude?: boolean;
+    redact?: boolean | "mask";
+    allowRaw?: boolean;
+  };
+  defaultValue?: unknown;
+  options?: unknown;
+  relationTo?: string;
+  hasMany?: boolean;
+  fields?: SerializedField[];
+  blocks?: unknown[];
+  blockReferences?: string[];
+  collection?: string;
+  on?: string;
+  limit?: number;
+  admin?: Record<string, unknown>;
+  access?: {
+    read?: boolean | string;
+    create?: boolean | string;
+    update?: boolean | string;
+  };
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>name</code> (required) |  |
+| <code>type</code> (required) |  |
+| <code>label</code> (optional) |  |
+| <code>required</code> (optional) |  |
+| <code>unique</code> (optional) |  |
+| <code>min</code> (optional) |  |
+| <code>max</code> (optional) |  |
+| <code>step</code> (optional) |  |
+| <code>minLength</code> (optional) |  |
+| <code>maxLength</code> (optional) |  |
+| <code>pattern</code> (optional) |  |
+| <code>allowedTypes</code> (optional) |  |
+| <code>maxSize</code> (optional) |  |
+| <code>virtual</code> (optional) |  |
+| <code>promoted</code> (optional) |  |
+| <code>ai</code> (optional) |  |
+| <code>defaultValue</code> (optional) |  |
+| <code>options</code> (optional) |  |
+| <code>relationTo</code> (optional) |  |
+| <code>hasMany</code> (optional) |  |
+| <code>fields</code> (optional) |  |
+| <code>blocks</code> (optional) |  |
+| <code>blockReferences</code> (optional) |  |
+| <code>collection</code> (optional) |  |
+| <code>on</code> (optional) |  |
+| <code>limit</code> (optional) |  |
+| <code>admin</code> (optional) |  |
+| <code>access</code> (optional) |  |
+
+
+## SerializedGlobalConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedGlobalConfig {
+  slug: string;
+  label?: string;
+  shared?: boolean;
+  siteId?: string;
+  access?: {
+    read?: boolean | string;
+    update?: boolean | string;
+  };
+  fields: SerializedField[];
+  admin?: Record<string, unknown>;
+  detail?: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) |  |
+| <code>label</code> (optional) |  |
+| <code>shared</code> (optional) |  |
+| <code>siteId</code> (optional) |  |
+| <code>access</code> (optional) |  |
+| <code>fields</code> (required) |  |
+| <code>admin</code> (optional) |  |
+| <code>detail</code> (optional) |  |
+
+
+## SerializedSchemaAIConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SerializedSchemaAIConfig {
+  enabled: boolean;
+  provider?: string;
+  model?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>enabled</code> (required) |  |
+| <code>provider</code> (optional) |  |
+| <code>model</code> (optional) |  |
 
 
 ## TransitionOptions

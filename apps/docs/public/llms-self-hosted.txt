@@ -51,13 +51,16 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Form Builder](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__form-builder)
 - [Import Export](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__import-export)
 - [MCP](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__mcp)
-- [Multi-Tenant](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__multi-tenant)
 - [Nested Docs](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__nested-docs)
 - [Redirects](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__redirects)
 - [Search](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__search)
 - [Sentry](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__sentry)
 - [SEO](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__seo)
 - [Stripe](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/__stripe)
+- [Pattern 3: Dynamic Tenant Schemas](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/dynamic-schemas): Dynamically load custom per-tenant collections and globals at runtime using the onSchemaFetch hook.
+- [Pattern 2: Header-Scoped Sites (X-Site-Id)](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped): Manage multiple client websites, regional portals, or sub-brands from a single Dyrected backend using the X-Site-Id header.
+- [Multi-Tenant Architecture Overview](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/overview): Understand the three multi-tenancy models supported by Dyrected and learn which pattern best fits your product architecture.
+- [Pattern 1: Row-Level Multi-Tenancy](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/multi-tenant/row-level): Configure workspace and team-level data isolation using collection access control rules and tenantId fields.
 - [Plugins (Coming Soon)](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/plugins-and-extensions/overview): What to expect from the Dyrected plugins section while the public plugin docs are still being written.
 - [Building without a DB connection](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/production/building-without-a-db-connection): Understand which Dyrected tasks can run during build without a live database, and where the real runtime boundary starts.
 - [Deployment](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/production/deployment): Ship Dyrected to production with the right boundary, durable infrastructure, stable secrets, and a deployment flow that matches how the product actually boots.
@@ -160,6 +163,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Concepts](https://docs.dyrected.com/docs/self-hosted/model-content/concepts): Learn the core Dyrected ideas before you start modeling content.
 - [I18n (Coming Soon)](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/__i18n): Review status for Dyrected admin interface translation support in the current public configuration surface.
 - [Localization (Coming Soon)](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/__localization): Review status for multilingual content configuration in the current public Dyrected surface.
+- [AI Privacy & Data Redaction](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai-privacy): How to prevent customer emails, phone numbers, credentials, and sensitive personal information from reaching external AI providers and vector search indexes.
 - [Configuring AI](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/ai): How to enable and configure schema-aware AI assistants, LLM providers, brand voice directives, and custom tools in dyrected.config.ts.
 - [Collections](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/collections): Use collections for repeatable content such as posts, products, users, and submissions.
 - [Globals](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/globals): Use globals for singleton content such as site settings, navigation, footer content, and SEO defaults.

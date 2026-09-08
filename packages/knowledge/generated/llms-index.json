@@ -1855,8 +1855,38 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:SchemaResponse",
+      "name": "SchemaResponse",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:SchemaShape",
       "name": "SchemaShape",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:SerializedCollectionConfig",
+      "name": "SerializedCollectionConfig",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:SerializedField",
+      "name": "SerializedField",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:SerializedGlobalConfig",
+      "name": "SerializedGlobalConfig",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:SerializedSchemaAIConfig",
+      "name": "SerializedSchemaAIConfig",
       "category": "sdk",
       "sourcePackage": "@dyrected/sdk"
     },
