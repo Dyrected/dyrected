@@ -773,12 +773,8 @@ function SidebarInner({
         </div>
       )}
 
-      {/* Workspace Switcher */}
-      {!isEmbedded && (
-        <div className={cn("dy-shrink-0", collapsed ? "dy-px-2 dy-pb-2" : "dy-px-3 dy-pb-2")}>
-          <WorkspaceSwitcher collapsed={collapsed} />
-        </div>
-      )}
+      {/* Workspace Switcher (renders only in multi-tenant mode) */}
+      {!isEmbedded && <WorkspaceSwitcher collapsed={collapsed} />}
 
       {/* Expand toggle when collapsed */}
       {collapsed && onToggleCollapse && !isEmbedded && (
