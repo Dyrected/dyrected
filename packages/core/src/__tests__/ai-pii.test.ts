@@ -117,6 +117,28 @@ describe('AI PII Redaction & De-identification Pipeline', () => {
       expect(sanitized.phone).toBe('***-***-6543'); // Still masked
     });
 
+    it('preserves raw email and phone when global config sets pii.enabled: false', () => {
+      const collectionConfig: CollectionConfig = {
+        slug: 'customers',
+        fields: [
+          { name: 'email', type: 'email' },
+          { name: 'phone', type: 'text' },
+          { name: 'fullName', type: 'text' },
+        ],
+      } as any;
+
+      const sanitized = sanitizeDocForAI({
+        doc: rawCustomerDoc,
+        collectionConfig,
+        globalAIConfig: {
+          pii: { enabled: false },
+        },
+      });
+
+      expect(sanitized.email).toBe('alice.johnson@example.com');
+      expect(sanitized.phone).toBe('+1 555-987-6543');
+    });
+
     it('completely removes fields configured with ai.exclude: true', () => {
       const collectionConfig: CollectionConfig = {
         slug: 'customers',

@@ -1,28 +1,28 @@
-import type { CollectionConfig } from '../types/schema-config.js';
-import type { AIConfig, AIPIIConfig } from '../types/ai.js';
+import type { CollectionConfig } from "../types/schema-config.js";
+import type { AIConfig, AIPIIConfig } from "../types/ai.js";
 
 export const NON_NEGOTIABLE_CREDENTIAL_FIELDS = new Set([
-  'password',
-  'salt',
-  'hash',
-  'resetPasswordToken',
-  'apiKey',
-  'token',
-  'secret',
-  'accessToken',
-  'refreshToken',
+  "password",
+  "salt",
+  "hash",
+  "resetPasswordToken",
+  "apiKey",
+  "token",
+  "secret",
+  "accessToken",
+  "refreshToken",
 ]);
 
 /**
  * Masks an email address to protect privacy (e.g. "john.doe@example.com" -> "j***@example.com").
  */
-export function maskEmail(email: string, strategy: 'mask' | 'token' = 'mask'): string {
-  if (!email || typeof email !== 'string') return email;
-  if (strategy === 'token') return '[REDACTED_EMAIL]';
+export function maskEmail(email: string, strategy: "mask" | "token" = "mask"): string {
+  if (!email || typeof email !== "string") return email;
+  if (strategy === "token") return "[REDACTED_EMAIL]";
 
-  const atIdx = email.indexOf('@');
+  const atIdx = email.indexOf("@");
   if (atIdx <= 1) {
-    return '***@' + (email.slice(atIdx + 1) || 'example.com');
+    return "***@" + (email.slice(atIdx + 1) || "example.com");
   }
   const prefix = email[0];
   const domain = email.slice(atIdx);
@@ -32,12 +32,12 @@ export function maskEmail(email: string, strategy: 'mask' | 'token' = 'mask'): s
 /**
  * Masks a phone number (e.g. "+1 555-234-5678" -> "+1 ***-***-5678").
  */
-export function maskPhone(phone: string, strategy: 'mask' | 'token' = 'mask'): string {
-  if (!phone || typeof phone !== 'string') return phone;
-  if (strategy === 'token') return '[REDACTED_PHONE]';
+export function maskPhone(phone: string, strategy: "mask" | "token" = "mask"): string {
+  if (!phone || typeof phone !== "string") return phone;
+  if (strategy === "token") return "[REDACTED_PHONE]";
 
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 4) return '***-***-****';
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 4) return "***-***-****";
   const lastFour = digits.slice(-4);
   return `***-***-${lastFour}`;
 }
@@ -47,6 +47,8 @@ export function maskPhone(phone: string, strategy: 'mask' | 'token' = 'mask'): s
  */
 export const PII_REGEX_PATTERNS = {
   email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+  phone_number: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
+  phoneNumber: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
   phone: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
   credit_card: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g,
   ssn: /\b\d{3}-\d{2}-\d{4}\b/g,
@@ -57,12 +59,12 @@ export const PII_REGEX_PATTERNS = {
  * Scrubs unstructured free text using configured regex patterns and custom scrubbers.
  */
 export function maskTextPII(text: string, piiConfig?: AIPIIConfig): string {
-  if (!text || typeof text !== 'string') return text;
+  if (!text || typeof text !== "string") return text;
   if (!piiConfig || piiConfig.enabled === false) return text;
 
   let result = text;
-  const strategy = piiConfig.strategy || 'mask';
-  const patterns = piiConfig.patterns || ['email', 'phone', 'ssn', 'credit_card', 'ipv4'];
+  const strategy = piiConfig.strategy || "mask";
+  const patterns = piiConfig.patterns || ["email", "phone", "ssn", "credit_card", "ipv4"];
 
   for (const patternName of patterns) {
     const regex = PII_REGEX_PATTERNS[patternName];
@@ -70,23 +72,25 @@ export function maskTextPII(text: string, piiConfig?: AIPIIConfig): string {
 
     result = result.replace(regex, (match) => {
       switch (patternName) {
-        case 'email':
+        case "email":
           return maskEmail(match, strategy);
-        case 'phone':
+        case "phone":
           return maskPhone(match, strategy);
-        case 'credit_card':
-          return strategy === 'token' ? '[REDACTED_CREDIT_CARD]' : '****-****-****-' + match.replace(/\D/g, '').slice(-4);
-        case 'ssn':
-          return strategy === 'token' ? '[REDACTED_SSN]' : '***-**-' + match.replace(/\D/g, '').slice(-4);
-        case 'ipv4':
-          return '[REDACTED_IP]';
+        case "credit_card":
+          return strategy === "token"
+            ? "[REDACTED_CREDIT_CARD]"
+            : "****-****-****-" + match.replace(/\D/g, "").slice(-4);
+        case "ssn":
+          return strategy === "token" ? "[REDACTED_SSN]" : "***-**-" + match.replace(/\D/g, "").slice(-4);
+        case "ipv4":
+          return "[REDACTED_IP]";
         default:
-          return '[REDACTED]';
+          return "[REDACTED]";
       }
     });
   }
 
-  if (typeof piiConfig.customScrubber === 'function') {
+  if (typeof piiConfig.customScrubber === "function") {
     result = piiConfig.customScrubber(result);
   }
 
@@ -113,7 +117,7 @@ export interface SanitizeDocForAIOptions {
  */
 export function sanitizeDocForAI(options: SanitizeDocForAIOptions): Record<string, unknown> {
   const { doc, collectionConfig, globalAIConfig } = options;
-  if (!doc || typeof doc !== 'object') return doc;
+  if (!doc || typeof doc !== "object") return doc;
 
   const copy: Record<string, unknown> = { ...doc };
 
@@ -142,28 +146,28 @@ export function sanitizeDocForAI(options: SanitizeDocForAIOptions): Record<strin
     }
 
     const val = copy[fieldName];
-    const isEmail = field.type === 'email' || fieldName.toLowerCase() === 'email';
-    const isPhone = fieldName.toLowerCase() === 'phone' || fieldName.toLowerCase() === 'phonenumber';
+    const isEmail = field.type === "email" || fieldName.toLowerCase() === "email";
+    const isPhone = fieldName.toLowerCase() === "phone" || fieldName.toLowerCase() === "phonenumber";
 
-    // B. Typed PII: default opt-out masking unless allowRaw === true
+    // B. Typed PII: default opt-out masking unless allowRaw === true or global pii.enabled === false
     if (isEmail) {
-      if (field.ai?.allowRaw !== true && typeof val === 'string') {
+      if (globalAIConfig?.pii?.enabled !== false && field.ai?.allowRaw !== true && typeof val === 'string') {
         copy[fieldName] = maskEmail(val, globalAIConfig?.pii?.strategy);
       }
       continue;
     }
 
     if (isPhone) {
-      if (field.ai?.allowRaw !== true && typeof val === 'string') {
+      if (globalAIConfig?.pii?.enabled !== false && field.ai?.allowRaw !== true && typeof val === 'string') {
         copy[fieldName] = maskPhone(val, globalAIConfig?.pii?.strategy);
       }
       continue;
     }
 
     // C. Explicit redact flag on any other field
-    if (field.ai?.redact === true || field.ai?.redact === 'mask') {
-      if (typeof val === 'string') {
-        copy[fieldName] = '[REDACTED]';
+    if (field.ai?.redact === true || field.ai?.redact === "mask") {
+      if (typeof val === "string") {
+        copy[fieldName] = "[REDACTED]";
       }
     }
   }
@@ -173,13 +177,13 @@ export function sanitizeDocForAI(options: SanitizeDocForAIOptions): Record<strin
     for (const field of collectionConfig.ai.redactFields) {
       if (copy[field] !== undefined) {
         const val = copy[field];
-        if (typeof val === 'string') {
-          if (field.toLowerCase().includes('email')) {
+        if (typeof val === "string") {
+          if (field.toLowerCase().includes("email")) {
             copy[field] = maskEmail(val, globalAIConfig?.pii?.strategy);
-          } else if (field.toLowerCase().includes('phone')) {
+          } else if (field.toLowerCase().includes("phone")) {
             copy[field] = maskPhone(val, globalAIConfig?.pii?.strategy);
           } else {
-            copy[field] = '[REDACTED]';
+            copy[field] = "[REDACTED]";
           }
         }
       }
@@ -188,14 +192,14 @@ export function sanitizeDocForAI(options: SanitizeDocForAIOptions): Record<strin
 
   // 5. Collection-level custom sanitizeDoc hook
   let result = copy;
-  if (typeof collectionConfig?.ai?.sanitizeDoc === 'function') {
+  if (typeof collectionConfig?.ai?.sanitizeDoc === "function") {
     result = collectionConfig.ai.sanitizeDoc(copy);
   }
 
   // 6. Global PII scrubber for unstructured text (if enabled)
   if (globalAIConfig?.pii?.enabled === true) {
     for (const [k, v] of Object.entries(result)) {
-      if (typeof v === 'string') {
+      if (typeof v === "string") {
         result[k] = maskTextPII(v, globalAIConfig.pii);
       }
     }
