@@ -26658,6 +26658,12 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.13.4
+
+- Resolve Rolldown CommonJS interop error in lazy-loaded `RichTextEditor` chunk by shimming `use-sync-external-store` to native React 18/19 hooks, and inject a browser `window.require` fallback for `react` and `react-dom` in `@dyrected/admin` and `@dyrected/vue`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/vue`)
+
+---
+
 ## v2.13.3
 
 - - Bundle all admin UI implementation dependencies into pre-compiled ESM to eliminate Vite runtime dependency discovery and page reloads.
@@ -27504,12 +27510,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/admin@2.5.51 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 - @dyrected/vue@2.5.51 (`@dyrected/nuxt`)
-
----
-
-## v2.5.50
-
-- Resolve preview domain dynamically using schemas siteUrl, prefix/strip url field domains using siteUrl origin, and update block builder library dialog with scrollable 3-column desktop layout. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
@@ -55210,6 +55210,12 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.13.4
+
+- Resolve Rolldown CommonJS interop error in lazy-loaded `RichTextEditor` chunk by shimming `use-sync-external-store` to native React 18/19 hooks, and inject a browser `window.require` fallback for `react` and `react-dom` in `@dyrected/admin` and `@dyrected/vue`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/vue`)
+
+---
+
 ## v2.13.3
 
 - - Bundle all admin UI implementation dependencies into pre-compiled ESM to eliminate Vite runtime dependency discovery and page reloads.
@@ -56056,12 +56062,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/admin@2.5.51 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 - @dyrected/vue@2.5.51 (`@dyrected/nuxt`)
-
----
-
-## v2.5.50
-
-- Resolve preview domain dynamically using schemas siteUrl, prefix/strip url field domains using siteUrl origin, and update block builder library dialog with scrollable 3-column desktop layout. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
