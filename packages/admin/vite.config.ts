@@ -17,6 +17,12 @@ const bundledImplementationDependencies = new Set([
   "prop-types",
   "jexl",
   "react-datasheet-grid",
+  "@ai-sdk/react",
+  "ai",
+  "@vercel/oidc",
+  "@ai-sdk/gateway",
+  "@ai-sdk/provider",
+  "@ai-sdk/provider-utils",
 ]);
 
 const peerAndPlatformDependencies = new Set([
@@ -30,10 +36,7 @@ const externalSharedDependencies = new Set(
   Object.keys(pkg.dependencies ?? {}).filter((dep) => !bundledImplementationDependencies.has(dep)),
 );
 
-const externalPackages = [
-  ...externalSharedDependencies,
-  ...peerAndPlatformDependencies,
-];
+const externalPackages = [...externalSharedDependencies, ...peerAndPlatformDependencies];
 
 const external = (id: string) => {
   return externalPackages.some((dep) => id === dep || id.startsWith(`${dep}/`));
@@ -73,6 +76,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@vercel/oidc": path.resolve(__dirname, "./src/shims/vercel-oidc.ts"),
     },
   },
 });

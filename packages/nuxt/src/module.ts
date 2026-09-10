@@ -405,6 +405,13 @@ export default defineNitroPlugin(async (nitroApp) => {
         }
       }
 
+      const aiDeps = ["@vercel/oidc", "@ai-sdk/react", "@ai-sdk/gateway"];
+      for (const dep of aiDeps) {
+        if (!nuxt.options.vite.optimizeDeps.include.includes(dep)) {
+          nuxt.options.vite.optimizeDeps.include.push(dep);
+        }
+      }
+
       nuxt.options.vite.optimizeDeps.exclude = nuxt.options.vite.optimizeDeps.exclude || [];
       if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/admin")) {
         nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/admin");
@@ -475,6 +482,15 @@ export default defineNitroPlugin(async (nitroApp) => {
       const optDeps = ((config as any).optimizeDeps = (config as any).optimizeDeps || {});
       optDeps.exclude = optDeps.exclude || [];
       optDeps.exclude.push("pino", "pino-pretty", "worker_threads");
+
+      // Pre-bundle CommonJS / ESM boundary dependencies used by @dyrected/admin
+      optDeps.include = optDeps.include || [];
+      const aiDeps = ["@vercel/oidc", "@ai-sdk/react", "@ai-sdk/gateway"];
+      for (const dep of aiDeps) {
+        if (!optDeps.include.includes(dep)) {
+          optDeps.include.push(dep);
+        }
+      }
 
       const plugins = (config.plugins ?? []) as any[];
       const unctxPlugin = plugins.find((p: any) => p && typeof p === "object" && p.name === "unctx:transform") as any;

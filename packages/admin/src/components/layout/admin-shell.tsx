@@ -42,7 +42,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
-import { DyrectedAILipTrigger } from "@/components/ai"
+const DyrectedAILipTrigger = React.lazy(() =>
+  import("../ai/DyrectedAILipTrigger").then((m) => ({ default: m.DyrectedAILipTrigger }))
+)
 import { WorkspaceSwitcher } from "./workspace-switcher"
 import logo from "@/assets/dyrected.svg"
 import logoDark from "@/assets/dyrected-dark.svg"
@@ -1114,7 +1116,9 @@ export function AdminShell({
                 {children}
               </div>
             </main>
-            <DyrectedAILipTrigger />
+            <React.Suspense fallback={null}>
+              <DyrectedAILipTrigger />
+            </React.Suspense>
           </div>
         </TooltipProvider>
       </SidebarControlProvider>
