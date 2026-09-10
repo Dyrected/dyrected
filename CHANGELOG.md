@@ -2,6 +2,12 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.13.4
+
+- Resolve Rolldown CommonJS interop error in lazy-loaded `RichTextEditor` chunk by shimming `use-sync-external-store` to native React 18/19 hooks, and inject a browser `window.require` fallback for `react` and `react-dom` in `@dyrected/admin` and `@dyrected/vue`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/vue`)
+
+---
+
 ## v2.13.3
 
 - - Bundle all admin UI implementation dependencies into pre-compiled ESM to eliminate Vite runtime dependency discovery and page reloads.

@@ -1,5 +1,15 @@
 # @dyrected/vue
 
+## 2.13.4
+
+### Patch Changes
+
+- 7bff5af: Resolve Rolldown CommonJS interop error in lazy-loaded `RichTextEditor` chunk by shimming `use-sync-external-store` to native React 18/19 hooks, and inject a browser `window.require` fallback for `react` and `react-dom` in `@dyrected/admin` and `@dyrected/vue`.
+- Updated dependencies [7bff5af]
+  - @dyrected/admin@2.13.4
+  - @dyrected/core@2.13.4
+  - @dyrected/sdk@2.13.4
+
 ## 2.13.3
 
 ### Patch Changes

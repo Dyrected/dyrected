@@ -1,5 +1,15 @@
 # @dyrected/nuxt
 
+## 2.13.4
+
+### Patch Changes
+
+- Updated dependencies [7bff5af]
+  - @dyrected/admin@2.13.4
+  - @dyrected/vue@2.13.4
+  - @dyrected/core@2.13.4
+  - @dyrected/sdk@2.13.4
+
 ## 2.13.3
 
 ### Patch Changes
