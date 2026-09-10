@@ -415,8 +415,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     );
 
     const effectiveAi = requestConfig.ai;
-    const aiEnabled = effectiveAi?.enabled !== false;
-    const aiProvider =
+    const aiEnabled = Boolean(effectiveAi && effectiveAi.enabled !== false);
+    const aiProvider = aiEnabled ? (
       effectiveAi?.provider ||
       (process.env.AGENTROUTER_API_KEY
         ? "agentrouter"
@@ -424,7 +424,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         ? "openrouter"
         : process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY
         ? "openai"
-        : "google");
+        : "google")
+    ) : undefined;
 
     return c.json({
       blocks: requestConfig.blocks?.map(serializeBlockForApi),

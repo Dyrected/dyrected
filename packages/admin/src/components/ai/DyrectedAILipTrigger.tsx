@@ -61,6 +61,7 @@ const DEFAULT_PANEL_WIDTH = 440;
 const MIN_PANEL_WIDTH = 340;
 
 export function DyrectedAILipTrigger() {
+  const { schemas } = useDyrected();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const aiThreadParam = searchParams.get('aiThread');
@@ -82,9 +83,9 @@ export function DyrectedAILipTrigger() {
   // Sync if URL query explicitly provides aiThread param
   useEffect(() => {
     if (aiThreadParam !== null) {
-      setIsOpenState(true);
       const tid = aiThreadParam === 'new' ? null : aiThreadParam;
-      setActiveThreadId(tid);
+      setIsOpenState((prev) => (prev ? prev : true));
+      setActiveThreadId((prev) => (prev === tid ? prev : tid));
       localStorage.setItem('dyrected_ai_open', 'true');
       localStorage.setItem('dyrected_ai_active_thread', aiThreadParam);
     }
@@ -184,6 +185,10 @@ export function DyrectedAILipTrigger() {
     window.addEventListener('dyrected:ai-open', handleAIOpen);
     return () => window.removeEventListener('dyrected:ai-open', handleAIOpen);
   }, [handleOpen, activeThreadId]);
+
+  if (!schemas?.ai?.enabled) {
+    return null;
+  }
 
   return (
     <>

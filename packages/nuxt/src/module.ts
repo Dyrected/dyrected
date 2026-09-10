@@ -279,7 +279,8 @@ export default defineNitroPlugin(async (nitroApp) => {
       addServerPlugin(dbPluginTemplate.dst);
 
       try {
-        const configModule = await import(configPath);
+        const { loadDyrectedConfig } = await import("./runtime/server/plugins/loadConfig.js");
+        const configModule = await loadDyrectedConfig(configPath);
         const userConfig = (configModule as { default?: unknown }).default ?? configModule;
         const configObj =
           userConfig &&
@@ -405,13 +406,6 @@ export default defineNitroPlugin(async (nitroApp) => {
         }
       }
 
-      const aiDeps = ["@vercel/oidc", "@ai-sdk/react", "@ai-sdk/gateway"];
-      for (const dep of aiDeps) {
-        if (!nuxt.options.vite.optimizeDeps.include.includes(dep)) {
-          nuxt.options.vite.optimizeDeps.include.push(dep);
-        }
-      }
-
       nuxt.options.vite.optimizeDeps.exclude = nuxt.options.vite.optimizeDeps.exclude || [];
       if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/admin")) {
         nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/admin");
@@ -485,12 +479,6 @@ export default defineNitroPlugin(async (nitroApp) => {
 
       // Pre-bundle CommonJS / ESM boundary dependencies used by @dyrected/admin
       optDeps.include = optDeps.include || [];
-      const aiDeps = ["@vercel/oidc", "@ai-sdk/react", "@ai-sdk/gateway"];
-      for (const dep of aiDeps) {
-        if (!optDeps.include.includes(dep)) {
-          optDeps.include.push(dep);
-        }
-      }
 
       const plugins = (config.plugins ?? []) as any[];
       const unctxPlugin = plugins.find((p: any) => p && typeof p === "object" && p.name === "unctx:transform") as any;

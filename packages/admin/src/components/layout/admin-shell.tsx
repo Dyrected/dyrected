@@ -1116,9 +1116,11 @@ export function AdminShell({
                 {children}
               </div>
             </main>
-            <React.Suspense fallback={null}>
-              <DyrectedAILipTrigger />
-            </React.Suspense>
+            {schemas?.ai?.enabled ? (
+              <React.Suspense fallback={null}>
+                <DyrectedAILipTrigger />
+              </React.Suspense>
+            ) : null}
           </div>
         </TooltipProvider>
       </SidebarControlProvider>
