@@ -6,6 +6,15 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
+## v2.13.3
+
+- - Bundle all admin UI implementation dependencies into pre-compiled ESM to eliminate Vite runtime dependency discovery and page reloads.
+  - Lazy-load AI SDK dependencies and add `@vercel/oidc` browser shim to eliminate Vite CommonJS export errors.
+  - Hide AI lip trigger when no AI config is specified.
+  - Fix relative ESM import extension for `loadConfig` and add `jiti` dependency to `@dyrected/nuxt`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/nuxt`)
+
+---
+
 ## v2.13.1
 
 - - **MySQL Adapter Feature Parity & Resilience (`@dyrected/db-mysql`)**:
@@ -849,18 +858,6 @@ Release notes and version history across all Dyrected packages.
 ## v2.5.50
 
 - Resolve preview domain dynamically using schemas siteUrl, prefix/strip url field domains using siteUrl origin, and update block builder library dialog with scrollable 3-column desktop layout. (`@dyrected/admin`, `@dyrected/core`)
-
----
-
-## v2.5.49
-
-- Add upgrade command, non-interactive init options, and unified combobox URL field redesign. (`@dyrected/admin`, `dyrected`)
-
-- @dyrected/core@2.5.49
-
-- @dyrected/react@2.5.49 (`@dyrected/next`)
-
-- @dyrected/sdk@2.5.49 (`@dyrected/next`)
 
 ---
 
