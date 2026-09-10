@@ -23,7 +23,13 @@ const provenanceFlag = useProvenance ? '--provenance ' : '';
 
 const packageDirs = fs.readdirSync(packagesDir, { withFileTypes: true })
   .filter(dirent => dirent.isDirectory())
-  .map(dirent => path.join(packagesDir, dirent.name));
+  .map(dirent => path.join(packagesDir, dirent.name))
+  // Ensure cli (dyrected) is published last so its dependencies (knowledge, core, sdk) are on npm first
+  .sort((a, b) => {
+    if (path.basename(a) === 'cli') return 1;
+    if (path.basename(b) === 'cli') return -1;
+    return 0;
+  });
 
 // Verify that packing resolves all workspace: dependencies
 function assertNoRawWorkspaceDeps(dir, pkgName) {
