@@ -607,7 +607,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>siteId</code> (optional) | Restricts this collection to one specific site in a multi-tenant setup.  Use this when the collection should belong to a single site rather than the whole installation. When set, only requests bearing a matching &#96;X-Site-Id&#96; header can access it. |
 | <code>shared</code> (optional) | If &#96;true&#96;, this collection is shared across all sites in a multi-tenant setup and accessible regardless of the &#96;X-Site-Id&#96; header.  Use this for content that should stay common across sites, such as shared taxonomies, reusable assets, or centrally managed reference data. |
 | <code>labels</code> (optional) | Human-readable names for documents in this collection, shown in the Admin UI.  Use this when the slug is technical or when you want the dashboard to read more naturally. For example, &#96;slug: 'people'&#96; might use &#96;labels: &#123; singular: 'Person', plural: 'People' &#125;&#96;.  See: [Collections labels](https://dyrected.com/docs/model-content/configuration/collections#labels) |
-| <code>auth</code> (optional) | If &#96;true&#96; or an auth config object, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  Pass an object when you want to tune built-in account lockout behavior for repeated failed logins.  See: [Authentication overview](https://dyrected.com/docs/editor-experience/editor-accounts) |
+| <code>auth</code> (optional) | If &#96;true&#96; or an auth config object, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  Pass an object when you want to tune built-in account lockout behavior for repeated failed logins or specify a custom admin role name with &#96;adminRole&#96;.  See: [Authentication overview](https://dyrected.com/docs/editor-experience/editor-accounts) |
 | <code>upload</code> (optional) | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;.  Turn this on when each document in the collection should represent a stored file, such as an image, PDF, video, or downloadable asset.  See: [Upload overview](https://docs.dyrected.com/docs/self-hosted/model-content/media/overview) |
 | <code>fields</code> (required) | Field definitions that make up the document schema for this collection.  This is the main schema contract for every document in the collection. It decides what editors can fill in, how data is validated, how records are stored, and what the API and SDK return.  In practice, fields are where you model the actual content structure of the collection: simple values such as text and dates, relationships to other collections, nested objects and arrays, and flexible &#96;blocks&#96; fields for reusable page sections or long-form layouts.  See: [Fields overview](https://dyrected.com/docs/model-content/fields/overview), [Blocks and page sections](https://dyrected.com/docs/model-content/fields/blocks) |
 | <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds the built-in system fields &#96;createdAt&#96;, &#96;updatedAt&#96;, &#96;createdBy&#96;, and &#96;updatedBy&#96; to every document. Defaults to &#96;true&#96;. |
@@ -690,6 +690,26 @@ Set `auth: true` when this collection should represent application users and sup
 An auth collection gains authentication endpoints such as login and logout, and its documents are treated as user records rather than plain content entries. In practice, this is what you use for collections like `users`, `members`, `customers`, or `admins`.
 
 Turning on `auth` changes the role of the collection. It is not just "add a password field" but "this collection now participates in authentication."
+
+If your organization uses custom role naming (such as `super_admin` instead of the default `admin`), pass `adminRole` in your auth config:
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Admins = defineCollection({
+  slug: "admins",
+  auth: {
+    adminRole: "super_admin", // Defaults to 'admin'
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
+  fields: [
+    { name: "name", label: "Full Name", type: "text", required: true },
+  ],
+});
+```
+
+When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
 
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](/docs/editor-experience/editor-accounts).
 

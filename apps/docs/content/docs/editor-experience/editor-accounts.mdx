@@ -111,12 +111,13 @@ The same secret must be present in every environment, and it must not be empty. 
 
 The recommended path is still `auth: true`. Reach for an object only when you need to change built-in behavior.
 
-The most important production options today are the login lockout settings:
+The most common options to tune are login lockout and the administrative role name:
 
 ```ts
-export const Users = defineCollection({
-  slug: "users",
+export const Admins = defineCollection({
+  slug: "admins",
   auth: {
+    adminRole: "super_admin", // Defaults to 'admin'
     maxLoginAttempts: 5,
     lockTime: 15 * 60 * 1000, // 15 minutes
   },
@@ -124,7 +125,9 @@ export const Users = defineCollection({
 });
 ```
 
-`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds.
+- `maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account.
+- `lockTime` controls how long that lock lasts, in milliseconds.
+- `adminRole` customizes the administrative role name (defaults to `'admin'`). Use this if your team uses custom role naming such as `'super_admin'` or `'manager'`, so the initial account setup (`/first-user`) and Admin UI privilege checks grant and recognize your custom role.
 
 This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](/docs/deployment-and-operations/production/preventing-abuse).
 
