@@ -13093,6 +13093,38 @@ For a first handoff, the recommended path is:
 
 That gives editors useful control without asking them to create content structures the app cannot render safely.
 
+## Splitting your schema into multiple files
+
+As your application grows, keeping all collections and globals inside a single `dyrected.config.ts` can become crowded. You can split collections and globals into their own TypeScript files and import them cleanly:
+
+```text
+my-nuxt-app/
+├── dyrected/
+│   ├── collections/
+│   │   ├── pages.ts
+│   │   └── posts.ts
+│   └── globals/
+│       └── settings.ts
+├── dyrected.config.ts
+└── nuxt.config.ts
+```
+
+Then import your definitions into `dyrected.config.ts`:
+
+```ts
+
+
+
+
+
+export default defineConfig({
+  collections: [Pages, Posts],
+  globals: [Settings],
+});
+```
+
+Because the Nuxt module loads your configuration using on-the-fly TypeScript resolution, you can use standard extensionless relative imports without worrying about ESM loader mismatches.
+
 ## Where to go deeper
 
 Use this page for the quick-start version of the decision. For the full configuration details, continue to:
@@ -17502,6 +17534,26 @@ Set `auth: true` when this collection should represent application users and sup
 An auth collection gains authentication endpoints such as login and logout, and its documents are treated as user records rather than plain content entries. In practice, this is what you use for collections like `users`, `members`, `customers`, or `admins`.
 
 Turning on `auth` changes the role of the collection. It is not just "add a password field" but "this collection now participates in authentication."
+
+If your organization uses custom role naming (such as `super_admin` instead of the default `admin`), pass `adminRole` in your auth config:
+
+```ts
+
+
+export const Admins = defineCollection({
+  slug: "admins",
+  auth: {
+    adminRole: "super_admin", // Defaults to 'admin'
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
+  fields: [
+    { name: "name", label: "Full Name", type: "text", required: true },
+  ],
+});
+```
+
+When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
 
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](https://docs.dyrected.com/docs/cloud/editor-experience/editor-accounts).
 
@@ -26606,6 +26658,32 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.13.1
+
+- - **MySQL Adapter Feature Parity & Resilience (`@dyrected/db-mysql`)**:
+  - **Concurrent Schema Migration Safety**: Added in-memory `tableLocks` mutex and lifecycle table cache to prevent concurrent requests from firing duplicate `ALTER TABLE` queries during initialization.
+  - **Duplicate Field Tolerance**: Caught `ER_DUP_FIELDNAME` (errno `1060`) and duplicate column errors silently during concurrent column promotion.
+  - **AI Chat Storage Provisioning**: Auto-created `_dyrected_ai_threads` and `_dyrected_ai_messages` internal tables with indexes and cascading foreign keys on boot, bringing MySQL to parity with Postgres.
+  - **Promoted Field Types & Backfilling**: Added `DATETIME(3)` column type support for `date`/`datetime` promoted fields and added automatic backfill from JSON `data` into newly promoted SQL columns.
+  - **Connection Resilience & Retries**: Added default keep-alive (`enableKeepAlive: true`, `10000ms`), connection timeout (`20000ms`), exponential backoff retries on pool initialization, and exposed `poolOptions` in `MysqlAdapterConfig`.
+  - **Global Pool Caching**: Cached MySQL connection pool on `globalThis` (`getSharedMysqlClientCache`) and exported `closeAllMysqlClients()` to prevent connection exhaustion during Next.js/Nuxt HMR.
+  - **Column Inspection Caching**: Replaced repetitive `SHOW COLUMNS` queries on every CRUD/aggregate call with an in-memory `tableColumnsCache`.
+
+  - **Configurable Superuser Role (`@dyrected/core`, `@dyrected/admin`)**:
+    - Added `adminRole?: string` to `AuthConfig` interface.
+    - Added `getAdminRoleForCollection` and `isUserAdmin` helper utilities in `@dyrected/core`.
+    - Updated `/first-user` setup endpoint to inspect the collection's configured `adminRole` and `roles` field options, automatically selecting the appropriate superuser role instead of hardcoding `'admin'`.
+    - Decoupled hardcoded `'admin'` checks across routes, controllers, and Admin UI to recognize configured admin roles alongside `'super_admin'` and `'admin'`.
+
+  - **Nuxt Config Loading via `jiti` (`@dyrected/nuxt`)**:
+    - Replaced the static top-level ESM `import` in the generated Nitro plugin with dynamic `loadDyrectedConfig` (via `jiti` with `esmResolve: true`), natively supporting extensionless TypeScript imports and path aliases at initial boot.
+
+  - **Safe Package Publishing & Workspace Protocol Protection (`dyrected`, `scripts/publish-packages.mjs`)**:
+    - Replaced native `npm publish` with `pnpm publish --no-git-checks` so internal `workspace:^` dependencies are automatically resolved into concrete published semver versions.
+    - Added an automated pre-publish assertion (`assertNoRawWorkspaceDeps`) that verifies package tarballs before upload and immediately aborts if any raw `"workspace:"` string is present in the distribution manifest.
+
+---
+
 ## v2.13.0
 
 - - **Core Client/Server Clean Decoupling & Schema Serialization**:
@@ -27435,24 +27513,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/react@2.5.49 (`@dyrected/next`)
 
 - @dyrected/sdk@2.5.49 (`@dyrected/next`)
-
----
-
-## v2.5.48
-
-- Fix CSV importer: drag & drop, file validation, empty file rejection, invalid row handling, network failure retry, and full-page layout
-  - Drag and drop now works on the upload zone (was advertised but never wired up) (CI-005)
-  - Non-CSV files dropped or selected show a clear "Unsupported file type" error and stay on the upload screen (CI-005)
-  - Empty CSV files (zero data rows) are rejected with an explicit message instead of advancing to a blank mapping step (CI-006)
-  - At the preview step, if all rows are invalid the Start Import button is disabled and a blocking error is shown; if some rows are invalid an acknowledgement checkbox must be checked before import can proceed, preventing silent partial data creation (CI-029)
-  - Rows that fail due to network or API errors during import are tracked separately from validation failures; a "Retry N Failed Rows" button appears on the complete screen so users can retry without re-uploading or re-mapping (CI-030)
-  - CSV import now renders as a full-page layout instead of a constrained modal, giving the validation table sufficient room to display all columns and rows (`@dyrected/admin`)
-
-- Improve cloud admin auth collection resolution and delegated membership handling
-  - Prefer the `__admins` collection for admin auth when present, then fall back to the configured `adminAuth.collectionSlug`, then the first auth collection
-  - Return the resolved admin auth collection slug in public admin auth config so the admin UI and server agree on the active auth collection
-  - Pass a normalized hook request context to delegated provider membership handlers so cloud-backed user management hooks can safely read query params and request headers
-  - Preserve multipart upload behavior in the SDK by letting fetch set the multipart boundary automatically (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
@@ -32282,14 +32342,47 @@ mysqlAdapter({
 | `user` | Connection user. |
 | `password` | Connection password. |
 | `database` | Database name to use. |
+| `poolOptions` | Optional `mysql2` pool configuration overrides, such as `connectionLimit`, `queueLimit`, or custom `ssl` settings. |
 
 Prefer an environment-provided `url` when your host rotates credentials or manages connection details for you.
 
+If you need finer control over the underlying connection pool, such as tuning max connections or attaching an SSL certificate authority, pass `poolOptions`:
+
+```ts
+
+
+
+export default defineConfig({
+  db: mysqlAdapter({
+    url: process.env.DATABASE_URL!,
+    poolOptions: {
+      connectionLimit: 10,
+      queueLimit: 0,
+      ssl: {
+        rejectUnauthorized: true,
+      },
+    },
+  }),
+  collections: [],
+  globals: [],
+})
+```
+
 > **Connecting to a local server? Use `127.0.0.1`, not `localhost`.** On some systems `localhost` resolves to IPv6 (`::1`) while MySQL only listens on IPv4, which fails to connect. If you hit an `EADDRNOTAVAIL` error, switch the host to `127.0.0.1`.
+
+## Resilience and connection pooling
+
+The MySQL adapter is built to handle network hiccups and serverless lifecycles cleanly:
+
+- **Automatic Keep-Alive**: TCP keep-alive packets are enabled by default (with a 10-second initial delay) to prevent managed cloud load balancers and firewalls from quietly closing idle connections.
+- **Automatic Retries**: Read and write queries automatically retry with exponential backoff if the database drops a connection (`PROTOCOL_CONNECTION_LOST`, `ETIMEDOUT`, `ECONNRESET`, or `ER_CON_COUNT_ERROR`).
+- **Shared Pool Caching**: In development environments with hot module replacement (HMR) or multi-tenant runtimes, the adapter caches connection pools globally by connection string so your app does not exhaust database connections on reload.
 
 ## What happens on startup
 
-The first time your app connects, the adapter creates a table for each collection that doesn't have one yet, plus an internal table for globals. Adding a new collection or field usually works on your next boot with no extra step. See [Migrations](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/migrations) for how schema changes are applied over time.
+The first time your app connects, the adapter creates a table for each collection that doesn't have one yet, plus internal tables for globals and AI chat history (`_dyrected_ai_threads` and `_dyrected_ai_messages`). Adding a new collection or field usually works on your next boot with no extra step. See [Migrations](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/migrations) for how schema changes are applied over time.
+
+Startup migrations use an in-memory lock per table and safely tolerate concurrent migration attempts (`ER_DUP_FIELDNAME`). If multiple serverless workers or cluster nodes start simultaneously, they will not crash if another instance adds a column first.
 
 As a local-development convenience, if the database named in your connection doesn't exist yet, the adapter will create it (`CREATE DATABASE IF NOT EXISTS`). In production, create the database ahead of time rather than relying on this.
 
@@ -32297,7 +32390,14 @@ As a local-development convenience, if the database named in your connection doe
 
 Each collection maps to a table named `collection_<slug>`. Every document is stored as a JSON `data` column alongside `id`, `created_at`, and `updated_at`. Globals live in an internal key/value table.
 
-Because the document body is JSON, you can filter and sort on any field without declaring it first. Fields you mark with `promoted: true` are also lifted into their own real, typed columns so the database can work with them directly. See [Indexes](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/indexes) for when to promote a field.
+Because the document body is JSON, you can filter and sort on any field without declaring it first. Fields you mark with `promoted: true` are also lifted into their own real, typed columns so the database can work with them directly:
+
+- Text and select fields become `VARCHAR(255)` or `LONGTEXT`.
+- Number fields become `DOUBLE`.
+- Boolean fields become `TINYINT(1)`.
+- Date and timestamp fields become `DATETIME(3)` with millisecond precision.
+
+When you promote an existing field, the adapter automatically backfills the new column with existing data from your documents, so your historical entries immediately benefit from indexes. See [Indexes](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/indexes) for when to promote a field.
 
 ## Transactions and raw SQL
 
@@ -47423,6 +47523,26 @@ An auth collection gains authentication endpoints such as login and logout, and 
 
 Turning on `auth` changes the role of the collection. It is not just "add a password field" but "this collection now participates in authentication."
 
+If your organization uses custom role naming (such as `super_admin` instead of the default `admin`), pass `adminRole` in your auth config:
+
+```ts
+
+
+export const Admins = defineCollection({
+  slug: "admins",
+  auth: {
+    adminRole: "super_admin", // Defaults to 'admin'
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
+  fields: [
+    { name: "name", label: "Full Name", type: "text", required: true },
+  ],
+});
+```
+
+When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
+
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/overview).
 
 ## `upload`
@@ -55093,6 +55213,32 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.13.1
+
+- - **MySQL Adapter Feature Parity & Resilience (`@dyrected/db-mysql`)**:
+  - **Concurrent Schema Migration Safety**: Added in-memory `tableLocks` mutex and lifecycle table cache to prevent concurrent requests from firing duplicate `ALTER TABLE` queries during initialization.
+  - **Duplicate Field Tolerance**: Caught `ER_DUP_FIELDNAME` (errno `1060`) and duplicate column errors silently during concurrent column promotion.
+  - **AI Chat Storage Provisioning**: Auto-created `_dyrected_ai_threads` and `_dyrected_ai_messages` internal tables with indexes and cascading foreign keys on boot, bringing MySQL to parity with Postgres.
+  - **Promoted Field Types & Backfilling**: Added `DATETIME(3)` column type support for `date`/`datetime` promoted fields and added automatic backfill from JSON `data` into newly promoted SQL columns.
+  - **Connection Resilience & Retries**: Added default keep-alive (`enableKeepAlive: true`, `10000ms`), connection timeout (`20000ms`), exponential backoff retries on pool initialization, and exposed `poolOptions` in `MysqlAdapterConfig`.
+  - **Global Pool Caching**: Cached MySQL connection pool on `globalThis` (`getSharedMysqlClientCache`) and exported `closeAllMysqlClients()` to prevent connection exhaustion during Next.js/Nuxt HMR.
+  - **Column Inspection Caching**: Replaced repetitive `SHOW COLUMNS` queries on every CRUD/aggregate call with an in-memory `tableColumnsCache`.
+
+  - **Configurable Superuser Role (`@dyrected/core`, `@dyrected/admin`)**:
+    - Added `adminRole?: string` to `AuthConfig` interface.
+    - Added `getAdminRoleForCollection` and `isUserAdmin` helper utilities in `@dyrected/core`.
+    - Updated `/first-user` setup endpoint to inspect the collection's configured `adminRole` and `roles` field options, automatically selecting the appropriate superuser role instead of hardcoding `'admin'`.
+    - Decoupled hardcoded `'admin'` checks across routes, controllers, and Admin UI to recognize configured admin roles alongside `'super_admin'` and `'admin'`.
+
+  - **Nuxt Config Loading via `jiti` (`@dyrected/nuxt`)**:
+    - Replaced the static top-level ESM `import` in the generated Nitro plugin with dynamic `loadDyrectedConfig` (via `jiti` with `esmResolve: true`), natively supporting extensionless TypeScript imports and path aliases at initial boot.
+
+  - **Safe Package Publishing & Workspace Protocol Protection (`dyrected`, `scripts/publish-packages.mjs`)**:
+    - Replaced native `npm publish` with `pnpm publish --no-git-checks` so internal `workspace:^` dependencies are automatically resolved into concrete published semver versions.
+    - Added an automated pre-publish assertion (`assertNoRawWorkspaceDeps`) that verifies package tarballs before upload and immediately aborts if any raw `"workspace:"` string is present in the distribution manifest.
+
+---
+
 ## v2.13.0
 
 - - **Core Client/Server Clean Decoupling & Schema Serialization**:
@@ -55922,24 +56068,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/react@2.5.49 (`@dyrected/next`)
 
 - @dyrected/sdk@2.5.49 (`@dyrected/next`)
-
----
-
-## v2.5.48
-
-- Fix CSV importer: drag & drop, file validation, empty file rejection, invalid row handling, network failure retry, and full-page layout
-  - Drag and drop now works on the upload zone (was advertised but never wired up) (CI-005)
-  - Non-CSV files dropped or selected show a clear "Unsupported file type" error and stay on the upload screen (CI-005)
-  - Empty CSV files (zero data rows) are rejected with an explicit message instead of advancing to a blank mapping step (CI-006)
-  - At the preview step, if all rows are invalid the Start Import button is disabled and a blocking error is shown; if some rows are invalid an acknowledgement checkbox must be checked before import can proceed, preventing silent partial data creation (CI-029)
-  - Rows that fail due to network or API errors during import are tracked separately from validation failures; a "Retry N Failed Rows" button appears on the complete screen so users can retry without re-uploading or re-mapping (CI-030)
-  - CSV import now renders as a full-page layout instead of a constrained modal, giving the validation table sufficient room to display all columns and rows (`@dyrected/admin`)
-
-- Improve cloud admin auth collection resolution and delegated membership handling
-  - Prefer the `__admins` collection for admin auth when present, then fall back to the configured `adminAuth.collectionSlug`, then the first auth collection
-  - Return the resolved admin auth collection slug in public admin auth config so the admin UI and server agree on the active auth collection
-  - Pass a normalized hook request context to delegated provider membership handlers so cloud-backed user management hooks can safely read query params and request headers
-  - Preserve multipart upload behavior in the SDK by letting fetch set the multipart boundary automatically (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 

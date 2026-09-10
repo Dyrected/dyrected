@@ -1057,6 +1057,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment-and-operations/infrastructure/database/mysql#example-3",
+    "page": "/deployment-and-operations/infrastructure/database/mysql",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deployment-and-operations/infrastructure/database/overview#example-1",
     "page": "/deployment-and-operations/infrastructure/database/overview",
     "language": "ts",
@@ -3542,6 +3549,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/guides/nuxt/defining-a-schema#example-2",
+    "page": "/guides/nuxt/defining-a-schema",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/nuxt/defining-a-schema#example-3",
+    "page": "/guides/nuxt/defining-a-schema",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/guides/nuxt/displaying-content-in-nuxtjs#example-1",
     "page": "/guides/nuxt/displaying-content-in-nuxtjs",
     "language": "vue",
@@ -4056,8 +4077,8 @@
     "id": "/model-content/configuration/collections#example-10",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/configuration/collections#example-11",
@@ -4068,6 +4089,13 @@
   },
   {
     "id": "/model-content/configuration/collections#example-12",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-13",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",
