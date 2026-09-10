@@ -514,6 +514,22 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
+   * Optional custom AI assistant instructions and RAG indexing options for this collection.
+   */
+  ai?: {
+    /** Specific editorial guidelines, brand voice, or instructions for this collection. */
+    prompt?: string;
+    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
+    rag?: import("./ai.js").CollectionRAGConfig;
+    /** Field names to completely omit from AI context and RAG indexing. */
+    excludeFields?: string[];
+    /** Field names to mask (e.g. j***@example.com) before sending to AI. */
+    redactFields?: string[];
+    /** Custom hook to transform/sanitize/pseudonymize documents before AI inspection. */
+    sanitizeDoc?: (doc: Record<string, unknown>) => Record<string, unknown>;
+  };
+
+  /**
    * Detail view layout configuration for the Admin UI.
    *
    * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
@@ -602,6 +618,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
+| <code>ai</code> (optional) | Optional custom AI assistant instructions and RAG indexing options for this collection. |
 | <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, collections are **Edit-First** (&#96;detail: false&#96;). Clicking a record in the table or cards view navigates directly to the editing form with Live Preview.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array using display helpers (&#96;displaySection&#96;, &#96;displayField&#96;, &#96;displayTabs&#96;, etc.) for a custom operational dashboard layout. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
@@ -673,6 +690,26 @@ Set `auth: true` when this collection should represent application users and sup
 An auth collection gains authentication endpoints such as login and logout, and its documents are treated as user records rather than plain content entries. In practice, this is what you use for collections like `users`, `members`, `customers`, or `admins`.
 
 Turning on `auth` changes the role of the collection. It is not just "add a password field" but "this collection now participates in authentication."
+
+If your organization uses custom role naming (such as `super_admin` instead of the default `admin`), pass `adminRole` in your auth config:
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Admins = defineCollection({
+  slug: "admins",
+  auth: {
+    adminRole: "super_admin", // Defaults to 'admin'
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
+  fields: [
+    { name: "name", label: "Full Name", type: "text", required: true },
+  ],
+});
+```
+
+When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
 
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](/docs/editor-experience/editor-accounts).
 

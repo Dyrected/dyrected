@@ -18,6 +18,7 @@ import {
   buildPasswordChangedEmail,
 } from "../services/email.service.js";
 import { getRequestLogger } from "../observability.js";
+import { getAdminRoleForCollection } from "../utils/admin-auth.js";
 
 /**
  * Handles auth endpoints for collections with `auth: true`.
@@ -199,14 +200,31 @@ export class AuthController {
       );
     }
 
-    // 2. Create the user
+    // 2. Create the user with resolved admin role
+    let initialRole = getAdminRoleForCollection(this.collection);
+    const rolesField = this.collection.fields?.find((f: any) => f.name === "roles");
+    if (rolesField && Array.isArray((rolesField as any).options) && (rolesField as any).options.length > 0) {
+      const optionValues = (rolesField as any).options.map((opt: any) =>
+        typeof opt === "string" ? opt : opt?.value
+      );
+      if (!optionValues.includes(initialRole)) {
+        if (optionValues.includes("super_admin")) {
+          initialRole = "super_admin";
+        } else if (optionValues.includes("admin")) {
+          initialRole = "admin";
+        } else {
+          initialRole = optionValues[0];
+        }
+      }
+    }
+
     const hashedPassword = await hashPassword(body.password);
     const user = await db.create({
       collection: this.collection.slug,
       data: {
         ...body,
         password: hashedPassword,
-        roles: ["admin"], // Default first user to admin
+        roles: [initialRole],
       },
     });
 

@@ -1,0 +1,294 @@
+---
+title: AI Privacy & Data Redaction
+description: How to prevent customer emails, phone numbers, credentials, and sensitive personal information from reaching external AI providers and vector search indexes.
+---
+
+When embedding an AI assistant inside a headless CMS, customer data privacy cannot rely on verbal prompt instructions alone. Prompt injection or model hallucinations can bypass soft rules like _"please ignore customer emails"_.
+
+Dyrected enforces data privacy **deterministically at the backend before any record ever touches an external LLM or vector embedding API**.
+
+By the end of this guide, you will understand how Dyrected protects customer data by default, how to exclude or mask specific fields, how to write custom pseudonymization hooks, and how to scrub personal data from free-form text.
+
+---
+
+## The mental model: secure-by-default hybrid privacy
+
+Dyrected uses a tiered, hybrid approach to AI privacy:
+
+```
+1. Non-Negotiable Credentials (Passwords, tokens, hashes)
+   ↳ Automatically stripped. Zero exceptions. Cannot be opted into.
+
+2. Typed Customer PII (Emails, phone numbers)
+   ↳ Automatically masked by default (e.g. j***@example.com).
+   ↳ Explicit escape hatch: ai: { allowRaw: true } if your workflow requires it.
+
+3. Custom Field & Collection Rules (Addresses, SSNs, financial data)
+   ↳ Declaratively exclude or redact fields in your schema.
+   ↳ Programmatically pseudonymize rows via collection sanitizeDoc hooks.
+
+4. Unstructured Free-Text Scrubbing (Support tickets, blog comments)
+   ↳ High-performance regex scrubber sweeps paragraphs before embedding or inference.
+```
+
+---
+
+## 1. Default protection: zero configuration needed
+
+Out of the box, Dyrected protects your database without requiring any special configuration flags:
+
+1. **Credentials are permanently blocked:** Any field named `password`, `salt`, `hash`, `resetPasswordToken`, `apiKey`, `token`, `secret`, `accessToken`, or `refreshToken` is deleted before the AI assistant sees the record.
+2. **Emails and phone numbers are masked by default:** Any field created with `defineEmailField` or named `email` or `phone` is automatically masked (for example, `alice.smith@example.com` becomes `a***@example.com`, and `+1 555-234-5678` becomes `***-***-5678`).
+
+Here is a standard collection definition:
+
+```ts
+import { defineCollection, defineTextField, defineEmailField } from "@dyrected/core";
+
+export const Customers = defineCollection({
+  slug: "customers",
+  labels: { singular: "Customer", plural: "Customers" },
+  fields: [
+    defineTextField({
+      name: "fullName",
+      label: "Customer Name",
+      required: true,
+    }),
+    defineEmailField({
+      name: "email",
+      label: "Customer Email",
+      required: true,
+    }),
+    defineTextField({
+      name: "phone",
+      label: "Phone Number",
+    }),
+  ],
+});
+```
+
+When the AI assistant queries this collection to answer questions or prepare drafts, it receives:
+
+| Field in Database                  | What the AI Assistant Receives                |
+| :--------------------------------- | :-------------------------------------------- |
+| `fullName: "Alice Smith"`          | `"Alice Smith"`                               |
+| `email: "alice.smith@example.com"` | `"a***@example.com"` _(automatically masked)_ |
+| `phone: "+1 555-234-5678"`         | `"***-***-5678"` _(automatically masked)_     |
+| `password: "$argon2id$..."`        | _(omitted completely)_                        |
+
+Your customer emails and phone numbers are protected from third-party model logs without writing a single line of privacy code.
+
+---
+
+## 2. Field-level control: exclude, redact, or allow raw
+
+When you want granular control over individual fields, declare the `ai` property directly in your field definition.
+
+### Completely excluding a field
+
+If a field contains sensitive customer details that the AI has no reason to inspect (such as billing addresses or government IDs), set `ai: { exclude: true }`. The field is stripped entirely from AI inspection tools and RAG vector chunks:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Members = defineCollection({
+  slug: "members",
+  fields: [
+    defineTextField({
+      name: "displayName",
+      label: "Display Name",
+      required: true,
+    }),
+    defineTextField({
+      name: "taxId",
+      label: "Tax ID / SSN",
+      ai: {
+        // Completely removed from AI queries, embeddings, and chat context
+        exclude: true,
+      },
+    }),
+  ],
+});
+```
+
+### Allowing raw values (Opting out of default masking)
+
+If you are building a specialized workflow where the AI assistant legitimately needs raw email addresses (for example, an email campaign generator or domain analyzer), set `ai: { allowRaw: true }`:
+
+```ts
+import { defineCollection, defineEmailField } from "@dyrected/core";
+
+export const NewsletterSubscribers = defineCollection({
+  slug: "subscribers",
+  fields: [
+    defineEmailField({
+      name: "email",
+      label: "Subscriber Email",
+      ai: {
+        // Disables default masking; sends raw email to AI
+        allowRaw: true,
+      },
+    }),
+  ],
+});
+```
+
+---
+
+## 3. Collection-level control: batch redaction and pseudonymization
+
+For collections handling complex records, you can declare batch rules or programmatic transformations in `collection.ai`.
+
+### Batch field lists
+
+Use `excludeFields` to drop multiple sensitive attributes, and `redactFields` to replace values with `[REDACTED]`:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Invoices = defineCollection({
+  slug: "invoices",
+  ai: {
+    // Completely drop these fields from AI queries
+    excludeFields: ["bankAccountNumber", "routingNumber", "wireInstructions"],
+    // Replace values with [REDACTED]
+    redactFields: ["internalAuditNotes"],
+  },
+  fields: [
+    defineTextField({ name: "invoiceNumber", label: "Invoice #" }),
+    defineTextField({ name: "bankAccountNumber", label: "Bank Account #" }),
+    defineTextField({ name: "internalAuditNotes", label: "Internal Notes" }),
+  ],
+});
+```
+
+### Programmatic pseudonymization (`sanitizeDoc`)
+
+When you need custom de-identification—such as replacing customer names with anonymous tokens while preserving analytical utility—provide a `sanitizeDoc` function:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const SupportTickets = defineCollection({
+  slug: "support-tickets",
+  ai: {
+    sanitizeDoc: (doc) => ({
+      ...doc,
+      // Replace personal customer name with an anonymous stable ID
+      customerName: `Customer #${String(doc.id).slice(0, 6)}`,
+      // Retain the ticket issue and category for AI troubleshooting
+      issueSummary: doc.issueSummary,
+    }),
+  },
+  fields: [
+    defineTextField({ name: "customerName", label: "Customer Name" }),
+    defineTextField({ name: "issueSummary", label: "Issue Summary" }),
+  ],
+});
+```
+
+---
+
+## 4. Global unstructured free-text scrubber (`config.ai.pii`)
+
+Customer PII does not only live in structured columns like `email`; customers often type phone numbers, credit card numbers, or email addresses directly into free-text descriptions, notes, or feedback paragraphs.
+
+To scrub unstructured text across all collections before vector embeddings are generated or prompts are streamed, enable the global PII scrubber in `dyrected.config.ts`:
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  ai: {
+    enabled: true,
+    pii: {
+      // Turns on automated regex scrubbing across unstructured text
+      enabled: true,
+      // Patterns to scrub (defaults to all five)
+      patterns: ["email", "phone", "credit_card", "ssn", "ipv4"],
+      // 'mask' (e.g. j***@acme.com) or 'token' (e.g. [REDACTED_EMAIL])
+      strategy: "token",
+      // Optional custom scrubber for proprietary identifiers
+      customScrubber: (text) => {
+        return text.replace(/EMP-[0-9]{5}/g, "[EMPLOYEE_ID]");
+      },
+    },
+  },
+});
+```
+
+### How the scrubber transforms free-text
+
+When an editor or customer writes:
+
+> _"Client John called from 192.168.1.1 asking to update card 4111 1111 1111 1234. Reach him at john@example.com."_
+
+The global scrubber transforms the text before embedding or sending to the AI model:
+
+> _"Client John called from [REDACTED_IP] asking to update card [REDACTED_CREDIT_CARD]. Reach him at [REDACTED_EMAIL]."_
+
+---
+
+## Where redaction is enforced
+
+Dyrected applies privacy sanitization at every point where data leaves your database for an AI provider:
+
+1. **AI Inspection Tools (`queryCollection`, `getDocument`):** When the chat assistant inspects records to answer a user's request, every document passes through `sanitizeDocForAI` before being returned to the model.
+2. **RAG Vector Embedding Pipeline (`RAGService.indexDocument`):** Before text chunks are created or sent to Google or OpenAI embedding models, documents are sanitized and excluded fields are omitted. Raw customer PII is never stored in your vector chunks table (`_dyrected_ai_chunks`).
+3. **Mutation Proposals:** Sensitive fields are scrubbed from proposal diff previews to ensure personal data is not inadvertently displayed in chat thread cards.
+
+---
+
+## Complete runnable configuration
+
+Here is a complete, copy-pasteable `dyrected.config.ts` demonstrating customer privacy protection in practice:
+
+```ts
+// dyrected.config.ts
+import { defineConfig, defineCollection, defineTextField, defineEmailField, defineNumberField } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+
+export const Customers = defineCollection({
+  slug: "customers",
+  labels: { singular: "Customer", plural: "Customers" },
+  ai: {
+    // Drop internal identifiers
+    excludeFields: ["taxId"],
+    // Pseudonymize customer records for AI assistance
+    sanitizeDoc: (doc) => ({
+      ...doc,
+      fullName: `Customer #${String(doc.id).slice(0, 6)}`,
+    }),
+  },
+  fields: [
+    defineTextField({ name: "fullName", label: "Full Name", required: true }),
+    defineEmailField({ name: "email", label: "Email Address", required: true }), // Auto-masked!
+    defineTextField({ name: "taxId", label: "Tax Identification", ai: { exclude: true } }),
+    defineNumberField({ name: "lifetimeSpend", label: "Lifetime Spend (USD)" }),
+  ],
+});
+
+export default defineConfig({
+  collections: [Customers],
+  db: postgresAdapter({
+    url: process.env.DATABASE_URL || "postgres://localhost:5432/my_app",
+  }),
+  ai: {
+    provider: "google",
+    model: "gemini-2.5-flash",
+    pii: {
+      enabled: true,
+      strategy: "token",
+    },
+  },
+});
+```
+
+---
+
+## Related documentation
+
+- [Configuring AI](/docs/model-content/configuration/ai) — Choosing AI providers, setting brand voice prompts, and rate limits.
+- [Access Control](/docs/model-content/configuration/collections#access) — Restricting collection read and write permissions by user role.
+- [Multi-Tenant Architecture](/docs/deployment-and-operations/plugins-and-extensions/multi-tenant/overview) — Isolating data and AI assistant scopes across workspaces.

@@ -18,7 +18,7 @@ import {
   generateUniqueUploadFilename,
 } from "../utils/upload-validation.js";
 import { resolveAccess } from "../auth/access.js";
-import { getAdminAuthCollection } from "../utils/admin-auth.js";
+import { getAdminAuthCollection, isUserAdmin } from "../utils/admin-auth.js";
 import { buildCollectionSearchWhere } from "../utils/collection-search.js";
 import {
   applyFieldReadAccess,
@@ -41,12 +41,48 @@ import {
 } from "../workflows.js";
 import { getRequestLogger } from "../observability.js";
 import { evaluateDetailComputed } from "../detail.js";
+import { RAGService } from "../services/rag/rag.service.js";
+import { HTTPException } from "hono/http-exception";
+import { getAllowedSitesForUser, resolveAuthorizedSiteId } from "../utils/tenant.js";
 
 export class CollectionController {
   private collection: CollectionConfig;
 
   constructor(collection: CollectionConfig) {
     this.collection = collection;
+  }
+
+  private checkTenantAccess(c: Context<DyrectedContext>): { ok: boolean; response?: any } {
+    let siteId: string | undefined;
+    try {
+      const hasSiteHeader = Boolean(c.req.header("X-Site-Id") || c.get("siteId"));
+      const allowedSites = getAllowedSitesForUser(c.get("user"), c.get("authTokenPayload"));
+      if (hasSiteHeader || (allowedSites && allowedSites.length > 0)) {
+        siteId = resolveAuthorizedSiteId(c);
+      }
+    } catch (err: any) {
+      if (err instanceof HTTPException) {
+        return {
+          ok: false,
+          response: c.json({ error: true, message: err.message }, err.status as any),
+        };
+      }
+      throw err;
+    }
+
+    if (this.collection.siteId && !this.collection.shared) {
+      if (!siteId || this.collection.siteId !== siteId) {
+        return {
+          ok: false,
+          response: c.json(
+            { error: true, message: `Collection "${this.collection.slug}" not found in project.` },
+            404,
+          ),
+        };
+      }
+    }
+
+    return { ok: true };
   }
 
   private getDelegatedProvider(c: Context<DyrectedContext>) {
@@ -107,6 +143,9 @@ export class CollectionController {
   }
 
   async find(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -373,6 +412,9 @@ export class CollectionController {
   }
 
   async findOne(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -500,6 +542,9 @@ export class CollectionController {
   }
 
   async create(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -634,6 +679,18 @@ export class CollectionController {
       { isolated: true },
     );
 
+    // Auto-index into RAG vector store in background
+    if (db && config) {
+      const siteId = resolveAuthorizedSiteId(c);
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index create failed:`, err?.message || err));
+    }
+
     // Run afterRead hooks on the returned doc
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
@@ -668,6 +725,9 @@ export class CollectionController {
   }
 
   async upload(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const storage = config.storage;
     if (!storage) return c.json({ message: "Storage not configured" }, 500);
@@ -787,6 +847,18 @@ export class CollectionController {
       { isolated: true },
     );
 
+    // Auto-index into RAG vector store in background
+    if (db && config) {
+      const siteId = resolveAuthorizedSiteId(c);
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index upload failed:`, err?.message || err));
+    }
+
     // Run afterRead hooks
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
@@ -821,6 +893,9 @@ export class CollectionController {
   }
 
   async update(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -986,6 +1061,18 @@ export class CollectionController {
       { isolated: true },
     );
 
+    // Auto-index into RAG vector store in background
+    if (db && config) {
+      const siteId = resolveAuthorizedSiteId(c);
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index update failed:`, err?.message || err));
+    }
+
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
       : doc;
@@ -1027,6 +1114,9 @@ export class CollectionController {
    * collection's lifecycle hooks and audit trail still apply.
    */
   async runViewAction(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -1154,6 +1244,9 @@ export class CollectionController {
   }
 
   async transition(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     if (!config.db) return c.json({ message: "Database not configured" }, 500);
     if (!this.collection.workflow)
@@ -1202,6 +1295,9 @@ export class CollectionController {
   }
 
   async workflowHistory(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     if (!config.db) return c.json({ message: "Database not configured" }, 500);
     if (!this.collection.workflow)
@@ -1262,6 +1358,9 @@ export class CollectionController {
    *  - newPassword and confirmPassword must match.
    */
   async changePassword(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -1292,7 +1391,7 @@ export class CollectionController {
       return c.json({ message: "Password must be at least 8 characters" }, 400);
     }
 
-    const isAdmin = Array.isArray(user.roles) && user.roles.includes("admin");
+    const isAdmin = isUserAdmin(user, this.collection);
     const isSelf = user.sub === id;
 
     if (!isAdmin && !isSelf) {
@@ -1355,6 +1454,9 @@ export class CollectionController {
   }
 
   async delete(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -1437,10 +1539,24 @@ export class CollectionController {
       { isolated: true },
     );
 
+    // Remove vector chunks for deleted document in background
+    if (db) {
+      const siteId = resolveAuthorizedSiteId(c);
+      RAGService.deleteDocumentChunks({
+        db,
+        collection: this.collection.slug,
+        documentId: id,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-delete chunks failed:`, err?.message || err));
+    }
+
     return c.json({ message: "Deleted" });
   }
 
   async deleteMany(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -1557,6 +1673,18 @@ export class CollectionController {
       }
     }
 
+    if (db && deleted.length > 0) {
+      const siteId = resolveAuthorizedSiteId(c);
+      for (const delId of deleted) {
+        RAGService.deleteDocumentChunks({
+          db,
+          collection: this.collection.slug,
+          documentId: delId,
+          projectId: siteId,
+        }).catch((err) => console.error(`[dyrected/rag] Auto-delete chunks failed for ${delId}:`, err?.message || err));
+      }
+    }
+
     return c.json({
       message: `Deleted ${deleted.length} document(s)`,
       deleted,
@@ -1601,6 +1729,9 @@ export class CollectionController {
   }
 
   async aggregate(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);

@@ -25,6 +25,11 @@ export interface AdminSchemas {
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
   };
+  ai?: {
+    enabled: boolean;
+    provider?: string;
+    model?: string;
+  };
 }
 
 

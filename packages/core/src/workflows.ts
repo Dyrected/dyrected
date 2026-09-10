@@ -548,18 +548,31 @@ export async function transitionWorkflow(args: {
       await hook({ ...hookContext, doc: updated, event: events[0] });
     } catch (error) {
       try {
-        const { getConfigLogger, getObservabilityRuntime } = await import("./observability.js");
-        getObservabilityRuntime(config)?.recordWorkflowHookFailure({
+        const obs = (config as unknown as { __observability?: { recordWorkflowHookFailure?: (attrs: unknown) => void } })?.__observability;
+        obs?.recordWorkflowHookFailure?.({
           collection: collection.slug,
           transition: transition.name,
         });
-        getConfigLogger(config, "workflow").error({
-          err: error,
-          msg: "afterTransition hook failed",
-          collection: collection.slug,
-          transition: transition.name,
-          documentId: id,
-        });
+        const logger = (config as unknown as { logger?: { child?: (bindings: unknown) => { error: (obj: unknown) => void }; error?: (obj: unknown) => void } })?.logger;
+        if (logger && typeof logger.child === "function") {
+          logger.child({ component: "workflow" }).error({
+            err: error,
+            msg: "afterTransition hook failed",
+            collection: collection.slug,
+            transition: transition.name,
+            documentId: id,
+          });
+        } else if (logger && typeof logger.error === "function") {
+          logger.error({
+            err: error,
+            msg: "afterTransition hook failed",
+            collection: collection.slug,
+            transition: transition.name,
+            documentId: id,
+          });
+        } else {
+          console.error("afterTransition hook failed:", error);
+        }
       } catch {
         console.error("afterTransition hook failed:", error);
       }

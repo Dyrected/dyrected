@@ -3,6 +3,8 @@
 Inspired by Laravel's approach to documentation. Use this as the standard when writing or reviewing any Dyrected doc page.
 
 ---
+## 0. Always use $api-docs-hitl skill when writing documenetation.
+---
 
 ## 1. Task-oriented, not API-oriented
 

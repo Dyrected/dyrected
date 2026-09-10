@@ -1,5 +1,95 @@
 # @dyrected/core
 
+## 2.13.1
+
+### Patch Changes
+
+- 0b4d4cb: - **MySQL Adapter Feature Parity & Resilience (`@dyrected/db-mysql`)**:
+  - **Concurrent Schema Migration Safety**: Added in-memory `tableLocks` mutex and lifecycle table cache to prevent concurrent requests from firing duplicate `ALTER TABLE` queries during initialization.
+  - **Duplicate Field Tolerance**: Caught `ER_DUP_FIELDNAME` (errno `1060`) and duplicate column errors silently during concurrent column promotion.
+  - **AI Chat Storage Provisioning**: Auto-created `_dyrected_ai_threads` and `_dyrected_ai_messages` internal tables with indexes and cascading foreign keys on boot, bringing MySQL to parity with Postgres.
+  - **Promoted Field Types & Backfilling**: Added `DATETIME(3)` column type support for `date`/`datetime` promoted fields and added automatic backfill from JSON `data` into newly promoted SQL columns.
+  - **Connection Resilience & Retries**: Added default keep-alive (`enableKeepAlive: true`, `10000ms`), connection timeout (`20000ms`), exponential backoff retries on pool initialization, and exposed `poolOptions` in `MysqlAdapterConfig`.
+  - **Global Pool Caching**: Cached MySQL connection pool on `globalThis` (`getSharedMysqlClientCache`) and exported `closeAllMysqlClients()` to prevent connection exhaustion during Next.js/Nuxt HMR.
+  - **Column Inspection Caching**: Replaced repetitive `SHOW COLUMNS` queries on every CRUD/aggregate call with an in-memory `tableColumnsCache`.
+
+  - **Configurable Superuser Role (`@dyrected/core`, `@dyrected/admin`)**:
+    - Added `adminRole?: string` to `AuthConfig` interface.
+    - Added `getAdminRoleForCollection` and `isUserAdmin` helper utilities in `@dyrected/core`.
+    - Updated `/first-user` setup endpoint to inspect the collection's configured `adminRole` and `roles` field options, automatically selecting the appropriate superuser role instead of hardcoding `'admin'`.
+    - Decoupled hardcoded `'admin'` checks across routes, controllers, and Admin UI to recognize configured admin roles alongside `'super_admin'` and `'admin'`.
+
+  - **Nuxt Config Loading via `jiti` (`@dyrected/nuxt`)**:
+    - Replaced the static top-level ESM `import` in the generated Nitro plugin with dynamic `loadDyrectedConfig` (via `jiti` with `esmResolve: true`), natively supporting extensionless TypeScript imports and path aliases at initial boot.
+
+  - **Safe Package Publishing & Workspace Protocol Protection (`dyrected`, `scripts/publish-packages.mjs`)**:
+    - Replaced native `npm publish` with `pnpm publish --no-git-checks` so internal `workspace:^` dependencies are automatically resolved into concrete published semver versions.
+    - Added an automated pre-publish assertion (`assertNoRawWorkspaceDeps`) that verifies package tarballs before upload and immediately aborts if any raw `"workspace:"` string is present in the distribution manifest.
+
+## 2.13.0
+
+### Minor Changes
+
+- e950c6e: - **Core Client/Server Clean Decoupling & Schema Serialization**:
+  - Decoupled server-only AI services (`ai.service`, `ai-tools`, `rag.service`, `embedding.service`, `ai-rate-limit`, `observability`) strictly into `@dyrected/core/server`.
+  - Cleaned the `@dyrected/core` root entry point to be 100% browser-safe, eliminating `pino` logger and Node.js built-ins (`os`, `fs`, `stream`) from client bundles and Next.js Turbopack applications.
+  - Hardened `/api/schemas` serialization to forward `shared`, `siteId`, and collection-level `ai` configuration, plus field constraints (`unique`, `min`, `max`, `step`, `minLength`, `maxLength`, `pattern`, `allowedTypes`, `maxSize`, `virtual`, `promoted`, `ai`).
+  - Added public AI readiness flags on the schema payload (`ai: { enabled: boolean, provider?: string, model?: string }`).
+
+  - **First-Class Typed SDK AI Module (`@dyrected/sdk`)**:
+    - Implemented typed `client.ai` namespace on `DyrectedClient`:
+      - `client.ai.createThread(input?)`: Create a persistent conversation thread.
+      - `client.ai.listThreads()`: Retrieve all conversation threads.
+      - `client.ai.getThread(id)`: Retrieve a single thread by ID.
+      - `client.ai.deleteThread(id)`: Delete a thread and cascade its messages.
+      - `client.ai.postMessage(threadId, input)`: Post a prompt and receive assistant response.
+      - `client.ai.listMessages(threadId)`: Fetch full history for a thread.
+      - `client.ai.getAction(actionId)`: Fetch details of a pending human-in-the-loop action proposal.
+      - `client.ai.executeAction(actionId)`: Approve and execute a sensitive action proposal.
+      - `client.ai.rejectAction(actionId, input?)`: Reject a pending action proposal with feedback.
+      - `client.ai.searchRAG(input)`: Semantic vector search across indexed collections.
+      - `client.ai.reindexRAG(input?)`: Trigger manual document vector indexing.
+      - `client.ai.chat(messages, options?)`: Stream raw chat responses from `/api/ai/chat`.
+    - Replaced ad-hoc `qs` stringification with pure JSON payload transmission for delete-many and folder actions.
+
+  - **Admin Sidebar Restructuring, Workspace Switcher & Dashboard AI (`@dyrected/admin`)**:
+    - Moved the sidebar collapse toggle to the top-right of the logo row (`[Logo] Dyrected ... [collapse button]`).
+    - Added a compact `WorkspaceSwitcher` (`h-8`, ~32px) directly underneath the logo row, with support for user-restricted site lists and dynamic switching.
+    - Added `setSiteId` to `DyrectedContext` and `DyrectedProvider` with immediate TanStack Query cache invalidation and localStorage persistence.
+    - Added an interactive **AI Assistant Spotlight Card** and **Ask AI Assistant** quick action button on the Dashboard.
+    - Added an **AI Assistant** navigation item (`Sparkles` icon with `⌘J` shortcut badge) in the sidebar.
+    - Positioned **Setup** on the bottom-left and the **ThemeSelector** on the bottom-right of the sidebar footer.
+
+  - **CLI Recursive Layout Flattening (`@dyrected/cli`)**:
+    - Updated `packages/cli/src/utils/type-generator.ts` to recursively flatten `row` layout containers into generated TypeScript interfaces so child fields are never omitted.
+
+  - **Documentation Updates (`apps/docs`)**:
+    - Documented OpenRouter and custom OpenAI-compatible provider configuration in `ai.mdx`.
+    - Added multi-tenant architecture docs: overview, header-scoped tenanting, row-level tenanting, and dynamic schemas.
+    - Added AI privacy and field-level PII scrubber documentation in `ai-privacy.mdx`.
+- d96440d: - **OpenAPI & Swagger AI Surface**:
+  - Integrated all `/api/ai/*` endpoints into the live OpenAPI 3.0 specification generator (`/api/openapi.json`) and Swagger UI documentation (`/api/docs`).
+  - Added full request/response schemas for `/api/ai/chat`, `/api/ai/threads`, `/api/ai/threads/{threadId}`, `/api/ai/threads/{threadId}/messages`, `/api/ai/actions/{actionId}`, `/api/ai/actions/{actionId}/execute`, `/api/ai/actions/{actionId}/reject`, `/api/ai/rag/reindex`, and `/api/ai/rag/search`.
+  - Added unit test coverage for AI OpenAPI route definitions in `packages/core/src/__tests__/openapi.test.ts`.
+
+  - **AI Core Prompt Architecture & Safety**:
+    - Streamlined `buildDyrectedSystemPrompt` with dual-mode communication (editorial partner by default, developer mode opt-in).
+    - Enforced proactive mutation proposals (`proposeCreateDocument`, `proposeUpdateDocument`, `proposeUpdateGlobal`) without asking passive permission for content rewrites.
+    - Added automatic provider auto-detection across `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, and `AGENTROUTER_API_KEY`.
+
+  - **Admin Assistant UI & Streaming Enhancements**:
+    - Added live animated streaming carets and streaming status banners with instant abort (`stop()`) support.
+    - Upgraded `TypingDots` with contextual status states ("Thinking...", "Synthesizing data...", "Drafting response...").
+    - Deduplicated tool execution parts and action proposal keys to eliminate React duplicate key warnings.
+
+  - **Comprehensive Documentation Suite (`apps/docs`)**:
+    - Added `model-content/configuration/ai.mdx`: Complete guide to configuring AI, setting brand voice directives, and collection prompts.
+    - Added `editor-experience/ai-assistant.mdx`: Guide to the embedded Lip Trigger assistant drawer, live diff viewers, and human-in-the-loop proposals.
+    - Added `deliver-content/ai-agent-api.mdx`: Programmatic `AIAgent` guide for Server-Sent Events (SSE) streaming and Telegram/WhatsApp webhooks.
+    - Added `deliver-content/rest-api/ai-endpoints.mdx`: Complete REST API reference for all AI endpoints.
+    - Added `examples-and-recipes/library/chat-to-order-proposal.mdx`: Recipe for parsing unstructured customer chat logs into structured database orders.
+    - Added `examples-and-recipes/library/custom-ai-tools.mdx`: Recipe for extending Dyrected AI with custom server-side functions and Zod schemas.
+
 ## 2.12.0
 
 ### Minor Changes

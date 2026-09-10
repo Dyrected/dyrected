@@ -10,6 +10,32 @@ export interface MysqlAdapterConfig {
   user?: string;
   password?: string;
   database?: string;
+  /** Optional pool options passed directly to mysql2 createPool */
+  poolOptions?: Record<string, any>;
+}
+
+type SharedMysqlClient = {
+  pool?: any;
+  initPromise?: Promise<any>;
+};
+
+const MYSQL_CLIENT_CACHE_KEY = "__dyrectedMysqlClientCache";
+
+function getSharedMysqlClientCache(): Map<string, SharedMysqlClient> {
+  const globalScope = globalThis as typeof globalThis & {
+    [MYSQL_CLIENT_CACHE_KEY]?: Map<string, SharedMysqlClient>;
+  };
+
+  if (!globalScope[MYSQL_CLIENT_CACHE_KEY]) {
+    globalScope[MYSQL_CLIENT_CACHE_KEY] = new Map();
+  }
+
+  return globalScope[MYSQL_CLIENT_CACHE_KEY];
+}
+
+function getMysqlCacheKey(config: MysqlAdapterConfig): string {
+  if (config.url) return config.url;
+  return `${config.host || "localhost"}:${config.port || 3306}:${config.database || ""}:${config.user || ""}`;
 }
 
 function escapeMysqlIdentifier(identifier: string) {
@@ -35,6 +61,9 @@ export class MysqlAdapter implements DatabaseAdapter {
   private config: MysqlAdapterConfig;
   private initPromise: Promise<void> | null = null;
   private inTransaction = false;
+  private tableLocks = new Map<string, Promise<void>>();
+  private ensuredTables = new Set<string>();
+  private tableColumnsCache = new Map<string, string[]>();
 
   constructor(config: MysqlAdapterConfig) {
     this.config = config;
@@ -60,6 +89,32 @@ FIX INSTRUCTIONS:
     throw err;
   }
 
+  private async retryOperation<T>(operation: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (err: any) {
+        lastError = err;
+        const isNetworkOrTimeout =
+          err.code === "ETIMEDOUT" ||
+          err.code === "ECONNREFUSED" ||
+          err.code === "PROTOCOL_CONNECTION_LOST" ||
+          err.message?.includes("ETIMEDOUT") ||
+          err.message?.includes("Connection lost");
+
+        if (attempt < maxRetries && isNetworkOrTimeout) {
+          const delay = initialDelay * Math.pow(2, attempt - 1);
+          console.warn(`[dyrected/db-mysql] Connection attempt ${attempt} failed (${err.code || err.message}), retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else {
+          break;
+        }
+      }
+    }
+    throw lastError;
+  }
+
   private async ensureInitialized() {
     if (!this.initPromise) {
       this.initPromise = this.initialize();
@@ -68,65 +123,138 @@ FIX INSTRUCTIONS:
   }
 
   private async initialize() {
-    const config = this.config;
-    let dbName = config.database;
-    let serverConfig: any = null;
+    const cache = getSharedMysqlClientCache();
+    const cacheKey = getMysqlCacheKey(this.config);
+    const cached = cache.get(cacheKey);
 
-    if (config.url) {
-      try {
-        const parsed = new URL(config.url);
-        dbName = parsed.pathname.replace(/^\//, "");
-        const serverUrl = `${parsed.protocol}//${parsed.username}:${parsed.password}@${parsed.host}`;
-        serverConfig = serverUrl;
-      } catch (err) {
-        // Ignore parsing errors
-      }
-    } else {
-      serverConfig = {
-        host: config.host ?? "localhost",
-        port: config.port ?? 3306,
-        user: config.user,
-        password: config.password,
-      };
+    if (cached?.pool) {
+      this.pool = cached.pool;
+      return;
     }
 
-    if (dbName && serverConfig) {
-      try {
-        const tempConn = (await mysql.createConnection(serverConfig)) as any;
-        await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-        await tempConn.end();
-        console.log(`[dyrected/db-mysql] Database "${dbName}" checked/created successfully`);
-      } catch (err: any) {
-        console.warn(`[dyrected/db-mysql] Auto-creation of database "${dbName}" skipped/failed:`, err.message);
-        if (err.code === "EADDRNOTAVAIL" || err.message?.includes("EADDRNOTAVAIL")) {
-          this.handleConnectionError(err);
+    if (cached?.initPromise) {
+      this.pool = await cached.initPromise;
+      return;
+    }
+
+    const initPromise = (async () => {
+      const config = this.config;
+      let dbName = config.database;
+      let serverConfig: any = null;
+
+      if (config.url) {
+        try {
+          const parsed = new URL(config.url);
+          dbName = parsed.pathname.replace(/^\//, "");
+          const serverUrl = `${parsed.protocol}//${parsed.username}:${parsed.password}@${parsed.host}`;
+          serverConfig = serverUrl;
+        } catch (err) {
+          // Ignore parsing errors
+        }
+      } else {
+        serverConfig = {
+          host: config.host ?? "localhost",
+          port: config.port ?? 3306,
+          user: config.user,
+          password: config.password,
+        };
+      }
+
+      if (dbName && serverConfig) {
+        try {
+          await this.retryOperation(async () => {
+            const tempConn = (await mysql.createConnection(serverConfig)) as any;
+            try {
+              await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+            } finally {
+              await tempConn.end().catch(() => {});
+            }
+          }, 3, 1000);
+          console.log(`[dyrected/db-mysql] Database "${dbName}" checked/created successfully`);
+        } catch (err: any) {
+          console.warn(`[dyrected/db-mysql] Auto-creation of database "${dbName}" skipped/failed:`, err.message);
+          if (err.code === "EADDRNOTAVAIL" || err.message?.includes("EADDRNOTAVAIL")) {
+            this.handleConnectionError(err);
+          }
         }
       }
-    }
 
-    if (config.url) {
-      this.pool = mysql.createPool(config.url);
-    } else {
-      this.pool = mysql.createPool({
-        host: config.host ?? "localhost",
-        port: config.port ?? 3306,
-        user: config.user,
-        password: config.password,
-        database: config.database,
+      const defaultPoolOptions = {
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
+        connectTimeout: 20000,
         dateStrings: true,
-      });
-    }
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        ...config.poolOptions,
+      };
 
-    // Initialize internal tables
+      let pool: any;
+      if (config.url) {
+        pool = mysql.createPool({
+          uri: config.url,
+          ...defaultPoolOptions,
+        });
+      } else {
+        pool = mysql.createPool({
+          host: config.host ?? "localhost",
+          port: config.port ?? 3306,
+          user: config.user,
+          password: config.password,
+          database: config.database,
+          ...defaultPoolOptions,
+        });
+      }
+
+      // Initialize internal tables with retry
+      try {
+        await this.retryOperation(async () => {
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS dyrected_internal (
+              \`key\` VARCHAR(255) PRIMARY KEY,
+              value JSON NOT NULL
+            )
+          `);
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS _dyrected_ai_threads (
+              id VARCHAR(36) PRIMARY KEY,
+              project_id VARCHAR(255) NOT NULL,
+              user_id VARCHAR(255) NOT NULL,
+              title TEXT,
+              created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+              updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+              INDEX idx_ai_threads_user_project (user_id, project_id)
+            )
+          `);
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS _dyrected_ai_messages (
+              id VARCHAR(36) PRIMARY KEY,
+              thread_id VARCHAR(36) NOT NULL,
+              role VARCHAR(50) NOT NULL,
+              content LONGTEXT NOT NULL,
+              created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+              metadata JSON,
+              INDEX idx_ai_messages_thread_id (thread_id),
+              CONSTRAINT fk_ai_messages_thread FOREIGN KEY (thread_id) REFERENCES _dyrected_ai_threads(id) ON DELETE CASCADE
+            )
+          `);
+        }, 3, 1000);
+      } catch (err: any) {
+        this.handleConnectionError(err);
+      }
+
+      return pool;
+    })();
+
+    cache.set(cacheKey, { initPromise });
+
     try {
-      await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS dyrected_internal (
-          \`key\` VARCHAR(255) PRIMARY KEY,
-          value JSON NOT NULL
-        )
-      `);
-    } catch (err: any) {
-      this.handleConnectionError(err);
+      this.pool = await initPromise;
+      cache.set(cacheKey, { pool: this.pool });
+    } catch (error) {
+      cache.delete(cacheKey);
+      throw error;
     }
   }
 
@@ -149,33 +277,111 @@ FIX INSTRUCTIONS:
   }
 
   private getTableName(slug: string): string {
-    return `collection_${slug}`;
+    if (slug.includes(".")) {
+      const parts = slug.split(".");
+      return parts[parts.length - 1].replace(/`/g, "");
+    }
+    return slug.startsWith("collection_") ? slug : `collection_${slug}`;
+  }
+
+  private async getTableColumns(tableName: string): Promise<string[]> {
+    const cached = this.tableColumnsCache.get(tableName);
+    if (cached) return cached;
+    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
+    const existingCols = cols.map((c: any) => c.Field);
+    this.tableColumnsCache.set(tableName, existingCols);
+    return existingCols;
   }
 
   private async ensureTable(slug: string, fields: any[] = []) {
-    const tableName = this.getTableName(slug);
-    await this.query(`
-      CREATE TABLE IF NOT EXISTS \`${tableName}\` (
-        id VARCHAR(36) PRIMARY KEY,
-        data JSON NOT NULL,
-        created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
-        updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
-      )
-    `);
+    if (slug === "_dyrected_ai_threads" || slug === "_dyrected_ai_messages") {
+      return;
+    }
 
-    // Inspect columns for promoted fields
-    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
-    const existingCols = cols.map((c: any) => c.Field);
+    // If the table was already ensured in this lifecycle and no new fields are being passed, skip
+    if (fields.length === 0 && this.ensuredTables.has(slug)) {
+      return;
+    }
 
-    for (const field of fields) {
-      if (field.promoted && !existingCols.includes(field.name)) {
-        console.log(`[dyrected/mysql] Promoting field "${field.name}" to column in ${tableName}`);
-        let sqlType = "TEXT";
-        if (field.type === "number") sqlType = "DECIMAL(19,4)";
-        if (field.type === "boolean") sqlType = "TINYINT(1)";
-
-        await this.query(`ALTER TABLE \`${tableName}\` ADD COLUMN \`${field.name}\` ${sqlType}`);
+    // Coordinate concurrency via tableLocks so parallel requests don't collide on table creation/alteration
+    if (this.tableLocks.has(slug)) {
+      await this.tableLocks.get(slug);
+      if (fields.length === 0 && this.ensuredTables.has(slug)) {
+        return;
       }
+    }
+
+    let resolveLock!: () => void;
+    let rejectLock!: (err: any) => void;
+    const lockPromise = new Promise<void>((resolve, reject) => {
+      resolveLock = resolve;
+      rejectLock = reject;
+    });
+    this.tableLocks.set(slug, lockPromise);
+
+    try {
+      const tableName = this.getTableName(slug);
+      await this.query(`
+        CREATE TABLE IF NOT EXISTS \`${tableName}\` (
+          id VARCHAR(36) PRIMARY KEY,
+          data JSON NOT NULL,
+          created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+          updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
+        )
+      `);
+
+      // Inspect columns for promoted fields
+      const existingCols = await this.getTableColumns(tableName);
+
+      for (const field of fields) {
+        if (field.promoted && !existingCols.includes(field.name)) {
+          console.log(`[dyrected/mysql] Promoting field "${field.name}" to column in ${tableName}`);
+          let sqlType = "TEXT";
+          if (field.type === "number") sqlType = "DECIMAL(19,4)";
+          if (field.type === "boolean") sqlType = "TINYINT(1)";
+          if (field.type === "date" || field.type === "datetime") sqlType = "DATETIME(3)";
+
+          try {
+            await this.query(`ALTER TABLE \`${tableName}\` ADD COLUMN \`${field.name}\` ${sqlType}`);
+            existingCols.push(field.name);
+            this.tableColumnsCache.set(tableName, existingCols);
+          } catch (err: any) {
+            // ER_DUP_FIELDNAME (errno 1060): Duplicate column name. Silently ignore if already added concurrently.
+            if (err.code === "ER_DUP_FIELDNAME" || err.errno === 1060 || err.message?.includes("Duplicate column name")) {
+              // Column already added
+            } else {
+              throw err;
+            }
+          }
+
+          // Backfill existing rows where the promoted column is NULL but JSON data contains the field
+          const escapedField = field.name.replace(/`/g, "``");
+          let castExpr = `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}'))`;
+          if (field.type === "number") {
+            castExpr = `IF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) REGEXP '^-?[0-9]+(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$', CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) AS DECIMAL(19,4)), NULL)`;
+          } else if (field.type === "boolean") {
+            castExpr = `IF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) IN ('true', '1'), 1, 0)`;
+          } else if (field.type === "date" || field.type === "datetime") {
+            castExpr = `STR_TO_DATE(LEFT(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')), 23), '%Y-%m-%d %H:%i:%s.%f')`;
+          }
+
+          try {
+            await this.query(
+              `UPDATE \`${tableName}\` SET \`${escapedField}\` = ${castExpr} WHERE \`${escapedField}\` IS NULL AND JSON_CONTAINS_PATH(data, 'one', '$.${field.name}')`
+            );
+          } catch {
+            // Ignore backfill errors
+          }
+        }
+      }
+
+      this.ensuredTables.add(slug);
+      resolveLock();
+    } catch (err) {
+      rejectLock(err);
+      throw err;
+    } finally {
+      this.tableLocks.delete(slug);
     }
   }
 
@@ -194,8 +400,7 @@ FIX INSTRUCTIONS:
     const offset = (page - 1) * limit;
 
     // Inspect columns for promoted fields
-    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
-    const existingCols = cols.map((c: any) => c.Field);
+    const existingCols = await this.getTableColumns(tableName);
 
     // Build WHERE clause via shared DSL translator (MySQL JSON path syntax)
     let whereSql = "";
@@ -271,8 +476,7 @@ FIX INSTRUCTIONS:
     const tableName = this.getTableName(params.collection);
 
     // Inspect columns for promoted fields
-    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
-    const existingCols = cols.map((c: any) => c.Field);
+    const existingCols = await this.getTableColumns(tableName);
 
     const id = params.data.id ?? Math.random().toString(36).substring(7);
     const now = new Date().toISOString().replace("T", " ").replace("Z", "");
@@ -304,8 +508,7 @@ FIX INSTRUCTIONS:
     const tableName = this.getTableName(params.collection);
 
     // Inspect columns for promoted fields
-    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
-    const existingCols = cols.map((c: any) => c.Field);
+    const existingCols = await this.getTableColumns(tableName);
 
     const existing = await this.findOne({ collection: params.collection, id: params.id });
     const now = new Date().toISOString().replace("T", " ").replace("Z", "");
@@ -399,8 +602,7 @@ FIX INSTRUCTIONS:
     if (!this.inTransaction) await this.ensureTable(args.collection);
 
     // Inspect promoted columns.
-    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
-    const existingCols = cols.map((c: any) => c.Field);
+    const existingCols = await this.getTableColumns(tableName);
 
     const toFieldExpr = (field: string): string => {
       if (field === "createdAt") return "`created_at`";
@@ -513,6 +715,11 @@ FIX INSTRUCTIONS:
   }
 
   async disconnect(): Promise<void> {
+    const cache = getSharedMysqlClientCache();
+    const cacheKey = getMysqlCacheKey(this.config);
+    cache.delete(cacheKey);
+    this.ensuredTables.clear();
+    this.tableColumnsCache.clear();
     if (this.initPromise) {
       try {
         await this.initPromise;
@@ -525,6 +732,22 @@ FIX INSTRUCTIONS:
     }
     this.initPromise = null;
     this.pool = null;
+  }
+}
+
+export async function closeAllMysqlClients(): Promise<void> {
+  const cache = getSharedMysqlClientCache();
+  const entries = Array.from(cache.values());
+  cache.clear();
+  for (const entry of entries) {
+    try {
+      const pool = entry.pool || (await entry.initPromise);
+      if (pool && typeof pool.end === "function") {
+        await pool.end().catch(() => {});
+      }
+    } catch {
+      // Ignore errors during pool teardown
+    }
   }
 }
 

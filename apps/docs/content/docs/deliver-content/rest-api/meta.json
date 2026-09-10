@@ -2,6 +2,7 @@
   "title": "Content REST API",
   "runtimeDefault": "shared",
   "pages": [
-    "overview"
+    "overview",
+    "ai-endpoints"
   ]
 }

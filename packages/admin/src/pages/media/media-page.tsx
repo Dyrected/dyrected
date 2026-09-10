@@ -499,6 +499,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
                 isRefreshing={showSearchRefreshing}
               />
             )}
+
           </div>
 
           <AdminComponentSlot

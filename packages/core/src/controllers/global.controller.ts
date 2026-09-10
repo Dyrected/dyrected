@@ -17,6 +17,8 @@ import {
 } from "../utils/access-control.js";
 import { getRequestLogger } from "../observability.js";
 import { evaluateDetailComputed } from "../detail.js";
+import { HTTPException } from "hono/http-exception";
+import { getAllowedSitesForUser, resolveAuthorizedSiteId } from "../utils/tenant.js";
 
 export class GlobalController {
   private global: GlobalConfig;
@@ -25,7 +27,43 @@ export class GlobalController {
     this.global = global;
   }
 
+  private checkTenantAccess(c: Context<DyrectedContext>): { ok: boolean; response?: any } {
+    let siteId: string | undefined;
+    try {
+      const hasSiteHeader = Boolean(c.req.header("X-Site-Id") || c.get("siteId"));
+      const allowedSites = getAllowedSitesForUser(c.get("user"), c.get("authTokenPayload"));
+      if (hasSiteHeader || (allowedSites && allowedSites.length > 0)) {
+        siteId = resolveAuthorizedSiteId(c);
+      }
+    } catch (err: any) {
+      if (err instanceof HTTPException) {
+        return {
+          ok: false,
+          response: c.json({ error: true, message: err.message }, err.status as any),
+        };
+      }
+      throw err;
+    }
+
+    if (this.global.siteId && !this.global.shared) {
+      if (!siteId || this.global.siteId !== siteId) {
+        return {
+          ok: false,
+          response: c.json(
+            { error: true, message: `Global "${this.global.slug}" not found in project.` },
+            404,
+          ),
+        };
+      }
+    }
+
+    return { ok: true };
+  }
+
   async get(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
@@ -136,6 +174,9 @@ export class GlobalController {
   }
 
   async update(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);

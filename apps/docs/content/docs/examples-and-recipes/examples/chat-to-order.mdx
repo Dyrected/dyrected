@@ -1,0 +1,152 @@
+---
+title: Chat-to-Order AI Pipeline
+description: Convert unstructured customer conversations from WhatsApp or Telegram into validated database orders with human review and live pricing math.
+---
+
+Commercial print shops, creative agencies, custom fabricators, and ecommerce businesses frequently receive order requests through unstructured channels: WhatsApp, Telegram, direct messages, and email. Operators often spend hours manually deciphering requirements, calculating quotes, checking pricing charts, and re-typing details into forms.
+
+In this guide, you will build an automated pipeline where pasting an unstructured conversation into Dyrected AI automatically parses the request, queries live database pricing rules, computes deposit math, and presents a visual **Order Proposal** for one-click manager approval.
+
+---
+
+## What this example demonstrates
+
+1. **Unstructured Data Ingestion:** Extracting names, contact numbers, line items, and quantities from messy conversation transcripts.
+2. **Dynamic Pricing Lookups:** Querying the `pricing-rules` collection in real time to calculate unit rates.
+3. **Financial Math Automation:** Computing a required 70% deposit and remaining balance due according to your business rules.
+4. **Human-in-the-Loop Approval:** Rendering an interactive **Action Proposal Card** with a visual diff so managers review and approve before any database mutation occurs.
+
+---
+
+## 1. Defining the collections
+
+Define the `Orders` and `PricingRules` collections. Notice how `Orders` includes financial tracking fields like `subtotal`, `depositPaid`, and `balanceDue`:
+
+```ts
+// src/collections/Orders.ts
+import {
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal (NGN)", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid (NGN)", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due (NGN)", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+```
+
+```ts
+// src/collections/PricingRules.ts
+import { defineCollection, defineTextField, defineNumberField } from "@dyrected/core";
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate (NGN)", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+```
+
+---
+
+## 2. Configuring the AI System Prompt
+
+In `dyrected.config.ts`, instruct the assistant on your deposit policy and how to parse incoming chat transcripts:
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { Orders } from "./src/collections/Orders";
+import { PricingRules } from "./src/collections/PricingRules";
+
+export default defineConfig({
+  collections: [Orders, PricingRules],
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  ai: {
+    systemPrompt: `
+    You are the Operations Assistant for PrintOS.
+    When a user pastes a customer conversation transcript from WhatsApp or Telegram:
+    1. Extract customer name, phone or handle, product specifications, and quantity.
+    2. Query the 'pricing-rules' collection to find the unit rate.
+    3. Calculate Subtotal = (Quantity * Unit Rate).
+    4. Calculate a 70% required deposit and the remaining balance due.
+    5. Generate a unique order reference (e.g. PO-2026-XXXX).
+    6. Propose a new document in the 'orders' collection.
+    `,
+  },
+});
+```
+
+---
+
+## 3. Testing the workflow in the Admin Assistant
+
+1. Open your Dyrected Admin dashboard at `/admin`.
+2. Click the floating **AI Assistant** drawer on the right.
+3. Paste a sample customer chat transcript:
+
+```text
+Customer: "Hi! Need 1,000 full-colour A5 flyers printed for our church conference next week. Name is Grace, 08029998877."
+Agent: "Hello Grace! We can definitely help with that. Let me prepare your quote."
+```
+
+---
+
+## 4. What happens automatically
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Assistant parses customer: Grace (08029998877)           │
+├─────────────────────────────────────────────────────────────┤
+│ 2. Queries 'pricing-rules' -> finds ₦45 per A5 flyer        │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Computes 1,000 * ₦45 = ₦45,000 Subtotal                  │
+│    Calculates ₦31,500 (70% Deposit) + ₦13,500 (Balance)     │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Renders Interactive Proposal Card in the Drawer          │
+├─────────────────────────────────────────────────────────────┤
+│ 5. Manager clicks [Approve & Apply] -> Stored in Database   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+1. **Entity Extraction:** The model extracts the customer's name, contact information, product specifications, and quantity.
+2. **Pricing Lookup:** The model invokes `queryCollection` against `pricing-rules` for `a5-flyer`.
+3. **Financial Math:** The assistant computes `subtotal`, required `depositPaid`, and remaining `balanceDue`.
+4. **Interactive Action Card:** The assistant renders the **Action Proposal Card** with a visual schema diff showing all proposed fields.
+5. **One-Click Execution:** The shop manager clicks **[Approve & Apply]**, and the order document is immediately saved to PostgreSQL with zero manual data entry.
+
+---
+
+## Related docs
+
+- [AI Configuration Guide](/docs/model-content/configuration/ai)
+- [Admin AI Assistant UI](/docs/editor-experience/ai-assistant)
+- [AI Agent API & Telegram Webhooks](/docs/deliver-content/ai-agent-api)
+- [Chat to Order Recipe](/docs/examples-and-recipes/library/chat-to-order-proposal)

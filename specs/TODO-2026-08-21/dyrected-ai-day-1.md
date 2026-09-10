@@ -430,7 +430,7 @@ export function DyrectedAIChatPanel({
       <div className="px-4 py-3 border-b flex items-center justify-between">
         <div className="flex items-center gap-2 font-semibold text-sm">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span>Dyrected Assistant</span>
+          <span>AI Assistant</span>
         </div>
         <button
           onClick={() => onSelectThread(null)}
@@ -513,24 +513,27 @@ export function DyrectedAIChatPanel({
 
 ## 8. Day 1 Implementation Checklist
 
-- [ ] **Database Layer:**
-  - [ ] Define schemas for `_dyrected_ai_threads` and `_dyrected_ai_messages`.
-  - [ ] Ensure database adapter initializes these tables during startup/migration.
-- [ ] **Backend Services & Routes (`packages/core`):**
-  - [ ] Install dependencies: `ai`, `@ai-sdk/google`.
-  - [ ] Create AI service module in core.
-  - [ ] Implement `POST /ai/threads` and `GET /ai/threads`.
-  - [ ] Implement `GET /ai/threads/:threadId`.
-  - [ ] Implement streaming `POST /ai/threads/:threadId/messages` with `streamText()`.
-  - [ ] Handle persistence in `onFinish` stream callback.
-- [ ] **Frontend UI (`packages/admin`):**
-  - [ ] Install `@ai-sdk/react`.
-  - [ ] Build basic `AIChatDrawer` with `useChat()`.
-  - [ ] Add trigger button to navigation/shell.
-- [ ] **Validation:**
-  - [ ] Test asking: *"What can you help me do with this project?"*.
-  - [ ] Verify real-time streaming output.
-  - [ ] Verify message persistence across page reloads.
+* [x] **Database Layer:**
+  * [x] Define schemas for `_dyrected_ai_threads` and `_dyrected_ai_messages`.
+  * [x] Ensure database adapter initializes these tables during startup/migration.
+* [x] **Backend Services & Routes (`packages/core`):**
+  * [x] Install dependencies: `ai`, `@ai-sdk/google`.
+  * [x] Create AI service module in core.
+  * [x] Implement `POST /ai/threads` and `GET /ai/threads`.
+  * [x] Implement `GET /ai/threads/:threadId`.
+  * [x] Implement streaming `POST /ai/threads/:threadId/messages` & `POST /api/ai/chat` with `streamText()`.
+  * [x] Handle persistence in `onFinish` stream callback.
+* [x] **Frontend UI (`packages/admin`):**
+  * [x] Install `@ai-sdk/react`.
+  * [x] Build docked desktop sidebar & mobile drawer with `useChat()`.
+  * [x] Add trigger button to navigation/shell with `⌘J` shortcut.
+  * [x] Rich Markdown rendering (`react-markdown` + `remark-gfm`).
+  * [x] TanStack Query thread history & deletion support.
+  * [x] URL parameter synchronization (`?aiThread=...`).
+* [x] **Validation:**
+  * [x] Test asking: *"What can you help me do with this project?"*.
+  * [x] Verify real-time streaming output.
+  * [x] Verify message persistence across page reloads.
 
 ---
 

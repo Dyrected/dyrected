@@ -1,5 +1,24 @@
 # @dyrected/react
 
+## 2.13.1
+
+### Patch Changes
+
+- Updated dependencies [0b4d4cb]
+  - @dyrected/core@2.13.1
+  - @dyrected/admin@2.13.1
+  - @dyrected/sdk@2.13.1
+
+## 2.13.0
+
+### Patch Changes
+
+- Updated dependencies [e950c6e]
+- Updated dependencies [d96440d]
+  - @dyrected/core@2.13.0
+  - @dyrected/sdk@2.13.0
+  - @dyrected/admin@2.13.0
+
 ## 2.12.0
 
 ### Patch Changes

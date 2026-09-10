@@ -13,3 +13,5 @@ export * from "./schema-inference.js";
 export * from "./workflows.js";
 export * from "./detail.js";
 export * from "./views.js";
+export * from "./ai.js";
+export * from "./ai-errors.js";

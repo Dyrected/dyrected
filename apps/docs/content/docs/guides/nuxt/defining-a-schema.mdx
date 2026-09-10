@@ -155,6 +155,38 @@ For a first handoff, the recommended path is:
 
 That gives editors useful control without asking them to create content structures the app cannot render safely.
 
+## Splitting your schema into multiple files
+
+As your application grows, keeping all collections and globals inside a single `dyrected.config.ts` can become crowded. You can split collections and globals into their own TypeScript files and import them cleanly:
+
+```text
+my-nuxt-app/
+├── dyrected/
+│   ├── collections/
+│   │   ├── pages.ts
+│   │   └── posts.ts
+│   └── globals/
+│       └── settings.ts
+├── dyrected.config.ts
+└── nuxt.config.ts
+```
+
+Then import your definitions into `dyrected.config.ts`:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+import { Pages } from "./dyrected/collections/pages";
+import { Posts } from "./dyrected/collections/posts";
+import { Settings } from "./dyrected/globals/settings";
+
+export default defineConfig({
+  collections: [Pages, Posts],
+  globals: [Settings],
+});
+```
+
+Because the Nuxt module loads your configuration using on-the-fly TypeScript resolution, you can use standard extensionless relative imports without worrying about ESM loader mismatches.
+
 ## Where to go deeper
 
 Use this page for the quick-start version of the decision. For the full configuration details, continue to:

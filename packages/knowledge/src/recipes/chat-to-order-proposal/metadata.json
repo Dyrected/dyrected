@@ -1,0 +1,23 @@
+{
+  "id": "chat-to-order-proposal",
+  "title": "Chat-to-order AI proposals",
+  "description": "Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.",
+  "problem": "Customer orders arrive inside unstructured chat transcripts and require manual data entry and price calculation.",
+  "summary": "Instruct Dyrected AI to extract customer details, query live pricing rules, calculate deposits, and generate an order proposal for approval.",
+  "category": "integrations",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses Dyrected AI system prompts and collection tools.",
+  "intents": [
+    "convert chat to order",
+    "parse whatsapp conversation to quote",
+    "telegram bot order creation",
+    "automate deposit calculation from chat"
+  ],
+  "concepts": ["ai.systemPrompt", "ai.provider", "defineCollection"],
+  "canonicalDocs": [
+    "/docs/model-content/configuration/ai",
+    "/docs/editor-experience/ai-assistant",
+    "/docs/deliver-content/ai-agent-api"
+  ],
+  "requires": []
+}

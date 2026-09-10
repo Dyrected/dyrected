@@ -29,11 +29,103 @@ import type {
   LifecycleEvent,
   AggregateInput,
   InferAggregateResult,
+  AIThread,
+  AIMessage,
+  AIAction,
+  AIActionType,
+  AIActionStatus,
+  RAGSearchResult,
+  AIConfig,
+  AIPIIConfig,
 } from "@dyrected/core";
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
 type UnknownRecord = Record<string, unknown>;
-type SchemaResponse = {
+
+export interface SerializedField {
+  name: string;
+  type: string;
+  label?: string;
+  required?: boolean;
+  unique?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  allowedTypes?: string[];
+  maxSize?: number;
+  virtual?: boolean;
+  promoted?: boolean;
+  ai?: {
+    exclude?: boolean;
+    redact?: boolean | "mask";
+    allowRaw?: boolean;
+  };
+  defaultValue?: unknown;
+  options?: unknown;
+  relationTo?: string;
+  hasMany?: boolean;
+  fields?: SerializedField[];
+  blocks?: unknown[];
+  blockReferences?: string[];
+  collection?: string;
+  on?: string;
+  limit?: number;
+  admin?: Record<string, unknown>;
+  access?: {
+    read?: boolean | string;
+    create?: boolean | string;
+    update?: boolean | string;
+  };
+}
+
+export interface SerializedCollectionConfig {
+  slug: string;
+  labels?: { singular?: string; plural?: string };
+  shared?: boolean;
+  siteId?: string;
+  ai?: unknown;
+  access?: {
+    read?: boolean | string;
+    create?: boolean | string;
+    update?: boolean | string;
+    delete?: boolean | string;
+  };
+  fields: SerializedField[];
+  upload?: boolean;
+  auth?: boolean;
+  audit?: boolean;
+  drafts?: boolean;
+  defaultView?: string;
+  views?: unknown[];
+  admin?: Record<string, unknown>;
+  detail?: unknown;
+  workflow?: unknown;
+}
+
+export interface SerializedGlobalConfig {
+  slug: string;
+  label?: string;
+  shared?: boolean;
+  siteId?: string;
+  access?: {
+    read?: boolean | string;
+    update?: boolean | string;
+  };
+  fields: SerializedField[];
+  admin?: Record<string, unknown>;
+  detail?: unknown;
+}
+
+export interface SerializedSchemaAIConfig {
+  enabled: boolean;
+  provider?: string;
+  model?: string;
+}
+
+export interface SchemaResponse {
   blocks?: Block[];
   collections: CollectionConfig[];
   globals: GlobalConfig[];
@@ -41,13 +133,14 @@ type SchemaResponse = {
   adminAuth?: PublicAdminAuthConfig;
   hasStorage?: boolean;
   configDiagnostics?: ConfigDiagnostic[];
+  ai?: SerializedSchemaAIConfig;
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
   };
-};
+}
 
 export type {
   PaginatedResult,
@@ -66,6 +159,14 @@ export type {
   AdminIconName,
   WorkflowMetadata,
   LifecycleEvent,
+  AIThread,
+  AIMessage,
+  AIAction,
+  AIActionType,
+  AIActionStatus,
+  RAGSearchResult,
+  AIConfig,
+  AIPIIConfig,
 };
 
 /** Shape of a media folder document in the DAM system. */
@@ -432,6 +533,138 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
       method: "POST",
       body: JSON.stringify(input),
     });
+  }
+
+  /**
+   * AI Assistant methods for managing threads, messaging, human-in-the-loop action approvals,
+   * semantic RAG search, and AI chat.
+   */
+  get ai() {
+    return {
+      /**
+       * Create a new conversation thread.
+       */
+      createThread: (input?: { title?: string }): Promise<AIThread> =>
+        this.request("/api/ai/threads", {
+          method: "POST",
+          body: JSON.stringify(input || {}),
+        }),
+
+      /**
+       * List all conversation threads for the current user/project.
+       */
+      listThreads: (): Promise<AIThread[]> =>
+        this.request("/api/ai/threads"),
+
+      /**
+       * Get a single thread by ID with its messages.
+       */
+      getThread: (
+        threadId: string,
+      ): Promise<AIThread & { messages: AIMessage[] }> =>
+        this.request(`/api/ai/threads/${encodeURIComponent(threadId)}`),
+
+      /**
+       * Delete a single thread by ID.
+       */
+      deleteThread: (threadId: string): Promise<{ success: boolean }> =>
+        this.request(`/api/ai/threads/${encodeURIComponent(threadId)}`, {
+          method: "DELETE",
+        }),
+
+      /**
+       * Delete all conversation threads for the user/project.
+       */
+      clearThreads: (): Promise<{ success: boolean }> =>
+        this.request("/api/ai/threads", {
+          method: "DELETE",
+        }),
+
+      /**
+       * Post a message to a thread.
+       */
+      postMessage: (
+        threadId: string,
+        input: { content: string; role?: "user" | "assistant" },
+      ): Promise<AIMessage> =>
+        this.request(`/api/ai/threads/${encodeURIComponent(threadId)}/messages`, {
+          method: "POST",
+          body: JSON.stringify(input),
+        }),
+
+      /**
+       * Retrieve details of a pending human-in-the-loop action requiring confirmation.
+       */
+      getAction: (actionId: string): Promise<AIAction> =>
+        this.request(`/api/ai/actions/${encodeURIComponent(actionId)}`),
+
+      /**
+       * Approve and execute a pending sensitive action (create/update/delete/transition).
+       */
+      executeAction: (
+        actionId: string,
+      ): Promise<{ success: boolean; result?: unknown }> =>
+        this.request(`/api/ai/actions/${encodeURIComponent(actionId)}/execute`, {
+          method: "POST",
+        }),
+
+      /**
+       * Reject a pending action with an optional reason.
+       */
+      rejectAction: (
+        actionId: string,
+        input?: { reason?: string },
+      ): Promise<{ success: boolean }> =>
+        this.request(`/api/ai/actions/${encodeURIComponent(actionId)}/reject`, {
+          method: "POST",
+          body: JSON.stringify(input || {}),
+        }),
+
+      /**
+       * Perform a semantic RAG vector search across indexed collections.
+       */
+      searchRAG: (input: {
+        query: string;
+        collection?: string;
+        limit?: number;
+      }): Promise<RAGSearchResult[]> =>
+        this.request("/api/ai/rag/search", {
+          method: "POST",
+          body: JSON.stringify(input),
+        }),
+
+      /**
+       * Trigger manual re-indexing of documents for RAG vector search.
+       */
+      reindexRAG: (input?: {
+        collection?: string;
+      }): Promise<{ success: boolean; indexedCount?: number }> =>
+        this.request("/api/ai/rag/reindex", {
+          method: "POST",
+          body: JSON.stringify(input || {}),
+        }),
+
+      /**
+       * Send a raw chat prompt or stream to `/api/ai/chat`.
+       * Returns the Response object so callers can read the streaming text or UI message stream.
+       */
+      chat: (
+        messages: Array<{ role: string; content: string }>,
+        options?: { threadId?: string; context?: Record<string, unknown> },
+      ): Promise<Response> =>
+        this.fetch(`${this.baseUrl}/api/ai/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...this.getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            messages,
+            threadId: options?.threadId,
+            context: options?.context,
+          }),
+        }),
+    };
   }
 
   async find<K extends keyof TSchema["collections"]>(

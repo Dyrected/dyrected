@@ -46,14 +46,47 @@ mysqlAdapter({
 | `user` | Connection user. |
 | `password` | Connection password. |
 | `database` | Database name to use. |
+| `poolOptions` | Optional `mysql2` pool configuration overrides, such as `connectionLimit`, `queueLimit`, or custom `ssl` settings. |
 
 Prefer an environment-provided `url` when your host rotates credentials or manages connection details for you.
 
+If you need finer control over the underlying connection pool, such as tuning max connections or attaching an SSL certificate authority, pass `poolOptions`:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { mysqlAdapter } from '@dyrected/db-mysql'
+
+export default defineConfig({
+  db: mysqlAdapter({
+    url: process.env.DATABASE_URL!,
+    poolOptions: {
+      connectionLimit: 10,
+      queueLimit: 0,
+      ssl: {
+        rejectUnauthorized: true,
+      },
+    },
+  }),
+  collections: [],
+  globals: [],
+})
+```
+
 > **Connecting to a local server? Use `127.0.0.1`, not `localhost`.** On some systems `localhost` resolves to IPv6 (`::1`) while MySQL only listens on IPv4, which fails to connect. If you hit an `EADDRNOTAVAIL` error, switch the host to `127.0.0.1`.
+
+## Resilience and connection pooling
+
+The MySQL adapter is built to handle network hiccups and serverless lifecycles cleanly:
+
+- **Automatic Keep-Alive**: TCP keep-alive packets are enabled by default (with a 10-second initial delay) to prevent managed cloud load balancers and firewalls from quietly closing idle connections.
+- **Automatic Retries**: Read and write queries automatically retry with exponential backoff if the database drops a connection (`PROTOCOL_CONNECTION_LOST`, `ETIMEDOUT`, `ECONNRESET`, or `ER_CON_COUNT_ERROR`).
+- **Shared Pool Caching**: In development environments with hot module replacement (HMR) or multi-tenant runtimes, the adapter caches connection pools globally by connection string so your app does not exhaust database connections on reload.
 
 ## What happens on startup
 
-The first time your app connects, the adapter creates a table for each collection that doesn't have one yet, plus an internal table for globals. Adding a new collection or field usually works on your next boot with no extra step. See [Migrations](/docs/deployment-and-operations/infrastructure/database/migrations) for how schema changes are applied over time.
+The first time your app connects, the adapter creates a table for each collection that doesn't have one yet, plus internal tables for globals and AI chat history (`_dyrected_ai_threads` and `_dyrected_ai_messages`). Adding a new collection or field usually works on your next boot with no extra step. See [Migrations](/docs/deployment-and-operations/infrastructure/database/migrations) for how schema changes are applied over time.
+
+Startup migrations use an in-memory lock per table and safely tolerate concurrent migration attempts (`ER_DUP_FIELDNAME`). If multiple serverless workers or cluster nodes start simultaneously, they will not crash if another instance adds a column first.
 
 As a local-development convenience, if the database named in your connection doesn't exist yet, the adapter will create it (`CREATE DATABASE IF NOT EXISTS`). In production, create the database ahead of time rather than relying on this.
 
@@ -61,7 +94,14 @@ As a local-development convenience, if the database named in your connection doe
 
 Each collection maps to a table named `collection_<slug>`. Every document is stored as a JSON `data` column alongside `id`, `created_at`, and `updated_at`. Globals live in an internal key/value table.
 
-Because the document body is JSON, you can filter and sort on any field without declaring it first. Fields you mark with `promoted: true` are also lifted into their own real, typed columns so the database can work with them directly. See [Indexes](/docs/deployment-and-operations/infrastructure/database/indexes) for when to promote a field.
+Because the document body is JSON, you can filter and sort on any field without declaring it first. Fields you mark with `promoted: true` are also lifted into their own real, typed columns so the database can work with them directly:
+
+- Text and select fields become `VARCHAR(255)` or `LONGTEXT`.
+- Number fields become `DOUBLE`.
+- Boolean fields become `TINYINT(1)`.
+- Date and timestamp fields become `DATETIME(3)` with millisecond precision.
+
+When you promote an existing field, the adapter automatically backfills the new column with existing data from your documents, so your historical entries immediately benefit from indexes. See [Indexes](/docs/deployment-and-operations/infrastructure/database/indexes) for when to promote a field.
 
 ## Transactions and raw SQL
 
@@ -72,3 +112,4 @@ For advanced cases, the MySQL adapter can also run raw SQL. Reach for collection
 ## Deploying to production
 
 MySQL is a good production adapter when it's already part of your stack. As with any relational adapter, provide the connection string through an environment variable, use your provider's connection pooler where recommended, and remember that startup schema sync is additive — it creates missing tables and columns but never drops or retypes existing ones. Back up before a schema change. See [Migrations](/docs/deployment-and-operations/infrastructure/database/migrations) and [Deployment](/docs/deployment-and-operations/production/deployment).
+

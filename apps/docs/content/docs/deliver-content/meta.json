@@ -4,6 +4,7 @@
   "pages": [
     "sdk-api",
     "rest-api",
+    "ai-agent-api",
     "displaying-content"
   ]
 }

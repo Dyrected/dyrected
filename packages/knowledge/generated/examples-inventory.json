@@ -1,5 +1,61 @@
 [
   {
+    "id": "/deliver-content/ai-agent-api#example-1",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-2",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-3",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-4",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-5",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-6",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-7",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/ai-agent-api#example-8",
+    "page": "/deliver-content/ai-agent-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deliver-content/displaying-content/overview#example-1",
     "page": "/deliver-content/displaying-content/overview",
     "language": "tsx",
@@ -68,6 +124,111 @@
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-1",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "http",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-2",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-3",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-4",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-5",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-6",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-7",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-8",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-9",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-10",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-11",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-12",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-13",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-14",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deliver-content/rest-api/ai-endpoints#example-15",
+    "page": "/deliver-content/rest-api/ai-endpoints",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
   },
   {
     "id": "/deliver-content/rest-api/overview#example-1",
@@ -407,6 +568,41 @@
   },
   {
     "id": "/deliver-content/sdk-api/overview#example-21",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-22",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-23",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-24",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-25",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-26",
     "page": "/deliver-content/sdk-api/overview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -861,6 +1057,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment-and-operations/infrastructure/database/mysql#example-3",
+    "page": "/deployment-and-operations/infrastructure/database/mysql",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deployment-and-operations/infrastructure/database/overview#example-1",
     "page": "/deployment-and-operations/infrastructure/database/overview",
     "language": "ts",
@@ -1045,6 +1248,62 @@
   {
     "id": "/deployment-and-operations/performance/overview#example-1",
     "page": "/deployment-and-operations/performance/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/dynamic-schemas#example-1",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/dynamic-schemas",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/dynamic-schemas#example-2",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/dynamic-schemas",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped#example-1",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped#example-2",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped#example-3",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped#example-4",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/header-scoped",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/row-level#example-1",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/row-level",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment-and-operations/plugins-and-extensions/multi-tenant/row-level#example-2",
+    "page": "/deployment-and-operations/plugins-and-extensions/multi-tenant/row-level",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
@@ -1489,6 +1748,13 @@
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/ai-assistant#example-1",
+    "page": "/editor-experience/ai-assistant",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/editor-experience/audit-history#example-1",
@@ -2772,6 +3038,41 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-1",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-2",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-3",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-4",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/examples-and-recipes/examples/chat-to-order#example-5",
+    "page": "/examples-and-recipes/examples/chat-to-order",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
     "id": "/examples-and-recipes/library/archive-instead-of-delete#example-1",
     "page": "/examples-and-recipes/library/archive-instead-of-delete",
     "language": "ts",
@@ -2800,6 +3101,13 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/chat-to-order-proposal#example-1",
+    "page": "/examples-and-recipes/library/chat-to-order-proposal",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/computed-fields-and-totals#example-1",
     "page": "/examples-and-recipes/library/computed-fields-and-totals",
     "language": "ts",
@@ -2816,6 +3124,13 @@
   {
     "id": "/examples-and-recipes/library/cross-field-validation#example-1",
     "page": "/examples-and-recipes/library/cross-field-validation",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/custom-ai-tools#example-1",
+    "page": "/examples-and-recipes/library/custom-ai-tools",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
@@ -3234,6 +3549,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/guides/nuxt/defining-a-schema#example-2",
+    "page": "/guides/nuxt/defining-a-schema",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/nuxt/defining-a-schema#example-3",
+    "page": "/guides/nuxt/defining-a-schema",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/guides/nuxt/displaying-content-in-nuxtjs#example-1",
     "page": "/guides/nuxt/displaying-content-in-nuxtjs",
     "language": "vue",
@@ -3570,6 +3899,118 @@
     "validation": "Inventoried vue example"
   },
   {
+    "id": "/model-content/configuration/ai-privacy#example-1",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-2",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-3",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-4",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-5",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-6",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-7",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai-privacy#example-8",
+    "page": "/model-content/configuration/ai-privacy",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-1",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-2",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-3",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-4",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-5",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-6",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-7",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/ai#example-8",
+    "page": "/model-content/configuration/ai",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/model-content/configuration/collections#example-1",
     "page": "/model-content/configuration/collections",
     "language": "ts",
@@ -3636,8 +4077,8 @@
     "id": "/model-content/configuration/collections#example-10",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/configuration/collections#example-11",
@@ -3648,6 +4089,13 @@
   },
   {
     "id": "/model-content/configuration/collections#example-12",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-13",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",

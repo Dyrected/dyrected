@@ -54,3 +54,30 @@ function humanizeProviderName(id: string, type: PublicAdminAuthProvider["type"])
   if (!cleaned) return type.toUpperCase();
   return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
 }
+
+/**
+ * Resolves the configured admin role for a collection or returns "admin" as default.
+ */
+export function getAdminRoleForCollection(collection?: CollectionConfig | null): string {
+  if (!collection?.auth) return "admin";
+  if (typeof collection.auth === "object" && collection.auth.adminRole) {
+    return collection.auth.adminRole;
+  }
+  return "admin";
+}
+
+/**
+ * Checks whether a user possesses an administrative role.
+ * Considers:
+ * 1. The collection's configured `adminRole` (e.g. 'super_admin')
+ * 2. Standard admin roles ('admin', 'super_admin')
+ */
+export function isUserAdmin(
+  user: any,
+  collection?: CollectionConfig | null,
+): boolean {
+  if (!user || !Array.isArray(user.roles)) return false;
+  const configuredRole = getAdminRoleForCollection(collection);
+  if (user.roles.includes(configuredRole)) return true;
+  return user.roles.includes("admin") || user.roles.includes("super_admin");
+}

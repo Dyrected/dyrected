@@ -202,6 +202,14 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   };
 
   /**
+   * Optional custom AI assistant instructions for this global singleton.
+   */
+  ai?: {
+    /** Specific guidelines, context, or instructions when interacting with this global. */
+    prompt?: string;
+  };
+
+  /**
    * Initial data to seed this global with the first time it is fetched and
    * found to be empty.
    */
@@ -232,6 +240,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>access</code> (optional) | Access control for reading and updating this global. |
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
+| <code>ai</code> (optional) | Optional custom AI assistant instructions for this global singleton. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
 | <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, globals are **Edit-First** (&#96;detail: false&#96;). Clicking the global in the sidebar navigates directly to the editing form.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array for a custom operational dashboard layout. |
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:END */}

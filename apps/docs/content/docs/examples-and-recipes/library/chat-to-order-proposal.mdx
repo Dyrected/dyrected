@@ -1,0 +1,85 @@
+---
+title: Chat-to-Order AI Proposals
+description: How to convert unstructured customer chat transcripts from WhatsApp or Telegram into structured, schema-validated database orders with human review.
+---
+
+{/* GENERATED:RECIPE:START */}
+Convert unstructured customer conversations from WhatsApp or Telegram into structured, schema-validated database orders with human-in-the-loop review.
+
+## Use this when
+
+- convert chat to order
+- parse whatsapp conversation to quote
+- telegram bot order creation
+- automate deposit calculation from chat
+
+## Dyrected concepts
+
+`ai.systemPrompt`, `ai.provider`, `defineCollection`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+  defineConfig,
+} from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Customer Order", plural: "Customer Orders" },
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Reference #", required: true }),
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineTextField({ name: "customerContact", label: "Phone / Handle", required: true }),
+    defineTextField({ name: "itemDescription", label: "Item Details", required: true }),
+    defineNumberField({ name: "quantity", label: "Quantity", required: true }),
+    defineNumberField({ name: "subtotal", label: "Subtotal", required: true }),
+    defineNumberField({ name: "depositPaid", label: "Deposit Paid", defaultValue: 0 }),
+    defineNumberField({ name: "balanceDue", label: "Balance Due", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Order Status",
+      options: [
+        { label: "Quote Sent", value: "quote" },
+        { label: "Deposit Confirmed", value: "depositPaid" },
+        { label: "In Production", value: "inProduction" },
+        { label: "Completed", value: "completed" },
+      ],
+      defaultValue: "quote",
+    }),
+  ],
+});
+
+export const PricingRules = defineCollection({
+  slug: "pricing-rules",
+  labels: { singular: "Pricing Rule", plural: "Pricing Rules" },
+  fields: [
+    defineTextField({ name: "itemSlug", label: "Item Identifier", required: true }),
+    defineNumberField({ name: "unitPrice", label: "Unit Rate", required: true }),
+    defineNumberField({ name: "minimumOrder", label: "Minimum Quantity", defaultValue: 100 }),
+  ],
+});
+
+import type { DyrectedConfig } from "@dyrected/core";
+
+export const config: DyrectedConfig = {
+  collections: [Orders, PricingRules],
+  globals: [],
+  ai: {
+    systemPrompt: "Parse chat transcripts, calculate 70% deposit requirements, and propose order records.",
+  },
+};
+```
+{/* GENERATED:RECIPE:END */}

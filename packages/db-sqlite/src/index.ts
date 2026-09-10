@@ -41,6 +41,36 @@ export class SqliteAdapter implements DatabaseAdapter {
         value TEXT
       )
     `);
+
+    this.sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS _dyrected_ai_threads (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        title TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    this.sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS _dyrected_ai_messages (
+        id TEXT PRIMARY KEY,
+        thread_id TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        metadata TEXT
+      )
+    `);
+
+    this.sqlite.exec(`
+      CREATE INDEX IF NOT EXISTS idx_ai_messages_thread_id ON _dyrected_ai_messages(thread_id)
+    `);
+
+    this.sqlite.exec(`
+      CREATE INDEX IF NOT EXISTS idx_ai_threads_user_project ON _dyrected_ai_threads(user_id, project_id)
+    `);
   }
 
   private getTableName(slug: string) {
@@ -48,6 +78,9 @@ export class SqliteAdapter implements DatabaseAdapter {
   }
 
   private async ensureTable(slug: string, fields: any[] = []) {
+    if (slug === '_dyrected_ai_threads' || slug === '_dyrected_ai_messages') {
+      return;
+    }
     const tableName = this.getTableName(slug);
     this.sqlite.exec(`
       CREATE TABLE IF NOT EXISTS ${tableName} (

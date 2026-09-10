@@ -46,6 +46,10 @@ describe("PostgresAdapter initInternalTables", () => {
     expect(calls).toEqual([
       "SELECT to_regclass('dyrected_internal') AS table_name",
       "CREATE TABLE dyrected_internal ( key TEXT PRIMARY KEY, value JSONB )",
+      "CREATE TABLE _dyrected_ai_threads ( id TEXT PRIMARY KEY, project_id TEXT NOT NULL, user_id TEXT NOT NULL, title TEXT, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP )",
+      "CREATE TABLE _dyrected_ai_messages ( id TEXT PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES _dyrected_ai_threads(id) ON DELETE CASCADE, role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')), content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, metadata JSONB )",
+      "CREATE INDEX IF NOT EXISTS idx_ai_messages_thread_id ON _dyrected_ai_messages(thread_id)",
+      "CREATE INDEX IF NOT EXISTS idx_ai_threads_user_project ON _dyrected_ai_threads(user_id, project_id)",
     ]);
   });
 
@@ -80,6 +84,10 @@ describe("PostgresAdapter initInternalTables", () => {
     expect(calls).toEqual([
       "SELECT to_regclass('dyrected_internal') AS table_name",
       "CREATE TABLE dyrected_internal ( key TEXT PRIMARY KEY, value JSONB )",
+      "CREATE TABLE _dyrected_ai_threads ( id TEXT PRIMARY KEY, project_id TEXT NOT NULL, user_id TEXT NOT NULL, title TEXT, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP )",
+      "CREATE TABLE _dyrected_ai_messages ( id TEXT PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES _dyrected_ai_threads(id) ON DELETE CASCADE, role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')), content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, metadata JSONB )",
+      "CREATE INDEX IF NOT EXISTS idx_ai_messages_thread_id ON _dyrected_ai_messages(thread_id)",
+      "CREATE INDEX IF NOT EXISTS idx_ai_threads_user_project ON _dyrected_ai_threads(user_id, project_id)",
     ]);
   });
 

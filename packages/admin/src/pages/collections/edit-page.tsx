@@ -504,8 +504,8 @@ export function EditEntryPage() {
 
   // Password-change permissions
   // isSelf: the logged-in user is editing their own account
-  // isAdminUser: the logged-in user has the admin role
-  const isAdminUser = Array.isArray(user?.roles) && user.roles.includes('admin')
+  const adminRole = typeof schema?.auth === 'object' && (schema.auth as any)?.adminRole ? (schema.auth as any).adminRole : 'admin'
+  const isAdminUser = Array.isArray(user?.roles) && (user.roles.includes(adminRole) || user.roles.includes('admin') || user.roles.includes('super_admin'))
   const isSelf = !!user && !!id && (user.id === id || user.sub === id)
   // 'self'  → show oldPassword + newPassword + confirmPassword
   // 'admin' → show newPassword + confirmPassword only (admin bypass)

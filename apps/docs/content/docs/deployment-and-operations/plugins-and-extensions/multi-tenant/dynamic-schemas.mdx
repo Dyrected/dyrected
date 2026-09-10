@@ -1,0 +1,185 @@
+---
+title: "Pattern 3: Dynamic Tenant Schemas"
+description: Dynamically load custom per-tenant collections and globals at runtime using the onSchemaFetch hook.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+In multi-tenant SaaS platforms, agency networks, and white-label applications, individual enterprise customers often need their own custom collections, specialized fields, or unique branding globals.
+
+Because tenant configurations change dynamically as customers sign up or customize their accounts, these schemas cannot be hardcoded in a static TypeScript file. Dyrected solves this with the `onSchemaFetch` hook.
+
+<Callout type="warning">
+**Commercial Feature:** Dynamic schema loading at runtime is part of the **Dyrected Platform License**. It is designed for businesses building multi-tenant SaaS products, agency platforms, and white-label CMS services.
+</Callout>
+
+---
+
+## Mental Model
+
+When a client or editor sends a request with `X-Site-Id: tenant-acme`:
+1. Dyrected intercepts the request and identifies the target tenant (`tenant-acme`).
+2. Dyrected invokes your `onSchemaFetch("tenant-acme")` hook.
+3. Your hook queries your application database (e.g. PostgreSQL, MongoDB, or an external config service) and returns the custom collections and globals for that tenant.
+4. Dyrected dynamically merges the tenant schema with your base static schema.
+5. The merged schema is served to `/api/schemas`, handles dynamic REST routing for `/api/collections/:slug`, and powers the AI Content Assistant.
+
+---
+
+## Complete Configuration Example
+
+Here is a complete, copy-pasteable `dyrected.config.ts` demonstrating how to load dynamic collections and globals based on the requesting `siteId`:
+
+```ts title="dyrected.config.ts"
+import {
+  defineConfig,
+  defineEmailField,
+  defineTextField,
+  defineRichTextField,
+  defineDateField,
+  CollectionConfig,
+  GlobalConfig,
+} from "@dyrected/core";
+
+// Mock database helper simulating external schema retrieval
+async function fetchTenantCustomSchemasFromDb(siteId: string): Promise<{
+  collections: CollectionConfig[];
+  globals: GlobalConfig[];
+}> {
+  // In a real application, query your database (e.g. Prisma, Drizzle, Mongoose)
+  if (siteId === "tenant-enterprise-acme") {
+    return {
+      collections: [
+        {
+          slug: "audit-logs",
+          fields: [
+            defineTextField({ name: "action", label: "Action Performed", required: true }),
+            defineTextField({ name: "performedBy", label: "User or Service", required: true }),
+            defineDateField({ name: "timestamp", label: "Event Timestamp", required: true }),
+          ],
+        },
+      ],
+      globals: [
+        {
+          slug: "custom-branding",
+          fields: [
+            defineTextField({ name: "primaryColor", label: "Brand Primary Color" }),
+            defineTextField({ name: "companyRegistrationNumber", label: "Company Registration Number" }),
+          ],
+        },
+      ],
+    };
+  }
+
+  // Return empty objects for standard tenants without custom schemas
+  return { collections: [], globals: [] };
+}
+
+export default defineConfig({
+  // Base collections shared by all tenants
+  collections: [
+    {
+      slug: "users",
+      auth: true,
+      fields: [
+        defineEmailField({ name: "email", label: "Email Address", required: true }),
+        defineTextField({ name: "name", label: "Full Name" }),
+      ],
+    },
+    {
+      slug: "articles",
+      fields: [
+        defineTextField({ name: "title", label: "Article Title", required: true }),
+        defineRichTextField({ name: "content", label: "Article Content" }),
+      ],
+    },
+  ],
+
+  // Base globals shared by all tenants
+  globals: [
+    {
+      slug: "site-settings",
+      fields: [
+        defineTextField({ name: "siteName", label: "Site Name", required: true }),
+      ],
+    },
+  ],
+
+  // Dynamic schema hook invoked per tenant request
+  onSchemaFetch: async (siteId: string) => {
+    try {
+      const customSchema = await fetchTenantCustomSchemasFromDb(siteId);
+      return {
+        collections: customSchema.collections,
+        globals: customSchema.globals,
+      };
+    } catch (error) {
+      console.error(`Failed to load dynamic schema for tenant ${siteId}:`, error);
+      return {};
+    }
+  },
+});
+```
+
+---
+
+## Runtime Behavior & Endpoint Resolution
+
+### 1. Dynamic Schema Discovery (`/api/schemas`)
+When the Admin panel or SDK calls `/api/schemas`:
+- **For `tenant-enterprise-acme`:** The response includes `users`, `articles`, and the dynamic `audit-logs` collection.
+- **For standard tenants:** The response contains only `users` and `articles`. The enterprise collection does not exist in their schema.
+
+### 2. Dynamic Collection REST Routes
+Dynamic collections behave exactly like static collections:
+- `POST /api/collections/audit-logs` (with `X-Site-Id: tenant-enterprise-acme`) creates a new audit log record.
+- `GET /api/collections/audit-logs` retrieves the tenant's audit logs.
+- Sending a request for `audit-logs` with a standard tenant's `X-Site-Id` returns `404 Not Found`.
+
+### 3. Dynamic Global REST Routes
+Dynamic globals can be retrieved and updated dynamically:
+- `GET /api/globals/custom-branding` returns the tenant's branding settings.
+- `PATCH /api/globals/custom-branding` updates the fields.
+
+---
+
+## Client Integration with Dynamic Schemas
+
+Frontend applications simply provide the target `X-Site-Id`. The SDK automatically interacts with both base and dynamic collections transparently:
+
+```ts title="client.ts"
+import { createClient } from "@dyrected/sdk";
+
+const client = createClient({
+  apiUrl: "https://cms.example.com",
+  headers: {
+    "X-Site-Id": "tenant-enterprise-acme",
+  },
+});
+
+async function runEnterpriseWorkflow() {
+  // 1. Create a record in the dynamic tenant collection
+  const log = await client.collection("audit-logs").create({
+    action: "user.login",
+    performedBy: "admin@acme.com",
+    timestamp: new Date().toISOString(),
+  });
+
+  // 2. Fetch the dynamic tenant global
+  const branding = await client.global("custom-branding").get();
+
+  console.log("Created dynamic log:", log);
+  console.log("Tenant branding:", branding);
+}
+
+runEnterpriseWorkflow();
+```
+
+---
+
+## AI Assistant & Dynamic Schemas
+
+Dyrected's AI Content Assistant dynamically discovers tenant-specific collections:
+1. When an editor asks a question or requests an action, the AI controller invokes `onSchemaFetch(projectId)` and merges the dynamic collections into the AI context.
+2. The AI tools (`listCollections`, `getCollectionSchema`, `queryCollection`, `proposeCreateDocument`) expose the dynamic collections to the model.
+3. Editors can ask the AI assistant: *"Summarize our recent audit-logs"* or *"Propose a new branding color"*, and the AI generates valid proposals matching the tenant's dynamic field definitions.

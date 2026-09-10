@@ -39,6 +39,13 @@ export interface AuthConfig {
    * Defaults to `10 * 60 * 1000` (10 minutes).
    */
   lockTime?: number;
+
+  /**
+   * The role name designated as the superuser/admin role for this collection.
+   *
+   * Defaults to `'admin'`.
+   */
+  adminRole?: string;
 }
 
 /**
@@ -410,6 +417,22 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
+   * Optional custom AI assistant instructions and RAG indexing options for this collection.
+   */
+  ai?: {
+    /** Specific editorial guidelines, brand voice, or instructions for this collection. */
+    prompt?: string;
+    /** Collection-level RAG (Retrieval-Augmented Generation) indexing settings. */
+    rag?: import("./ai.js").CollectionRAGConfig;
+    /** Field names to completely omit from AI context and RAG indexing. */
+    excludeFields?: string[];
+    /** Field names to mask (e.g. j***@example.com) before sending to AI. */
+    redactFields?: string[];
+    /** Custom hook to transform/sanitize/pseudonymize documents before AI inspection. */
+    sanitizeDoc?: (doc: Record<string, unknown>) => Record<string, unknown>;
+  };
+
+  /**
    * Detail view layout configuration for the Admin UI.
    *
    * By default, collections are **Edit-First** (`detail: false`). Clicking a record in the
@@ -565,6 +588,14 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
+  };
+
+  /**
+   * Optional custom AI assistant instructions for this global singleton.
+   */
+  ai?: {
+    /** Specific guidelines, context, or instructions when interacting with this global. */
+    prompt?: string;
   };
 
   /**

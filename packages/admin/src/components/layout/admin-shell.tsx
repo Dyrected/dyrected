@@ -14,7 +14,6 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Sparkles,
   Sun,
   Lock,
   Shield,
@@ -43,6 +42,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
+import { DyrectedAILipTrigger } from "@/components/ai"
+import { WorkspaceSwitcher } from "./workspace-switcher"
 import logo from "@/assets/dyrected.svg"
 import logoDark from "@/assets/dyrected-dark.svg"
 import type { AdminSchemas } from "../../types/admin-components"
@@ -702,70 +703,82 @@ function SidebarInner({
 
   return (
     <div className="dy-flex dy-h-full dy-min-h-0 dy-flex-col">
-      {/* Logo */}
+      {/* Logo and Collapse Toggle */}
       {!isEmbedded && (
-
-        < div
+        <div
           className={cn(
             "dy-flex dy-items-center dy-h-14 dy-shrink-0 dy-transition-all",
-            collapsed ? "dy-justify-center dy-px-2" : "dy-gap-2.5 dy-px-4"
+            collapsed ? "dy-justify-center dy-px-2" : "dy-justify-between dy-px-3.5"
           )}
         >
-          <div>
-            <>
-              {branding?.logoText ? (
-                collapsed ? (
-                  // Collapsed: show initials in a styled pill
-                  <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-rounded-md dy-bg-primary/10 dy-shrink-0">
-                    <span className="dy-text-[11px] dy-font-bold dy-text-primary dy-uppercase dy-tracking-tight dy-leading-none">
-                      {branding.logoText
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((w: string) => w[0])
-                        .join("")}
-                    </span>
-                  </div>
-                ) : (
-                  // Expanded: full text wordmark
-                  <span className="dy-font-serif dy-text-lg dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate dy-leading-none">
-                    {branding.logoText}
+          <div className="dy-flex dy-items-center dy-gap-2.5 dy-min-w-0 dy-flex-1">
+            {branding?.logoText ? (
+              collapsed ? (
+                // Collapsed: show initials in a styled pill
+                <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-rounded-md dy-bg-primary/10 dy-shrink-0">
+                  <span className="dy-text-[11px] dy-font-bold dy-text-primary dy-uppercase dy-tracking-tight dy-leading-none">
+                    {branding.logoText
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((w: string) => w[0])
+                      .join("")}
                   </span>
-                )
-              ) : branding?.logo || branding?.logoMark ? (
-                <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-shrink-0">
-                  <img
-                    src={getMediaUrl(
-                      collapsed
-                        ? (branding.logoMark || branding.logo)
-                        : (branding.logo || branding.logoMark),
-                      client?.getBaseUrl() || ""
-                    )}
-                    alt="Logo"
-                    className="dy-max-h-full dy-max-w-full dy-object-contain"
-                  />
                 </div>
               ) : (
-                <div className="dy-h-7 dy-w-auto dy-flex dy-items-center dy-justify-center dy-shrink-0">
-                  <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto dark:dy-hidden" />
-                  <img src={logoDark} alt="Dyrected" className="dy-h-8 dy-w-auto dy-hidden dark:dy-block" />
-                </div>
-              )}
-              {!collapsed && !branding?.logoText && (
-                <span className="dy-font-serif dy-text-lg dy-tracking-tight dy-text-foreground dy-flex-1 dy-truncate">
-                  {meta?.titleSuffix?.replace(/^- /, '') || ''}
+                // Expanded: full text wordmark
+                <span className="dy-font-serif dy-text-lg dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate dy-leading-none">
+                  {branding.logoText}
                 </span>
-              )}
-            </>
+              )
+            ) : branding?.logo || branding?.logoMark ? (
+              <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-shrink-0">
+                <img
+                  src={getMediaUrl(
+                    collapsed
+                      ? (branding.logoMark || branding.logo)
+                      : (branding.logo || branding.logoMark),
+                    client?.getBaseUrl() || ""
+                  )}
+                  alt="Logo"
+                  className="dy-max-h-full dy-max-w-full dy-object-contain"
+                />
+              </div>
+            ) : (
+              <div className="dy-h-7 dy-w-auto dy-flex dy-items-center dy-justify-center dy-shrink-0">
+                <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto dark:dy-hidden" />
+                <img src={logoDark} alt="Dyrected" className="dy-h-8 dy-w-auto dy-hidden dark:dy-block" />
+              </div>
+            )}
+            {!collapsed && !branding?.logoText && (
+              <span className="dy-font-serif dy-text-lg dy-tracking-tight dy-text-foreground dy-flex-1 dy-truncate">
+                {meta?.titleSuffix?.replace(/^- /, '') || ''}
+              </span>
+            )}
           </div>
-          {/* Desktop Toggle - Only visible on desktop since mobile uses overlay */}
 
+          {/* Top Collapse Button */}
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className={cn(
+                "dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors",
+                collapsed && "dy-hidden"
+              )}
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="dy-h-4 dy-w-4" />
+            </button>
+          )}
         </div>
       )}
 
+      {/* Workspace Switcher (renders only in multi-tenant mode) */}
+      {!isEmbedded && <WorkspaceSwitcher collapsed={collapsed} />}
 
       {/* Nav */}
-      <nav className="dy-flex-1 dy-overflow-y-auto dy-py-4 dy-px-2 dy-space-y-4">
-        <div>
+      <nav className="dy-flex-1 dy-overflow-y-auto dy-py-2 dy-px-2 dy-space-y-4">
+        <div className="dy-space-y-0.5">
           <NavItem
             to="/"
             icon={LayoutDashboard}
@@ -838,24 +851,7 @@ function SidebarInner({
       </nav>
 
       {/* Footer */}
-      <div className="dy-border-t dy-border-border dy-px-2 dy-py-3 dy-shrink-0 dy-space-y-0.5">
-        {/* Setup guidance — always visible to embedded and standalone users. */}
-        <NavItem
-          to="/setup"
-          icon={Sparkles}
-          label={
-            <div className="dy-flex dy-items-center dy-justify-between dy-w-full dy-min-w-0">
-              <span className="dy-truncate">Setup & Help</span>
-              {updateInfo?.hasUpdate && (
-                <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-primary dy-shrink-0 dy-ml-2" />
-              )}
-            </div>
-          }
-          tooltipLabel="Setup & Help"
-          active={location.pathname === "/setup"}
-          collapsed={collapsed}
-          onClick={onNavigate}
-        />
+      <div className="dy-border-t dy-border-border dy-px-2 dy-py-2.5 dy-shrink-0 dy-space-y-1.5">
         {!isEmbedded && user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -929,42 +925,27 @@ function SidebarInner({
         )}
 
         <div className={cn(
-          "dy-flex dy-items-center dy-gap-1.5 dy-w-full dy-mt-1",
-          collapsed ? "dy-flex-col dy-items-center" : "dy-flex-row dy-justify-between"
+          "dy-flex dy-items-center dy-w-full",
+          collapsed ? "dy-flex-col dy-gap-1.5 dy-items-center" : "dy-justify-between dy-gap-1"
         )}>
-          {onToggleCollapse && !isEmbedded && (
-            (() => {
-              const label = collapsed ? "Expand sidebar" : "Collapse sidebar"
-              const btn = (
-                <button
-                  onClick={onToggleCollapse}
-                  className={cn(
-                    "dy-group/btn dy-flex dy-h-7 dy-items-center dy-gap-2 dy-rounded-md dy-px-2.5 dy-text-[11px] dy-font-medium dy-text-muted-foreground/45 dy-transition-colors hover:dy-bg-accent/40 hover:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
-                    collapsed ? "dy-justify-center dy-px-2 dy-w-full" : "dy-flex-1"
+          <div className={collapsed ? "dy-w-full" : "dy-flex-1 dy-min-w-0"}>
+            <NavItem
+              to="/setup"
+              icon={Settings}
+              label={
+                <div className="dy-flex dy-items-center dy-justify-between dy-w-full dy-min-w-0">
+                  <span className="dy-truncate">Setup</span>
+                  {updateInfo?.hasUpdate && (
+                    <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-primary dy-shrink-0 dy-ml-1.5" />
                   )}
-                  aria-label={label}
-                >
-                  {collapsed ? (
-                    <PanelLeftOpen className="dy-h-3.5 dy-w-3.5" />
-                  ) : (
-                    <>
-                      <PanelLeftClose className="dy-h-3.5 dy-w-3.5 dy-transition-transform dy-group-hover/btn:dy--translate-x-0.5" />
-                      <span className="dy-truncate">Collapse</span>
-                    </>
-                  )}
-                </button>
-              )
-              if (!collapsed) return btn
-              return (
-                <Tooltip delayDuration={300}>
-                  <TooltipTrigger asChild>{btn}</TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
-                    {label}
-                  </TooltipContent>
-                </Tooltip>
-              )
-            })()
-          )}
+                </div>
+              }
+              tooltipLabel="Setup"
+              active={location.pathname === "/setup"}
+              collapsed={collapsed}
+              onClick={onNavigate}
+            />
+          </div>
 
           <ThemeSelector collapsed={collapsed} iconOnly={!collapsed} />
         </div>
@@ -1034,31 +1015,52 @@ export function AdminShell({
   return (
     <BrandingProvider>
       <SidebarControlProvider value={sidebarControl}>
-        <TooltipProvider delayDuration={300}>
+        <TooltipProvider delayDuration={250}>
           <div
             className={cn(
               "dy-relative dy-flex dy-w-full dy-min-h-0 dy-overflow-hidden",
               isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-h-[100dvh]"
             )}
           >
-            {/* ... existing sidebar and main content ... */}
-            <aside
-              className={cn(
-                "dy-hidden md:dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
-                collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
+            {/* Desktop Sidebar with Expand Lip Trigger */}
+            <div className="dy-relative dy-hidden md:dy-flex dy-h-full dy-shrink-0">
+              <aside
+                className={cn(
+                  "dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
+                  collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
+                )}
+              >
+                <SidebarInner
+                  schemas={schemas}
+                  isLoading={isLoading}
+                  location={location}
+                  logout={logout}
+                  isEmbedded={isEmbedded}
+                  collapsed={collapsed}
+                  onToggleCollapse={() => setCollapsed((v) => !v)}
+                  updateInfo={updateInfo}
+                />
+              </aside>
+
+              {/* Sidebar Expand Lip Trigger */}
+              {collapsed && !isEmbedded && (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setCollapsed(false)}
+                      className="dy-absolute -dy-right-3.5 dy-top-1/2 -dy-translate-y-1/2 dy-z-30 dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-3.5 hover:dy-w-5 dy-rounded-r-md dy-border-y dy-border-r dy-border-border dy-bg-card dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-accent dy-shadow-md hover:dy-shadow-lg dy-transition-all dy-duration-150 dy-cursor-pointer group"
+                      aria-label="Expand sidebar"
+                    >
+                      <PanelLeftOpen className="dy-h-3 dy-w-3 dy-transition-transform group-hover:dy-scale-110" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+                    Expand sidebar
+                  </TooltipContent>
+                </Tooltip>
               )}
-            >
-              <SidebarInner
-                schemas={schemas}
-                isLoading={isLoading}
-                location={location}
-                logout={logout}
-                isEmbedded={isEmbedded}
-                collapsed={collapsed}
-                onToggleCollapse={() => setCollapsed((v) => !v)}
-                updateInfo={updateInfo}
-              />
-            </aside>
+            </div>
 
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetContent side="left" className="dy-w-[220px] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
@@ -1112,6 +1114,7 @@ export function AdminShell({
                 {children}
               </div>
             </main>
+            <DyrectedAILipTrigger />
           </div>
         </TooltipProvider>
       </SidebarControlProvider>

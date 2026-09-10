@@ -1,0 +1,69 @@
+---
+title: AI Editorial Assistant
+description: How the embedded AI assistant works in the Dyrected admin panel, including live streaming, reasoning accordions, and human-in-the-loop diff proposals.
+---
+
+The Dyrected Admin panel includes an embedded AI assistant that acts as a real-time editorial partner for your team. Editors can brainstorm ideas, rewrite copy, query collection statistics, and generate structured content without leaving their active editing tab.
+
+By the end of this page, you will understand how to access the assistant drawer, how live reasoning and streaming work, and how the human-in-the-loop proposal system protects your live database.
+
+## Accessing the assistant drawer
+
+The assistant is accessible from anywhere in the admin panel via the floating **Lip Trigger** button located on the right side of the screen.
+
+- **Click to Open:** Click the floating sparkles trigger on the edge of your screen to slide open the assistant panel.
+- **Keyboard Navigation:** Press `Escape` to close the panel or `Enter` (with `Shift+Enter` for multi-line breaks) to send messages.
+- **Deep Linking:** You can link directly to a specific conversation thread by appending `?aiThread=<threadId>` or `?aiThread=new` to any admin URL.
+
+## The review and proposal workflow
+
+Safety is central to Dyrected AI. The assistant cannot directly overwrite your database records behind your back. Instead, all content creation and updates go through a visual **Human-in-the-Loop Proposal** workflow:
+
+```
+┌────────────────────────────────────────────────────────┐
+│ Editor: "Rewrite this headline to be punchier"         │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│ Assistant streams explanation & generates proposal card │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│ Visual Word Diff Card:                                 │
+│ [- "Old boring headline" -] [+ "New Punchy Headline" +]│
+│                                                        │
+│ [ Reject ]                     [ Approve & Apply ]     │
+└────────────────────────────────────────────────────────┘
+```
+
+### 1. Requesting Changes
+When an editor asks for an edit (e.g., *"Make this introductory paragraph more engaging"* or *"Create a draft service for Executive Coaching"*), the assistant drafts the content and invokes a mutation proposal tool (`proposeUpdateDocument`, `proposeCreateDocument`, or `proposeUpdateGlobal`).
+
+### 2. Inspecting the Visual Diff
+The assistant renders an **AI Action Proposal Card** directly in the conversation.
+- **Green Highlights:** Added words and fields.
+- **Red Strikethroughs:** Removed words.
+- **Clean Formatting:** HTML and rich text fields are cleanly rendered so editors see the exact readable copy.
+
+### 3. Approving or Rejecting
+- Click **[Approve & Apply]** to commit the changes directly to the database. The active form updates immediately.
+- Click **[Reject]** to dismiss the proposal without modifying any records.
+
+## Live streaming and reasoning transparency
+
+While the assistant generates answers, the UI provides real-time visual feedback:
+
+- **Live Streaming Caret:** An animated blinking indicator follows text as it is generated token-by-token.
+- **Reasoning Process Accordion:** When using reasoning models (such as DeepSeek or OpenAI o-series), internal thoughts are neatly collected in a collapsible **Reasoning Process** accordion, keeping the main chat clean.
+- **Tool Execution Breakdown:** When the AI searches documents, queries collection counts, or performs vector similarity lookups, an expandable **Actions** pill displays each executed database operation.
+- **Stop Generation:** If an answer is running too long or you want to revise your prompt, click the red **[Stop]** button to abort streaming immediately.
+
+## Conversation history and threads
+
+Every conversation is automatically stored in your database under the `_dyrected_ai_threads` and `_dyrected_ai_messages` system tables.
+
+- **Resume Past Threads:** Click the **History** icon in the panel header to switch between previous conversations.
+- **Smart Auto-Titling:** After your first prompt, Dyrected automatically generates a concise 3–5 word title for the conversation.
+- **Thread Management:** Rename threads, clear all conversation history, or delete individual conversations on demand.
