@@ -25,6 +25,24 @@ const packageDirs = fs.readdirSync(packagesDir, { withFileTypes: true })
   .filter(dirent => dirent.isDirectory())
   .map(dirent => path.join(packagesDir, dirent.name));
 
+// Verify that packing resolves all workspace: dependencies
+function assertNoRawWorkspaceDeps(dir, pkgName) {
+  const tarballName = execSync('pnpm pack', { cwd: dir, encoding: 'utf8' }).trim().split('\n').pop()?.trim();
+  const tgzPath = tarballName ? path.join(dir, tarballName) : null;
+  try {
+    if (tgzPath && fs.existsSync(tgzPath)) {
+      const packedPkgJson = execSync(`tar -xOf "${tgzPath}" package/package.json`, { encoding: 'utf8' });
+      if (packedPkgJson.includes('"workspace:')) {
+        throw new Error(`CRITICAL: Found raw "workspace:" protocol dependency in packed manifest for ${pkgName}! Refusing to publish.`);
+      }
+    }
+  } finally {
+    if (tgzPath && fs.existsSync(tgzPath)) {
+      fs.unlinkSync(tgzPath);
+    }
+  }
+}
+
 for (const dir of packageDirs) {
   const pkgJsonPath = path.join(dir, 'package.json');
   if (!fs.existsSync(pkgJsonPath)) continue;
@@ -35,9 +53,13 @@ for (const dir of packageDirs) {
     continue;
   }
 
-  console.log(`\n🚀 [publish] Publishing ${pkg.name}@${pkg.version} with tag "${tag}" via native npm...`);
+  // Pre-publish safety assertion
+  console.log(`\n🔍 [publish] Verifying clean package dependencies for ${pkg.name}...`);
+  assertNoRawWorkspaceDeps(dir, pkg.name);
+
+  console.log(`🚀 [publish] Publishing ${pkg.name}@${pkg.version} with tag "${tag}" via pnpm publish...`);
   try {
-    execSync(`npm publish ${dryRunFlag}${provenanceFlag}--access public --tag ${tag}`, {
+    execSync(`pnpm publish --no-git-checks ${dryRunFlag}${provenanceFlag}--access public --tag ${tag}`, {
       cwd: dir,
       stdio: 'inherit',
       env: { ...process.env }

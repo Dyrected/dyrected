@@ -39,6 +39,13 @@ export interface AuthConfig {
    * Defaults to `10 * 60 * 1000` (10 minutes).
    */
   lockTime?: number;
+
+  /**
+   * The role name designated as the superuser/admin role for this collection.
+   *
+   * Defaults to `'admin'`.
+   */
+  adminRole?: string;
 }
 
 /**

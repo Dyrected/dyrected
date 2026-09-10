@@ -194,7 +194,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 import { useRuntimeConfig } from "#imports";
 import { assertValidDeclarativeAccessInConfig, assertValidDeclarativeHooksInConfig, formatConfigDiagnostics, isConfigValidationError } from "@dyrected/core";
 // @ts-ignore
-import userConfigRaw from "${escapedConfigPath}";
+import { loadDyrectedConfig } from "./dyrected-load-config.ts";
 
 const defineNitroPlugin = (def) => def;
 const validateDeclarativeConfig = (configObj, source) => {
@@ -206,9 +206,17 @@ export default defineNitroPlugin(async (nitroApp) => {
   const runtimeConfig = useRuntimeConfig().dyrected;
 
   try {
+    const configTarget = runtimeConfig?.configPath || "${escapedConfigPath}";
+    let userConfigRaw;
+    try {
+      userConfigRaw = await loadDyrectedConfig(configTarget);
+    } catch (jitiErr) {
+      console.warn("[dyrected/nuxt] jiti config load fallback to dynamic import:", jitiErr);
+      userConfigRaw = await import("${escapedConfigPath}");
+    }
     const userConfig = userConfigRaw.default || userConfigRaw;
     const configObj = (userConfig.default && (userConfig.default.collections || userConfig.default.globals || userConfig.default.db)) ? userConfig.default : userConfig;
-    validateDeclarativeConfig(configObj, runtimeConfig?.configPath || "nuxt.config");
+    validateDeclarativeConfig(configObj, configTarget);
 
     if (configObj) {
       globalThis.__dyrected_config = configObj;

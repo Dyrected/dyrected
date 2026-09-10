@@ -18,7 +18,7 @@ import {
   generateUniqueUploadFilename,
 } from "../utils/upload-validation.js";
 import { resolveAccess } from "../auth/access.js";
-import { getAdminAuthCollection } from "../utils/admin-auth.js";
+import { getAdminAuthCollection, isUserAdmin } from "../utils/admin-auth.js";
 import { buildCollectionSearchWhere } from "../utils/collection-search.js";
 import {
   applyFieldReadAccess,
@@ -1391,7 +1391,7 @@ export class CollectionController {
       return c.json({ message: "Password must be at least 8 characters" }, 400);
     }
 
-    const isAdmin = Array.isArray(user.roles) && user.roles.includes("admin");
+    const isAdmin = isUserAdmin(user, this.collection);
     const isSelf = user.sub === id;
 
     if (!isAdmin && !isSelf) {

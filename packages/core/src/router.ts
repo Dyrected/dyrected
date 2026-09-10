@@ -14,7 +14,7 @@ import { requireAuth, optionalAuth } from "./middleware/auth.js";
 import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
-import { getPublicAdminAuthConfig } from "./utils/admin-auth.js";
+import { getPublicAdminAuthConfig, isUserAdmin } from "./utils/admin-auth.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
 import {
@@ -658,7 +658,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const body = await c.req.json().catch(() => ({}));
 
     if (scope === "global") {
-      const isAdminUser = Array.isArray(user?.roles) && user.roles.includes("admin");
+      const userCol = config.collections?.find((col) => col.slug === user?.collection);
+      const isAdminUser = isUserAdmin(user, userCol);
       if (!isAdminUser) {
         return c.json(
           {
@@ -718,7 +719,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     if (scope === "global") {
-      const isAdminUser = Array.isArray(user?.roles) && user.roles.includes("admin");
+      const userCol = config.collections?.find((col) => col.slug === user?.collection);
+      const isAdminUser = isUserAdmin(user, userCol);
       if (!isAdminUser) {
         return c.json(
           {
