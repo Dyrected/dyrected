@@ -6,24 +6,7 @@ import pkg from "./package.json" with { type: "json" };
 
 // Packaging policy for @dyrected/admin:
 // - Peer/platform deps stay external so the host app owns singletons and routing/runtime integration.
-// - Shared ecosystem deps with stable ESM surfaces can stay external to keep the library lean.
-// - Consumer-fragile implementation deps are bundled when they are CJS-only or regularly need
-//   Vite/Nuxt interop workarounds in consuming apps.
-const bundledImplementationDependencies = new Set([
-  "papaparse",
-  "react-dropzone",
-  "attr-accept",
-  "file-selector",
-  "prop-types",
-  "jexl",
-  "react-datasheet-grid",
-  "@ai-sdk/react",
-  "ai",
-  "@vercel/oidc",
-  "@ai-sdk/gateway",
-  "@ai-sdk/provider",
-  "@ai-sdk/provider-utils",
-]);
+// - All UI implementation dependencies are bundled so consuming apps never suffer Vite/Nuxt runtime discovery or CJS interop issues.
 
 const peerAndPlatformDependencies = new Set([
   ...Object.keys(pkg.peerDependencies ?? {}),
@@ -32,14 +15,8 @@ const peerAndPlatformDependencies = new Set([
   "react-dom/client",
 ]);
 
-const externalSharedDependencies = new Set(
-  Object.keys(pkg.dependencies ?? {}).filter((dep) => !bundledImplementationDependencies.has(dep)),
-);
-
-const externalPackages = [...externalSharedDependencies, ...peerAndPlatformDependencies];
-
 const external = (id: string) => {
-  return externalPackages.some((dep) => id === dep || id.startsWith(`${dep}/`));
+  return [...peerAndPlatformDependencies].some((dep) => id === dep || id.startsWith(`${dep}/`));
 };
 
 // https://vite.dev/config/
