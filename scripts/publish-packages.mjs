@@ -43,6 +43,21 @@ function assertNoRawWorkspaceDeps(dir, pkgName) {
   }
 }
 
+// Check if this version is already on the npm registry
+async function isAlreadyPublished(pkgName, version) {
+  try {
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkgName)}`);
+    if (res.status === 404) return false;
+    if (res.ok) {
+      const data = await res.json();
+      return Boolean(data.versions && data.versions[version]);
+    }
+  } catch {
+    // Fall back to trying publish if registry check has network issues
+  }
+  return false;
+}
+
 for (const dir of packageDirs) {
   const pkgJsonPath = path.join(dir, 'package.json');
   if (!fs.existsSync(pkgJsonPath)) continue;
@@ -50,6 +65,12 @@ for (const dir of packageDirs) {
   const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
   if (pkg.private) {
     console.log(`[publish] Skipping private package: ${pkg.name || path.basename(dir)}`);
+    continue;
+  }
+
+  // Skip already published packages
+  if (await isAlreadyPublished(pkg.name, pkg.version)) {
+    console.log(`⏩ [publish] Skipping ${pkg.name}@${pkg.version} (already published on registry)`);
     continue;
   }
 
@@ -65,6 +86,11 @@ for (const dir of packageDirs) {
       env: { ...process.env }
     });
   } catch (error) {
+    const errString = `${error.stdout || ''}\n${error.stderr || ''}\n${error.message || ''}`;
+    if (errString.includes('previously published') || errString.includes('cannot publish over')) {
+      console.log(`⏩ [publish] Skipping ${pkg.name}@${pkg.version} (already published on registry)`);
+      continue;
+    }
     console.error(`❌ Failed to publish ${pkg.name}`);
     throw error;
   }
