@@ -54,6 +54,13 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@vercel/oidc": path.resolve(__dirname, "./src/shims/vercel-oidc.ts"),
+      "use-sync-external-store/shim/with-selector.js": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
+      "use-sync-external-store/shim/with-selector": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
+      "use-sync-external-store/shim/index.js": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
+      "use-sync-external-store/shim": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
+      "use-sync-external-store/with-selector.js": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
+      "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
+      "use-sync-external-store": path.resolve(__dirname, "./src/shims/use-sync-external-store.ts"),
     },
   },
 });

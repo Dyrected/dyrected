@@ -101,7 +101,7 @@ describe("Dynamic Router", async () => {
     );
     expect(layoutField.blockReferences).toEqual(["hero"]);
     expect(layoutField.blocks).toBeUndefined();
-    expect(data.ai).toMatchObject({ enabled: true });
+    expect(data.ai).toMatchObject({ enabled: false });
     expect(data.collections[0]).toHaveProperty("shared");
   });
 

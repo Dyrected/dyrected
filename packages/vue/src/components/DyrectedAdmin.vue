@@ -4,9 +4,25 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed, getCurrentInstance } from "vue";
+import * as React from "react";
+import * as ReactDOM from "react-dom";
 import { wrapComponents } from "../bridge/react-in-vue";
 import type { AdminThemeController, AdminThemePreference, ResolvedAdminTheme } from "@dyrected/admin/public";
 import { createAdminThemeController } from "@dyrected/admin/public";
+
+// Ensure a fallback `window.require` shim exists in browser ESM environments (e.g. Nuxt, Vite)
+// so that any third-party packages with legacy CommonJS require("react") calls resolve gracefully.
+if (typeof window !== "undefined") {
+  const g = window as any;
+  if (typeof g.require === "undefined") {
+    const modules: Record<string, any> = {
+      react: React,
+      "react-dom": ReactDOM,
+    };
+    g.require = (id: string) => modules[id] || undefined;
+  }
+}
+
 
 const props = defineProps<{
   /**

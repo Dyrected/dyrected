@@ -1,7 +1,24 @@
 /** @jsxImportSource react */
 import "./index.css";
 import React, { useEffect, useState, StrictMode } from "react";
+import * as ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
+
+// Ensure a fallback `window.require` shim exists in browser ESM environments
+// so that any third-party CJS dependencies requiring "react" or "react-dom"
+// resolve cleanly instead of throwing Rolldown / browser require errors.
+if (typeof window !== "undefined") {
+  const g = window as any;
+  if (typeof g.require === "undefined") {
+    const modules: Record<string, any> = {
+      react: React,
+      "react-dom": ReactDOM,
+      "react-dom/client": { createRoot },
+    };
+    g.require = (id: string) => modules[id] || undefined;
+  }
+}
+
 import {
   HashRouter,
   MemoryRouter,
@@ -196,7 +213,7 @@ function CollectionRoute() {
     slug: "default",
     label: (schema as any).labels?.plural ?? slug,
     layout: "table" as const,
-    filter: undefined,
+    filter: undefined as Record<string, any> | string | undefined,
     columns: undefined,
     sort: undefined,
     metrics: undefined,
@@ -206,7 +223,7 @@ function CollectionRoute() {
   const rawView = defaultMasterView;
 
   // URL compat shim for legacy v1 links (`?where=<json>&search=<term>`)
-  let effectiveView: typeof rawView = rawView;
+  let effectiveView: any = rawView;
   if (typeof window !== "undefined") {
     try {
       const params = new URLSearchParams(window.location.hash.split("?")[1] ?? window.location.search);
