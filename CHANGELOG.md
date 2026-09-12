@@ -2,6 +2,16 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.13.5
+
+- - Normalize `role` and `roles` fields across core auth middleware and admin auth to allow interchangeable use.
+  - Return collection slug in `GET /me` response to ensure user context collection is always populated.
+  - Fix route access guard in `EditEntryPage` to check `canCreate` on creation routes instead of incorrectly checking `canRead`.
+  - Synchronize token authentication with the client on startup and invalidate schemas cache on login/logout so permission rules refresh immediately.
+  - Fix TypeScript type-narrowing on uploaded file preview in `EditEntryPage`. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.13.4
 
 - Resolve Rolldown CommonJS interop error in lazy-loaded `RichTextEditor` chunk by shimming `use-sync-external-store` to native React 18/19 hooks, and inject a browser `window.require` fallback for `react` and `react-dom` in `@dyrected/admin` and `@dyrected/vue`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/vue`)
