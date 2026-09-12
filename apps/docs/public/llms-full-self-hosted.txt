@@ -26729,6 +26729,16 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.13.5
+
+- - Normalize `role` and `roles` fields across core auth middleware and admin auth to allow interchangeable use.
+  - Return collection slug in `GET /me` response to ensure user context collection is always populated.
+  - Fix route access guard in `EditEntryPage` to check `canCreate` on creation routes instead of incorrectly checking `canRead`.
+  - Synchronize token authentication with the client on startup and invalidate schemas cache on login/logout so permission rules refresh immediately.
+  - Fix TypeScript type-narrowing on uploaded file preview in `EditEntryPage`. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.13.4
 
 - Resolve Rolldown CommonJS interop error in lazy-loaded `RichTextEditor` chunk by shimming `use-sync-external-store` to native React 18/19 hooks, and inject a browser `window.require` fallback for `react` and `react-dom` in `@dyrected/admin` and `@dyrected/vue`. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/vue`)
@@ -27563,24 +27573,6 @@ Release notes and version history across all Dyrected packages.
 
   **SDK (`@dyrected/sdk`)**
   - Support for external media references and upload validation feedback. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
-
----
-
-## v2.5.51
-
-- @dyrected/core@2.5.51
-
-- @dyrected/sdk@2.5.51
-
-- Traverse parent directories to detect lockfiles in monorepos/nested workspaces during package manager detection.
-  - @dyrected/core@2.5.51
-  - @dyrected/sdk@2.5.51 (`dyrected`)
-
-- @dyrected/react@2.5.51 (`@dyrected/next`)
-
-- @dyrected/admin@2.5.51 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
-
-- @dyrected/vue@2.5.51 (`@dyrected/nuxt`)
 
 ---
 
