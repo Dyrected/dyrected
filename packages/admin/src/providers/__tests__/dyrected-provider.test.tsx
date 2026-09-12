@@ -15,12 +15,14 @@ function TestConsumer() {
   return (
     <div>
       <div data-testid="user-id">{user ? String(user.id || user.sub || "") : "no-user"}</div>
+      <div data-testid="user-collection">{user ? String(user.collection || "") : "no-collection"}</div>
+      <div data-testid="user-role">{user ? String(user.role || "") : "no-role"}</div>
       <button data-testid="logout-btn" onClick={logout}>
         Logout
       </button>
       <button
         data-testid="login-btn"
-        onClick={() => setToken(makeToken({ sub: "user-123", email: "test@example.com" }), "users")}
+        onClick={() => setToken(makeToken({ sub: "user-123", email: "test@example.com", roles: ["ops"] }), "users")}
       >
         Login
       </button>
@@ -41,6 +43,8 @@ describe("DyrectedProvider auth and session management", () => {
       },
     })
     localStorage.clear()
+    document.cookie = "__dyrected_token=; path=/; max-age=0;"
+    document.cookie = "dyrected_token=; path=/; max-age=0;"
 
     globalThis.fetch = vi.fn().mockImplementation(async (url: string | URL | Request, _init?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url.toString()
@@ -91,6 +95,8 @@ describe("DyrectedProvider auth and session management", () => {
   afterEach(() => {
     cleanup()
     localStorage.clear()
+    document.cookie = "__dyrected_token=; path=/; max-age=0;"
+    document.cookie = "dyrected_token=; path=/; max-age=0;"
     globalThis.fetch = originalFetch
   })
 
@@ -195,5 +201,34 @@ describe("DyrectedProvider auth and session management", () => {
       expect(localStorage.getItem("dyrected_token")).toBe(freshToken)
       expect(screen.getByTestId("user-id").textContent).toBe("user-123")
     })
+  })
+
+  it("normalizes user collection and role and invalidates schemas query when logging in with setToken", async () => {
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries")
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DyrectedProvider baseUrl="http://api.test" apiKey="test-key">
+          <TestConsumer />
+        </DyrectedProvider>
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("user-id").textContent).toBe("no-user")
+    })
+
+    const loginBtn = screen.getByTestId("login-btn")
+    await act(async () => {
+      loginBtn.click()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("user-id").textContent).toBe("user-123")
+      expect(screen.getByTestId("user-collection").textContent).toBe("users")
+      expect(screen.getByTestId("user-role").textContent).toBe("ops")
+    })
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["schemas"] })
   })
 })

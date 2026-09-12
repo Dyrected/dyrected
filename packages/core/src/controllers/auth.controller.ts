@@ -47,7 +47,22 @@ export class AuthController {
       lockedUntil: _lockedUntil,
       ...safeUser
     } = user;
-    return safeUser;
+
+    const roles = Array.isArray(safeUser.roles)
+      ? safeUser.roles
+      : typeof safeUser.role === "string"
+        ? [safeUser.role]
+        : [];
+    const role =
+      typeof safeUser.role === "string" ? safeUser.role : roles[0];
+
+    return {
+      ...safeUser,
+      collection:
+        (safeUser.collection as string | undefined) || this.collection.slug,
+      ...(role !== undefined ? { role } : {}),
+      roles,
+    };
   }
 
   private hasField(name: string) {
@@ -218,13 +233,19 @@ export class AuthController {
       }
     }
 
+    const hasRoleField = this.collection.fields?.some((f) => f.name === "role");
+    const hasRolesField = this.collection.fields?.some((f) => f.name === "roles");
+    const rolePayload = hasRoleField && !hasRolesField
+      ? { role: initialRole }
+      : { roles: [initialRole] };
+
     const hashedPassword = await hashPassword(body.password);
     const user = await db.create({
       collection: this.collection.slug,
       data: {
         ...body,
         password: hashedPassword,
-        roles: [initialRole],
+        ...rolePayload,
       },
     });
 
@@ -422,7 +443,10 @@ export class AuthController {
     }
 
     const safeUser = this.sanitizeUser(user);
-    return c.json(safeUser);
+    return c.json({
+      ...safeUser,
+      collection: this.collection.slug,
+    });
   }
 
   // ---------------------------------------------------------------------------

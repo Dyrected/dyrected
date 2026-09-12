@@ -128,7 +128,11 @@ function publicMetadata(meta: WorkflowMetadata): WorkflowMetadata {
 
 export function workflowCapabilities(workflow: WorkflowConfig, user?: AuthenticatedUser): Set<string> {
   const capabilities = new Set<string>(Array.isArray(user?.capabilities) ? (user.capabilities as string[]) : []);
-  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  const roles = Array.isArray(user?.roles)
+    ? user.roles
+    : typeof user?.role === "string"
+      ? [user.role]
+      : [];
   for (const mapping of workflow.roles ?? []) {
     if (roles.includes(mapping.role)) mapping.capabilities.forEach((capability) => capabilities.add(capability));
   }

@@ -733,6 +733,8 @@ export function EditEntryPage() {
     }) : undefined
   ), [entry, schema, schemas?.collections])
 
+  const currentDoc = (previewData || entry) as Record<string, any> | undefined
+
   const persistDraft = useCallback((
     data: Record<string, unknown>,
     mode: "manual" | "autosave" | "transition",
@@ -920,7 +922,7 @@ export function EditEntryPage() {
       />
     )
   }
-  if (!canRead) {
+  if (isEdit ? !canRead : !canCreate) {
     return (
       <div className="dy-flex dy-items-center dy-justify-center dy-h-[calc(100vh-200px)]">
         <div className="dy-text-center dy-space-y-3">
@@ -928,7 +930,11 @@ export function EditEntryPage() {
             <Archive className="dy-h-6 dy-w-6" />
           </div>
           <h3 className="dy-text-lg dy-font-bold">Access Denied</h3>
-          <p className="dy-text-sm dy-text-muted-foreground">You do not have permission to view this entry.</p>
+          <p className="dy-text-sm dy-text-muted-foreground">
+            {isEdit
+              ? "You do not have permission to view this entry."
+              : "You do not have permission to create an entry in this collection."}
+          </p>
         </div>
       </div>
     )
@@ -1322,39 +1328,39 @@ export function EditEntryPage() {
                       You have read-only access to this collection.
                     </div>
                   )}
-                  {schema.upload && (previewData || entry) && ((previewData || entry).filename || (previewData || entry).url) && (
+                  {schema.upload && currentDoc && (currentDoc.filename || currentDoc.url) && (
                     <div className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-muted/10 dy-space-y-4">
                       <div className="dy-flex dy-items-start dy-gap-4">
                         <div className="dy-flex-1 dy-space-y-1">
                           <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
-                          <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{getDisplayFilename((previewData || entry).filename)}</h3>
+                          <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{getDisplayFilename(currentDoc.filename)}</h3>
                           <p className="dy-text-xs dy-text-muted-foreground">
-                            {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
+                            {currentDoc.filesize ? `${(((currentDoc.filesize || 0) as number) / 1024).toFixed(1)} KB` : 'N/A Size'} • {currentDoc.mimeType || 'Unknown Type'}
                           </p>
                         </div>
                       </div>
 
                       <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-flex dy-items-center dy-justify-center dy-p-4 dy-min-h-[160px] dy-max-h-[320px] dy-relative">
-                        {(previewData || entry).mimeType?.startsWith("image/") ? (
+                        {currentDoc.mimeType?.startsWith("image/") ? (
                           <img
-                            src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
-                            alt={(previewData || entry).alt || (previewData || entry).filename}
+                            src={getMediaUrl(currentDoc, client?.getBaseUrl() ?? "")}
+                            alt={currentDoc.alt || currentDoc.filename || ""}
                             className="dy-object-contain dy-max-h-[280px] dy-rounded-lg dy-shadow-sm"
                           />
-                        ) : (previewData || entry).mimeType?.startsWith("audio/") ? (
+                        ) : currentDoc.mimeType?.startsWith("audio/") ? (
                           <div className="dy-w-full dy-max-w-md dy-bg-card dy-p-4 dy-rounded-xl dy-border dy-border-border/60 dy-shadow-sm dy-flex dy-flex-col dy-gap-3 dy-items-center">
                             <div className="dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-text-primary">
                               <Volume2 className="dy-h-5 dy-w-5" />
                             </div>
                             <audio
-                              src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                              src={getMediaUrl(currentDoc, client?.getBaseUrl() ?? "")}
                               controls
                               className="dy-w-full"
                             />
                           </div>
-                        ) : (previewData || entry).mimeType?.startsWith("video/") ? (
+                        ) : currentDoc.mimeType?.startsWith("video/") ? (
                           <video
-                            src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                            src={getMediaUrl(currentDoc, client?.getBaseUrl() ?? "")}
                             controls
                             className="dy-max-h-[280px] dy-w-full dy-rounded-lg dy-shadow-sm"
                           />

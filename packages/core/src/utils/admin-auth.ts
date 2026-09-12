@@ -76,8 +76,14 @@ export function isUserAdmin(
   user: any,
   collection?: CollectionConfig | null,
 ): boolean {
-  if (!user || !Array.isArray(user.roles)) return false;
+  if (!user) return false;
+  const roles = Array.isArray(user.roles)
+    ? user.roles
+    : typeof user.role === "string"
+      ? [user.role]
+      : [];
+  if (roles.length === 0) return false;
   const configuredRole = getAdminRoleForCollection(collection);
-  if (user.roles.includes(configuredRole)) return true;
-  return user.roles.includes("admin") || user.roles.includes("super_admin");
+  if (roles.includes(configuredRole)) return true;
+  return roles.includes("admin") || roles.includes("super_admin");
 }

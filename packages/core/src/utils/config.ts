@@ -214,7 +214,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
           },
         ];
       }
-      if (!existingFieldNames.has("roles")) {
+      if (!existingFieldNames.has("roles") && !existingFieldNames.has("role")) {
         fields = [
           ...fields,
           {
@@ -228,7 +228,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
               { value: "viewer", label: "Viewer" },
             ],
             access: {
-              update: "user.roles && 'admin' in user.roles",
+              update: "user.role == 'admin' || (user.roles != null && 'admin' in user.roles)",
             },
           },
         ];
@@ -246,10 +246,10 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
               { value: "pending", label: "Pending" },
             ],
             access: {
-              update: "user.roles && 'admin' in user.roles && user.id != id",
+              update: "(user.role == 'admin' || (user.roles != null && 'admin' in user.roles)) && user.id != id",
             },
             admin: {
-              condition: `!(data.roles && "admin" in data.roles)`,
+              condition: `!(data.roles && "admin" in data.roles) && data.role != "admin"`,
             },
           },
         ];
@@ -285,13 +285,13 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
             },
           };
         }
-        if (field.name === "roles") {
+        if (field.name === "roles" || field.name === "role") {
           return {
             ...field,
             access: {
               ...(field.access || {}),
               // Must be an admin; cannot edit own roles (no self-elevation).
-              update: "user.roles && 'admin' in user.roles && user.id != id",
+              update: "(user.role == 'admin' || (user.roles != null && 'admin' in user.roles)) && user.id != id",
             },
           };
         }
@@ -300,7 +300,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
             ...field,
             access: {
               ...(field.access || {}),
-              update: "user.roles && 'admin' in user.roles && user.id != id",
+              update: "(user.role == 'admin' || (user.roles != null && 'admin' in user.roles)) && user.id != id",
             },
           };
         }

@@ -20,6 +20,37 @@ function findCollection(
   return collections.find(predicate);
 }
 
+export function normalizeAdminUser(
+  user: Record<string, unknown> | null | undefined,
+  collectionSlug?: string | null,
+): AdminUser | null {
+  if (!user || typeof user !== "object") return null;
+
+  const roles = Array.isArray(user.roles)
+    ? user.roles
+        .filter((role): role is string => typeof role === "string")
+        .map(normalizeCloudRole)
+    : typeof user.role === "string"
+      ? [normalizeCloudRole(user.role)]
+      : [];
+  const role =
+    typeof user.role === "string"
+      ? normalizeCloudRole(user.role)
+      : roles[0];
+
+  const collection =
+    typeof user.collection === "string" && user.collection
+      ? user.collection
+      : collectionSlug || undefined;
+
+  return {
+    ...user,
+    ...(collection ? { collection } : {}),
+    ...(role ? { role } : {}),
+    roles,
+  };
+}
+
 export function decodeTokenPayload(token: string): AdminUser | null {
   const payload = token.split(".")[1];
   if (!payload) return null;
@@ -36,20 +67,8 @@ export function decodeTokenPayload(token: string): AdminUser | null {
     const parsed = JSON.parse(json);
     if (!parsed || typeof parsed !== "object") return null;
 
-    const user = parsed as AdminUser;
-    const roles = Array.isArray(user.roles)
-      ? user.roles
-          .filter((role): role is string => typeof role === "string")
-          .map(normalizeCloudRole)
-      : [];
-    const role =
-      typeof user.role === "string" ? normalizeCloudRole(user.role) : undefined;
-
-    return {
-      ...user,
-      ...(role ? { role } : {}),
-      roles: roles.length > 0 ? roles : role ? [role] : roles,
-    };
+    const collectionSlug = typeof parsed.collection === "string" ? parsed.collection : null;
+    return normalizeAdminUser(parsed as Record<string, unknown>, collectionSlug);
   } catch {
     return null;
   }

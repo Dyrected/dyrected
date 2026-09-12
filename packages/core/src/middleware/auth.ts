@@ -69,11 +69,20 @@ async function resolveUser(
 
   const { password: _password, ...safe } = doc;
 
+  const roles = Array.isArray(safe.roles)
+    ? safe.roles
+    : typeof safe.role === 'string'
+      ? [safe.role]
+      : [];
+  const role = typeof safe.role === 'string' ? safe.role : roles[0];
+
   // Token identity claims win over the stored document so `sub`/`collection` always
   // reflect the session, while everything else (roles, ownership, custom fields) comes
   // from the live record.
   return {
     ...safe,
+    ...(role !== undefined ? { role } : {}),
+    roles,
     sub: payload.sub,
     email: payload.email ?? (safe.email as string | undefined),
     collection: payload.collection,
@@ -188,8 +197,13 @@ export function optionalAuth(config?: DyrectedConfig) {
           c.set('user', user);
         }
         c.set('authTokenPayload', resolved.payload);
-      } catch {
-        // Invalid token — proceed without user
+      } catch (err) {
+        // Invalid or expired token — proceed without user, but log warning for debugging
+        getConfigLogger(config ?? c.get('config'), 'auth').warn({
+          err,
+          msg: 'optionalAuth failed to resolve token',
+          path: c.req.path,
+        });
       }
     }
 

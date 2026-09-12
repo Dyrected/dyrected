@@ -3,7 +3,7 @@ import { createClient, DyrectedClient, DyrectedError } from "@dyrected/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
-import { decodeTokenPayload, getAdminCollectionSlug, type AdminUser } from "./admin-auth";
+import { decodeTokenPayload, getAdminCollectionSlug, normalizeAdminUser, type AdminUser } from "./admin-auth";
 import { DyrectedContext, type DyrectedContextType } from "./dyrected-context";
 
 function resolveBlock(block: Block, registry: Map<string, Block>): Block {
@@ -179,18 +179,28 @@ export function DyrectedProvider({
 
   const client = useMemo<DyrectedClient | null>(() => {
     if (!baseUrl) return null;
-    return createClient({
+    const instance = createClient({
       baseUrl,
       apiKey: apiKey || undefined,
       siteId: siteId || undefined,
     });
-  }, [apiKey, baseUrl, siteId]);
+    const tokenToUse = initialToken || storedToken;
+    if (tokenToUse) {
+      instance.setToken(tokenToUse);
+    }
+    return instance;
+  }, [apiKey, baseUrl, initialToken, siteId, storedToken]);
+
+  const authUserId =
+    (user?.id as string | undefined) ??
+    (user?.sub as string | undefined) ??
+    null;
 
   const {
     data: schemas = null,
     error: schemasError,
   } = useQuery({
-    queryKey: ["schemas", baseUrl, apiKey ?? null, siteId ?? null],
+    queryKey: ["schemas", baseUrl, apiKey ?? null, siteId ?? null, authUserId],
     queryFn: async () => resolveSchemas(await client!.getSchemas()),
     enabled: !!client,
   });
@@ -221,8 +231,9 @@ export function DyrectedProvider({
       (nextClient ?? client)?.clearToken();
       setAuthCollectionSlug(null);
       setUser(null);
+      void queryClient.invalidateQueries({ queryKey: ["schemas"] });
     },
-    [client],
+    [client, queryClient],
   );
 
   const shouldClearStoredAuth = useCallback((error: unknown) => {
@@ -274,7 +285,7 @@ export function DyrectedProvider({
 
       const optimisticUser = decodeTokenPayload(token);
       if (optimisticUser) {
-        setUser(optimisticUser);
+        setUser(normalizeAdminUser(optimisticUser, resolvedCollectionSlug));
       }
 
       if (resolvedCollectionSlug) {
@@ -293,7 +304,16 @@ export function DyrectedProvider({
             .collection(resolvedCollectionSlug)
             .me()
             .then(
-              (nextUser) => setUser(nextUser as AdminUser),
+              (nextUser) =>
+                setUser(
+                  normalizeAdminUser(
+                    {
+                      ...(optimisticUser || {}),
+                      ...(nextUser as Record<string, unknown>),
+                    },
+                    resolvedCollectionSlug,
+                  ),
+                ),
               (error) => {
                 if (shouldClearStoredAuth(error)) {
                   clearPersistedAuthState(client);
@@ -306,8 +326,9 @@ export function DyrectedProvider({
             );
         }
       }
+      void queryClient.invalidateQueries({ queryKey: ["schemas"] });
     },
-    [authCollectionSlug, clearPersistedAuthState, client, schemas, shouldClearStoredAuth],
+    [authCollectionSlug, clearPersistedAuthState, client, queryClient, schemas, shouldClearStoredAuth],
   );
 
   const refreshingPromiseRef = React.useRef<Promise<string | null> | null>(null);
@@ -466,11 +487,19 @@ export function DyrectedProvider({
       .then(
         (nextUser) => {
           if (cancelled) return;
+          const tokenPayload = decodeTokenPayload(token);
+          const normalized = normalizeAdminUser(
+            {
+              ...(tokenPayload || {}),
+              ...(nextUser as Record<string, unknown>),
+            },
+            resolvedCollectionSlug,
+          );
           setUser((prev) => {
-            if (prev && JSON.stringify(prev) === JSON.stringify(nextUser)) {
+            if (prev && JSON.stringify(prev) === JSON.stringify(normalized)) {
               return prev;
             }
-            return nextUser as AdminUser;
+            return normalized;
           });
         },
         (error) => {
