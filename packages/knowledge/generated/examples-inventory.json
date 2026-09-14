@@ -6533,7 +6533,7 @@
   {
     "id": "/start-here/changelog#example-1",
     "page": "/start-here/changelog",
-    "language": "ts",
+    "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
@@ -6546,6 +6546,13 @@
   },
   {
     "id": "/start-here/changelog#example-3",
+    "page": "/start-here/changelog",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/start-here/changelog#example-4",
     "page": "/start-here/changelog",
     "language": "ts",
     "classification": "syntax-checked",
