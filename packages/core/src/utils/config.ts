@@ -221,7 +221,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
             name: "roles",
             type: "select",
             label: "Roles",
-            defaultValue: [],
+            defaultValue: "viewer",
             options: [
               { value: "admin", label: "Admin" },
               { value: "editor", label: "Editor" },

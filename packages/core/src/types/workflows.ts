@@ -25,7 +25,15 @@ export interface WorkflowTransition {
   /** Stable transition key used by the REST and SDK APIs. */
   name: string;
   label: string;
+  /**
+   * Source state(s) this transition originates from.
+   * Must match names in the workflow's `states` array.
+   */
   from: string | string[];
+  /**
+   * Target state this transition leads to.
+   * Must match a name in the workflow's `states` array.
+   */
   to: string;
   /** Every listed capability is required. */
   requiredCapabilities?: string[];

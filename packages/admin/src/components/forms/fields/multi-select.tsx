@@ -67,6 +67,9 @@ export function MultiSelect({
   const [open, setOpen] = React.useState(false)
   const [searchVal, setSearchVal] = React.useState("")
 
+  // Normalize value to always be an array (defensive guard against misconfigured defaultValues)
+  const normalizedValue = Array.isArray(value) ? value : (value ? [value] : [])
+
   const isDynamic = !!(schema?.options && typeof schema.options === "object" && "_dynamic" in schema.options)
 
   // For dynamic options, search on the server so large and growing lists never
@@ -109,17 +112,17 @@ export function MultiSelect({
   })
 
   const handleSelect = (currentValue: string) => {
-    const isSelected = value.includes(currentValue)
+    const isSelected = normalizedValue.includes(currentValue)
     if (isSelected) {
-      onChange(value.filter((val) => val !== currentValue))
+      onChange(normalizedValue.filter((val) => val !== currentValue))
     } else {
-      onChange([...value, currentValue])
+      onChange([...normalizedValue, currentValue])
     }
   }
 
   const handleRemove = (valueToRemove: string, e?: React.MouseEvent | React.KeyboardEvent) => {
     e?.stopPropagation()
-    onChange(value.filter((val) => val !== valueToRemove))
+    onChange(normalizedValue.filter((val) => val !== valueToRemove))
   }
 
   return (
@@ -136,12 +139,12 @@ export function MultiSelect({
             className="dy-min-h-12 dy-w-full dy-justify-between dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md"
           >
             <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-wrap dy-items-center dy-gap-1">
-              {value.length === 0 && (
+              {normalizedValue.length === 0 && (
                 <span className="dy-truncate dy-text-muted-foreground">
                   {isDynamic && isLoading ? "Loading options..." : placeholder}
                 </span>
               )}
-              {value.map((val) => {
+              {normalizedValue.map((val) => {
                 const option = normalizedOpts.find((opt) => opt.value === val)
                 return (
                   <Badge
@@ -183,7 +186,7 @@ export function MultiSelect({
               })}
             </div>
             <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0 dy-ml-2">
-              {value.length > 0 && !disabled && (
+              {normalizedValue.length > 0 && !disabled && (
                 <span
                   role="button"
                   tabIndex={0}
@@ -221,7 +224,7 @@ export function MultiSelect({
               <CommandEmpty>No option found.</CommandEmpty>
               <CommandGroup>
                 {normalizedOpts.map((option) => {
-                  const isSelected = value.includes(option.value)
+                  const isSelected = normalizedValue.includes(option.value)
                   return (
                     <CommandItem
                       key={option.value}

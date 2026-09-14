@@ -291,8 +291,10 @@ export type TypedField<
   TType extends FieldType,
   TValue,
   TAdminExtra = Record<never, never>,
-> = Omit<FieldBase, "admin"> & {
+> = Omit<FieldBase, "admin" | "defaultValue"> & {
   type: TType;
+  /** Default value must match the field's value type. */
+  defaultValue?: TValue;
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &
   FieldAdminHooks<TValue>;
@@ -707,25 +709,48 @@ export type DateField = TypedField<"date", string, DateFieldAdmin>;
 export type DateTimeField = TypedField<"datetime", string, DateFieldAdmin>;
 /** A local time of day, stored as a string when the date is modeled elsewhere. */
 export type TimeField = TypedField<"time", string, DateFieldAdmin>;
-/** A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value. */
+/**
+ * A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.
+ * Should include either static `options` or dynamic option configuration via the base FieldBase type.
+ */
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;
-/** A single choice shown as radio buttons, stored as the chosen value. */
+/**
+ * A single choice shown as radio buttons, stored as the chosen value.
+ * Should include either static `options` or dynamic option configuration via the base FieldBase type.
+ */
 export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
 /** A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation. */
 export type NumberField = TypedField<"number", number, NumberFieldAdmin> &
   NumberLimitFieldConfig;
 /** A `true`/`false` value, shown to editors as a checkbox or switch. */
 export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
-/** Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values. */
+/**
+ * Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.
+ * Should include either static `options` or dynamic option configuration via the base FieldBase type.
+ */
 export type MultiSelectField = TypedField<
   "multiSelect",
   string[],
   MultiSelectFieldAdmin
 >;
-/** A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple. */
-export type RelationshipField = TypedField<"relationship", string | string[]>;
-/** A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple. */
-export type ImageField = TypedField<"image", string | string[]>;
+/**
+ * A reference to one or more documents in another collection, stored as an ID or array of IDs.
+ * Requires `relationTo` to specify the target collection.
+ * Use `hasMany` for multiple relationships.
+ */
+export type RelationshipField = TypedField<"relationship", string | string[]> & {
+  /** Target collection slug (required for relationship fields). */
+  relationTo: string;
+};
+/**
+ * A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs.
+ * Requires `relationTo` to specify the target collection.
+ * Use `hasMany` for multiple relationships.
+ */
+export type ImageField = TypedField<"image", string | string[]> & {
+  /** Target collection slug (required for image fields). */
+  relationTo: string;
+};
 /** Formatted content authored in the admin editor, stored as an HTML string. */
 export type RichTextField = TypedField<"richText", string> &
   RichTextFieldConfig;
@@ -735,14 +760,47 @@ export type JsonField = TypedField<
   Record<string, unknown>,
   JsonFieldAdmin
 >;
-/** A group of nested `fields` stored as an embedded object under this field's `name`. */
-export type ObjectField = TypedField<"object", unknown>;
-/** A repeatable list of rows that all share the same `fields`, stored as an array of objects. */
-export type ArrayField = TypedField<"array", unknown>;
-/** Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`. */
-export type BlocksField = TypedField<"blocks", unknown>;
-/** A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document. */
-export type JoinField = TypedField<"join", unknown, JoinFieldAdmin>;
+/**
+ * A group of nested `fields` stored as an embedded object under this field's `name`.
+ * Requires `fields` to define the structure of the object.
+ */
+export type ObjectField = TypedField<"object", unknown> & {
+  /** Child fields that make up the object structure (required). */
+  fields: Field[];
+};
+/**
+ * A repeatable list of rows that all share the same `fields`, stored as an array of objects.
+ * Requires `fields` to define the structure of each row.
+ */
+export type ArrayField = TypedField<"array", unknown> & {
+  /** Child fields that make up each row in the array (required). */
+  fields: Field[];
+};
+/**
+ * Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`.
+ * Requires either inline `blocks` definitions or `blockReferences` pointing to shared block definitions.
+ */
+export type BlocksField = (
+  | (TypedField<"blocks", unknown> & {
+      /** Inline block definitions (required unless blockReferences is set). */
+      blocks: Block[];
+    })
+  | (TypedField<"blocks", unknown> & {
+      /** References to shared block definitions from the root config (required unless blocks is set). */
+      blockReferences: string[];
+    })
+);
+/**
+ * A virtual reverse relationship that surfaces documents pointing back at this one.
+ * Read-only; nothing is stored on this document.
+ * Requires `collection` (target collection slug) and `on` (back-reference field name).
+ */
+export type JoinField = TypedField<"join", unknown, JoinFieldAdmin> & {
+  /** Target collection slug (required for join fields). */
+  collection: string;
+  /** Back-reference field name on the joined collection (required for join fields). */
+  on: string;
+};
 /** A layout-only container that arranges its child `fields` horizontally in the admin UI. Stores no value of its own. */
 export type RowField = TypedField<"row", unknown>;
 

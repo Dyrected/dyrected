@@ -172,9 +172,9 @@ export interface ViewConfig {
 }
 
 /**
- * An operational workflow action that can mutate data or trigger server logic.
+ * Base configuration shared by all action types.
  */
-export interface ActionConfig<TDoc extends Record<string, unknown> = Record<string, unknown>> {
+export interface ActionConfigBase<TDoc extends Record<string, unknown> = Record<string, unknown>> {
   /** Unique action identifier (e.g. `"checkIn"`, `"markPaid"`). */
   name: string;
   /** Button label displayed in the UI. */
@@ -189,13 +189,39 @@ export interface ActionConfig<TDoc extends Record<string, unknown> = Record<stri
   confirm?: string;
   /** Optional interactive modal form fields prompting the user for input before executing. */
   fields?: Field[];
-  /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: "now()" }`). */
-  mutation?: Partial<TDoc> | Record<string, unknown>;
-  /** Self-hosted server handler function executed when the action is triggered. */
-  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;
   /** Role-based access rules controlling who can trigger this action. */
   access?: AccessConfig;
 }
+
+/**
+ * An operational workflow action with declarative data mutation.
+ */
+export interface ActionConfigWithMutation<TDoc extends Record<string, unknown> = Record<string, unknown>>
+  extends ActionConfigBase<TDoc> {
+  /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: "now()" }`). */
+  mutation: Partial<TDoc> | Record<string, unknown>;
+  /** Optional server handler for additional logic. */
+  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;
+}
+
+/**
+ * An operational workflow action with server handler.
+ */
+export interface ActionConfigWithHandler<TDoc extends Record<string, unknown> = Record<string, unknown>>
+  extends ActionConfigBase<TDoc> {
+  /** Self-hosted server handler function executed when the action is triggered (required when mutation is not provided). */
+  handler: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;
+  /** Optional declarative mutation. */
+  mutation?: Partial<TDoc> | Record<string, unknown>;
+}
+
+/**
+ * An operational workflow action that can mutate data or trigger server logic.
+ * Requires either `mutation` or `handler` (or both).
+ */
+export type ActionConfig<TDoc extends Record<string, unknown> = Record<string, unknown>> =
+  | ActionConfigWithMutation<TDoc>
+  | ActionConfigWithHandler<TDoc>;
 
 /**
  * Context passed to an action's server handler function.
@@ -224,41 +250,17 @@ export interface AccessConfig {
 }
 
 /**
- * Options for defining an operational view with `defineView`.
- *
- * @example
- * ```ts
- * export const attendingGuests = defineView({
- *   slug: "attending-guests",
- *   label: "Attending Guests",
- *   icon: "UserCheck",
- *   layout: "table",
- *   groupBy: "tableNumber",
- *   filter: { attending: { equals: true } },
- *   columns: ["name", "email", "guestCount", "checkedIn"],
- *   sort: { field: "name", direction: "asc" },
- * });
- * ```
+ * Base options shared by all operational view types.
  */
-export interface DefineViewOptions {
+export interface DefineViewBaseOptions {
   /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug`). */
   slug: string;
   /** Human-readable title displayed in the sidebar navigation and view header. */
   label: string;
   /** Lucide icon name (e.g. `"UserCheck"`, `"Calendar"`, `"Shirt"`, `"TableProperties"`). */
   icon?: string;
-  /** Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`. */
-  layout?: ViewLayout;
   /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */
   filter?: Record<string, any> | string;
-  /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */
-  groupBy?: string;
-  /** Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`. */
-  dateField?: string;
-  /** Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`. */
-  startDateField?: string;
-  /** Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`. */
-  endDateField?: string;
   /** Field names to show in this view, in order. If omitted, Dyrected infers default display fields. */
   columns?: string[];
   /** Default sorting rule when entering the view. */
@@ -279,6 +281,68 @@ export interface DefineViewOptions {
   /** Role-based access rules controlling who can see or use this view. */
   access?: AccessConfig;
 }
+
+/** Table view — requires no special fields. */
+export interface DefineTableViewOptions extends DefineViewBaseOptions {
+  layout?: 'table' | 'spreadsheet';
+  /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */
+  groupBy?: string;
+}
+
+/** Kanban view — requires `groupBy` to organize into columns. */
+export interface DefineKanbanViewOptions extends DefineViewBaseOptions {
+  layout: 'kanban';
+  /** Field name to organize records into kanban columns. */
+  groupBy: string;
+}
+
+/** Calendar view — requires `dateField` to place records on the calendar. */
+export interface DefineCalendarViewOptions extends DefineViewBaseOptions {
+  layout: 'calendar';
+  /** Field name containing the ISO date string for calendar placement. */
+  dateField: string;
+}
+
+/** Gantt view — requires both `startDateField` and `endDateField`. */
+export interface DefineGanttViewOptions extends DefineViewBaseOptions {
+  layout: 'gantt';
+  /** Field name for the start date in the gantt timeline. */
+  startDateField: string;
+  /** Field name for the end date in the gantt timeline. */
+  endDateField: string;
+}
+
+/** Cards view — shows records as image/thumbnail gallery. */
+export interface DefineCardsViewOptions extends DefineViewBaseOptions {
+  layout: 'cards';
+  /** Field name used to organize records into groups. */
+  groupBy?: string;
+}
+
+/**
+ * Options for defining an operational view with `defineView`.
+ * Use layout-specific overloads to ensure required fields are provided.
+ *
+ * @example
+ * ```ts
+ * export const attendingGuests = defineView({
+ *   slug: "attending-guests",
+ *   label: "Attending Guests",
+ *   icon: "UserCheck",
+ *   layout: "table",
+ *   groupBy: "tableNumber",
+ *   filter: { attending: { equals: true } },
+ *   columns: ["name", "email", "guestCount", "checkedIn"],
+ *   sort: { field: "name", direction: "asc" },
+ * });
+ * ```
+ */
+export type DefineViewOptions =
+  | DefineTableViewOptions
+  | DefineKanbanViewOptions
+  | DefineCalendarViewOptions
+  | DefineGanttViewOptions
+  | DefineCardsViewOptions;
 
 /**
  * Options for defining a custom workflow action with `defineAction`.
@@ -318,21 +382,49 @@ export interface DefineActionOptions<TDoc extends Record<string, unknown> = Reco
 
 /**
  * Defines a typed operational view for a collection.
+ * Layout-specific overloads enforce required fields for each view type.
  *
  * @example
  * ```ts
- * export const attendingGuests = defineView({
- *   slug: "attending-guests",
- *   label: "Attending Guests",
- *   icon: "UserCheck",
- *   layout: "table",
- *   groupBy: "tableNumber",
- *   filter: { attending: { equals: true } },
- *   columns: ["name", "email", "guestCount", "checkedIn"],
- *   sort: { field: "name", direction: "asc" },
+ * // Table view (no special requirements)
+ * export const allGuests = defineView({
+ *   slug: "all-guests",
+ *   label: "All Guests",
+ *   layout: "table", // or omit for default
+ * });
+ *
+ * // Kanban view (requires groupBy)
+ * export const guestsByTable = defineView({
+ *   slug: "by-table",
+ *   label: "Guests by Table",
+ *   layout: "kanban",
+ *   groupBy: "tableNumber", // required!
+ * });
+ *
+ * // Calendar view (requires dateField)
+ * export const eventCalendar = defineView({
+ *   slug: "event-calendar",
+ *   label: "Event Calendar",
+ *   layout: "calendar",
+ *   dateField: "eventDate", // required!
+ * });
+ *
+ * // Gantt view (requires startDateField and endDateField)
+ * export const projectTimeline = defineView({
+ *   slug: "timeline",
+ *   label: "Project Timeline",
+ *   layout: "gantt",
+ *   startDateField: "startDate", // required!
+ *   endDateField: "endDate", // required!
  * });
  * ```
  */
+export function defineView(config: DefineTableViewOptions): DefineTableViewOptions;
+export function defineView(config: DefineKanbanViewOptions): DefineKanbanViewOptions;
+export function defineView(config: DefineCalendarViewOptions): DefineCalendarViewOptions;
+export function defineView(config: DefineGanttViewOptions): DefineGanttViewOptions;
+export function defineView(config: DefineCardsViewOptions): DefineCardsViewOptions;
+export function defineView<const T extends DefineViewOptions>(config: T): T;
 export function defineView<const T extends DefineViewOptions>(config: T): T {
   return config;
 }

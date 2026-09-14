@@ -10,6 +10,9 @@ import type {
   GlobalConfig,
   InferDocShape,
   Prettify,
+  RelationshipField,
+  ImageField,
+  JoinField,
   SystemDocFields,
   AuthDocFields,
   UploadDocFields,
@@ -778,8 +781,6 @@ export const defineSelectField = createFieldDefiner("select");
 export const defineMultiSelectField = createFieldDefiner("multiSelect");
 /** Define a `radio` field. */
 export const defineRadioField = createFieldDefiner("radio");
-/** Define a `relationship` field. */
-export const defineRelationshipField = createFieldDefiner("relationship");
 /** Define an `array` field. */
 export const defineArrayField = createFieldDefiner("array");
 /** Define an `object` field. */
@@ -788,18 +789,116 @@ export const defineObjectField = createFieldDefiner("object");
 export const defineJsonField = createFieldDefiner("json");
 /** Define a `blocks` field. */
 export const defineBlocksField = createFieldDefiner("blocks");
-/** Define an `image` field. */
-export const defineImageField = createFieldDefiner("image");
 /** Define an `email` field. */
 export const defineEmailField = createFieldDefiner("email");
 /** Define a `url` field. */
 export const defineUrlField = createFieldDefiner("url");
 /** Define an `icon` field. */
 export const defineIconField = createFieldDefiner("icon");
-/** Define a `join` field. */
-export const defineJoinField = createFieldDefiner("join");
 /** Define a layout-only `row` field. */
 export const defineRowField = createFieldDefiner("row");
+
+/**
+ * Extract valid collection slugs from a collection config array.
+ * Used to type-safe `relationTo` and `collection` field properties.
+ * @example
+ * ```ts
+ * type ValidSlugs = ExtractCollectionSlugs<typeof collections>;
+ * // ValidSlugs = "posts" | "comments" | "users"
+ * ```
+ */
+export type ExtractCollectionSlugs<
+  TCollections extends readonly CollectionConfig<any>[]
+> = Extract<TCollections[number], { slug: string }>["slug"];
+
+/** Base relationship field definer (internal). */
+const _defineRelationshipFieldBase = createFieldDefiner("relationship");
+/** Base image field definer (internal). */
+const _defineImageFieldBase = createFieldDefiner("image");
+/** Base join field definer (internal). */
+const _defineJoinFieldBase = createFieldDefiner("join");
+
+/**
+ * Define a `relationship` field with automatic slug inference from your collection config.
+ * The `relationTo` parameter is type-checked at compile time against available collections.
+ *
+ * @example
+ * ```ts
+ * import { dyrectedSchema } from './schema';
+ * type ValidSlugs = ExtractCollectionSlugs<typeof dyrectedSchema.collections>;
+ *
+ * defineRelationshipField<ValidSlugs>({
+ *   name: 'author',
+ *   relationTo: 'users',  // ✅ TypeScript validates against your collections
+ * })
+ * ```
+ */
+export function defineRelationshipField<TValidSlugs extends string = string>(
+  config: Omit<Omit<Parameters<typeof _defineRelationshipFieldBase>[0], 'type'>, 'relationTo'> & {
+    relationTo: TValidSlugs;
+  }
+): RelationshipField;
+export function defineRelationshipField(
+  config: Parameters<typeof _defineRelationshipFieldBase>[0]
+): RelationshipField;
+export function defineRelationshipField(config: any): RelationshipField {
+  return _defineRelationshipFieldBase(config) as RelationshipField;
+}
+
+/**
+ * Define an `image` field with automatic slug inference from your collection config.
+ * The `relationTo` parameter is type-checked at compile time against available collections.
+ *
+ * @example
+ * ```ts
+ * import { dyrectedSchema } from './schema';
+ * type ValidSlugs = ExtractCollectionSlugs<typeof dyrectedSchema.collections>;
+ *
+ * defineImageField<ValidSlugs>({
+ *   name: 'cover',
+ *   relationTo: 'media',  // ✅ TypeScript validates against your collections
+ * })
+ * ```
+ */
+export function defineImageField<TValidSlugs extends string = string>(
+  config: Omit<Omit<Parameters<typeof _defineImageFieldBase>[0], 'type'>, 'relationTo'> & {
+    relationTo: TValidSlugs;
+  }
+): ImageField;
+export function defineImageField(
+  config: Parameters<typeof _defineImageFieldBase>[0]
+): ImageField;
+export function defineImageField(config: any): ImageField {
+  return _defineImageFieldBase(config) as ImageField;
+}
+
+/**
+ * Define a `join` field with automatic slug inference from your collection config.
+ * The `collection` parameter is type-checked at compile time against available collections.
+ *
+ * @example
+ * ```ts
+ * import { dyrectedSchema } from './schema';
+ * type ValidSlugs = ExtractCollectionSlugs<typeof dyrectedSchema.collections>;
+ *
+ * defineJoinField<ValidSlugs>({
+ *   name: 'post_comments',
+ *   collection: 'posts',  // ✅ TypeScript validates against your collections
+ *   on: 'comments',
+ * })
+ * ```
+ */
+export function defineJoinField<TValidSlugs extends string = string>(
+  config: Omit<Omit<Parameters<typeof _defineJoinFieldBase>[0], 'type'>, 'collection'> & {
+    collection: TValidSlugs;
+  }
+): JoinField;
+export function defineJoinField(
+  config: Parameters<typeof _defineJoinFieldBase>[0]
+): JoinField;
+export function defineJoinField(config: any): JoinField {
+  return _defineJoinFieldBase(config) as JoinField;
+}
 
 /**
  * Group fields under a named tab in the Admin edit form. Tabs are presentational
