@@ -15,3 +15,4 @@ export * from "./detail.js";
 export * from "./views.js";
 export * from "./ai.js";
 export * from "./ai-errors.js";
+export * from "./readonly-fix.js";
