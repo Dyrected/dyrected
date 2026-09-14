@@ -40,7 +40,8 @@ export function rulesToWhere(rules: FilterRule[]): WhereClause {
       if (!clause.AND) {
         clause.AND = [];
       }
-      clause.AND.push({ [field]: operatorObj });
+      // Ensure AND is mutable before pushing
+      (clause.AND as any[]).push({ [field]: operatorObj });
     } else {
       clause[field] = operatorObj;
     }

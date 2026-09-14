@@ -8,6 +8,7 @@ import { useDyrected } from "../../../providers/dyrected-context"
 import { cn, getSiteUrl } from "../../../lib/utils"
 import { resolvePreviewUrl } from "../../../lib/preview-url"
 import { AdminComponentSlot } from "../../../components/admin-component-slot"
+import { InviteDialog } from "../../../components/collections/invite-dialog"
 import type { CollectionViewSlotProps } from "../../../types/admin-components"
 import { useViewMetrics } from "./use-view-metrics"
 import { useViewActions } from "./use-view-actions"
@@ -90,6 +91,34 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   const canCreate = useMemo(() => evaluateAccess(schema?.access?.create, user), [schema, user])
   const canDelete = useMemo(() => evaluateAccess(schema?.access?.delete, user), [schema, user])
   const hasDetail = schema?.detail !== false
+
+  // Extract invite configuration if this is an auth collection
+  const inviteConfig = useMemo(() => {
+    if (!schema?.auth) return null
+
+    // Find role field if it exists
+    const roleField = schema.fields?.find(
+      (f: any) =>
+        f.name === "roles" || f.name === "role" || (f.type === "select" && f.admin?.inviteRole)
+    )
+
+    if (!roleField) return { enabled: true }
+
+    const options = Array.isArray(roleField.options)
+      ? roleField.options.map((opt: any) =>
+          typeof opt === "string" ? { label: opt, value: opt } : opt
+        )
+      : []
+
+    return {
+      enabled: true,
+      roleField: {
+        fieldName: roleField.name,
+        hasMany: roleField.type === "multiSelect" || roleField.hasMany,
+        options,
+      },
+    }
+  }, [schema])
 
   const systemOps = useSystemOps({ slug, schema, schemas, data: [] })
 
@@ -345,6 +374,15 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
               <FileUp className="dy-h-3.5 dy-w-3.5" />
               Import
             </Button>
+          )}
+
+          {inviteConfig?.enabled && (
+            <InviteDialog
+              collectionSlug={slug}
+              collectionLabel={schema.labels?.singular || schema.slug}
+              inviteRoleField={inviteConfig.roleField}
+              inviteUrl={getSiteUrl((schemas as any)?.admin?.siteUrl)}
+            />
           )}
 
           {canCreate && (
