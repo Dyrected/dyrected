@@ -455,7 +455,7 @@ export function defineCollection<TDoc extends object, const TConfig extends Coll
 ): TConfig;
 // Implementation
 export function defineCollection(config: unknown): unknown {
-  return asCollection(config as any);
+  return asCollection(config as CollectionConfig<any>);
 }
 
 /**
