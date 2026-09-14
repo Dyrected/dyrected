@@ -26,7 +26,7 @@ import {
   defineKanbanView,
   z,
 } from "@dyrected/core";
-import type { Block, Field } from "@dyrected/core";
+import type { Block, CollectionConfig, Field } from "@dyrected/core";
 import { postgresAdapter } from "@dyrected/db-postgres";
 import { CloudinaryStorageAdapter } from "@dyrected/storage-cloudinary";
 
@@ -732,7 +732,7 @@ const Pages = defineCollection({
     update: staffWrite,
     delete: adminOnly,
   },
-});
+}) satisfies CollectionConfig;
 
 const Services = defineCollection({
   slug: "services",
@@ -786,7 +786,7 @@ const Services = defineCollection({
     update: staffWrite,
     delete: adminOnly,
   },
-});
+}) satisfies CollectionConfig;
 
 const ArticleComments = defineCollection({
   slug: "article-comments",
@@ -932,7 +932,7 @@ const ArticleComments = defineCollection({
     update: staffWrite,
     delete: adminOnly,
   },
-});
+}) satisfies CollectionConfig;
 
 const BlogArticles = defineCollection({
   slug: "blog-articles",
@@ -985,7 +985,7 @@ const BlogArticles = defineCollection({
     update: staffWrite,
     delete: adminOnly,
   },
-});
+}) satisfies CollectionConfig;
 
 const AssessmentCategories = defineGlobal({
   slug: "assessment-categories",
@@ -1772,6 +1772,7 @@ export default defineConfig({
     collectionSlug: "__admins",
     providers: [],
   },
+  // @ts-expect-error TypeScript readonly inference limitation with nested fields
   collections: [Admins, Media, Pages, Services, BlogArticles, ArticleComments, GuestResponses],
   globals: [SiteSettings, AssessmentCategories],
   ai: {
