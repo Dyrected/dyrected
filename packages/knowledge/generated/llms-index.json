@@ -907,6 +907,42 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:defineView",
+      "name": "defineView",
+      "category": "operational-views",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:DefineViewOptions",
       "name": "DefineViewOptions",
       "category": "operational-views",

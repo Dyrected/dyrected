@@ -252,13 +252,17 @@ type TypedBlocksForConfig<
     : TBlocks[K];
 };
 
+type MutableOmit<T, K extends PropertyKey> = {
+  [P in keyof T as P extends K ? never : P]: T[P];
+};
+
 type TypedFieldForConfig<
   TField extends Field,
   TCollections extends readonly unknown[],
   TBlocks extends readonly Block[],
   TPolicyNames extends string,
 > = TField extends { type: "relationship" }
-  ? Omit<TField, "relationTo" | "access"> & {
+  ? MutableOmit<TField, "relationTo" | "access"> & {
       relationTo?: TypedReference<
         PropertyType<TField, "relationTo">,
         CollectionSlug<TCollections>,
@@ -267,7 +271,7 @@ type TypedFieldForConfig<
       access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
     }
   : TField extends { type: "image" }
-    ? Omit<TField, "relationTo" | "access"> & {
+    ? MutableOmit<TField, "relationTo" | "access"> & {
         relationTo?: TypedReference<
           PropertyType<TField, "relationTo">,
           UploadCollectionSlug<TCollections>,
@@ -276,7 +280,7 @@ type TypedFieldForConfig<
         access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
       }
     : TField extends { type: "richText" }
-      ? Omit<TField, "uploadCollection" | "access"> & {
+      ? MutableOmit<TField, "uploadCollection" | "access"> & {
           uploadCollection?: TypedReference<
             PropertyType<TField, "uploadCollection">,
             UploadCollectionSlug<TCollections>,
@@ -285,7 +289,7 @@ type TypedFieldForConfig<
           access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
         }
       : TField extends { type: "join" }
-        ? Omit<TField, "collection" | "on" | "access"> & {
+        ? MutableOmit<TField, "collection" | "on" | "access"> & {
             collection?: TypedReference<
               PropertyType<TField, "collection">,
               CollectionSlug<TCollections>,
@@ -313,7 +317,7 @@ type TypedFieldForConfig<
             >;
           }
         : TField extends { type: "blocks" }
-          ? Omit<TField, "blocks" | "blockReferences" | "access"> & {
+          ? MutableOmit<TField, "blocks" | "blockReferences" | "access"> & {
               blocks?: TField["blocks"] extends readonly Block[]
                 ? TypedBlocksForConfig<
                     TField["blocks"],
@@ -336,7 +340,7 @@ type TypedFieldForConfig<
                 type: "array";
                 fields: infer TSubFields extends readonly Field[];
               }
-            ? Omit<TField, "fields" | "access" | "admin"> & {
+            ? MutableOmit<TField, "fields" | "access" | "admin"> & {
                 fields: TypedFields<
                   TSubFields,
                   TCollections,
@@ -356,7 +360,7 @@ type TypedFieldForConfig<
                   type: "object";
                   fields: infer TSubFields extends readonly Field[];
                 }
-              ? Omit<TField, "fields" | "access" | "admin"> & {
+              ? MutableOmit<TField, "fields" | "access" | "admin"> & {
                   fields: TypedFields<
                     TSubFields,
                     TCollections,
@@ -373,7 +377,7 @@ type TypedFieldForConfig<
                   >;
                 }
           : TField extends { fields: infer TSubFields extends readonly Field[] }
-            ? Omit<TField, "fields" | "access"> & {
+            ? MutableOmit<TField, "fields" | "access"> & {
                 fields: TypedFields<
                   TSubFields,
                   TCollections,
@@ -385,7 +389,7 @@ type TypedFieldForConfig<
                   TPolicyNames
                 >;
               }
-            : Omit<TField, "access"> & {
+            : MutableOmit<TField, "access"> & {
                 access?: TypedFieldAccess<
                   NonNullable<TField["access"]>,
                   TPolicyNames

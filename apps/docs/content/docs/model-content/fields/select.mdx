@@ -254,6 +254,7 @@ export type OptionFormat =
 ## SelectField
 
 A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.
+Should include either static `options` or dynamic option configuration via the base FieldBase type.
 
 ```ts
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;

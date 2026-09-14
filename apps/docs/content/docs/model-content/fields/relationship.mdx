@@ -37,9 +37,14 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 {/* GENERATED:REFERENCE-FIELD-RELATIONSHIP:START */}
 ## RelationshipField
 
-A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.
+A reference to one or more documents in another collection, stored as an ID or array of IDs.
+Requires `relationTo` to specify the target collection.
+Use `hasMany` for multiple relationships.
 
 ```ts
-export type RelationshipField = TypedField<"relationship", string | string[]>;
+export type RelationshipField = TypedField<"relationship", string | string[]> & {
+  /** Target collection slug (required for relationship fields). */
+  relationTo: string;
+};
 ```
 {/* GENERATED:REFERENCE-FIELD-RELATIONSHIP:END */}

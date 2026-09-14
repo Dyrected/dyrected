@@ -46,8 +46,12 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 ## ArrayField
 
 A repeatable list of rows that all share the same `fields`, stored as an array of objects.
+Requires `fields` to define the structure of each row.
 
 ```ts
-export type ArrayField = TypedField<"array", unknown>;
+export type ArrayField = TypedField<"array", unknown> & {
+  /** Child fields that make up each row in the array (required). */
+  fields: Field[];
+};
 ```
 {/* GENERATED:REFERENCE-FIELD-ARRAY:END */}

@@ -96,6 +96,7 @@ export type OptionFormat =
 ## RadioField
 
 A single choice shown as radio buttons, stored as the chosen value.
+Should include either static `options` or dynamic option configuration via the base FieldBase type.
 
 ```ts
 export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;

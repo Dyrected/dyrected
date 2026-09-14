@@ -46,8 +46,12 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 ## ObjectField
 
 A group of nested `fields` stored as an embedded object under this field's `name`.
+Requires `fields` to define the structure of the object.
 
 ```ts
-export type ObjectField = TypedField<"object", unknown>;
+export type ObjectField = TypedField<"object", unknown> & {
+  /** Child fields that make up the object structure (required). */
+  fields: Field[];
+};
 ```
 {/* GENERATED:REFERENCE-FIELD-OBJECT:END */}

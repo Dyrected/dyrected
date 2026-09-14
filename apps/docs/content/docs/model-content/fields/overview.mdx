@@ -255,7 +255,7 @@ export interface FieldBase {
   required?: boolean;
   /** Whether values for this field must be unique across the collection. */
   unique?: boolean;
-  /** Default value used when a new document omits this field. */
+  /** Default value: literal value or function computed from context. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
   options?:
@@ -318,7 +318,7 @@ export interface FieldBase {
 | <code>label</code> (optional) | Human-readable label shown in the Admin UI. |
 | <code>required</code> (optional) | Whether the field must have a value when saving. |
 | <code>unique</code> (optional) | Whether values for this field must be unique across the collection. |
-| <code>defaultValue</code> (optional) | Default value used when a new document omits this field. |
+| <code>defaultValue</code> (optional) | Default value: literal value or function computed from context. |
 | <code>options</code> (optional) | Static or dynamic option source for supported selection fields. |
 | <code>relationTo</code> (optional) | Target collection slug for &#96;relationship&#96; fields. |
 | <code>hasMany</code> (optional) | Whether the field stores multiple values instead of one. |
@@ -435,8 +435,10 @@ export type TypedField<
   TType extends FieldType,
   TValue,
   TAdminExtra = Record<never, never>,
-> = Omit<FieldBase, "admin"> & {
+> = Omit<FieldBase, "admin" | "defaultValue"> & {
   type: TType;
+  /** Default value: literal value, parameterless function, or function taking context. */
+  defaultValue?: TValue | (() => TValue) | ((context: DefaultValueContext) => TValue);
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &
   FieldAdminHooks<TValue>;

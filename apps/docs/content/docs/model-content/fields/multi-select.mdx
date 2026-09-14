@@ -59,6 +59,7 @@ export type DisplayTone =
 ## MultiSelectField
 
 Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.
+Should include either static `options` or dynamic option configuration via the base FieldBase type.
 
 ```ts
 export type MultiSelectField = TypedField<

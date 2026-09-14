@@ -49,9 +49,16 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 {/* GENERATED:REFERENCE-FIELD-JOIN:START */}
 ## JoinField
 
-A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document.
+A virtual reverse relationship that surfaces documents pointing back at this one.
+Read-only; nothing is stored on this document.
+Requires `collection` (target collection slug) and `on` (back-reference field name).
 
 ```ts
-export type JoinField = TypedField<"join", unknown, JoinFieldAdmin>;
+export type JoinField = TypedField<"join", unknown, JoinFieldAdmin> & {
+  /** Target collection slug (required for join fields). */
+  collection: string;
+  /** Back-reference field name on the joined collection (required for join fields). */
+  on: string;
+};
 ```
 {/* GENERATED:REFERENCE-FIELD-JOIN:END */}

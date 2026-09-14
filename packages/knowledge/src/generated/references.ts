@@ -5,63 +5,12 @@ export const references: readonly ReferenceEntry[] = [
   {
     "id": "@dyrected/core:ActionConfig",
     "name": "ActionConfig",
-    "kind": "interface",
+    "kind": "type",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "An operational workflow action that can mutate data or trigger server logic.",
-    "signature": "export interface ActionConfig<TDoc extends Record<string, unknown> = Record<string, unknown>> {\n  /** Unique action identifier (e.g. `\"checkIn\"`, `\"markPaid\"`). */\n  name: string;\n  /** Button label displayed in the UI. */\n  label: string;\n  /** Optional custom label for the modal submit button (defaults to \"Run\" or \"Confirm\"). */\n  submitLabel?: string;\n  /** Lucide icon name for the button (e.g. `\"UserCheck\"`, `\"CheckCircle\"`). */\n  icon?: string;\n  /** Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`. */\n  type?: ActionType;\n  /** Optional confirmation prompt shown before executing (e.g. `\"Confirm guest check-in at the door?\"`). */\n  confirm?: string;\n  /** Optional interactive modal form fields prompting the user for input before executing. */\n  fields?: Field[];\n  /** Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: \"now()\" }`). */\n  mutation?: Partial<TDoc> | Record<string, unknown>;\n  /** Self-hosted server handler function executed when the action is triggered. */\n  handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown;\n  /** Role-based access rules controlling who can trigger this action. */\n  access?: AccessConfig;\n}",
-    "members": [
-      {
-        "name": "name",
-        "signature": "name: string",
-        "description": "Unique action identifier (e.g. `\"checkIn\"`, `\"markPaid\"`)."
-      },
-      {
-        "name": "label",
-        "signature": "label: string",
-        "description": "Button label displayed in the UI."
-      },
-      {
-        "name": "submitLabel",
-        "signature": "submitLabel?: string",
-        "description": "Optional custom label for the modal submit button (defaults to \"Run\" or \"Confirm\")."
-      },
-      {
-        "name": "icon",
-        "signature": "icon?: string",
-        "description": "Lucide icon name for the button (e.g. `\"UserCheck\"`, `\"CheckCircle\"`)."
-      },
-      {
-        "name": "type",
-        "signature": "type?: ActionType",
-        "description": "Action placement: `'row'` (per-row), `'bulk'` (multi-row selection bar), or `'header'` (view header). Defaults to `'row'`."
-      },
-      {
-        "name": "confirm",
-        "signature": "confirm?: string",
-        "description": "Optional confirmation prompt shown before executing (e.g. `\"Confirm guest check-in at the door?\"`)."
-      },
-      {
-        "name": "fields",
-        "signature": "fields?: Field[]",
-        "description": "Optional interactive modal form fields prompting the user for input before executing."
-      },
-      {
-        "name": "mutation",
-        "signature": "mutation?: Partial<TDoc> | Record<string, unknown>",
-        "description": "Declarative database mutation applied to targeted documents (e.g. `{ checkedIn: true, checkedInAt: \"now()\" }`)."
-      },
-      {
-        "name": "handler",
-        "signature": "handler?: (context: ActionContext<TDoc>) => Promise<unknown> | unknown",
-        "description": "Self-hosted server handler function executed when the action is triggered."
-      },
-      {
-        "name": "access",
-        "signature": "access?: AccessConfig",
-        "description": "Role-based access rules controlling who can trigger this action."
-      }
-    ]
+    "description": "An operational workflow action that can mutate data or trigger server logic.\nRequires either `mutation` or `handler` (or both).",
+    "signature": "export type ActionConfig<TDoc extends Record<string, unknown> = Record<string, unknown>> =\n  | ActionConfigWithMutation<TDoc>\n  | ActionConfigWithHandler<TDoc>;",
+    "members": []
   },
   {
     "id": "@dyrected/core:ActionContext",
@@ -192,8 +141,8 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A repeatable list of rows that all share the same `fields`, stored as an array of objects.",
-    "signature": "export type ArrayField = TypedField<\"array\", unknown>;",
+    "description": "A repeatable list of rows that all share the same `fields`, stored as an array of objects.\nRequires `fields` to define the structure of each row.",
+    "signature": "export type ArrayField = TypedField<\"array\", unknown> & {\n  /** Child fields that make up each row in the array (required). */\n  fields: Field[];\n};",
     "members": []
   },
   {
@@ -360,8 +309,8 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`.",
-    "signature": "export type BlocksField = TypedField<\"blocks\", unknown>;",
+    "description": "Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`.\nRequires either inline `blocks` definitions or `blockReferences` pointing to shared block definitions.",
+    "signature": "export type BlocksField = (\n  | (TypedField<\"blocks\", unknown> & {\n      /** Inline block definitions (required unless blockReferences is set). */\n      blocks: Block[];\n    })\n  | (TypedField<\"blocks\", unknown> & {\n      /** References to shared block definitions from the root config (required unless blocks is set). */\n      blockReferences: string[];\n    })\n);",
     "members": []
   },
   {
@@ -890,105 +839,79 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "function",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "Defines a typed operational view for a collection.",
+    "description": "Defines a typed operational view for a collection.\nLayout-specific overloads enforce required fields for each view type.",
+    "signature": "export function defineView(config: DefineTableViewOptions): DefineTableViewOptions;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineView(config: DefineKanbanViewOptions): DefineKanbanViewOptions;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineView(config: DefineCalendarViewOptions): DefineCalendarViewOptions;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineView(config: DefineGanttViewOptions): DefineGanttViewOptions;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineView(config: DefineCardsViewOptions): DefineCardsViewOptions;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function defineView<const T extends DefineViewOptions>(config: T): T;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:defineView",
+    "name": "defineView",
+    "kind": "function",
+    "category": "operational-views",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
     "signature": "export function defineView<const T extends DefineViewOptions>(config: T): T",
     "members": []
   },
   {
     "id": "@dyrected/core:DefineViewOptions",
     "name": "DefineViewOptions",
-    "kind": "interface",
+    "kind": "type",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "Options for defining an operational view with `defineView`.",
-    "signature": "export interface DefineViewOptions {\n  /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug`). */\n  slug: string;\n  /** Human-readable title displayed in the sidebar navigation and view header. */\n  label: string;\n  /** Lucide icon name (e.g. `\"UserCheck\"`, `\"Calendar\"`, `\"Shirt\"`, `\"TableProperties\"`). */\n  icon?: string;\n  /** Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`. */\n  layout?: ViewLayout;\n  /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */\n  filter?: Record<string, any> | string;\n  /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */\n  groupBy?: string;\n  /** Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`. */\n  dateField?: string;\n  /** Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`. */\n  startDateField?: string;\n  /** Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`. */\n  endDateField?: string;\n  /** Field names to show in this view, in order. If omitted, Dyrected infers default display fields. */\n  columns?: string[];\n  /** Default sorting rule when entering the view. */\n  sort?: { field: string; direction: 'asc' | 'desc' };\n  /** Custom workflow actions available in this view. */\n  actions?: ActionConfig[];\n  /** Toggles built-in operations (view/edit/duplicate/delete/export). */\n  features?: ViewActionFeatures;\n  /**\n   * Explicit display order for action buttons — mixing custom action names and built-in names\n   * (`\"view\"`, `\"edit\"`, `\"duplicate\"`, `\"delete\"`). Unlisted actions append in default order.\n   */\n  actionOrder?: string[];\n  /** KPI summary cards rendered in the hero row above the view. */\n  metrics?: ViewMetric[];\n  /** Custom component slots rendered around this operational view. */\n  components?: ViewComponentSlots;\n  /** Role-based access rules controlling who can see or use this view. */\n  access?: AccessConfig;\n}",
-    "members": [
-      {
-        "name": "slug",
-        "signature": "slug: string",
-        "description": "Stable URL slug for the view (`/collections/:slug/views/:viewSlug`)."
-      },
-      {
-        "name": "label",
-        "signature": "label: string",
-        "description": "Human-readable title displayed in the sidebar navigation and view header."
-      },
-      {
-        "name": "icon",
-        "signature": "icon?: string",
-        "description": "Lucide icon name (e.g. `\"UserCheck\"`, `\"Calendar\"`, `\"Shirt\"`, `\"TableProperties\"`)."
-      },
-      {
-        "name": "layout",
-        "signature": "layout?: ViewLayout",
-        "description": "Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`."
-      },
-      {
-        "name": "filter",
-        "signature": "filter?: Record<string, any> | string",
-        "description": "Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string)."
-      },
-      {
-        "name": "groupBy",
-        "signature": "groupBy?: string",
-        "description": "Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet."
-      },
-      {
-        "name": "dateField",
-        "signature": "dateField?: string",
-        "description": "Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`."
-      },
-      {
-        "name": "startDateField",
-        "signature": "startDateField?: string",
-        "description": "Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`."
-      },
-      {
-        "name": "endDateField",
-        "signature": "endDateField?: string",
-        "description": "Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`."
-      },
-      {
-        "name": "columns",
-        "signature": "columns?: string[]",
-        "description": "Field names to show in this view, in order. If omitted, Dyrected infers default display fields."
-      },
-      {
-        "name": "sort",
-        "signature": "sort?: { field: string; direction: 'asc' | 'desc' }",
-        "description": "Default sorting rule when entering the view."
-      },
-      {
-        "name": "actions",
-        "signature": "actions?: ActionConfig[]",
-        "description": "Custom workflow actions available in this view."
-      },
-      {
-        "name": "features",
-        "signature": "features?: ViewActionFeatures",
-        "description": "Toggles built-in operations (view/edit/duplicate/delete/export)."
-      },
-      {
-        "name": "actionOrder",
-        "signature": "actionOrder?: string[]",
-        "description": "Explicit display order for action buttons — mixing custom action names and built-in names\n(`\"view\"`, `\"edit\"`, `\"duplicate\"`, `\"delete\"`). Unlisted actions append in default order."
-      },
-      {
-        "name": "metrics",
-        "signature": "metrics?: ViewMetric[]",
-        "description": "KPI summary cards rendered in the hero row above the view."
-      },
-      {
-        "name": "components",
-        "signature": "components?: ViewComponentSlots",
-        "description": "Custom component slots rendered around this operational view."
-      },
-      {
-        "name": "access",
-        "signature": "access?: AccessConfig",
-        "description": "Role-based access rules controlling who can see or use this view."
-      }
-    ]
+    "description": "Options for defining an operational view with `defineView`.\nUse layout-specific overloads to ensure required fields are provided.",
+    "signature": "export type DefineViewOptions =\n  | DefineTableViewOptions\n  | DefineKanbanViewOptions\n  | DefineCalendarViewOptions\n  | DefineGanttViewOptions\n  | DefineCardsViewOptions;",
+    "members": []
   },
   {
     "id": "@dyrected/core:DetailComputed",
@@ -2278,7 +2201,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value used when a new document omits this field. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?:\n    | string[]\n    | { label: string; value: unknown }[]\n    | DynamicOptionsResolver\n    | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /**\n   * Shared block slugs pulled from the root `defineConfig({ blocks: [...] })`\n   * registry for a `blocks` field.\n   *\n   * Use this when the same block types should be reused across multiple fields\n   * without inlining the full block schema into each field definition.\n   */\n  blockReferences?: string[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */\n    create?: AccessRule;\n    /** Controls whether incoming writes may change this field on update. */\n    update?: AccessRule;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n  /** AI assistant privacy and PII redaction settings for this field. */\n  ai?: {\n    /** If true, completely removes this field from AI queries, RAG chunks, and context. */\n    exclude?: boolean;\n    /** If true or 'mask', masks the field value (e.g. b***@example.com) before sending to AI. */\n    redact?: boolean | 'mask';\n    /** If true, opts out of automatic default PII masking (e.g. for email/phone fields). */\n    allowRaw?: boolean;\n  };\n}",
+    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value: literal value or function computed from context. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?:\n    | string[]\n    | { label: string; value: unknown }[]\n    | DynamicOptionsResolver\n    | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /**\n   * Shared block slugs pulled from the root `defineConfig({ blocks: [...] })`\n   * registry for a `blocks` field.\n   *\n   * Use this when the same block types should be reused across multiple fields\n   * without inlining the full block schema into each field definition.\n   */\n  blockReferences?: string[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */\n    create?: AccessRule;\n    /** Controls whether incoming writes may change this field on update. */\n    update?: AccessRule;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n  /** AI assistant privacy and PII redaction settings for this field. */\n  ai?: {\n    /** If true, completely removes this field from AI queries, RAG chunks, and context. */\n    exclude?: boolean;\n    /** If true or 'mask', masks the field value (e.g. b***@example.com) before sending to AI. */\n    redact?: boolean | 'mask';\n    /** If true, opts out of automatic default PII masking (e.g. for email/phone fields). */\n    allowRaw?: boolean;\n  };\n}",
     "members": [
       {
         "name": "name",
@@ -2303,7 +2226,7 @@ export const references: readonly ReferenceEntry[] = [
       {
         "name": "defaultValue",
         "signature": "defaultValue?: unknown",
-        "description": "Default value used when a new document omits this field."
+        "description": "Default value: literal value or function computed from context."
       },
       {
         "name": "options",
@@ -2747,8 +2670,8 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.",
-    "signature": "export type ImageField = TypedField<\"image\", string | string[]>;",
+    "description": "A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs.\nRequires `relationTo` to specify the target collection.\nUse `hasMany` for multiple relationships.",
+    "signature": "export type ImageField = TypedField<\"image\", string | string[]> & {\n  /** Target collection slug (required for image fields). */\n  relationTo: string;\n};",
     "members": []
   },
   {
@@ -2803,8 +2726,8 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document.",
-    "signature": "export type JoinField = TypedField<\"join\", unknown, JoinFieldAdmin>;",
+    "description": "A virtual reverse relationship that surfaces documents pointing back at this one.\nRead-only; nothing is stored on this document.\nRequires `collection` (target collection slug) and `on` (back-reference field name).",
+    "signature": "export type JoinField = TypedField<\"join\", unknown, JoinFieldAdmin> & {\n  /** Target collection slug (required for join fields). */\n  collection: string;\n  /** Back-reference field name on the joined collection (required for join fields). */\n  on: string;\n};",
     "members": []
   },
   {
@@ -2974,7 +2897,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.",
+    "description": "Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.\nShould include either static `options` or dynamic option configuration via the base FieldBase type.",
     "signature": "export type MultiSelectField = TypedField<\n  \"multiSelect\",\n  string[],\n  MultiSelectFieldAdmin\n>;",
     "members": []
   },
@@ -3065,8 +2988,8 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A group of nested `fields` stored as an embedded object under this field's `name`.",
-    "signature": "export type ObjectField = TypedField<\"object\", unknown>;",
+    "description": "A group of nested `fields` stored as an embedded object under this field's `name`.\nRequires `fields` to define the structure of the object.",
+    "signature": "export type ObjectField = TypedField<\"object\", unknown> & {\n  /** Child fields that make up the object structure (required). */\n  fields: Field[];\n};",
     "members": []
   },
   {
@@ -3172,7 +3095,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A single choice shown as radio buttons, stored as the chosen value.",
+    "description": "A single choice shown as radio buttons, stored as the chosen value.\nShould include either static `options` or dynamic option configuration via the base FieldBase type.",
     "signature": "export type RadioField = TypedField<\"radio\", string, RadioFieldAdmin>;",
     "members": []
   },
@@ -3202,8 +3125,8 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.",
-    "signature": "export type RelationshipField = TypedField<\"relationship\", string | string[]>;",
+    "description": "A reference to one or more documents in another collection, stored as an ID or array of IDs.\nRequires `relationTo` to specify the target collection.\nUse `hasMany` for multiple relationships.",
+    "signature": "export type RelationshipField = TypedField<\"relationship\", string | string[]> & {\n  /** Target collection slug (required for relationship fields). */\n  relationTo: string;\n};",
     "members": []
   },
   {
@@ -3242,7 +3165,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.",
+    "description": "A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.\nShould include either static `options` or dynamic option configuration via the base FieldBase type.",
     "signature": "export type SelectField = TypedField<\"select\", string, SelectFieldAdmin>;",
     "members": []
   },
@@ -3384,7 +3307,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type TypedField<\n  TType extends FieldType,\n  TValue,\n  TAdminExtra = Record<never, never>,\n> = Omit<FieldBase, \"admin\"> & {\n  type: TType;\n  admin?: BaseFieldAdmin & TAdminExtra;\n} & FieldHooks<TValue> &\n  FieldAdminHooks<TValue>;",
+    "signature": "export type TypedField<\n  TType extends FieldType,\n  TValue,\n  TAdminExtra = Record<never, never>,\n> = Omit<FieldBase, \"admin\" | \"defaultValue\"> & {\n  type: TType;\n  /** Default value: literal value, parameterless function, or function taking context. */\n  defaultValue?: TValue | (() => TValue) | ((context: DefaultValueContext) => TValue);\n  admin?: BaseFieldAdmin & TAdminExtra;\n} & FieldHooks<TValue> &\n  FieldAdminHooks<TValue>;",
     "members": []
   },
   {
@@ -3884,7 +3807,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "workflows",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface WorkflowTransition {\n  /** Stable transition key used by the REST and SDK APIs. */\n  name: string;\n  label: string;\n  from: string | string[];\n  to: string;\n  /** Every listed capability is required. */\n  requiredCapabilities?: string[];\n  /** Require a non-empty comment when performing the transition. */\n  requireComment?: boolean;\n  /** Remove the public snapshot after this transition commits. */\n  unpublish?: boolean;\n}",
+    "signature": "export interface WorkflowTransition {\n  /** Stable transition key used by the REST and SDK APIs. */\n  name: string;\n  label: string;\n  /**\n   * Source state(s) this transition originates from.\n   * Must match names in the workflow's `states` array.\n   */\n  from: string | string[];\n  /**\n   * Target state this transition leads to.\n   * Must match a name in the workflow's `states` array.\n   */\n  to: string;\n  /** Every listed capability is required. */\n  requiredCapabilities?: string[];\n  /** Require a non-empty comment when performing the transition. */\n  requireComment?: boolean;\n  /** Remove the public snapshot after this transition commits. */\n  unpublish?: boolean;\n}",
     "members": [
       {
         "name": "name",
@@ -3899,12 +3822,12 @@ export const references: readonly ReferenceEntry[] = [
       {
         "name": "from",
         "signature": "from: string | string[]",
-        "description": ""
+        "description": "Source state(s) this transition originates from.\nMust match names in the workflow's `states` array."
       },
       {
         "name": "to",
         "signature": "to: string",
-        "description": ""
+        "description": "Target state this transition leads to.\nMust match a name in the workflow's `states` array."
       },
       {
         "name": "requiredCapabilities",

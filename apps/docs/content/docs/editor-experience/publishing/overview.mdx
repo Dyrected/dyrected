@@ -559,7 +559,15 @@ export interface WorkflowTransition {
   /** Stable transition key used by the REST and SDK APIs. */
   name: string;
   label: string;
+  /**
+   * Source state(s) this transition originates from.
+   * Must match names in the workflow's `states` array.
+   */
   from: string | string[];
+  /**
+   * Target state this transition leads to.
+   * Must match a name in the workflow's `states` array.
+   */
   to: string;
   /** Every listed capability is required. */
   requiredCapabilities?: string[];
@@ -574,8 +582,8 @@ export interface WorkflowTransition {
 | --- | --- |
 | <code>name</code> (required) | Stable transition key used by the REST and SDK APIs. |
 | <code>label</code> (required) |  |
-| <code>from</code> (required) |  |
-| <code>to</code> (required) |  |
+| <code>from</code> (required) | Source state(s) this transition originates from. Must match names in the workflow's &#96;states&#96; array. |
+| <code>to</code> (required) | Target state this transition leads to. Must match a name in the workflow's &#96;states&#96; array. |
 | <code>requiredCapabilities</code> (optional) | Every listed capability is required. |
 | <code>requireComment</code> (optional) | Require a non-empty comment when performing the transition. |
 | <code>unpublish</code> (optional) | Remove the public snapshot after this transition commits. |

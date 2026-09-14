@@ -12889,7 +12889,15 @@ export interface WorkflowTransition {
   /** Stable transition key used by the REST and SDK APIs. */
   name: string;
   label: string;
+  /**
+   * Source state(s) this transition originates from.
+   * Must match names in the workflow's `states` array.
+   */
   from: string | string[];
+  /**
+   * Target state this transition leads to.
+   * Must match a name in the workflow's `states` array.
+   */
   to: string;
   /** Every listed capability is required. */
   requiredCapabilities?: string[];
@@ -12904,8 +12912,8 @@ export interface WorkflowTransition {
 | --- | --- |
 | <code>name</code> (required) | Stable transition key used by the REST and SDK APIs. |
 | <code>label</code> (required) |  |
-| <code>from</code> (required) |  |
-| <code>to</code> (required) |  |
+| <code>from</code> (required) | Source state(s) this transition originates from. Must match names in the workflow's &#96;states&#96; array. |
+| <code>to</code> (required) | Target state this transition leads to. Must match a name in the workflow's &#96;states&#96; array. |
 | <code>requiredCapabilities</code> (optional) | Every listed capability is required. |
 | <code>requireComment</code> (optional) | Require a non-empty comment when performing the transition. |
 | <code>unpublish</code> (optional) | Remove the public snapshot after this transition commits. |
@@ -20943,9 +20951,13 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 ## ArrayField
 
 A repeatable list of rows that all share the same `fields`, stored as an array of objects.
+Requires `fields` to define the structure of each row.
 
 ```ts
-export type ArrayField = TypedField<"array", unknown>;
+export type ArrayField = TypedField<"array", unknown> & {
+  /** Child fields that make up each row in the array (required). */
+  fields: Field[];
+};
 ```
 
 ---
@@ -21203,9 +21215,19 @@ export interface Block {
 ## BlocksField
 
 Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`.
+Requires either inline `blocks` definitions or `blockReferences` pointing to shared block definitions.
 
 ```ts
-export type BlocksField = TypedField<"blocks", unknown>;
+export type BlocksField = (
+  | (TypedField<"blocks", unknown> & {
+      /** Inline block definitions (required unless blockReferences is set). */
+      blocks: Block[];
+    })
+  | (TypedField<"blocks", unknown> & {
+      /** References to shared block definitions from the root config (required unless blocks is set). */
+      blockReferences: string[];
+    })
+);
 ```
 
 
@@ -21683,10 +21705,15 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 
 ## ImageField
 
-A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.
+A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs.
+Requires `relationTo` to specify the target collection.
+Use `hasMany` for multiple relationships.
 
 ```ts
-export type ImageField = TypedField<"image", string | string[]>;
+export type ImageField = TypedField<"image", string | string[]> & {
+  /** Target collection slug (required for image fields). */
+  relationTo: string;
+};
 ```
 
 ---
@@ -21741,10 +21768,17 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 
 ## JoinField
 
-A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document.
+A virtual reverse relationship that surfaces documents pointing back at this one.
+Read-only; nothing is stored on this document.
+Requires `collection` (target collection slug) and `on` (back-reference field name).
 
 ```ts
-export type JoinField = TypedField<"join", unknown, JoinFieldAdmin>;
+export type JoinField = TypedField<"join", unknown, JoinFieldAdmin> & {
+  /** Target collection slug (required for join fields). */
+  collection: string;
+  /** Back-reference field name on the joined collection (required for join fields). */
+  on: string;
+};
 ```
 
 ---
@@ -21878,6 +21912,7 @@ export type DisplayTone =
 ## MultiSelectField
 
 Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.
+Should include either static `options` or dynamic option configuration via the base FieldBase type.
 
 ```ts
 export type MultiSelectField = TypedField<
@@ -22161,9 +22196,13 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 ## ObjectField
 
 A group of nested `fields` stored as an embedded object under this field's `name`.
+Requires `fields` to define the structure of the object.
 
 ```ts
-export type ObjectField = TypedField<"object", unknown>;
+export type ObjectField = TypedField<"object", unknown> & {
+  /** Child fields that make up the object structure (required). */
+  fields: Field[];
+};
 ```
 
 ---
@@ -22424,7 +22463,7 @@ export interface FieldBase {
   required?: boolean;
   /** Whether values for this field must be unique across the collection. */
   unique?: boolean;
-  /** Default value used when a new document omits this field. */
+  /** Default value: literal value or function computed from context. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
   options?:
@@ -22487,7 +22526,7 @@ export interface FieldBase {
 | <code>label</code> (optional) | Human-readable label shown in the Admin UI. |
 | <code>required</code> (optional) | Whether the field must have a value when saving. |
 | <code>unique</code> (optional) | Whether values for this field must be unique across the collection. |
-| <code>defaultValue</code> (optional) | Default value used when a new document omits this field. |
+| <code>defaultValue</code> (optional) | Default value: literal value or function computed from context. |
 | <code>options</code> (optional) | Static or dynamic option source for supported selection fields. |
 | <code>relationTo</code> (optional) | Target collection slug for &#96;relationship&#96; fields. |
 | <code>hasMany</code> (optional) | Whether the field stores multiple values instead of one. |
@@ -22604,8 +22643,10 @@ export type TypedField<
   TType extends FieldType,
   TValue,
   TAdminExtra = Record<never, never>,
-> = Omit<FieldBase, "admin"> & {
+> = Omit<FieldBase, "admin" | "defaultValue"> & {
   type: TType;
+  /** Default value: literal value, parameterless function, or function taking context. */
+  defaultValue?: TValue | (() => TValue) | ((context: DefaultValueContext) => TValue);
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &
   FieldAdminHooks<TValue>;
@@ -22757,6 +22798,7 @@ export type OptionFormat =
 ## RadioField
 
 A single choice shown as radio buttons, stored as the chosen value.
+Should include either static `options` or dynamic option configuration via the base FieldBase type.
 
 ```ts
 export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
@@ -22820,10 +22862,15 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 
 ## RelationshipField
 
-A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.
+A reference to one or more documents in another collection, stored as an ID or array of IDs.
+Requires `relationTo` to specify the target collection.
+Use `hasMany` for multiple relationships.
 
 ```ts
-export type RelationshipField = TypedField<"relationship", string | string[]>;
+export type RelationshipField = TypedField<"relationship", string | string[]> & {
+  /** Target collection slug (required for relationship fields). */
+  relationTo: string;
+};
 ```
 
 ---
@@ -23157,6 +23204,7 @@ export type OptionFormat =
 ## SelectField
 
 A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.
+Should include either static `options` or dynamic option configuration via the base FieldBase type.
 
 ```ts
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;

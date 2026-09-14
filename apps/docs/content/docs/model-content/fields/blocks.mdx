@@ -252,9 +252,19 @@ export interface Block {
 ## BlocksField
 
 Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`.
+Requires either inline `blocks` definitions or `blockReferences` pointing to shared block definitions.
 
 ```ts
-export type BlocksField = TypedField<"blocks", unknown>;
+export type BlocksField = (
+  | (TypedField<"blocks", unknown> & {
+      /** Inline block definitions (required unless blockReferences is set). */
+      blocks: Block[];
+    })
+  | (TypedField<"blocks", unknown> & {
+      /** References to shared block definitions from the root config (required unless blocks is set). */
+      blockReferences: string[];
+    })
+);
 ```
 
 

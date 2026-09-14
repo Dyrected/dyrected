@@ -23,6 +23,7 @@ import {
   displayDivider,
   displayText,
   defineTab,
+  defineKanbanView,
   z,
 } from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
@@ -1139,7 +1140,13 @@ const recordPaymentAction = defineAction({
       name: "amountPaid",
       label: "Amount Paid (NGN)",
       required: true,
-      defaultValue: (context: { doc?: Record<string, any>; docs?: Record<string, any>[]; user?: any; siblingData?: any; data?: any }) => {
+      defaultValue: (context: {
+        doc?: Record<string, any>;
+        docs?: Record<string, any>[];
+        user?: any;
+        siblingData?: any;
+        data?: any;
+      }) => {
         const quantity = Number(context?.doc?.asoebiQuantity ?? context?.data?.asoebiQuantity) || 1;
         return quantity * 25000;
       },
@@ -1397,7 +1404,7 @@ const GuestResponses = defineCollection({
     }),
 
     // 2. Kanban board for outfit fulfillment
-    defineView({
+    defineKanbanView({
       slug: "asoebi-pipeline",
       label: "Asoebi Fulfillment",
       icon: "Shirt",
