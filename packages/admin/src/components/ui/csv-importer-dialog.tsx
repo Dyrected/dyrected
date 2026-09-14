@@ -25,7 +25,7 @@ export function CsvImporterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:dy-max-w-2xl">
+      <DialogContent className="sm:dy-max-w-2xl md:dy-max-w-4xl lg:dy-max-w-5xl">
         <DialogHeader>
           <DialogTitle>Import CSV Data</DialogTitle>
           <DialogDescription>
