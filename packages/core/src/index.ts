@@ -17,37 +17,23 @@ import type {
   AuthDocFields,
   UploadDocFields,
 } from "./types/index.js";
+import { asCollection } from "./types/readonly-fix.js";
 
-type TopLevelFieldName<TFields extends readonly Field[]> = Extract<
-  TFields[number],
-  { name: string }
->["name"];
+type TopLevelFieldName<TFields extends readonly Field[]> = Extract<TFields[number], { name: string }>["name"];
 
-type InvalidReference<
-  TLabel extends string,
-  TReceived,
-  TExpected extends string,
-> = {
+type InvalidReference<TLabel extends string, TReceived, TExpected extends string> = {
   __dyrected_error__: `Invalid ${TLabel}`;
   __dyrected_received__: TReceived;
   __dyrected_expected__: TExpected;
 };
 
-type TypedReference<
-  TValue,
-  TExpected extends string,
-  TLabel extends string,
-> = TValue extends undefined
+type TypedReference<TValue, TExpected extends string, TLabel extends string> = TValue extends undefined
   ? undefined
   : TValue extends TExpected
     ? TValue
     : InvalidReference<TLabel, TValue, TExpected>;
 
-type TypedReferenceList<
-  TValue,
-  TExpected extends string,
-  TLabel extends string,
-> = TValue extends readonly unknown[]
+type TypedReferenceList<TValue, TExpected extends string, TLabel extends string> = TValue extends readonly unknown[]
   ? {
       [K in keyof TValue]: TypedReference<TValue[K], TExpected, TLabel>;
     }
@@ -57,10 +43,7 @@ type TypedCollectionAdmin<
   TFields extends readonly Field[],
   TDoc extends object,
   TAdmin extends NonNullable<CollectionConfig<TDoc>["admin"]> | undefined,
-> = Omit<
-  NonNullable<CollectionConfig<TDoc>["admin"]>,
-  "useAsTitle" | "defaultColumns" | "searchableFields"
-> & {
+> = Omit<NonNullable<CollectionConfig<TDoc>["admin"]>, "useAsTitle" | "defaultColumns" | "searchableFields"> & {
   useAsTitle?: TypedReference<
     PropertyType<NonNullable<TAdmin>, "useAsTitle">,
     TopLevelFieldName<TFields>,
@@ -81,10 +64,7 @@ type TypedCollectionAdmin<
 type TypedNestedFieldAdmin<
   TFields extends readonly Field[],
   TAdmin extends NonNullable<Field["admin"]> | undefined,
-> = Omit<
-  NonNullable<Field["admin"]>,
-  "useAsTitle"
-> & {
+> = Omit<NonNullable<Field["admin"]>, "useAsTitle"> & {
   useAsTitle?: TypedReference<
     PropertyType<NonNullable<TAdmin>, "useAsTitle">,
     TopLevelFieldName<TFields>,
@@ -100,31 +80,18 @@ type PropertyType<T, K extends PropertyKey> = T extends {
 
 type PolicyNames<TPolicies> = Extract<keyof NonNullable<TPolicies>, string>;
 
-type TypedPolicyReference<
-  TPolicyNames extends string,
-  TPolicy extends string | undefined,
-> = {
+type TypedPolicyReference<TPolicyNames extends string, TPolicy extends string | undefined> = {
   policy: TypedReference<TPolicy, TPolicyNames, "policy name">;
   params?: Record<string, unknown>;
 };
 
 type TypedAccessRule<TRule, TPolicyNames extends string> =
   | Exclude<TRule, { policy: string }>
-  | TypedPolicyReference<
-      TPolicyNames,
-      Extract<PropertyType<TRule, "policy">, string>
-    >;
+  | TypedPolicyReference<TPolicyNames, Extract<PropertyType<TRule, "policy">, string>>;
 
-type RetypeAccessObject<
-  TAccess,
-  TKeys extends PropertyKey,
-  TPolicyNames extends string,
-> = TAccess extends object
+type RetypeAccessObject<TAccess, TKeys extends PropertyKey, TPolicyNames extends string> = TAccess extends object
   ? Omit<TAccess, Extract<TKeys, keyof TAccess>> & {
-      [K in Extract<TKeys, keyof TAccess>]?: TypedAccessRule<
-        PropertyType<TAccess, K>,
-        TPolicyNames
-      >;
+      [K in Extract<TKeys, keyof TAccess>]?: TypedAccessRule<PropertyType<TAccess, K>, TPolicyNames>;
     }
   : TAccess;
 
@@ -134,10 +101,7 @@ type TypedFieldAccess<TAccess, TPolicyNames extends string> = RetypeAccessObject
   TPolicyNames
 >;
 
-type TypedCollectionAccess<
-  TAccess,
-  TPolicyNames extends string,
-> = RetypeAccessObject<
+type TypedCollectionAccess<TAccess, TPolicyNames extends string> = RetypeAccessObject<
   TAccess,
   "read" | "create" | "update" | "delete" | "readAudit",
   TPolicyNames
@@ -151,9 +115,7 @@ type TypedGlobalAccess<TAccess, TPolicyNames extends string> = RetypeAccessObjec
 
 type SlugOf<T> = T extends { slug: infer TSlug extends string } ? TSlug : never;
 
-type CollectionSlug<TCollections extends readonly unknown[]> = SlugOf<
-  TCollections[number]
->;
+type CollectionSlug<TCollections extends readonly unknown[]> = SlugOf<TCollections[number]>;
 
 type BlockSlug<TBlocks extends readonly unknown[]> = SlugOf<TBlocks[number]>;
 
@@ -165,19 +127,17 @@ type AuthCollectionSlug<TCollections extends readonly unknown[]> = SlugOf<
   Extract<TCollections[number], { auth: unknown }>
 >;
 
-type CollectionBySlug<
-  TCollections extends readonly unknown[],
-  TSlug extends string,
-> = Extract<TCollections[number], { slug: TSlug }>;
+type CollectionBySlug<TCollections extends readonly unknown[], TSlug extends string> = Extract<
+  TCollections[number],
+  { slug: TSlug }
+>;
 
-type CollectionFieldNamesBySlug<
-  TCollections extends readonly unknown[],
-  TSlug extends string,
-> = CollectionBySlug<TCollections, TSlug> extends {
-  fields: infer TFields extends readonly Field[];
-}
-  ? TopLevelFieldName<TFields>
-  : never;
+type CollectionFieldNamesBySlug<TCollections extends readonly unknown[], TSlug extends string> =
+  CollectionBySlug<TCollections, TSlug> extends {
+    fields: infer TFields extends readonly Field[];
+  }
+    ? TopLevelFieldName<TFields>
+    : never;
 
 type WorkflowStateName<TWorkflow> = TWorkflow extends {
   states: infer TStates extends readonly unknown[];
@@ -187,24 +147,13 @@ type WorkflowStateName<TWorkflow> = TWorkflow extends {
 
 type TypedWorkflowStateValue<TValue, TWorkflow> = TValue extends readonly unknown[]
   ? {
-      [K in keyof TValue]: TypedReference<
-        TValue[K],
-        WorkflowStateName<TWorkflow>,
-        "workflow state name"
-      >;
+      [K in keyof TValue]: TypedReference<TValue[K], WorkflowStateName<TWorkflow>, "workflow state name">;
     }
   : TypedReference<TValue, WorkflowStateName<TWorkflow>, "workflow state name">;
 
-type TypedWorkflowTransition<TTransition, TWorkflow> = Omit<
-  TTransition,
-  "from" | "to"
-> & {
+type TypedWorkflowTransition<TTransition, TWorkflow> = Omit<TTransition, "from" | "to"> & {
   from: TypedWorkflowStateValue<PropertyType<TTransition, "from">, TWorkflow>;
-  to: TypedReference<
-    PropertyType<TTransition, "to">,
-    WorkflowStateName<TWorkflow>,
-    "workflow state name"
-  >;
+  to: TypedReference<PropertyType<TTransition, "to">, WorkflowStateName<TWorkflow>, "workflow state name">;
 };
 
 type TypedWorkflow<TWorkflow> = TWorkflow extends {
@@ -222,10 +171,7 @@ type TypedWorkflow<TWorkflow> = TWorkflow extends {
         "workflow state name"
       >;
       transitions: {
-        [K in keyof TTransitions]: TypedWorkflowTransition<
-          TTransitions[K],
-          TWorkflow
-        >;
+        [K in keyof TTransitions]: TypedWorkflowTransition<TTransitions[K], TWorkflow>;
       };
     }
   : TWorkflow;
@@ -263,11 +209,7 @@ type TypedFieldForConfig<
   TPolicyNames extends string,
 > = TField extends { type: "relationship" }
   ? MutableOmit<TField, "relationTo" | "access"> & {
-      relationTo?: TypedReference<
-        PropertyType<TField, "relationTo">,
-        CollectionSlug<TCollections>,
-        "collection slug"
-      >;
+      relationTo?: TypedReference<PropertyType<TField, "relationTo">, CollectionSlug<TCollections>, "collection slug">;
       access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
     }
   : TField extends { type: "image" }
@@ -297,104 +239,55 @@ type TypedFieldForConfig<
             >;
             on?: TypedReference<
               PropertyType<TField, "on">,
-              CollectionFieldNamesBySlug<
-                TCollections,
-                Extract<PropertyType<TField, "collection">, string>
-              > | TopLevelFieldName<
-                Extract<
-                  CollectionBySlug<
-                    TCollections,
-                    CollectionSlug<TCollections>
-                  >,
-                  { fields: readonly Field[] }
-                >["fields"]
-              >,
+              | CollectionFieldNamesBySlug<TCollections, Extract<PropertyType<TField, "collection">, string>>
+              | TopLevelFieldName<
+                  Extract<
+                    CollectionBySlug<TCollections, CollectionSlug<TCollections>>,
+                    { fields: readonly Field[] }
+                  >["fields"]
+                >,
               "field name"
             >;
-            access?: TypedFieldAccess<
-              NonNullable<TField["access"]>,
-              TPolicyNames
-            >;
+            access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
           }
         : TField extends { type: "blocks" }
           ? MutableOmit<TField, "blocks" | "blockReferences" | "access"> & {
               blocks?: TField["blocks"] extends readonly Block[]
-                ? TypedBlocksForConfig<
-                    TField["blocks"],
-                    TCollections,
-                    TBlocks,
-                    TPolicyNames
-                  >
+                ? TypedBlocksForConfig<TField["blocks"], TCollections, TBlocks, TPolicyNames>
                 : TField["blocks"];
               blockReferences?: TypedReferenceList<
                 PropertyType<TField, "blockReferences">,
                 BlockSlug<TBlocks>,
                 "block slug"
               >;
-              access?: TypedFieldAccess<
-                NonNullable<TField["access"]>,
-                TPolicyNames
-              >;
+              access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
             }
           : TField extends {
                 type: "array";
                 fields: infer TSubFields extends readonly Field[];
               }
             ? MutableOmit<TField, "fields" | "access" | "admin"> & {
-                fields: TypedFields<
-                  TSubFields,
-                  TCollections,
-                  TBlocks,
-                  TPolicyNames
-                >;
-                access?: TypedFieldAccess<
-                  NonNullable<TField["access"]>,
-                  TPolicyNames
-                >;
-                admin?: TypedNestedFieldAdmin<
-                  TSubFields,
-                  PropertyType<TField, "admin">
-                >;
+                fields: TypedFields<TSubFields, TCollections, TBlocks, TPolicyNames>;
+                access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
+                admin?: TypedNestedFieldAdmin<TSubFields, PropertyType<TField, "admin">>;
               }
             : TField extends {
                   type: "object";
                   fields: infer TSubFields extends readonly Field[];
                 }
               ? MutableOmit<TField, "fields" | "access" | "admin"> & {
-                  fields: TypedFields<
-                    TSubFields,
-                    TCollections,
-                    TBlocks,
-                    TPolicyNames
-                  >;
-                  access?: TypedFieldAccess<
-                    NonNullable<TField["access"]>,
-                    TPolicyNames
-                  >;
-                  admin?: TypedNestedFieldAdmin<
-                    TSubFields,
-                    PropertyType<TField, "admin">
-                  >;
+                  fields: TypedFields<TSubFields, TCollections, TBlocks, TPolicyNames>;
+                  access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
+                  admin?: TypedNestedFieldAdmin<TSubFields, PropertyType<TField, "admin">>;
                 }
-          : TField extends { fields: infer TSubFields extends readonly Field[] }
-            ? MutableOmit<TField, "fields" | "access"> & {
-                fields: TypedFields<
-                  TSubFields,
-                  TCollections,
-                  TBlocks,
-                  TPolicyNames
-                >;
-                access?: TypedFieldAccess<
-                  NonNullable<TField["access"]>,
-                  TPolicyNames
-                >;
-              }
-            : MutableOmit<TField, "access"> & {
-                access?: TypedFieldAccess<
-                  NonNullable<TField["access"]>,
-                  TPolicyNames
-                >;
-              };
+              : TField extends { fields: infer TSubFields extends readonly Field[] }
+                ? MutableOmit<TField, "fields" | "access"> & {
+                    fields: TypedFields<TSubFields, TCollections, TBlocks, TPolicyNames>;
+                    access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
+                  }
+                : MutableOmit<TField, "access"> & {
+                    access?: TypedFieldAccess<NonNullable<TField["access"]>, TPolicyNames>;
+                  };
 
 type TypedFields<
   TFields extends readonly Field[],
@@ -416,10 +309,7 @@ type TypedCollectionForConfig<
   fields: TCollection["fields"] extends readonly Field[]
     ? TypedFields<TCollection["fields"], TCollections, TBlocks, TPolicyNames>
     : TCollection["fields"];
-  access?: TypedCollectionAccess<
-    NonNullable<TCollection["access"]>,
-    TPolicyNames
-  >;
+  access?: TypedCollectionAccess<NonNullable<TCollection["access"]>, TPolicyNames>;
   workflow?: TypedWorkflow<NonNullable<TCollection["workflow"]>>;
   views?: TCollection["views"];
 };
@@ -431,12 +321,7 @@ type TypedCollections<
   TPolicyNames extends string,
 > = {
   [K in keyof TCollections]: TCollections[K] extends CollectionConfig<any>
-    ? TypedCollectionForConfig<
-        TCollections[K],
-        TAllCollections,
-        TBlocks,
-        TPolicyNames
-      >
+    ? TypedCollectionForConfig<TCollections[K], TAllCollections, TBlocks, TPolicyNames>
     : TCollections[K];
 };
 
@@ -463,10 +348,7 @@ type TypedGlobals<
     : TGlobals[K];
 };
 
-type TypedAdminAuthConfig<
-  TAdminAuth,
-  TCollections extends readonly CollectionConfig<any>[],
-> = TAdminAuth extends object
+type TypedAdminAuthConfig<TAdminAuth, TCollections extends readonly CollectionConfig<any>[]> = TAdminAuth extends object
   ? Omit<TAdminAuth, "collectionSlug"> & {
       collectionSlug?: TypedReference<
         PropertyType<TAdminAuth, "collectionSlug">,
@@ -509,23 +391,13 @@ type TypedAdminAuthConfig<
 export function defineCollection<
   const TSlug extends string,
   const TFields extends Field[],
-  const TAdmin extends NonNullable<
-    CollectionConfig<
-      Prettify<
-        { id: string } & InferDocShape<TFields> &
-          SystemDocFields &
-          AuthDocFields
+  const TAdmin extends
+    | NonNullable<
+        CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>["admin"]
       >
-    >["admin"]
-  > | undefined,
+    | undefined,
   const TConfig extends Omit<
-    CollectionConfig<
-      Prettify<
-        { id: string } & InferDocShape<TFields> &
-          SystemDocFields &
-          AuthDocFields
-      >
-    >,
+    CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>,
     "fields" | "auth" | "admin"
   > & {
     slug: TSlug;
@@ -533,36 +405,22 @@ export function defineCollection<
     auth: true | AuthConfig;
     admin?: TypedCollectionAdmin<
       TFields,
-      Prettify<
-        { id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields
-      >,
+      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>,
       TAdmin
     >;
   },
->(
-  config: TConfig,
-): TConfig;
+>(config: TConfig): TConfig;
 // Overload 2: upload/media collection — infer fields + add system + upload fields
 export function defineCollection<
   const TSlug extends string,
   const TFields extends Field[],
-  const TAdmin extends NonNullable<
-    CollectionConfig<
-      Prettify<
-        { id: string } & InferDocShape<TFields> &
-          SystemDocFields &
-          UploadDocFields
+  const TAdmin extends
+    | NonNullable<
+        CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>["admin"]
       >
-    >["admin"]
-  > | undefined,
+    | undefined,
   const TConfig extends Omit<
-    CollectionConfig<
-      Prettify<
-        { id: string } & InferDocShape<TFields> &
-          SystemDocFields &
-          UploadDocFields
-      >
-    >,
+    CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>,
     "fields" | "upload" | "admin"
   > & {
     slug: TSlug;
@@ -570,49 +428,34 @@ export function defineCollection<
     upload: true;
     admin?: TypedCollectionAdmin<
       TFields,
-      Prettify<
-        { id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields
-      >,
+      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>,
       TAdmin
     >;
   },
->(
-  config: TConfig,
-): TConfig;
+>(config: TConfig): TConfig;
 // Overload 3: base collection — infer fields + add system fields
 export function defineCollection<
   const TSlug extends string,
   const TFields extends Field[],
-  const TAdmin extends NonNullable<
-    CollectionConfig<
-      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>
-    >["admin"]
-  > | undefined,
+  const TAdmin extends
+    | NonNullable<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>["admin"]>
+    | undefined,
   const TConfig extends Omit<
-    CollectionConfig<
-      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>
-    >,
+    CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>,
     "fields" | "admin"
   > & {
     slug: TSlug;
     fields: TFields;
-    admin?: TypedCollectionAdmin<
-      TFields,
-      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>,
-      TAdmin
-    >;
+    admin?: TypedCollectionAdmin<TFields, Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>, TAdmin>;
   },
->(
+>(config: TConfig): TConfig;
+// Overload 4: explicit TDoc
+export function defineCollection<TDoc extends object, const TConfig extends CollectionConfig<TDoc>>(
   config: TConfig,
 ): TConfig;
-// Overload 4: explicit TDoc
-export function defineCollection<
-  TDoc extends object,
-  const TConfig extends CollectionConfig<TDoc>,
->(config: TConfig): TConfig;
 // Implementation
 export function defineCollection(config: unknown): unknown {
-  return config;
+  return asCollection(config as any);
 }
 
 /**
@@ -650,10 +493,7 @@ export function defineGlobal<
   },
 >(config: TConfig): TConfig;
 // Overload 2: explicit TDoc
-export function defineGlobal<
-  TDoc extends object,
-  const TConfig extends GlobalConfig<TDoc>,
->(config: TConfig): TConfig;
+export function defineGlobal<TDoc extends object, const TConfig extends GlobalConfig<TDoc>>(config: TConfig): TConfig;
 // Implementation
 export function defineGlobal(config: unknown): unknown {
   return config;
@@ -673,34 +513,12 @@ export function defineConfig<
   const TGlobals extends readonly GlobalConfig<any>[] = [],
   const TAdminAuth extends DyrectedConfig<TUser>["adminAuth"] | undefined = undefined,
   const TPolicies extends
-    | Record<
-        string,
-        AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean
-      >
-    | undefined = undefined,
+    Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean> | undefined = undefined,
 >(
-  config: Omit<
-    DyrectedConfig<TUser>,
-    "blocks" | "collections" | "globals" | "accessPolicies" | "adminAuth"
-  > & {
-    blocks?: TypedBlocksForConfig<
-      TBlocks,
-      TCollections,
-      TBlocks,
-      PolicyNames<TPolicies>
-    >;
-    collections: TypedCollections<
-      TCollections,
-      TCollections,
-      TBlocks,
-      PolicyNames<TPolicies>
-    >;
-    globals: TypedGlobals<
-      TGlobals,
-      TCollections,
-      TBlocks,
-      PolicyNames<TPolicies>
-    >;
+  config: Omit<DyrectedConfig<TUser>, "blocks" | "collections" | "globals" | "accessPolicies" | "adminAuth"> & {
+    blocks?: TypedBlocksForConfig<TBlocks, TCollections, TBlocks, PolicyNames<TPolicies>>;
+    collections: TypedCollections<TCollections, TCollections, TBlocks, PolicyNames<TPolicies>>;
+    globals: TypedGlobals<TGlobals, TCollections, TBlocks, PolicyNames<TPolicies>>;
     accessPolicies?: TPolicies;
     adminAuth?: TypedAdminAuthConfig<TAdminAuth, TCollections>;
   },
@@ -758,9 +576,8 @@ type FieldOfType<TType extends FieldType> = Extract<Field, { type: TType }>;
  * shapes. Used to generate the `define<Type>Field` helpers below.
  */
 function createFieldDefiner<TType extends FieldType>(type: TType) {
-  return <const T extends Omit<FieldOfType<TType>, "type">>(
-    field: T,
-  ): T & { type: TType } => ({ ...field, type }) as T & { type: TType };
+  return <const T extends Omit<FieldOfType<TType>, "type">>(field: T): T & { type: TType } =>
+    ({ ...field, type }) as T & { type: TType };
 }
 
 /** Define a `text` field. */
@@ -811,9 +628,10 @@ export const defineRowField = createFieldDefiner("row");
  * // ValidSlugs = "posts" | "comments" | "users"
  * ```
  */
-export type ExtractCollectionSlugs<
-  TCollections extends readonly CollectionConfig<any>[]
-> = Extract<TCollections[number], { slug: string }>["slug"];
+export type ExtractCollectionSlugs<TCollections extends readonly CollectionConfig<any>[]> = Extract<
+  TCollections[number],
+  { slug: string }
+>["slug"];
 
 /** Base relationship field definer (internal). */
 const _defineRelationshipFieldBase = createFieldDefiner("relationship");
@@ -838,13 +656,11 @@ const _defineJoinFieldBase = createFieldDefiner("join");
  * ```
  */
 export function defineRelationshipField<TValidSlugs extends string = string>(
-  config: Omit<Omit<Parameters<typeof _defineRelationshipFieldBase>[0], 'type'>, 'relationTo'> & {
+  config: Omit<Omit<Parameters<typeof _defineRelationshipFieldBase>[0], "type">, "relationTo"> & {
     relationTo: TValidSlugs;
-  }
+  },
 ): RelationshipField;
-export function defineRelationshipField(
-  config: Parameters<typeof _defineRelationshipFieldBase>[0]
-): RelationshipField;
+export function defineRelationshipField(config: Parameters<typeof _defineRelationshipFieldBase>[0]): RelationshipField;
 export function defineRelationshipField(config: any): RelationshipField {
   return _defineRelationshipFieldBase(config) as RelationshipField;
 }
@@ -865,13 +681,11 @@ export function defineRelationshipField(config: any): RelationshipField {
  * ```
  */
 export function defineImageField<TValidSlugs extends string = string>(
-  config: Omit<Omit<Parameters<typeof _defineImageFieldBase>[0], 'type'>, 'relationTo'> & {
+  config: Omit<Omit<Parameters<typeof _defineImageFieldBase>[0], "type">, "relationTo"> & {
     relationTo: TValidSlugs;
-  }
+  },
 ): ImageField;
-export function defineImageField(
-  config: Parameters<typeof _defineImageFieldBase>[0]
-): ImageField;
+export function defineImageField(config: Parameters<typeof _defineImageFieldBase>[0]): ImageField;
 export function defineImageField(config: any): ImageField {
   return _defineImageFieldBase(config) as ImageField;
 }
@@ -893,13 +707,11 @@ export function defineImageField(config: any): ImageField {
  * ```
  */
 export function defineJoinField<TValidSlugs extends string = string>(
-  config: Omit<Omit<Parameters<typeof _defineJoinFieldBase>[0], 'type'>, 'collection'> & {
+  config: Omit<Omit<Parameters<typeof _defineJoinFieldBase>[0], "type">, "collection"> & {
     collection: TValidSlugs;
-  }
+  },
 ): JoinField;
-export function defineJoinField(
-  config: Parameters<typeof _defineJoinFieldBase>[0]
-): JoinField;
+export function defineJoinField(config: Parameters<typeof _defineJoinFieldBase>[0]): JoinField;
 export function defineJoinField(config: any): JoinField {
   return _defineJoinFieldBase(config) as JoinField;
 }
@@ -959,5 +771,3 @@ export * from "./utils/tenant.js";
 export * from "./utils/ai-pii.js";
 export * from "./types/ai.js";
 export { z } from "zod";
-
-
