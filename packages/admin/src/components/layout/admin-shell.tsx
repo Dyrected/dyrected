@@ -1051,10 +1051,10 @@ export function AdminShell({
                     <button
                       type="button"
                       onClick={() => setCollapsed(false)}
-                      className="dy-absolute -dy-right-3.5 dy-top-1/2 -dy-translate-y-1/2 dy-z-30 dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-3.5 hover:dy-w-5 dy-rounded-r-md dy-border-y dy-border-r dy-border-border dy-bg-card dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-accent dy-shadow-md hover:dy-shadow-lg dy-transition-all dy-duration-150 dy-cursor-pointer group"
+                      className="dy-absolute -dy-right-4 dy-top-3.5 dy-z-30 dy-flex dy-items-center dy-justify-center dy-h-6 dy-w-6 dy-rounded-none dy-border-l dy-border-border dy-bg-card dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-accent/40 dy-transition-all dy-duration-150 dy-cursor-pointer group"
                       aria-label="Expand sidebar"
                     >
-                      <PanelLeftOpen className="dy-h-3 dy-w-3 dy-transition-transform group-hover:dy-scale-110" />
+                      <PanelLeftOpen className="dy-h-3 dy-w-3 dy-transition-transform group-hover:dy-scale-105" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">

@@ -89,7 +89,7 @@ export function InviteDialog({
           Invite {collectionLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:dy-max-w-lg">
+      <DialogContent className="sm:dy-max-w-lg border-boder">
         <DialogHeader>
           <DialogTitle>Invite {collectionLabel}</DialogTitle>
           <DialogDescription>
