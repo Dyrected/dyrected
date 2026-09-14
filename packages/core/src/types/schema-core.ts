@@ -48,6 +48,19 @@ export interface DynamicOptionsConfig {
   cacheTTL?: number;
 }
 
+export interface DefaultValueContext {
+  /** The document being created or edited. */
+  doc?: Record<string, any>;
+  /** Batch of documents (for bulk operations). */
+  docs?: Record<string, any>[];
+  /** Authenticated user performing the operation. */
+  user?: AuthenticatedUser;
+  /** Values of sibling fields in the same object or array row. */
+  siblingData?: Record<string, any>;
+  /** Incoming field value from the request payload. */
+  data?: any;
+}
+
 export type DynamicOptionItem = string | { label: string; value: unknown };
 
 export interface Block {
@@ -102,7 +115,7 @@ export interface FieldBase {
   required?: boolean;
   /** Whether values for this field must be unique across the collection. */
   unique?: boolean;
-  /** Default value used when a new document omits this field. */
+  /** Default value: literal value or function computed from context. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
   options?:
@@ -293,8 +306,8 @@ export type TypedField<
   TAdminExtra = Record<never, never>,
 > = Omit<FieldBase, "admin" | "defaultValue"> & {
   type: TType;
-  /** Default value must match the field's value type. */
-  defaultValue?: TValue;
+  /** Default value: literal value, parameterless function, or function taking context. */
+  defaultValue?: TValue | (() => TValue) | ((context: DefaultValueContext) => TValue);
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &
   FieldAdminHooks<TValue>;

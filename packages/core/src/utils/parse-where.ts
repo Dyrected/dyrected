@@ -56,10 +56,10 @@ export type WhereOperator =
 /** Top-level where clause. Fields map to operator objects or shorthand scalar values. */
 export type WhereClause = {
   [field: string]: WhereOperator | any;
-  OR?: WhereClause[];
-  or?: WhereClause[];
-  AND?: WhereClause[];
-  and?: WhereClause[];
+  OR?: WhereClause[] | readonly WhereClause[];
+  or?: WhereClause[] | readonly WhereClause[];
+  AND?: WhereClause[] | readonly WhereClause[];
+  and?: WhereClause[] | readonly WhereClause[];
 };
 
 /** Compile-time exhaustiveness guard. Any unhandled operator becomes a type error. */

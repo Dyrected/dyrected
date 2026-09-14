@@ -429,6 +429,31 @@ export function defineView<const T extends DefineViewOptions>(config: T): T {
   return config;
 }
 
+/** Convenience helper for table views. Enforces no view-specific required fields. */
+export function defineTableView(config: DefineTableViewOptions): DefineTableViewOptions {
+  return config;
+}
+
+/** Convenience helper for kanban views. Enforces `groupBy` is provided. */
+export function defineKanbanView(config: DefineKanbanViewOptions): DefineKanbanViewOptions {
+  return config;
+}
+
+/** Convenience helper for calendar views. Enforces `dateField` is provided. */
+export function defineCalendarView(config: DefineCalendarViewOptions): DefineCalendarViewOptions {
+  return config;
+}
+
+/** Convenience helper for gantt views. Enforces `startDateField` and `endDateField` are provided. */
+export function defineGanttView(config: DefineGanttViewOptions): DefineGanttViewOptions {
+  return config;
+}
+
+/** Convenience helper for cards views. Optional `groupBy`. */
+export function defineCardsView(config: DefineCardsViewOptions): DefineCardsViewOptions {
+  return config;
+}
+
 /**
  * Defines a custom workflow action for an operational view.
  *
