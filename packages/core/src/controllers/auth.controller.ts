@@ -4,7 +4,7 @@ import type { DyrectedContext } from "../app.js";
 import type { CollectionConfig } from "../types/index.js";
 import { getLockedUntilMs, resolveAuthLockoutConfig } from "../auth/lockout.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
-import { signCollectionToken, verifyCollectionToken } from "../auth/token.js";
+import { resolveSessionTokenExpiry, signCollectionToken, verifyCollectionToken } from "../auth/token.js";
 import {
   issueAuthSessionToken,
   revokeAllAuthSessions,
@@ -255,6 +255,7 @@ export class AuthController {
       userId: user.id,
       email: user.email,
       collection: this.collection.slug,
+      expiresIn: resolveSessionTokenExpiry(this.collection),
       ip: c.get("clientIp"),
       authSource: "local",
     });
@@ -362,6 +363,7 @@ export class AuthController {
       userId: user.id,
       email: user.email,
       collection: this.collection.slug,
+      expiresIn: resolveSessionTokenExpiry(this.collection),
       ip: c.get("clientIp"),
       authSource: "local",
     });
@@ -467,12 +469,15 @@ export class AuthController {
 
     const tokenPayload = c.get("authTokenPayload");
     if (tokenPayload?.sid) {
-      const token = await signCollectionToken({
-        sub: requestUser.sub,
-        email: requestUser.email,
-        collection: this.collection.slug,
-        sid: tokenPayload.sid,
-      });
+      const token = await signCollectionToken(
+        {
+          sub: requestUser.sub,
+          email: requestUser.email,
+          collection: this.collection.slug,
+          sid: tokenPayload.sid,
+        },
+        resolveSessionTokenExpiry(this.collection),
+      );
 
       return c.json({ token });
     }
@@ -796,6 +801,7 @@ export class AuthController {
       userId: user.id,
       email: inviteeEmail,
       collection: this.collection.slug,
+      expiresIn: resolveSessionTokenExpiry(this.collection),
       ip: c.get("clientIp"),
       authSource: "local",
     });

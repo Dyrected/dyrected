@@ -67,12 +67,13 @@ export const Users = defineCollection({
   auth: {
     maxLoginAttempts: 5,
     lockTime: 15 * 60 * 1000, // 15 minutes
+    tokenExpiration: "12h",
   },
   fields: [{ name: "name", label: "Name", type: "text" }],
 });
 ```
 
-`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds.
+`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds. `tokenExpiration` controls how long session tokens stay valid — it accepts values like `'15m'`, `'12h'`, or `'30d'`, and defaults to `'7d'` when you leave it out.
 
 This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](/docs/deployment-and-operations/production/preventing-abuse).
 
@@ -100,7 +101,7 @@ That means three useful things are true at once:
 - the server re-hydrates the live user document on each request
 - logout, password reset, and password change can revoke the session immediately
 
-Tokens still expire on their own after 7 days by default, but there is a real server-side invalidation point too.
+Tokens still expire on their own after 7 days by default (set `auth.tokenExpiration` to change that), but there is a real server-side invalidation point too.
 
 ## Log in and read the user
 

@@ -3350,12 +3350,13 @@ export const Users = defineCollection({
   auth: {
     maxLoginAttempts: 5,
     lockTime: 15 * 60 * 1000, // 15 minutes
+    tokenExpiration: "12h",
   },
   fields: [{ name: "name", label: "Name", type: "text" }],
 });
 ```
 
-`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds.
+`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds. `tokenExpiration` controls how long session tokens stay valid — it accepts values like `'15m'`, `'12h'`, or `'30d'`, and defaults to `'7d'` when you leave it out.
 
 This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/production/preventing-abuse).
 
@@ -3383,7 +3384,7 @@ That means three useful things are true at once:
 - the server re-hydrates the live user document on each request
 - logout, password reset, and password change can revoke the session immediately
 
-Tokens still expire on their own after 7 days by default, but there is a real server-side invalidation point too.
+Tokens still expire on their own after 7 days by default (set `auth.tokenExpiration` to change that), but there is a real server-side invalidation point too.
 
 ## Log in and read the user
 
@@ -4537,6 +4538,37 @@ export default defineConfig({
   globals: [],
 })
 ```
+
+### Reuse the auth helpers in your own server code
+
+If you build a custom endpoint around the auth flows, you do not need to reimplement the token and email plumbing. Import the same helpers Dyrected uses from `@dyrected/core/server`:
+
+- `signCollectionToken`, `verifyCollectionToken`, `decodeCollectionToken` for issuing, checking, and reading session and purpose tokens
+- `sendEmail`, `buildResetPasswordEmail`, `buildInviteEmail`, `buildWelcomeEmail`, `buildPasswordChangedEmail` for delivery and the default templates
+- `hashPassword`, `verifyPassword` for password storage and checks
+- `revokeAuthSession`, `revokeAllAuthSessions`, `getAuthSession` for server-side session control
+
+For example, a custom forgot-password route can mint a reset token, render the default template (including any `templates.resetPassword` override you configured), and send it:
+
+```ts
+
+  buildResetPasswordEmail,
+  sendEmail,
+  signCollectionToken,
+} from '@dyrected/core/server'
+
+const token = await signCollectionToken(
+  { sub: user.id, email: user.email, collection: 'users', purpose: 'reset' },
+  '1h',
+)
+const { subject, html } = buildResetPasswordEmail(config, {
+  token,
+  url: `https://myapp.com/reset?token=${token}`,
+})
+await sendEmail(config, { to: user.email, subject, html })
+```
+
+Signing needs `DYRECTED_JWT_SECRET`, the same secret from [Authentication Overview](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/overview). To read a token without verifying it (for example, to decide which flow it belongs to before doing real work), use `decodeCollectionToken` — it returns the payload or `null` when the token is malformed, and it never throws.
 
 ### Keep transport stable, swap templates later
 

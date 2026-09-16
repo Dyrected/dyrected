@@ -10,6 +10,7 @@ import {
 } from "jose";
 import type { DyrectedContext } from "../app.js";
 import { issueAuthSessionToken, revokeAllAuthSessions, revokeAuthSession } from "../auth/sessions.js";
+import { resolveSessionTokenExpiry } from "../auth/token.js";
 import { hashPassword } from "../auth/password.js";
 import type {
   AdminAuthProvider,
@@ -311,6 +312,7 @@ export class AdminAuthController {
       userId: user.id,
       email: user.email,
       collection: adminCollection.slug,
+      expiresIn: resolveSessionTokenExpiry(adminCollection),
       providerId: provider.id,
       authSource: "external",
       ip: c.get("clientIp"),

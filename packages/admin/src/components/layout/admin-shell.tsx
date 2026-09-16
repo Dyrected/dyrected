@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
   Database,
@@ -968,6 +968,25 @@ function useUpdateCheck() {
   };
 }
 
+const DEFAULT_SIDEBAR_WIDTH = 220
+const MIN_SIDEBAR_WIDTH = 180
+const MAX_SIDEBAR_WIDTH = 420
+const SIDEBAR_WIDTH_STORAGE_KEY = "dyrected_sidebar_width"
+const SIDEBAR_WIDTH_PREF_KEY = "layout:admin:sidebar-width"
+const COLLAPSED_SIDEBAR_WIDTH = 56
+
+function clampSidebarWidth(value: number) {
+  if (Number.isNaN(value)) return DEFAULT_SIDEBAR_WIDTH
+  return Math.max(MIN_SIDEBAR_WIDTH, Math.min(value, MAX_SIDEBAR_WIDTH))
+}
+
+function readStoredSidebarWidth() {
+  if (typeof window === "undefined") return DEFAULT_SIDEBAR_WIDTH
+  const saved = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)
+  if (!saved) return DEFAULT_SIDEBAR_WIDTH
+  return clampSidebarWidth(parseInt(saved, 10))
+}
+
 export function AdminShell({
   children,
   isEmbedded = false,
@@ -975,7 +994,7 @@ export function AdminShell({
   children: React.ReactNode
   isEmbedded?: boolean
 }) {
-  const { logout } = useDyrected()
+  const { logout, client } = useDyrected()
   const location = useLocation()
   const updateInfo = useUpdateCheck()
 
@@ -984,6 +1003,97 @@ export function AdminShell({
   const sidebarControl = React.useMemo(() => ({ collapsed, setCollapsed }), [collapsed])
   // Mobile: open/close overlay
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Resizable desktop sidebar width (mirrors the AI panel resize behaviour).
+  // Source of truth is the server-backed global preference so the width
+  // follows the workspace; localStorage is only the instant cache for first
+  // paint and offline fallback.
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => readStoredSidebarWidth())
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false)
+  const sidebarWidthRef = useRef(sidebarWidth)
+
+  // Keep the ref mirror in sync for use inside mouse handlers.
+  useEffect(() => {
+    sidebarWidthRef.current = sidebarWidth
+  }, [sidebarWidth])
+
+  // Hydrate from the global preference once the client is available.
+  useEffect(() => {
+    if (!client?.getPreference) return
+    let cancelled = false
+    client
+      .getPreference<number>(SIDEBAR_WIDTH_PREF_KEY, { scope: "global" })
+      .then((result) => {
+        if (cancelled || result.value == null) return
+        const next = clampSidebarWidth(Math.round(Number(result.value)))
+        setSidebarWidth((prev) => (prev === next ? prev : next))
+        try {
+          window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(next))
+        } catch {
+          // Ignore cache write failures (e.g. private mode); server value wins.
+        }
+      })
+      .catch(() => {
+        // Offline or unauthorized: keep the local cache.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [client])
+
+  const persistSidebarWidth = useCallback(
+    (width: number) => {
+      const rounded = Math.round(width)
+      try {
+        window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(rounded))
+      } catch {
+        // Ignore cache write failures; the server preference is the source of truth.
+      }
+      if (client?.setPreference) {
+        client.setPreference(SIDEBAR_WIDTH_PREF_KEY, rounded, { scope: "global" }).catch(() => {
+          // Ignore persistence failures; the local cache already updated.
+        })
+      }
+    },
+    [client]
+  )
+
+  const startSidebarResizing = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setIsResizingSidebar(true)
+      const startX = e.clientX
+      const startWidth = sidebarWidthRef.current
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const deltaX = moveEvent.clientX - startX
+        const next = clampSidebarWidth(startWidth + deltaX)
+        sidebarWidthRef.current = next
+        setSidebarWidth((prev) => (prev === next ? prev : next))
+      }
+
+      const onMouseUp = () => {
+        setIsResizingSidebar(false)
+        document.removeEventListener("mousemove", onMouseMove)
+        document.removeEventListener("mouseup", onMouseUp)
+        document.body.style.cursor = ""
+        document.body.style.userSelect = ""
+        persistSidebarWidth(sidebarWidthRef.current)
+      }
+
+      document.body.style.cursor = "col-resize"
+      document.body.style.userSelect = "none"
+      document.addEventListener("mousemove", onMouseMove)
+      document.addEventListener("mouseup", onMouseUp)
+    },
+    [persistSidebarWidth]
+  )
+
+  const handleResetSidebarWidth = useCallback(() => {
+    sidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH
+    setSidebarWidth((prev) => (prev === DEFAULT_SIDEBAR_WIDTH ? prev : DEFAULT_SIDEBAR_WIDTH))
+    persistSidebarWidth(DEFAULT_SIDEBAR_WIDTH)
+  }, [persistSidebarWidth])
 
   // Close the mobile sidebar whenever the route changes. Depends only on the
   // path (not mobileOpen) so opening the drawer never re-triggers this; the
@@ -1027,9 +1137,10 @@ export function AdminShell({
             {/* Desktop Sidebar with Expand Lip Trigger */}
             <div className="dy-relative dy-hidden md:dy-flex dy-h-full dy-shrink-0">
               <aside
+                style={{ width: collapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth }}
                 className={cn(
-                  "dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
-                  collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
+                  "dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-overflow-hidden",
+                  isResizingSidebar ? "dy-transition-none" : "dy-transition-all dy-duration-300"
                 )}
               >
                 <SidebarInner
@@ -1043,6 +1154,27 @@ export function AdminShell({
                   updateInfo={updateInfo}
                 />
               </aside>
+
+              {/* VS Code-style resize handle on the right border (mirrors AI panel) */}
+              {!collapsed && (
+                <div
+                  onMouseDown={startSidebarResizing}
+                  onDoubleClick={handleResetSidebarWidth}
+                  title={`Drag to resize menu width, double-click to reset (${DEFAULT_SIDEBAR_WIDTH}px)`}
+                  aria-label="Resize sidebar width"
+                  className={cn(
+                    "dy-absolute dy-top-0 dy-bottom-0 -dy-right-1.5 dy-w-3 dy-cursor-col-resize dy-z-30 dy-group dy-flex dy-items-center dy-justify-center hover:dy-bg-primary/10 dy-transition-colors",
+                    isResizingSidebar && "dy-bg-primary/20"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "dy-w-[2px] dy-h-12 dy-rounded-full dy-bg-border/60 group-hover:dy-bg-primary/80 group-hover:dy-w-[3px] dy-transition-all",
+                      isResizingSidebar && "dy-bg-primary dy-w-[3px] dy-h-20"
+                    )}
+                  />
+                </div>
+              )}
 
               {/* Sidebar Expand Lip Trigger */}
               {collapsed && !isEmbedded && (

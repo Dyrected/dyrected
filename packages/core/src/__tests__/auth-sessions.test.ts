@@ -11,14 +11,14 @@ describe("auth sessions", () => {
     process.env.DYRECTED_JWT_SECRET = "dyrected-test-secret";
   });
 
-  async function createAuthApp() {
+  async function createAuthApp(auth: true | { tokenExpiration: string } = true) {
     const db = new InMemoryAdapter();
     const app = await createDyrectedApp(
       defineConfig({
         collections: [
           defineCollection({
             slug: "users",
-            auth: true,
+            auth,
             fields: [{ name: "name", type: "text" }],
           }),
         ],
@@ -142,5 +142,35 @@ describe("auth sessions", () => {
     const refreshedPayload = decodeCollectionToken(refreshedToken);
 
     expect(refreshedPayload?.sid).toBe(payload?.sid);
+  });
+
+  it("defaults session tokens to a 7-day lifetime", async () => {
+    const { app } = await createAuthApp();
+    const payload = decodeCollectionToken(await login(app));
+
+    expect(payload!.exp! - payload!.iat!).toBe(7 * 24 * 3600);
+  });
+
+  it("honors auth.tokenExpiration when issuing session tokens", async () => {
+    const { app } = await createAuthApp({ tokenExpiration: "1h" });
+    const payload = decodeCollectionToken(await login(app));
+
+    expect(payload!.exp! - payload!.iat!).toBe(3600);
+  });
+
+  it("honors auth.tokenExpiration when refreshing a token", async () => {
+    const { app } = await createAuthApp({ tokenExpiration: "30m" });
+    const token = await login(app);
+
+    const refresh = await app.request("/api/collections/users/refresh-token", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(refresh.status).toBe(200);
+
+    const refreshedPayload = decodeCollectionToken(
+      (await refresh.json()).token as string,
+    );
+    expect(refreshedPayload!.exp! - refreshedPayload!.iat!).toBe(1800);
   });
 });

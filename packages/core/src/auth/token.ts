@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify, decodeJwt, type JWTPayload } from 'jose';
+import type { CollectionConfig } from '../types/index.js';
 
 export interface CollectionTokenPayload extends JWTPayload {
   sub: string;       // document id (or invited email for invite tokens)
@@ -22,6 +23,23 @@ function getSecret(): Uint8Array {
 }
 
 const DEFAULT_EXPIRY = '7d';
+
+export const DEFAULT_SESSION_EXPIRY = DEFAULT_EXPIRY;
+
+/**
+ * Resolve the session JWT lifetime for an auth collection.
+ *
+ * Reads `auth.tokenExpiration` when the collection configures auth as an
+ * object, and falls back to `'7d'` for `auth: true` (or any missing/empty
+ * value) so existing behavior is unchanged.
+ */
+export function resolveSessionTokenExpiry(collection: CollectionConfig): string {
+  const auth = collection.auth;
+  if (auth && typeof auth === 'object' && typeof auth.tokenExpiration === 'string' && auth.tokenExpiration.length > 0) {
+    return auth.tokenExpiration;
+  }
+  return DEFAULT_SESSION_EXPIRY;
+}
 
 /**
  * Issue a signed JWT for a user document in an auth collection.

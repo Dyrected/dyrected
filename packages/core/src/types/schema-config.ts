@@ -41,6 +41,17 @@ export interface AuthConfig {
   lockTime?: number;
 
   /**
+   * How long issued session JWTs remain valid.
+   *
+   * Accepts the same values as `jose`'s `setExpirationTime` (e.g. `'15m'`,
+   * `'12h'`, `'30d'`).
+   *
+   * Defaults to `'7d'`. Applies to login, registration, invite-accept, and
+   * refresh-token issuance for this collection.
+   */
+  tokenExpiration?: string;
+
+  /**
    * The role name designated as the superuser/admin role for this collection.
    *
    * Defaults to `'admin'`.

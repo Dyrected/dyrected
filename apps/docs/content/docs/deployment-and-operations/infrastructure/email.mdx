@@ -232,6 +232,37 @@ export default defineConfig({
 })
 ```
 
+### Reuse the auth helpers in your own server code
+
+If you build a custom endpoint around the auth flows, you do not need to reimplement the token and email plumbing. Import the same helpers Dyrected uses from `@dyrected/core/server`:
+
+- `signCollectionToken`, `verifyCollectionToken`, `decodeCollectionToken` for issuing, checking, and reading session and purpose tokens
+- `sendEmail`, `buildResetPasswordEmail`, `buildInviteEmail`, `buildWelcomeEmail`, `buildPasswordChangedEmail` for delivery and the default templates
+- `hashPassword`, `verifyPassword` for password storage and checks
+- `revokeAuthSession`, `revokeAllAuthSessions`, `getAuthSession` for server-side session control
+
+For example, a custom forgot-password route can mint a reset token, render the default template (including any `templates.resetPassword` override you configured), and send it:
+
+```ts
+import {
+  buildResetPasswordEmail,
+  sendEmail,
+  signCollectionToken,
+} from '@dyrected/core/server'
+
+const token = await signCollectionToken(
+  { sub: user.id, email: user.email, collection: 'users', purpose: 'reset' },
+  '1h',
+)
+const { subject, html } = buildResetPasswordEmail(config, {
+  token,
+  url: `https://myapp.com/reset?token=${token}`,
+})
+await sendEmail(config, { to: user.email, subject, html })
+```
+
+Signing needs `DYRECTED_JWT_SECRET`, the same secret from [Authentication Overview](/docs/deployment-and-operations/authentication/overview). To read a token without verifying it (for example, to decide which flow it belongs to before doing real work), use `decodeCollectionToken` — it returns the payload or `null` when the token is malformed, and it never throws.
+
 ### Keep transport stable, swap templates later
 
 If different projects need different branding, keep the same `send` implementation and change only the `templates` functions per project. That gives you one delivery path with different message content.
