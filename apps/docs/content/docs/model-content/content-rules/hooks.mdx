@@ -185,6 +185,32 @@ For a Cloud-safe slug transform, use a hook defined as a content rule instead. K
 - `afterChange` and `afterDelete` are for side effects after persistence. Their return values are ignored, and their errors are isolated so a successful write is not turned into a `500`.
 - Server hooks receive a database adapter, but only `afterChange` and `afterDelete` get a writable one.
 
+## Throwing friendly errors from hooks
+
+When a `beforeChange`, `beforeDelete`, or `beforeRead` hook must stop the operation, throw an error class from `@dyrected/core` with a message written for the editor who will read it. The server answers with the matching status and your message:
+
+```ts
+import { defineCollection, ForbiddenError, ValidationError } from '@dyrected/core'
+
+export const Orders = defineCollection({
+  slug: 'orders',
+  fields: [/* ... */],
+  hooks: {
+    beforeChange: [
+      ({ data, user }) => {
+        const roles = (user as { roles?: string[] } | null)?.roles ?? []
+        if (data.status === 'refunded' && !roles.includes('manager')) {
+          throw new ForbiddenError('Only managers can mark orders refunded.')
+        }
+        return data
+      },
+    ],
+  },
+})
+```
+
+Available classes: `ValidationError` (400), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), and the `DyrectedError(message, statusCode)` base class for anything else. A plain `Error` without a status still answers `500`, and errors thrown from `after*` hooks stay isolated so a successful write is never turned into a failure. The same classes work in action handlers — see [Actions](/docs/model-content/operational-views/actions).
+
 ## What to read next
 
 - [Collection hooks](/docs/deployment-and-operations/server-runtime/hooks/collections) for the full document lifecycle on collections.

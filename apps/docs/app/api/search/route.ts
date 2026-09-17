@@ -1,22 +1,11 @@
-import { runtimeSource } from "@/app/source";
 import { createSearchAPI } from "fumadocs-core/search/server";
+import { buildRuntimeIndexes } from "@/lib/search-index";
 import {
   DOCS_DEFAULT_RUNTIME,
   getRuntimeFromPathname,
-  getRuntimePageUrl,
   isDocsSiteRuntime,
   type DocsSiteRuntime,
 } from "@/lib/docs-runtime";
-
-function buildRuntimeIndexes(runtime: DocsSiteRuntime) {
-  return runtimeSource.getPages(runtime).map((page) => ({
-    title: page.data.title,
-    description: page.data.description,
-    url: getRuntimePageUrl(page.slugs.join("/"), runtime),
-    id: getRuntimePageUrl(page.slugs.join("/"), runtime),
-    structuredData: page.data.structuredData,
-  }));
-}
 
 const runtimeSearchApis = {
   cloud: createSearchAPI("advanced", {

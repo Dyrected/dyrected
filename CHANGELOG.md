@@ -2,6 +2,21 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.15.0
+
+- Detail View drawers, workflow actions, and list config improvements:
+
+  - Join field rows (on the edit page) and detail-repeat rows (on the read-only Detail View) now open into a side drawer showing that row's own collection's Detail View config when it has one (falling back to the edit form otherwise), with a view/edit toggle and prev/next navigation between the already-loaded rows.
+  - Auto-generated Detail View schemas now render join fields as a table instead of badge pills, and table-layout repeat fields no longer duplicate field labels already shown in the column header.
+  - New `collection.actions` (`defineAction`/`displayAction`) let a collection define workflow actions that run against a single document independent of any view, rendered in the Detail View's header toolbar and/or inline via `displayAction(name)` — backed by a new view-less `POST /api/collections/:slug/actions/:action` route and a `client.collection(slug).runCollectionAction()` SDK method.
+  - New `collection.admin.filter` / `sort` / `metrics` / `groupBy` apply directly to a collection's default list view, without needing to define a separate `views` array and mark it as the default.
+  - Inline-editable Detail View fields now show their edit affordance by default on mobile instead of only on hover. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
+
+- - Respect `error.statusCode` from throwing `defineAction` handlers in the collection action runner instead of always returning HTTP 500, matching the workflow-transition error path. Single-row failures now return the thrown status (e.g. 400 for validation failures) with an `{ error: true, message }` body, and bulk runs report the per-row status.
+  - Surface the server's error message in `DyrectedError` for string and bare `{ error }` response bodies, so admin action toasts show the actual validation message instead of a bare status code. (`@dyrected/core`, `@dyrected/sdk`)
+
+---
+
 ## v2.14.0
 
 - **Auth: configurable session token lifetime and reusable server auth helpers**

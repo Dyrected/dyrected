@@ -27027,6 +27027,21 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.15.0
+
+- Detail View drawers, workflow actions, and list config improvements:
+
+  - Join field rows (on the edit page) and detail-repeat rows (on the read-only Detail View) now open into a side drawer showing that row's own collection's Detail View config when it has one (falling back to the edit form otherwise), with a view/edit toggle and prev/next navigation between the already-loaded rows.
+  - Auto-generated Detail View schemas now render join fields as a table instead of badge pills, and table-layout repeat fields no longer duplicate field labels already shown in the column header.
+  - New `collection.actions` (`defineAction`/`displayAction`) let a collection define workflow actions that run against a single document independent of any view, rendered in the Detail View's header toolbar and/or inline via `displayAction(name)` — backed by a new view-less `POST /api/collections/:slug/actions/:action` route and a `client.collection(slug).runCollectionAction()` SDK method.
+  - New `collection.admin.filter` / `sort` / `metrics` / `groupBy` apply directly to a collection's default list view, without needing to define a separate `views` array and mark it as the default.
+  - Inline-editable Detail View fields now show their edit affordance by default on mobile instead of only on hover. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
+
+- - Respect `error.statusCode` from throwing `defineAction` handlers in the collection action runner instead of always returning HTTP 500, matching the workflow-transition error path. Single-row failures now return the thrown status (e.g. 400 for validation failures) with an `{ error: true, message }` body, and bulk runs report the per-row status.
+  - Surface the server's error message in `DyrectedError` for string and bare `{ error }` response bodies, so admin action toasts show the actual validation message instead of a bare status code. (`@dyrected/core`, `@dyrected/sdk`)
+
+---
+
 ## v2.14.0
 
 - **Auth: configurable session token lifetime and reusable server auth helpers**
@@ -27856,42 +27871,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/sdk@2.5.55 (`dyrected`, `@dyrected/next`)
 
 - @dyrected/react@2.5.55 (`@dyrected/next`)
-
----
-
-## v2.5.54
-
-- feat: visual and functional enhancements to the Admin UI
-
-  - **Filenames**: Added a `getDisplayFilename` utility that strips directory path prefixes (e.g. `dyrected_cloud/...`) to show clean filenames in list views, media cards, and detail dialog inputs.
-  - **Collection Icons**: Resolved custom collection icons (`schema.admin?.icon`) on list page headers, falling back dynamically to `Users` or `Database`.
-  - **Data Table Layout**: Upgraded the `DataTable` visual presentation (borders, rounded corners, row heights, and backgrounds) to align with the media library's clean design aesthetics.
-  - **Field Labels**: Updated `DataTable` search placeholders and View Settings column checklists to render human-readable field labels instead of raw database keys.
-  - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds.
-  - @dyrected/core@2.5.54
-  - @dyrected/sdk@2.5.54 (`@dyrected/admin`)
-
-- @dyrected/core@2.5.54
-
-- @dyrected/sdk@2.5.54 (`dyrected`)
-
-- feat: visual and functional enhancements to the Admin UI
-
-  - **Filenames**: Added a `getDisplayFilename` utility that strips directory path prefixes (e.g. `dyrected_cloud/...`) to show clean filenames in list views, media cards, and detail dialog inputs.
-  - **Collection Icons**: Resolved custom collection icons (`schema.admin?.icon`) on list page headers, falling back dynamically to `Users` or `Database`.
-  - **Data Table Layout**: Upgraded the `DataTable` visual presentation (borders, rounded corners, row heights, and backgrounds) to align with the media library's clean design aesthetics.
-  - **Field Labels**: Updated `DataTable` search placeholders and View Settings column checklists to render human-readable field labels instead of raw database keys.
-  - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds. (`@dyrected/nuxt`)
-
-- feat: add `DyrectedIcon` component for rendering `icon` field values
-
-  The `icon` field type stores a Lucide icon _name_ (e.g. `"ChartNoAxesCombined"`), not SVG markup. The new `DyrectedIcon` component resolves that name to the matching Lucide icon so `icon` field values can be rendered directly:
-
-  - `@dyrected/react` — `<DyrectedIcon name={feature.icon} className="w-6 h-6" />` (backed by `lucide-react`)
-  - `@dyrected/vue` — `<DyrectedIcon :name="feature.icon" class="w-6 h-6" />` (backed by `lucide-vue-next`)
-  - `@dyrected/nuxt` — auto-imported as `<DyrectedIcon>` (no import required)
-
-  All standard Lucide props (`size`, `color`, `strokeWidth`, `class`/`className`, …) are forwarded, plus an optional `fallback` icon name. Integration docs now document the component and include a full per-framework component reference. (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 ---
 

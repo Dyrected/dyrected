@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { RootProvider } from 'fumadocs-ui/provider/next'
 import type { Metadata } from 'next'
+import { RuntimeSearchDialog } from '@/components/search-dialog'
 import './globals.css'
 
 const dmSans = { variable: '' }
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col" suppressHydrationWarning>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider search={{ SearchDialog: RuntimeSearchDialog }}>{children}</RootProvider>
       </body>
     </html>
   )

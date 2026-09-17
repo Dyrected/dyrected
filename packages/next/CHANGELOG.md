@@ -1,5 +1,15 @@
 # @dyrected/next
 
+## 2.15.0
+
+### Patch Changes
+
+- Updated dependencies [ff5c357]
+- Updated dependencies [85a2ec4]
+  - @dyrected/core@2.15.0
+  - @dyrected/sdk@2.15.0
+  - @dyrected/react@2.15.0
+
 ## 2.14.0
 
 ### Patch Changes

@@ -223,6 +223,15 @@ export async function createDyrectedApp(rawConfig: DyrectedConfig | any) {
     if (err instanceof HTTPException) {
       return c.json({ error: true, message: err.message }, err.status);
     }
+    // User-facing errors thrown from hooks and other server code carry their
+    // own HTTP status (see `DyrectedError` in utils/errors.js). Honor it so a
+    // `throw new ValidationError(...)` in a beforeChange hook answers 400
+    // instead of 500. Anything else stays a 500.
+    const statusCode = (err as { statusCode?: unknown }).statusCode;
+    const status =
+      typeof statusCode === "number" && Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599
+        ? statusCode
+        : 500;
     const logger = getRequestLogger(c, 'core');
     logger.error({
       err,
@@ -234,10 +243,11 @@ export async function createDyrectedApp(rawConfig: DyrectedConfig | any) {
       path: c.req.path,
       method: c.req.method,
     });
-    return c.json({ 
+    return c.json({
+      error: true,
       message: err.message || 'Internal Server Error',
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined 
-    }, 500);
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    }, status as 400);
   });
 
   // 5. Dynamic Routing

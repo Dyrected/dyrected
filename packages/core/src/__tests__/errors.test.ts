@@ -37,8 +37,7 @@ describe("user-facing server errors", () => {
     }
   });
 
-  it("propagates a thrown ValidationError through the action pipeline", async () => {
-    const db = new InMemoryAdapter();
+  it("propagates a thrown ValidationError through the action pipeline", async () => {    const db = new InMemoryAdapter();
     db.seed("orders", [{ id: "order-1", status: "pending" }]);
 
     const Orders = defineCollection({
@@ -67,5 +66,60 @@ describe("user-facing server errors", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.message ?? body.error).toContain("Enter what the user paid.");
+  });
+
+  it("honors error classes thrown from hooks with their status", async () => {
+    const db = new InMemoryAdapter();
+    const Orders = defineCollection({
+      slug: "orders",
+      fields: [{ name: "status", type: "text" }],
+      hooks: {
+        beforeChange: [
+          ({ data }: any) => {
+            if ((data as any)?.status === "refunded") {
+              throw new ForbiddenError("Only managers can mark orders refunded.");
+            }
+            return data;
+          },
+        ],
+      },
+    });
+
+    const app = await createDyrectedApp(defineConfig({ collections: [Orders], globals: [], db }));
+
+    const res = await app.request("/api/collections/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "refunded" }),
+    });
+
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.message).toContain("Only managers can mark orders refunded.");
+  });
+
+  it("keeps plain hook errors at 500", async () => {
+    const db = new InMemoryAdapter();
+    const Orders = defineCollection({
+      slug: "orders",
+      fields: [{ name: "status", type: "text" }],
+      hooks: {
+        beforeChange: [
+          () => {
+            throw new Error("Boom");
+          },
+        ],
+      },
+    });
+
+    const app = await createDyrectedApp(defineConfig({ collections: [Orders], globals: [], db }));
+
+    const res = await app.request("/api/collections/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "pending" }),
+    });
+
+    expect(res.status).toBe(500);
   });
 });
