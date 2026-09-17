@@ -10,7 +10,11 @@ import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet"
 import { useIsMobile } from "../../hooks/use-mobile"
 import { useAdjacentItems } from "../../hooks/use-adjacent-items"
-import { toast } from "sonner"
+import {
+  saveDrawerDocument,
+  updateDrawerField,
+  invalidateParentAndJoinQueries,
+} from "../../lib/drawer-save-pipeline"
 import type { DetailItem, DetailRepeatOptions } from "@dyrected/core"
 
 const FormEngine = lazy(async () => {
@@ -29,10 +33,13 @@ export interface DetailRepeatComponentProps {
   doc?: any
   client?: any
   schemas?: any
+  user?: any
   items: DetailItem[]
   options?: DetailRepeatOptions
   data: any[]
   renderItemContent: (item: DetailItem, rowData: any) => React.ReactNode
+  parentCollection?: string
+  onParentUpdate?: () => Promise<void> | void
 }
 
 const cardSpanClasses: Record<number, string> = {
@@ -68,10 +75,13 @@ export function DetailRepeatComponent({
   doc,
   client,
   schemas,
+  user,
   items,
   options,
   data,
   renderItemContent,
+  parentCollection,
+  onParentUpdate,
 }: DetailRepeatComponentProps) {
   const layout = options?.layout || "table"
   const emptyText = options?.emptyText || "No items recorded"
@@ -158,11 +168,36 @@ export function DetailRepeatComponent({
 
   const handleCloseDrawer = () => setActiveDocId(null)
 
+  const pipelineContext = useMemo(
+    () => ({
+      client,
+      queryClient,
+      targetCollection: targetCol || "",
+      parentCollection,
+      parentDocId: doc?.id != null ? String(doc.id) : undefined,
+      parentFieldName: _field,
+      onField,
+      singularLabel,
+      onSuccess: async () => {
+        await onParentUpdate?.()
+      },
+    }),
+    [
+      client,
+      queryClient,
+      targetCol,
+      parentCollection,
+      doc?.id,
+      _field,
+      onField,
+      singularLabel,
+      onParentUpdate,
+    ],
+  )
+
   const handleDrawerFieldUpdate = async (fieldName: string, value: unknown) => {
-    if (!client || !targetCol || !activeDocId) return
-    await client.collection(targetCol).update(activeDocId, { [fieldName]: value })
-    queryClient.invalidateQueries({ queryKey: ["collection", targetCol, "detail", activeDocId] })
-    queryClient.invalidateQueries({ queryKey: ["join", targetCol, onField, doc?.id] })
+    if (!activeDocId) return
+    await updateDrawerField(pipelineContext, activeDocId, fieldName, value)
   }
 
   const handleNavigateFullEdit = () => {
@@ -172,16 +207,15 @@ export function DetailRepeatComponent({
   }
 
   const handleDrawerSubmit = async (formData: Record<string, unknown>) => {
-    if (!client || !targetCol || !activeDocId) return
+    if (!activeDocId) return
     try {
-      await client.collection(targetCol).update(activeDocId, formData)
-      toast.success(`${singularLabel} updated`)
+      await saveDrawerDocument(pipelineContext, formData, {
+        isCreating: false,
+        activeDocId,
+      })
       handleCloseDrawer()
-      queryClient.invalidateQueries({ queryKey: ["join", targetCol, onField, doc?.id] })
-      queryClient.invalidateQueries({ queryKey: ["collection", targetCol] })
-    } catch (err: unknown) {
-      console.error(`Failed to save ${singularLabel}:`, err)
-      toast.error((err as any)?.message || `Failed to save ${singularLabel}`)
+    } catch {
+      // Error toast already displayed by pipeline
     }
   }
 
@@ -295,7 +329,18 @@ export function DetailRepeatComponent({
                 collection={targetSchema}
                 client={client}
                 schemas={schemas}
+                user={user}
                 onUpdate={handleDrawerFieldUpdate}
+                onActionSuccess={async () => {
+                  await invalidateParentAndJoinQueries({
+                    queryClient,
+                    parentCollection,
+                    parentDocId: doc?.id != null ? String(doc.id) : undefined,
+                    targetCollection: targetCol,
+                    onField,
+                  })
+                  await onParentUpdate?.()
+                }}
               />
             </Suspense>
           ) : targetSchema?.fields ? (

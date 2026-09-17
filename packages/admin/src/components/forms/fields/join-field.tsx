@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from "react"
+import { useState, useMemo, lazy, Suspense } from "react"
 import { useWatch } from "react-hook-form"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { useNavigate, useParams } from "react-router-dom"
@@ -39,9 +39,14 @@ import {
   DialogTitle,
 } from "../../ui/dialog"
 import { useIsMobile } from "../../../hooks/use-mobile"
-import { toast } from "sonner"
 import { DetailRenderer } from "../../detail/detail-renderer"
 import type { FieldSchema } from "../form-engine"
+import {
+  saveDrawerDocument,
+  updateDrawerField,
+  deleteDrawerDocument,
+  invalidateParentAndJoinQueries,
+} from "../../../lib/drawer-save-pipeline"
 
 const FormEngine = lazy(async () => {
   const module = await import("../form-engine")
@@ -54,11 +59,22 @@ interface JoinFieldProps {
   schema: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: any
+  parentCollection?: string
+  parentDocId?: string
+  onParentUpdate?: () => Promise<void> | void
 }
 
-export function JoinField({ schema, control }: JoinFieldProps) {
-  const { client, schemas } = useDyrected()
-  const { id: docId } = useParams()
+export function JoinField({
+  schema,
+  control,
+  parentCollection,
+  parentDocId,
+  onParentUpdate,
+}: JoinFieldProps) {
+  const { client, schemas, user } = useDyrected()
+  const { id: routeDocId, slug: routeSlug } = useParams<{ id?: string; slug?: string }>()
+  const effectiveParentDocId = parentDocId ?? routeDocId
+  const effectiveParentCollection = parentCollection ?? routeSlug
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const isMobile = useIsMobile()
@@ -82,9 +98,20 @@ export function JoinField({ schema, control }: JoinFieldProps) {
 
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
   const [isCreatingNew, setIsCreatingNew] = useState(false)
-  const [viewMode, setViewMode] = useState<"detail" | "form">("form")
+  const [modeOverride, setModeOverride] = useState<{ key: string; mode: "detail" | "form" } | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const drawerSessionKey = `${activeDocId ?? ""}:${isCreatingNew ? "create" : "edit"}`
+  const viewMode: "detail" | "form" =
+    modeOverride?.key === drawerSessionKey
+      ? modeOverride.mode
+      : isCreatingNew || !targetIsDetailFirst
+        ? "form"
+        : "detail"
+  const setViewMode = (mode: "detail" | "form") => {
+    setModeOverride({ key: drawerSessionKey, mode })
+  }
 
   // Use the data already populated by the backend if present
   const joinData = useWatch({ control, name: schema.name })
@@ -95,7 +122,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
     fetchNextPage,
     hasNextPage,
   } = useInfiniteQuery({
-    queryKey: ["collection", targetCollection, "join", onField, docId ?? ""],
+    queryKey: ["collection", targetCollection, "join", onField, effectiveParentDocId ?? ""],
     queryFn: async ({ pageParam }) => {
       const page = typeof pageParam === "number" ? pageParam : 1
       if (!client) {
@@ -110,7 +137,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
       return client
         .collection(targetCollection)
         .find({
-          where: { [onField]: { equals: docId } },
+          where: { [onField]: { equals: effectiveParentDocId } },
           limit: PAGE_SIZE,
           page,
         })
@@ -128,7 +155,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
       }
       return undefined
     },
-    enabled: Boolean(client && docId && targetCollection),
+    enabled: Boolean(client && effectiveParentDocId && targetCollection),
     staleTime: 10_000,
   })
 
@@ -143,12 +170,6 @@ export function JoinField({ schema, control }: JoinFieldProps) {
     staleTime: 10_000,
   })
 
-  // Reset the drawer's view mode whenever the target document (or create/edit
-  // intent) changes, so each opened item starts on its collection's preferred view.
-  useEffect(() => {
-    const next: "detail" | "form" = isCreatingNew || !targetIsDetailFirst ? "form" : "detail"
-    setViewMode((prev) => (prev === next ? prev : next))
-  }, [activeDocId, isCreatingNew, targetIsDetailFirst])
 
   const detailSchemaItems = useMemo(() => {
     if (!targetIsDetailFirst || !targetSchema) return []
@@ -203,17 +224,42 @@ export function JoinField({ schema, control }: JoinFieldProps) {
     setIsCreatingNew(false)
   }
 
+  const pipelineContext = useMemo(
+    () => ({
+      client,
+      queryClient,
+      targetCollection,
+      parentCollection: effectiveParentCollection,
+      parentDocId: effectiveParentDocId,
+      parentFieldName: schema?.name,
+      onField,
+      singularLabel,
+      onSuccess: async () => {
+        await onParentUpdate?.()
+      },
+    }),
+    [
+      client,
+      queryClient,
+      targetCollection,
+      effectiveParentCollection,
+      effectiveParentDocId,
+      schema?.name,
+      onField,
+      singularLabel,
+      onParentUpdate,
+    ],
+  )
+
   const handleDrawerFieldUpdate = async (fieldName: string, value: unknown) => {
-    if (!client || !activeDocId) return
-    await client.collection(targetCollection).update(activeDocId, { [fieldName]: value })
-    queryClient.invalidateQueries({ queryKey: ["collection", targetCollection, "detail", activeDocId] })
-    queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
+    if (!activeDocId) return
+    await updateDrawerField(pipelineContext, activeDocId, fieldName, value)
   }
 
   const handleViewAll = () => {
     const params = new URLSearchParams({
       where: JSON.stringify({
-        [onField]: { equals: docId },
+        [onField]: { equals: effectiveParentDocId },
       }),
     })
     navigate(`/collections/${targetCollection}?${params.toString()}`)
@@ -221,7 +267,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
 
   const handleNavigateFullEdit = () => {
     if (isCreatingNew) {
-      const params = new URLSearchParams({ [onField]: docId! })
+      const params = new URLSearchParams({ [onField]: effectiveParentDocId! })
       navigate(`/collections/${targetCollection}/new?${params.toString()}`)
     } else if (activeDocId) {
       navigate(`/collections/${targetCollection}/${activeDocId}/edit`)
@@ -229,42 +275,27 @@ export function JoinField({ schema, control }: JoinFieldProps) {
   }
 
   const handleDrawerSubmit = async (formData: Record<string, unknown>) => {
-    if (!client) return
     try {
-      if (isCreatingNew) {
-        await client.collection(targetCollection).create({
-          ...formData,
-          [onField]: docId,
-        })
-        toast.success(`${singularLabel} created`)
-      } else if (activeDocId) {
-        await client.collection(targetCollection).update(activeDocId, formData)
-        toast.success(`${singularLabel} updated`)
-      }
+      await saveDrawerDocument(pipelineContext, formData, {
+        isCreating: isCreatingNew,
+        activeDocId,
+      })
       handleCloseDrawer()
-      queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
-    } catch (err: unknown) {
-      console.error(`Failed to save ${singularLabel}:`, err)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      toast.error((err as any)?.message || `Failed to save ${singularLabel}`)
+    } catch {
+      // Error toast already displayed by pipeline
     }
   }
 
   const handleDeleteItem = async (id: string) => {
-    if (!client) return
     setIsDeleting(true)
     try {
-      await client.collection(targetCollection).delete(id)
-      toast.success(`${singularLabel} deleted`)
+      await deleteDrawerDocument(pipelineContext, id)
       if (activeDocId === id) {
         handleCloseDrawer()
       }
       setDeleteTargetId(null)
-      queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
-    } catch (err: unknown) {
-      console.error(`Failed to delete ${singularLabel}:`, err)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      toast.error((err as any)?.message || `Failed to delete ${singularLabel}`)
+    } catch {
+      // Error toast already displayed by pipeline
     } finally {
       setIsDeleting(false)
     }
@@ -302,7 +333,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
     return tableColumns.filter((col) => col.name !== displayField).slice(0, 2)
   }, [tableColumns, displayField])
 
-  if (!docId) {
+  if (!effectiveParentDocId) {
     return (
       <p className="dy-text-xs dy-text-muted-foreground/60 dy-italic dy-py-2">
         Save this document first to view related {targetCollection}.
@@ -313,7 +344,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
   const isDrawerOpen = Boolean(activeDocId || isCreatingNew)
   const activeFallbackItem = activeDocId ? items.find((i) => String(i.id) === activeDocId) : undefined
   const drawerDefaultValues = isCreatingNew
-    ? { [onField]: docId }
+    ? { [onField]: effectiveParentDocId }
     : ((activeDocData as Record<string, unknown>) || activeFallbackItem || { id: activeDocId })
 
   return (
@@ -664,7 +695,18 @@ export function JoinField({ schema, control }: JoinFieldProps) {
                 collection={targetSchema}
                 client={client}
                 schemas={schemas}
+                user={user}
                 onUpdate={handleDrawerFieldUpdate}
+                onActionSuccess={async () => {
+                  await invalidateParentAndJoinQueries({
+                    queryClient,
+                    parentCollection: effectiveParentCollection,
+                    parentDocId: effectiveParentDocId,
+                    targetCollection,
+                    onField,
+                  })
+                  await onParentUpdate?.()
+                }}
               />
             ) : targetSchema?.fields ? (
               <Suspense

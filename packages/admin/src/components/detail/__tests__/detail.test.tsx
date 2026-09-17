@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { DetailRenderer } from "../detail-renderer"
 
-const useDyrectedMock = vi.fn(() => ({
+const useDyrectedMock = vi.fn((): any => ({
   client: {},
   user: { id: "user-1", email: "admin@dyrected.com" },
-  schemas: { collections: [] },
+  schemas: { collections: [] as any[] },
   components: {},
 }))
 
@@ -40,15 +40,18 @@ const defaultDyrectedValue = {
   components: {},
 }
 
-function render(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return rtlRender(
+function render(ui: React.ReactElement, customClient?: QueryClient) {
+  const queryClient =
+    customClient ||
+    new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+  const rendered = rtlRender(
     <QueryClientProvider client={queryClient}>
       {ui}
     </QueryClientProvider>
   )
+  return { ...rendered, queryClient }
 }
 
 describe("Admin Detail View Components", () => {
@@ -726,6 +729,83 @@ describe("Admin Detail View Components", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit" }))
 
     expect(screen.getByRole("heading", { name: "Edit Comment" })).toBeDefined()
+  })
+
+  it("saves changes in DetailRepeatComponent drawer and invalidates parent queries and join queries", async () => {
+    const rows = [{ id: "c1", authorName: "Ann" }]
+    const updateMock = vi.fn().mockImplementation(async (id: string, data: any) => ({ id, ...data }))
+    const client = {
+      collection: () => ({
+        find: () => ({ exec: () => Promise.resolve({ docs: [] }) }),
+        findOne: (id: string) => Promise.resolve(rows.find((r) => r.id === id)),
+        update: updateMock,
+      }),
+    }
+    const schemas = {
+      collections: [
+        {
+          slug: "article-comments",
+          labels: { singular: "Comment" },
+          fields: [{ name: "authorName", type: "text", label: "Author" }],
+        },
+      ],
+    }
+
+    useDyrectedMock.mockReturnValue({
+      client,
+      user: { id: "user-1", email: "admin@dyrected.com" },
+      schemas,
+      components: {},
+    })
+
+    const testQueryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    const invalidateSpy = vi.spyOn(testQueryClient, "invalidateQueries")
+    const onParentUpdate = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <MemoryRouter>
+        <DetailRepeatComponent
+          field="comments"
+          fieldDef={{ type: "join", collection: "article-comments", on: "article" }}
+          doc={{ id: "article-1" }}
+          client={client}
+          schemas={schemas}
+          items={[displayField("authorName")]}
+          options={{ layout: "table" }}
+          data={rows}
+          renderItemContent={(item: any, row: any) => <span>{row[item.field]}</span>}
+          parentCollection="articles"
+          onParentUpdate={onParentUpdate}
+        />
+      </MemoryRouter>,
+      testQueryClient,
+    )
+
+    fireEvent.click(screen.getByText("Ann"))
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Edit Comment" })).toBeDefined()
+    })
+
+    const saveBtn = await screen.findByRole("button", { name: "Save changes" }, { timeout: 10000 })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(updateMock).toHaveBeenCalledWith("c1", expect.any(Object))
+    })
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collections", "article-comments"],
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collections", "articles", "detail", "article-1"],
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["join", "article-comments", "article", "article-1"],
+    })
+    expect(onParentUpdate).toHaveBeenCalled()
   })
 
   it("hides per-cell field labels by default in table-layout repeats, since the column header already shows them", () => {

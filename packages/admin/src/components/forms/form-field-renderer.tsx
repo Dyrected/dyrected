@@ -475,7 +475,12 @@ function FormFieldRendererInner({
             <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-italic">{schema.admin.description}</p>
           )}
         </div>
-        <JoinField schema={schema} control={control} />
+        <JoinField
+          schema={schema}
+          control={control}
+          parentCollection={collection}
+          parentDocId={documentId}
+        />
       </div>
     )
   }

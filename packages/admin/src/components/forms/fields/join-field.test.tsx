@@ -7,7 +7,7 @@ import { JoinField } from "./join-field"
 
 const navigateSpy = vi.fn()
 const useWatchSpy = vi.fn()
-const paramsRef: { current: { id?: string } } = { current: { id: "post-1" } }
+const paramsRef: { current: { id?: string; slug?: string } } = { current: { id: "post-1", slug: "posts" } }
 const clientFindMock = vi.fn()
 const clientCreateMock = vi.fn()
 const clientUpdateMock = vi.fn()
@@ -60,15 +60,18 @@ vi.mock("../../../providers/dyrected-context", () => ({
   useDyrected: () => dyrectedRef.current,
 }))
 
-function renderWithClient(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
+function renderWithClient(ui: React.ReactElement, customClient?: QueryClient) {
+  const queryClient =
+    customClient ||
+    new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
       },
-    },
-  })
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+    })
+  const rendered = render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+  return { ...rendered, queryClient }
 }
 
 afterEach(() => {
@@ -87,7 +90,7 @@ describe("JoinField", () => {
       Promise.resolve({ id, title: "First comment", body: "Hello world" }),
     )
 
-    paramsRef.current = { id: "post-1" }
+    paramsRef.current = { slug: "posts", id: "post-1" }
     dyrectedRef.current = {
       client: {
         collection: () => ({
@@ -441,5 +444,86 @@ describe("JoinField", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }))
 
     expect(screen.getByRole("heading", { name: "Edit Comment" })).toBeTruthy()
+  })
+
+  it("saves drawer edits and invalidates parent queries and join queries", async () => {
+    const user = userEvent.setup()
+
+    const { queryClient } = renderWithClient(
+      <JoinField
+        schema={{ name: "comments", collection: "comments", on: "post" }}
+        control={{}}
+        parentCollection="posts"
+        parentDocId="post-1"
+      />,
+    )
+
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries")
+
+    await user.click(screen.getByText("First comment"))
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Edit Comment" })).toBeTruthy()
+    })
+
+    const saveBtn = await screen.findByRole("button", { name: "Save changes" })
+    await user.click(saveBtn)
+
+    await waitFor(() => {
+      expect(clientUpdateMock).toHaveBeenCalledWith("comment-1", expect.any(Object))
+    })
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collections", "comments"],
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collections", "posts", "detail", "post-1"],
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collections", "posts", "entry", "post-1"],
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collection", "comments", "join", "post", "post-1"],
+    })
+  })
+
+  it("invalidates parent queries when deleting a join item", async () => {
+    const user = userEvent.setup()
+
+    const { queryClient } = renderWithClient(
+      <JoinField
+        schema={{ name: "comments", collection: "comments", on: "post" }}
+        control={{}}
+        parentCollection="posts"
+        parentDocId="post-1"
+      />,
+    )
+
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries")
+
+    await waitFor(() => {
+      expect(screen.getByText("First comment")).toBeTruthy()
+    })
+
+    const deleteBtn = screen.getByTitle("Delete Comment")
+    await user.click(deleteBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Are you sure you want to delete this comment\?/i)).toBeTruthy()
+    })
+
+    const confirmDeleteBtn = screen.getByRole("button", { name: /^Delete$/i })
+    await user.click(confirmDeleteBtn)
+
+    await waitFor(() => {
+      expect(clientDeleteMock).toHaveBeenCalledWith("comment-1")
+    })
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collections", "posts", "detail", "post-1"],
+    })
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["collection", "comments", "join", "post", "post-1"],
+    })
   })
 })

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
@@ -238,10 +237,12 @@ export function DetailRenderer({
           doc={currentDoc}
           client={client}
           schemas={schemas}
+          user={user}
           items={visibleRepeatItems}
           options={item.options}
           data={repeatData}
           renderItemContent={(subItem, rowData) => renderSingleItem(subItem, rowData, childFields)}
+          parentCollection={collectionSlug}
         />
       )
     }
