@@ -4062,9 +4062,9 @@
   {
     "id": "/model-content/configuration/collections#example-4",
     "page": "/model-content/configuration/collections",
-    "language": "",
+    "language": "ts",
     "classification": "illustrative",
-    "validation": "Output, prose, or non-executable illustration"
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/configuration/collections#example-5",
@@ -4090,9 +4090,9 @@
   {
     "id": "/model-content/configuration/collections#example-8",
     "page": "/model-content/configuration/collections",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/model-content/configuration/collections#example-9",
@@ -4119,8 +4119,8 @@
     "id": "/model-content/configuration/collections#example-12",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/configuration/collections#example-13",
@@ -4131,6 +4131,13 @@
   },
   {
     "id": "/model-content/configuration/collections#example-14",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-15",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",
@@ -6114,11 +6121,32 @@
     "id": "/model-content/operational-views/actions#example-6",
     "page": "/model-content/operational-views/actions",
     "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-7",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/model-content/operational-views/actions#example-7",
+    "id": "/model-content/operational-views/actions#example-8",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-9",
+    "page": "/model-content/operational-views/actions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/actions#example-10",
     "page": "/model-content/operational-views/actions",
     "language": "ts",
     "classification": "syntax-checked",

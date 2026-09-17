@@ -3240,6 +3240,16 @@ Supported inline editable field types include text, textareas, numbers, currenci
 
 ---
 
+## Open related rows in a drawer
+
+When a Detail View shows related rows through a join field, clicking a row opens it in a side drawer instead of navigating away. The parent record stays on screen while the related document opens beside it, so editors never lose their place while fixing a line item.
+
+The drawer follows the related collection's own Detail View. When that collection sets `detail` (a custom schema or `detail: true`), the drawer opens on the read-only summary with a pencil toggle to switch into the form. Collections without `detail` open straight into the form — the same edit-first behavior as the rest of the admin.
+
+Inside the drawer, the Previous/Next buttons step through the sibling rows without closing it, and the Open-full-page button jumps to the record's full edit page when the change outgrows a quick fix. Saving in the drawer writes through the normal collection update pipeline, so hooks and access rules run exactly as they would on the edit page. On mobile the drawer becomes a bottom sheet.
+
+---
+
 ## Custom badge colors with `badgeColors`
 
 When displaying statuses, priority levels, or tags using `display: "badge"`, `display: "badges"`, or `display: "tags"`, you can map raw document values to distinct color tones with `badgeColors`.
@@ -5212,6 +5222,9 @@ export const Posts = defineCollection({
     description: "Long-form content for the marketing site and docs.",
     defaultColumns: ["title", "status", "publishedAt"],
     searchableFields: ["title", "slug", "excerpt", "author"],
+    filter: { status: { equals: "published" } },
+    sort: { field: "publishedAt", direction: "desc" },
+    groupBy: "status",
   },
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
@@ -5223,6 +5236,8 @@ export const Posts = defineCollection({
 ```
 
 If you set `admin.description`, it appears under the collection title on the list page. This is a good place for a short operational note such as what the collection is for, who uses it, or what editors should expect to find there.
+
+The same `admin` block shapes the default list before editors touch it: `filter` narrows which records the list opens on, `sort` sets the opening order, `groupBy` organizes it into collapsible sections, and `metrics` adds KPI cards above the table. These mirror the same keys on `defineView`, so moving a collection to curated views later keeps the behavior editors already know.
 
 ## Acting on a row
 
@@ -17025,6 +17040,23 @@ export const GuestResponses = defineCollection({
 
 If you omit `views`, Dyrected synthesizes a `list` table view from `admin.defaultColumns` or the first five display fields — so `/collections/:slug` always has a route. Keep `slug` and view `slug`s stable; they are part of the URL and preference keys.
 
+You can shape that default table without a `views` array. These `admin` options apply directly to the default list and match the same keys on `defineView`:
+
+```ts
+export const Orders = defineCollection({
+  slug: "orders",
+  admin: {
+    defaultColumns: ["customer", "total", "status"],
+    filter: { status: { equals: "paid" } },
+    sort: { field: "createdAt", direction: "desc" },
+    groupBy: "status",
+  },
+  fields: [/* ... */],
+});
+```
+
+`filter` narrows the default list before the editor's toolbar filters, `sort` sets the opening order, `groupBy` organizes it into collapsible sections, and `metrics` adds KPI cards on top. When a default view redirect (`defaultView`, or a view with `default: true`) is configured, that view's own settings win on its route.
+
 For layouts, actions, metrics, and UX taste, read [Operational Views](https://docs.dyrected.com/docs/cloud/model-content/operational-views/overview).
 
 ## When to choose a collection
@@ -18159,6 +18191,14 @@ Global admin options are smaller than collection admin options, because there is
 - `icon` — a Lucide icon beside the global in the sidebar
 - `group` — a named section to group related globals under
 - `hidden` — hides the global from the sidebar while keeping it in the system
+
+### Editing a global: read view, inline edits, and the edit page
+
+Opening a global shows its read-only Detail View first — the same summary layout collections use, shaped by the global's `detail` config. From there editors have two ways to change values.
+
+For a quick correction, any field marked `editable: true` in the `detail` schema edits inline: click the pencil, change the value, and save without leaving the screen. For larger changes, the Edit button opens the full edit page with every field and validation. Saving there returns to the read view with the new values in place.
+
+The same building blocks work here as on collections — layout helpers, computed values, and repeated data all render from the shared Detail View system. For the full helper reference, read [Detail Views](https://docs.dyrected.com/docs/cloud/editor-experience/detail-view).
 
 ## Global vs collection
 
@@ -24646,6 +24686,38 @@ export const sendReminderAction = defineAction({
   mutation: { remindedAt: "now()" },
 });
 ```
+
+### Collection actions without a view
+
+Actions don't have to belong to a view. Add an `actions` array directly on the collection for verbs that work anywhere one document is in scope — most notably the read-only Detail View, where they render in the header toolbar (`type: "header"`) or inline via `displayAction(name)` in the `detail` schema:
+
+```ts
+
+
+const markShippedAction = defineAction({
+  name: "markShipped",
+  label: "Mark Shipped",
+  type: "header",
+  mutation: { status: "shipped" },
+});
+
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [/* ... */],
+  actions: [markShippedAction],
+  detail: [
+    displaySection("Fulfillment", [displayAction("markShipped", { span: 4 })]),
+  ],
+});
+```
+
+Collection actions run through a view-less route (`POST /api/collections/:slug/actions/:action`), and the SDK call drops the view segment:
+
+```ts
+await client.collection("orders").runCollectionAction("markShipped", { id: order.id });
+```
+
+The same action definition can also be referenced from a `defineView`'s own `actions` — the two are not mutually exclusive.
 
 
 ## Configuration options| Option        | Type                              | Description                                                                                                                              |
