@@ -355,11 +355,31 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
 
     const updatedFieldNames = new Set(fields.map((f) => f.name));
     const fieldsToInject = SYSTEM_FIELDS.filter((f) => !updatedFieldNames.has(f.name));
+
+    // Promote fields that have unique: true or are referenced in indexes
+    const indexedFieldNames = new Set<string>();
+    if (col.indexes) {
+      for (const idx of col.indexes) {
+        if (Array.isArray(idx.fields)) {
+          for (const f of idx.fields) {
+            indexedFieldNames.add(f);
+          }
+        }
+      }
+    }
+
+    const allFields = [...fields, ...fieldsToInject].map((field) => {
+      if ((field as any).unique || (field.name && indexedFieldNames.has(field.name))) {
+        return { ...field, promoted: true };
+      }
+      return field;
+    });
+
     const workflow = col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
     return {
       ...col,
       workflow,
-      fields: [...fields, ...fieldsToInject],
+      fields: allFields,
     };
   });
 

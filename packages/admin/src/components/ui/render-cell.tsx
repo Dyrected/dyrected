@@ -92,9 +92,9 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   // Handle Date / DateTime / Time (with optional admin.format)
   if (field.type === "date" || field.type === "datetime" || field.type === "time") {
     return (
-      <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-muted-foreground">
+      <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-foreground">
         <Calendar className="dy-h-3 dy-w-3" />
-        <span className="dy-text-xs">{formatDate(value, field.admin?.format, field.type)}</span>
+        <span className="dy-text-sm">{formatDate(value, field.admin?.format, field.type)}</span>
       </div>
     )
   }
@@ -123,7 +123,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     if (!media) return <span className="dy-text-muted-foreground">-</span>
 
     const url = getMediaUrl(value, client?.getBaseUrl() || "")
-    
+
     if (!url) return <span className="dy-text-muted-foreground">-</span>
 
     return (
@@ -194,7 +194,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     const entries = Object.entries(value)
       .filter(([, v]) => typeof v !== 'object' && v !== null && v !== undefined)
       .slice(0, 3)
-    
+
     if (entries.length > 0) {
       return (
         <span className="dy-text-[11px] dy-text-muted-foreground dy-font-medium dy-leading-tight">

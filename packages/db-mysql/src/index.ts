@@ -1,5 +1,29 @@
-import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere } from "@dyrected/core";
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError } from "@dyrected/core";
+import { randomUUID } from "node:crypto";
 import mysql from "mysql2/promise";
+
+function parseMysqlDuplicateKey(message: string): { field?: string; value?: string } {
+  const match = message.match(/Duplicate entry '(.*)' for key '(?:[^.]*\.)?(.*)'/);
+  if (!match) return {};
+  const [, value, keyName] = match;
+  let field = keyName;
+  if (keyName === "PRIMARY") {
+    field = "id";
+  } else if (keyName.startsWith("uniq_") || keyName.startsWith("idx_")) {
+    const parts = keyName.split("_");
+    field = parts[parts.length - 1];
+  }
+  return { field, value };
+}
+
+function isNumericOp(val: any): val is { increment?: number; decrement?: number } {
+  return (
+    val !== null &&
+    typeof val === "object" &&
+    !Array.isArray(val) &&
+    ("increment" in val || "decrement" in val)
+  );
+}
 
 export interface MysqlAdapterConfig {
   /** Full MySQL connection URL: mysql://user:pass@host:3306/dbname */
@@ -218,7 +242,7 @@ FIX INSTRUCTIONS:
           `);
           await pool.query(`
             CREATE TABLE IF NOT EXISTS _dyrected_ai_threads (
-              id VARCHAR(36) PRIMARY KEY,
+              id VARCHAR(191) PRIMARY KEY,
               project_id VARCHAR(255) NOT NULL,
               user_id VARCHAR(255) NOT NULL,
               title TEXT,
@@ -229,8 +253,8 @@ FIX INSTRUCTIONS:
           `);
           await pool.query(`
             CREATE TABLE IF NOT EXISTS _dyrected_ai_messages (
-              id VARCHAR(36) PRIMARY KEY,
-              thread_id VARCHAR(36) NOT NULL,
+              id VARCHAR(191) PRIMARY KEY,
+              thread_id VARCHAR(191) NOT NULL,
               role VARCHAR(50) NOT NULL,
               content LONGTEXT NOT NULL,
               created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
@@ -258,12 +282,23 @@ FIX INSTRUCTIONS:
     }
   }
 
+  private handleDatabaseError(err: any): never {
+    if (err && (err.errno === 1062 || err.code === "ER_DUP_ENTRY" || err.message?.includes("Duplicate entry"))) {
+      const { field, value } = parseMysqlDuplicateKey(err.message || "");
+      throw new DuplicateKeyError(
+        `Duplicate entry${value ? ` '${value}'` : ""} for unique key${field ? ` '${field}'` : ""}`,
+        { field, value }
+      );
+    }
+    this.handleConnectionError(err);
+  }
+
   private async query(sql: string, params?: any[]): Promise<any> {
     await this.ensureInitialized();
     try {
       return await this.pool.query(sql, params);
     } catch (err: any) {
-      this.handleConnectionError(err);
+      this.handleDatabaseError(err);
     }
   }
 
@@ -272,7 +307,7 @@ FIX INSTRUCTIONS:
     try {
       return await this.pool.execute(sql, params);
     } catch (err: any) {
-      this.handleConnectionError(err);
+      this.handleDatabaseError(err);
     }
   }
 
@@ -293,7 +328,7 @@ FIX INSTRUCTIONS:
     return existingCols;
   }
 
-  private async ensureTable(slug: string, fields: any[] = []) {
+  private async ensureTable(slug: string, fields: any[] = [], indexes: any[] = []) {
     if (slug === "_dyrected_ai_threads" || slug === "_dyrected_ai_messages") {
       return;
     }
@@ -323,7 +358,7 @@ FIX INSTRUCTIONS:
       const tableName = this.getTableName(slug);
       await this.query(`
         CREATE TABLE IF NOT EXISTS \`${tableName}\` (
-          id VARCHAR(36) PRIMARY KEY,
+          id VARCHAR(191) PRIMARY KEY,
           data JSON NOT NULL,
           created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
           updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
@@ -333,13 +368,25 @@ FIX INSTRUCTIONS:
       // Inspect columns for promoted fields
       const existingCols = await this.getTableColumns(tableName);
 
+      // Auto-migrate legacy VARCHAR(36) id column to VARCHAR(191) to prevent "Data too long" errors
+      try {
+        const [idCols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\` WHERE Field = 'id'`);
+        const idCol = idCols?.[0];
+        if (idCol && typeof idCol.Type === "string" && idCol.Type.toLowerCase().includes("varchar(36)")) {
+          await this.query(`ALTER TABLE \`${tableName}\` MODIFY COLUMN id VARCHAR(191) NOT NULL`);
+        }
+      } catch {
+        // Silently continue if alter fails or insufficient permissions
+      }
+
       for (const field of fields) {
         if (field.promoted && !existingCols.includes(field.name)) {
           console.log(`[dyrected/mysql] Promoting field "${field.name}" to column in ${tableName}`);
-          let sqlType = "TEXT";
+          let sqlType = "VARCHAR(191)";
           if (field.type === "number") sqlType = "DECIMAL(19,4)";
           if (field.type === "boolean") sqlType = "TINYINT(1)";
           if (field.type === "date" || field.type === "datetime") sqlType = "DATETIME(3)";
+          if (field.type === "textarea" || field.type === "richText" || field.type === "json") sqlType = "LONGTEXT";
 
           try {
             await this.query(`ALTER TABLE \`${tableName}\` ADD COLUMN \`${field.name}\` ${sqlType}`);
@@ -375,6 +422,68 @@ FIX INSTRUCTIONS:
         }
       }
 
+      // Ensure indexes exist
+      const [existingIndicesRows] = await this.query(`SHOW INDEX FROM \`${tableName}\``);
+      const existingIndexNames = new Set(existingIndicesRows.map((r: any) => r.Key_name));
+
+      // 1. Single-field unique constraints
+      for (const field of fields) {
+        if (field.unique) {
+          const idxName = `uniq_${tableName}_${field.name}`;
+          if (!existingIndexNames.has(idxName) && !existingIndexNames.has(field.name)) {
+            try {
+              const [colInfoRows] = await this.query(`SHOW COLUMNS FROM \`${tableName}\` WHERE Field = ?`, [field.name]);
+              const colType = colInfoRows?.[0]?.Type?.toLowerCase() || "";
+              if (colType.includes("text")) {
+                await this.query(`ALTER TABLE \`${tableName}\` MODIFY COLUMN \`${field.name}\` VARCHAR(191)`);
+              }
+            } catch {
+              // ignore
+            }
+            try {
+              await this.query(`ALTER TABLE \`${tableName}\` ADD UNIQUE INDEX \`${idxName}\` (\`${field.name}\`)`);
+              existingIndexNames.add(idxName);
+            } catch (err: any) {
+              if (err.errno !== 1061 && err.code !== "ER_DUP_KEYNAME") {
+                console.warn(`[dyrected/mysql] Could not create unique index ${idxName} on ${tableName}:`, err.message);
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Collection composite/custom indexes
+      if (Array.isArray(indexes)) {
+        for (const idx of indexes) {
+          if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
+          const isUnique = Boolean(idx.unique);
+          const idxName = idx.name || `${isUnique ? "uniq" : "idx"}_${tableName}_${idx.fields.join("_")}`;
+          if (!existingIndexNames.has(idxName)) {
+            for (const fName of idx.fields) {
+              try {
+                const [colInfoRows] = await this.query(`SHOW COLUMNS FROM \`${tableName}\` WHERE Field = ?`, [fName]);
+                const colType = colInfoRows?.[0]?.Type?.toLowerCase() || "";
+                if (colType.includes("text")) {
+                  await this.query(`ALTER TABLE \`${tableName}\` MODIFY COLUMN \`${fName}\` VARCHAR(191)`);
+                }
+              } catch {
+                // ignore
+              }
+            }
+            const uniqueKeyword = isUnique ? "UNIQUE " : "";
+            const colList = idx.fields.map((f: string) => `\`${f.replace(/`/g, "``")}\``).join(", ");
+            try {
+              await this.query(`ALTER TABLE \`${tableName}\` ADD ${uniqueKeyword}INDEX \`${idxName}\` (${colList})`);
+              existingIndexNames.add(idxName);
+            } catch (err: any) {
+              if (err.errno !== 1061 && err.code !== "ER_DUP_KEYNAME") {
+                console.warn(`[dyrected/mysql] Could not create index ${idxName} on ${tableName}:`, err.message);
+              }
+            }
+          }
+        }
+      }
+
       this.ensuredTables.add(slug);
       resolveLock();
     } catch (err) {
@@ -391,6 +500,8 @@ FIX INSTRUCTIONS:
     limit?: number;
     page?: number;
     sort?: string;
+    fields?: any[];
+    lock?: "for-update";
   }): Promise<PaginatedResult> {
     if (!this.inTransaction) await this.ensureTable(args.collection);
     const tableName = this.getTableName(args.collection);
@@ -409,8 +520,9 @@ FIX INSTRUCTIONS:
       const result = parseSqlWhere(
         args.where,
         (field: string) => {
-          if (field === "createdAt") return "`created_at`";
-          if (field === "updatedAt") return "`updated_at`";
+          if (field === "id") return "`id`";
+          if (field === "createdAt" || field === "created_at") return "`created_at`";
+          if (field === "updatedAt" || field === "updated_at") return "`updated_at`";
           if (existingCols.includes(field) && !["id", "data"].includes(field)) {
             return `\`${field}\``;
           }
@@ -423,6 +535,7 @@ FIX INSTRUCTIONS:
     }
 
     const sort = normalizeMysqlSort(args.sort, existingCols);
+    const lock = (this.inTransaction || args.lock === "for-update") ? " FOR UPDATE" : "";
 
     // Count with filter applied for accurate pagination
     const [countRows] = await this.query(
@@ -433,16 +546,26 @@ FIX INSTRUCTIONS:
 
     // Fetch page of data
     const [rows] = await this.query(
-      `SELECT * FROM \`${tableName}\` ${whereSql} ORDER BY ${sort} LIMIT ? OFFSET ?`,
+      `SELECT * FROM \`${tableName}\` ${whereSql} ORDER BY ${sort} LIMIT ? OFFSET ?${lock}`,
       [...whereParams, limit, offset],
     );
 
-    const docs = rows.map((r: any) => ({
-      id: r.id,
-      ...JSON.parse(typeof r.data === "string" ? r.data : JSON.stringify(r.data)),
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    const docs = rows.map((r: any) => {
+      const parsedData = JSON.parse(typeof r.data === "string" ? r.data : JSON.stringify(r.data));
+      const promotedOverlay: Record<string, any> = {};
+      for (const col of existingCols) {
+        if (!["id", "data", "created_at", "updated_at"].includes(col) && r[col] !== undefined && r[col] !== null) {
+          promotedOverlay[col] = r[col];
+        }
+      }
+      return {
+        id: r.id,
+        ...parsedData,
+        ...promotedOverlay,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      };
+    });
 
     const totalPages = Math.ceil(total / limit);
     return {
@@ -456,16 +579,26 @@ FIX INSTRUCTIONS:
     };
   }
 
-  async findOne(params: { collection: string; id: string }) {
+  async findOne(params: { collection: string; id: string; lock?: "for-update" }) {
     if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    const lock = this.inTransaction ? " FOR UPDATE" : "";
+    const lock = (this.inTransaction || params.lock === "for-update") ? " FOR UPDATE" : "";
     const [rows] = await this.query(`SELECT * FROM \`${tableName}\` WHERE id = ?${lock}`, [params.id]);
     const row = rows[0];
     if (!row) return null;
+
+    const parsedData = JSON.parse(typeof row.data === "string" ? row.data : JSON.stringify(row.data));
+    const existingCols = await this.getTableColumns(tableName);
+    const promotedOverlay: Record<string, any> = {};
+    for (const col of existingCols) {
+      if (!["id", "data", "created_at", "updated_at"].includes(col) && row[col] !== undefined && row[col] !== null) {
+        promotedOverlay[col] = row[col];
+      }
+    }
     return {
       id: row.id,
-      ...JSON.parse(typeof row.data === "string" ? row.data : JSON.stringify(row.data)),
+      ...parsedData,
+      ...promotedOverlay,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -478,7 +611,7 @@ FIX INSTRUCTIONS:
     // Inspect columns for promoted fields
     const existingCols = await this.getTableColumns(tableName);
 
-    const id = params.data.id ?? Math.random().toString(36).substring(7);
+    const id = params.data.id ?? randomUUID();
     const now = new Date().toISOString().replace("T", " ").replace("Z", "");
 
     const data = { ...params.data };
@@ -500,42 +633,128 @@ FIX INSTRUCTIONS:
     const values = [id, JSON.stringify(data), now, now, ...Object.values(promotedValues)];
 
     await this.query(`INSERT INTO \`${tableName}\` (${colNames.join(", ")}) VALUES (${placeholders})`, values);
-    return { id, ...data, createdAt: now, updatedAt: now };
+    return { id, ...data, ...promotedValues, createdAt: now, updatedAt: now };
   }
 
-  async update(params: { collection: string; id: string; data: any }) {
+  async update(params: { collection: string; id?: string; where?: any; data: any }): Promise<any> {
     if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-
-    // Inspect columns for promoted fields
     const existingCols = await this.getTableColumns(tableName);
-
-    const existing = await this.findOne({ collection: params.collection, id: params.id });
     const now = new Date().toISOString().replace("T", " ").replace("Z", "");
-    const merged = { ...(existing ?? {}), ...params.data };
-    delete (merged as any).id;
-    delete (merged as any).createdAt;
-    delete (merged as any).updatedAt;
 
-    // Extract promoted fields
-    const promotedValues: Record<string, any> = {};
-    for (const col of existingCols) {
-      if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
-      if (merged[col] !== undefined) {
-        promotedValues[col] = merged[col];
+    // Build WHERE clause
+    let whereSql = "";
+    let whereParams: any[] = [];
+    if (params.id) {
+      whereSql = "WHERE id = ?";
+      whereParams = [params.id];
+      if (params.where && Object.keys(params.where).length > 0) {
+        const parsed = parseSqlWhere(
+          params.where,
+          (field: string) => {
+            if (field === "id") return "`id`";
+            if (field === "createdAt" || field === "created_at") return "`created_at`";
+            if (field === "updatedAt" || field === "updated_at") return "`updated_at`";
+            if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+              return `\`${field}\``;
+            }
+            return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+          },
+          "?",
+        );
+        whereSql += ` AND (${parsed.sql})`;
+        whereParams.push(...parsed.params);
+      }
+    } else if (params.where && Object.keys(params.where).length > 0) {
+      const parsed = parseSqlWhere(
+        params.where,
+        (field: string) => {
+          if (field === "id") return "`id`";
+          if (field === "createdAt" || field === "created_at") return "`created_at`";
+          if (field === "updatedAt" || field === "updated_at") return "`updated_at`";
+          if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+            return `\`${field}\``;
+          }
+          return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+        },
+        "?",
+      );
+      whereSql = `WHERE ${parsed.sql}`;
+      whereParams = parsed.params;
+    } else {
+      throw new Error("update requires either id or where clause");
+    }
+
+    const setClauses: string[] = [];
+    const setParams: any[] = [];
+    const jsonPaths: string[] = [];
+    const jsonParams: any[] = [];
+
+    for (const [key, val] of Object.entries(params.data)) {
+      if (["id", "createdAt", "updatedAt"].includes(key)) continue;
+
+      const isPromoted = existingCols.includes(key) && !["id", "data", "created_at", "updated_at"].includes(key);
+
+      if (isNumericOp(val)) {
+        const delta = Number((val.increment ?? 0) - (val.decrement ?? 0));
+        if (isPromoted) {
+          const escapedCol = escapeMysqlIdentifier(key);
+          setClauses.push(`${escapedCol} = COALESCE(${escapedCol}, 0) + ?`);
+          setParams.push(delta);
+          jsonPaths.push(`'$.${key}', ${escapedCol}`);
+        } else {
+          jsonPaths.push(`'$.${key}', CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${key}')), 0) AS DECIMAL(19,4)) + ?`);
+          jsonParams.push(delta);
+        }
+      } else {
+        if (isPromoted) {
+          const escapedCol = escapeMysqlIdentifier(key);
+          setClauses.push(`${escapedCol} = ?`);
+          setParams.push(val);
+          jsonPaths.push(`'$.${key}', ${escapedCol}`);
+        } else if (val === null) {
+          jsonPaths.push(`'$.${key}', CAST('null' AS JSON)`);
+        } else if (typeof val === "object") {
+          jsonPaths.push(`'$.${key}', CAST(? AS JSON)`);
+          jsonParams.push(JSON.stringify(val));
+        } else {
+          jsonPaths.push(`'$.${key}', ?`);
+          jsonParams.push(val);
+        }
       }
     }
 
-    const setClauses = ["data = ?", "updated_at = ?", ...Object.keys(promotedValues).map((k) => `\`${k}\` = ?`)];
-    const values = [JSON.stringify(merged), now, ...Object.values(promotedValues), params.id];
+    setClauses.push("updated_at = ?");
+    setParams.push(now);
 
-    await this.query(`UPDATE \`${tableName}\` SET ${setClauses.join(", ")} WHERE id = ?`, values);
-    return { id: params.id, ...merged, createdAt: existing?.createdAt, updatedAt: now };
+    if (jsonPaths.length > 0) {
+      setClauses.push(`data = JSON_SET(COALESCE(data, '{}'), ${jsonPaths.join(", ")})`);
+      setParams.push(...jsonParams);
+    }
+
+    const updateSql = `UPDATE \`${tableName}\` SET ${setClauses.join(", ")} ${whereSql}`;
+    const [res] = await this.query(updateSql, [...setParams, ...whereParams]);
+
+    let targetId = params.id;
+    if (!targetId && params.where) {
+      const found = await this.find({ collection: params.collection, where: params.where, limit: 1 });
+      targetId = found.docs[0]?.id;
+    }
+
+    if (targetId) {
+      const doc = await this.findOne({ collection: params.collection, id: targetId });
+      if (doc) {
+        (doc as any).affectedRows = res?.affectedRows ?? 0;
+        return doc;
+      }
+    }
+
+    return { id: targetId, ...params.data, affectedRows: res?.affectedRows ?? 0, updatedAt: now };
   }
 
   async sync(collections: any[]) {
     for (const col of collections) {
-      await this.ensureTable(col.slug, col.fields);
+      await this.ensureTable(col.slug, col.fields, col.indexes);
     }
   }
 

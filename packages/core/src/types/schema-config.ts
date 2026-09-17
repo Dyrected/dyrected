@@ -60,6 +60,29 @@ export interface AuthConfig {
 }
 
 /**
+ * Physical database index specification for a collection.
+ */
+export interface CollectionIndex {
+  /** Optional custom index name. If omitted, adapter auto-generates one. */
+  name?: string;
+  /** Field names participating in the index. */
+  fields: string[];
+  /** Whether the index enforces database-level uniqueness. Defaults to false. */
+  unique?: boolean;
+  /** Whether to only index non-null rows where supported. */
+  sparse?: boolean;
+}
+
+/**
+ * Atomic numeric update operators for database mutation payloads.
+ */
+export interface NumericUpdateOperator {
+  increment?: number;
+  decrement?: number;
+}
+
+
+/**
  * Use this contract when you want the exact shape of a collection config.
  *
  * Most collection work comes down to a small set of top-level options: giving
@@ -190,6 +213,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * @see {@link https://dyrected.com/docs/model-content/fields/blocks Blocks and page sections}
    */
   fields: Field[];
+
+  /**
+   * Database indexes to create on this collection.
+   *
+   * Fields participating in indexes are automatically promoted to physical columns.
+   */
+  indexes?: CollectionIndex[];
 
   /**
    * If `true`, Dyrected automatically adds the built-in system fields

@@ -32,16 +32,28 @@ export interface DatabaseAdapter {
      * ignore it; SQL adapters use it to sort numeric fields by magnitude.
      */
     fields?: Field[];
+    /** Row-level locking strategy (e.g. SELECT ... FOR UPDATE in transactions). */
+    lock?: "for-update";
   }): Promise<PaginatedResult>;
 
   /** Find a single document by its ID. Returns `null` if not found. */
-  findOne(args: { collection: string; id: string }): Promise<BaseDocument | null>;
+  findOne(args: {
+    collection: string;
+    id: string;
+    /** Row-level locking strategy (e.g. SELECT ... FOR UPDATE in transactions). */
+    lock?: "for-update";
+  }): Promise<BaseDocument | null>;
 
   /** Insert a new document and return it with its generated `id`. */
   create(args: { collection: string; data: Record<string, unknown> }): Promise<BaseDocument>;
 
-  /** Update a document by ID and return the updated document. */
-  update(args: { collection: string; id: string; data: Record<string, unknown> }): Promise<BaseDocument>;
+  /** Update a document by ID or conditional filter and return the updated document. */
+  update(args: {
+    collection: string;
+    id?: string;
+    where?: Record<string, unknown>;
+    data: Record<string, unknown>;
+  }): Promise<BaseDocument>;
 
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
