@@ -40,6 +40,9 @@ export const Posts = defineCollection({
     description: "Long-form content for the marketing site and docs.",
     defaultColumns: ["title", "status", "publishedAt"],
     searchableFields: ["title", "slug", "excerpt", "author"],
+    filter: { status: { equals: "published" } },
+    sort: { field: "publishedAt", direction: "desc" },
+    groupBy: "status",
   },
   fields: [
     defineTextField({ name: "title", label: "Title", required: true }),
@@ -51,6 +54,8 @@ export const Posts = defineCollection({
 ```
 
 If you set `admin.description`, it appears under the collection title on the list page. This is a good place for a short operational note such as what the collection is for, who uses it, or what editors should expect to find there.
+
+The same `admin` block shapes the default list before editors touch it: `filter` narrows which records the list opens on, `sort` sets the opening order, `groupBy` organizes it into collapsible sections, and `metrics` adds KPI cards above the table. These mirror the same keys on `defineView`, so moving a collection to curated views later keeps the behavior editors already know.
 
 ## Acting on a row
 

@@ -173,6 +173,38 @@ export const sendReminderAction = defineAction({
 });
 ```
 
+### Collection actions without a view
+
+Actions don't have to belong to a view. Add an `actions` array directly on the collection for verbs that work anywhere one document is in scope — most notably the read-only Detail View, where they render in the header toolbar (`type: "header"`) or inline via `displayAction(name)` in the `detail` schema:
+
+```ts
+import { defineAction, defineCollection, displayAction, displaySection } from "@dyrected/core";
+
+const markShippedAction = defineAction({
+  name: "markShipped",
+  label: "Mark Shipped",
+  type: "header",
+  mutation: { status: "shipped" },
+});
+
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [/* ... */],
+  actions: [markShippedAction],
+  detail: [
+    displaySection("Fulfillment", [displayAction("markShipped", { span: 4 })]),
+  ],
+});
+```
+
+Collection actions run through a view-less route (`POST /api/collections/:slug/actions/:action`), and the SDK call drops the view segment:
+
+```ts
+await client.collection("orders").runCollectionAction("markShipped", { id: order.id });
+```
+
+The same action definition can also be referenced from a `defineView`'s own `actions` — the two are not mutually exclusive.
+
 <SelfHostedOnly>
 
 ### 4. Custom TypeScript handler
@@ -199,6 +231,31 @@ export const chargeGuestAction = defineAction({
 ```
 
 The data returned from `handler` automatically merges into the document through the collection's validation and hook pipeline.
+
+### Throwing friendly errors from a handler
+
+When a handler cannot complete, throw an error with a message written for the editor who will read it. `@dyrected/core` provides classes that carry the right HTTP status, so you never hand-roll status codes:
+
+```ts
+import { defineAction, defineTextField, ValidationError } from "@dyrected/core";
+
+export const refundOrderAction = defineAction({
+  name: "refund",
+  label: "Refund Order",
+  type: "row",
+  fields: [defineTextField({ name: "refundReason", label: "Refund reason" })],
+  handler: async ({ doc, input }) => {
+    if (!input.refundReason) {
+      throw new ValidationError("Enter a refund reason so support can follow up.");
+    }
+    return { status: "refunded" };
+  },
+});
+```
+
+Available classes: `ValidationError` (400) for input the editor can fix, `ForbiddenError` (403) for permission, `NotFoundError` (404) for missing records, `ConflictError` (409) for state conflicts, and the `DyrectedError(message, statusCode)` base class for anything else. A plain `Error` without a status still answers `500`, so existing handlers keep working.
+
+The server answers with your status and message. The SDK surfaces that message on the thrown error, and the admin shows "\<Action label\> failed" with your message underneath, so editors see guidance instead of a generic failure. Bulk runs evaluate each document separately, so a failure on one row is reported against that row without hiding the rest.
 
 </SelfHostedOnly>
 

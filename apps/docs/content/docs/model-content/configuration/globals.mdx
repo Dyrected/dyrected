@@ -269,6 +269,14 @@ Global admin options are smaller than collection admin options, because there is
 - `group` — a named section to group related globals under
 - `hidden` — hides the global from the sidebar while keeping it in the system
 
+### Editing a global: read view, inline edits, and the edit page
+
+Opening a global shows its read-only Detail View first — the same summary layout collections use, shaped by the global's `detail` config. From there editors have two ways to change values.
+
+For a quick correction, any field marked `editable: true` in the `detail` schema edits inline: click the pencil, change the value, and save without leaving the screen. For larger changes, the Edit button opens the full edit page with every field and validation. Saving there returns to the read view with the new values in place.
+
+The same building blocks work here as on collections — layout helpers, computed values, and repeated data all render from the shared Detail View system. For the full helper reference, read [Detail Views](/docs/editor-experience/detail-view).
+
 ## Global vs collection
 
 The most useful decision when modeling content is whether a piece of it is a global or a collection.

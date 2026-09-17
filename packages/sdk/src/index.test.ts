@@ -220,4 +220,32 @@ describe('DyrectedClient', () => {
     expect(init.body).toBe(JSON.stringify({ id: 'order-1' }));
     expect(res).toEqual({ id: 'order-1', status: 'shipped' });
   });
+
+  it('surfaces the server message when an action fails with { error, message }', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve({ error: true, message: 'Enter what the user paid.' }),
+    });
+
+    await expect(
+      client.collection('orders').runCollectionAction('refund', { id: 'order-1' }),
+    ).rejects.toThrow('Enter what the user paid.');
+  });
+
+  it('surfaces the server message when an action fails with a bare { error } string', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve({ error: 'Enter what the user paid.' }),
+    });
+
+    const err = await client
+      .collection('orders')
+      .runCollectionAction('refund', { id: 'order-1' })
+      .catch((e) => e);
+
+    expect(err.message).toBe('Enter what the user paid.');
+    expect(err.statusCode).toBe(400);
+  });
 });

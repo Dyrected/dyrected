@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isUserAdmin } from "@dyrected/core";
 
 import { useDyrected } from "../../../providers/dyrected-context";
 import {
@@ -123,8 +124,13 @@ export function useColumnPreferences({
   fixedIds = [],
   variant,
 }: UseColumnPreferencesOptions) {
-  const { client, user } = useDyrected();
+  const { client, user, schemas } = useDyrected();
   const queryClient = useQueryClient();
+
+  const collection = useMemo(
+    () => schemas?.collections?.find((c) => c.slug === slug) ?? null,
+    [schemas, slug],
+  );
 
   const prefKey = getColumnPrefKey(slug, viewSlug, variant);
   const legacyPrefKey = getLegacyColumnPrefKey(slug, viewSlug, variant);
@@ -257,7 +263,7 @@ export function useColumnPreferences({
     onError: (error: Error) => toast.error("Could not reset preferences", { description: error.message }),
   });
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isUserAdmin(user, collection);
 
   return useMemo(
     () => ({

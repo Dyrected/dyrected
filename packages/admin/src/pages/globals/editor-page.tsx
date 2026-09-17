@@ -65,10 +65,17 @@ export function GlobalEditorPage() {
     mutationFn: (data: any) => {
       return client!.updateGlobal(slug!, data)
     },
-    onSuccess: () => {
+    onSuccess: async (updated) => {
       setIsDirty(false)
-      queryClient.invalidateQueries({ queryKey: ["global", slug] })
-      queryClient.invalidateQueries({ queryKey: ["global", slug, "detail"] })
+      // Seed both global caches with the PATCH response (the server returns
+      // the full updated doc) so the detail page renders fresh data the
+      // moment we navigate — without waiting for the refetch round-trip.
+      if (updated && typeof updated === "object") {
+        queryClient.setQueryData(["global", slug], updated)
+        queryClient.setQueryData(["global", slug, "detail"], updated)
+      }
+      await queryClient.invalidateQueries({ queryKey: ["global", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["global", slug, "detail"] })
       toast.success(`${schema?.label || schema?.slug || "Global"} updated successfully`)
       navigate(`/globals/${slug}`)
     },

@@ -44,6 +44,7 @@ import { useCallback, useMemo } from "react"
 import { resolvePublishingStatus, resolveWorkflowState } from "../../lib/workflow-ui"
 import { buildDraftLiveComparison } from "../../lib/draft-live-compare"
 import type { WorkflowTransition } from "@dyrected/core"
+import { isUserAdmin } from "@dyrected/core"
 import {
   AdminCommandListSkeleton,
   AdminEditorSkeleton,
@@ -504,8 +505,7 @@ export function EditEntryPage() {
 
   // Password-change permissions
   // isSelf: the logged-in user is editing their own account
-  const adminRole = typeof schema?.auth === 'object' && (schema.auth as any)?.adminRole ? (schema.auth as any).adminRole : 'admin'
-  const isAdminUser = Array.isArray(user?.roles) && (user.roles.includes(adminRole) || user.roles.includes('admin') || user.roles.includes('super_admin'))
+  const isAdminUser = isUserAdmin(user, schema)
   const isSelf = !!user && !!id && (user.id === id || user.sub === id)
   // 'self'  → show oldPassword + newPassword + confirmPassword
   // 'admin' → show newPassword + confirmPassword only (admin bypass)
@@ -554,10 +554,26 @@ export function EditEntryPage() {
 
       return results
     },
-    onSuccess: (results, variables) => {
+    onSuccess: async (results, variables) => {
       setIsDirty(false)
-      queryClient.invalidateQueries({ queryKey: ["collections", slug] })
-      queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+
+      const doc = results.doc as Record<string, unknown> | undefined
+      const docId = (doc as { id?: string } | undefined)?.id ?? (isEdit ? id : undefined)
+      // Seed the entry/detail caches with the mutation response (merged over
+      // the previous cache so populated fields the response omits survive),
+      // so list/detail views render fresh data immediately. Revalidation
+      // below then confirms against the server in the background.
+      if (doc && typeof doc === "object" && docId) {
+        queryClient.setQueryData(["collections", slug, "entry", docId], doc)
+        queryClient.setQueryData(["collections", slug, "detail", docId], (old: unknown) =>
+          old && typeof old === "object" ? { ...(old as object), ...doc } : doc,
+        )
+      }
+      await queryClient.invalidateQueries({ queryKey: ["collections", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      if (variables.mode === "manual") {
+        await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+      }
 
       if (variables.mode === "manual") {
         toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
@@ -569,9 +585,9 @@ export function EditEntryPage() {
         toast.success("Password changed successfully")
       }
 
-      const doc = results.doc as { id?: string } | undefined
-      if (!isEdit && doc?.id) {
-        navigate(`/collections/${slug}/${doc.id}/edit`, { replace: true })
+      const createdId = (doc as { id?: string } | undefined)?.id
+      if (!isEdit && createdId) {
+        navigate(`/collections/${slug}/${createdId}/edit`, { replace: true })
       }
     },
     onError: (error: Error, variables) => {

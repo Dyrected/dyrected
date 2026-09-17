@@ -1455,22 +1455,35 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     // Support both standard fetch (Response object) and Nuxt $fetch (parsed data)
     if (res && typeof res.ok === "boolean") {
       if (!res.ok) {
-        const body = await res
+        const body: unknown = await res
           .json()
           .catch((): { message: string; code?: string } => ({
             message: "Unknown error",
           }));
+        const bodyRecord =
+          body !== null && typeof body === "object"
+            ? (body as { message?: unknown; error?: unknown; code?: unknown })
+            : null;
+        const message =
+          typeof body === "string" && body.length > 0
+            ? body
+            : typeof bodyRecord?.message === "string" && bodyRecord.message.length > 0
+              ? bodyRecord.message
+              : typeof bodyRecord?.error === "string" && bodyRecord.error.length > 0
+                ? bodyRecord.error
+                : `Request failed with status ${res.status}`;
         if (res.status === 429 && typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("dyrected:rate-limit", {
-              detail: { message: body.message, code: body.code },
+              detail: { message, code: bodyRecord?.code },
             }),
           );
         }
         const error = new DyrectedError(
-          body.message || `Request failed with status ${res.status}`,
+          message,
           res.status,
-          body.code,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          bodyRecord?.code as any,
         );
         if (
           res.status === 401 &&
@@ -1481,7 +1494,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           if (typeof window !== "undefined") {
             window.dispatchEvent(
               new CustomEvent("dyrected:auth-unauthorized", {
-                detail: { message: body.message, code: body.code, path },
+                detail: { message, code: bodyRecord?.code, path },
               }),
             );
           }

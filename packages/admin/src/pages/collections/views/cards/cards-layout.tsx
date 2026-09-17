@@ -141,7 +141,9 @@ export function CardsLayout({
   )
 
   const { allFieldIds, defaultHiddenIds } = React.useMemo(() => {
-    const specified = (view.columns ?? []).filter((name) => fieldsByName.has(name))
+    const specified = (view.columns?.length ? view.columns : defaultCardsOrder(schema)).filter((name) =>
+      fieldsByName.has(name),
+    )
     const remaining = (schema?.fields ?? [])
       .map((f: any) => f.name)
       .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
@@ -385,5 +387,13 @@ function labelByIdFrom(ids: string[], fieldsByName: Map<string, any>): Map<strin
     labels.set(id, field?.label || id)
   }
   return labels
+}
+
+/** Fallback visible fields when the view declares none — mirrors table layout. */
+function defaultCardsOrder(schema: any): string[] {
+  return (schema?.fields ?? [])
+    .filter((field: any) => !["textarea", "richText", "json", "blocks"].includes(field.type))
+    .slice(0, 5)
+    .map((field: any) => field.name)
 }
 

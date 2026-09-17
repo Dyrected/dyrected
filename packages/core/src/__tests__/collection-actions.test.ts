@@ -168,4 +168,107 @@ describe("Collection-root (view-less) actions", () => {
     const body = await res.json();
     expect(body.status).toBe("shipped");
   });
+
+  it("propagates error.statusCode from a throwing handler instead of hardcoding 500", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("orders", [{ id: "order-1", status: "pending" }]);
+
+    const Orders = defineCollection({
+      slug: "orders",
+      fields: [{ name: "status", type: "text" }],
+      actions: [
+        defineAction({
+          name: "refund",
+          label: "Refund",
+          type: "row",
+          handler: async () => {
+            throw Object.assign(new Error("Enter what the user paid."), { statusCode: 400 });
+          },
+        }),
+      ],
+    });
+
+    const app = await createDyrectedApp(defineConfig({ collections: [Orders], globals: [], db }));
+
+    const res = await app.request("/api/collections/orders/actions/refund", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: "order-1" }),
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.message ?? body.error).toContain("Enter what the user paid.");
+  });
+
+  it("falls back to 500 when a throwing handler carries no statusCode", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("orders", [{ id: "order-1", status: "pending" }]);
+
+    const Orders = defineCollection({
+      slug: "orders",
+      fields: [{ name: "status", type: "text" }],
+      actions: [
+        defineAction({
+          name: "refund",
+          label: "Refund",
+          type: "row",
+          handler: async () => {
+            throw new Error("Boom");
+          },
+        }),
+      ],
+    });
+
+    const app = await createDyrectedApp(defineConfig({ collections: [Orders], globals: [], db }));
+
+    const res = await app.request("/api/collections/orders/actions/refund", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: "order-1" }),
+    });
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.message ?? body.error).toContain("Boom");
+  });
+
+  it("reports per-row statuses (not hardcoded 500) for bulk action failures", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("orders", [
+      { id: "order-1", status: "pending" },
+      { id: "order-2", status: "pending" },
+    ]);
+
+    const Orders = defineCollection({
+      slug: "orders",
+      fields: [{ name: "status", type: "text" }],
+      actions: [
+        defineAction({
+          name: "refund",
+          label: "Refund",
+          type: "row",
+          handler: async () => {
+            throw Object.assign(new Error("Enter what the user paid."), { statusCode: 400 });
+          },
+        }),
+      ],
+    });
+
+    const app = await createDyrectedApp(defineConfig({ collections: [Orders], globals: [], db }));
+
+    const res = await app.request("/api/collections/orders/actions/refund", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ids: ["order-1", "order-2"] }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.failed).toBe(2);
+    for (const row of body.results) {
+      expect(row.status).toBe(400);
+      expect(String(row.error)).toContain("Enter what the user paid.");
+    }
+  });
 });

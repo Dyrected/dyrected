@@ -3,8 +3,24 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { embed, embedMany, type EmbeddingModel } from 'ai';
 import type { DyrectedConfig } from '../../types/index.js';
 
-export function getEmbeddingModel(config?: DyrectedConfig): EmbeddingModel {
+/**
+ * Whether any embedding API key is resolvable for this config. Mirrors the
+ * key sources consulted by `getEmbeddingModel` without constructing a
+ * provider. When this returns false, RAG indexing can never succeed, so
+ * callers should skip silently instead of throwing and logging noise.
+ */
+export function hasEmbeddingApiKey(config?: DyrectedConfig): boolean {
   const ai = config?.ai;
+  return Boolean(
+    ai?.apiKey ||
+      process.env.OPENROUTER_API_KEY ||
+      process.env.OPENAI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  );
+}
+
+export function getEmbeddingModel(config?: DyrectedConfig): EmbeddingModel {  const ai = config?.ai;
   const provider = ai?.provider;
 
   // 1. Explicit OpenRouter or OPENROUTER_API_KEY

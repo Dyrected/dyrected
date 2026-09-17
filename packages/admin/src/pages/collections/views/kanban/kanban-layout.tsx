@@ -153,7 +153,9 @@ export function KanbanLayout({
     [schema],
   )
   const { allFieldIds, defaultHiddenIds } = React.useMemo(() => {
-    const specified = (view.columns ?? []).filter((name) => fieldsByName.has(name))
+    const specified = (view.columns?.length ? view.columns : defaultKanbanOrder(schema)).filter((name) =>
+      fieldsByName.has(name),
+    )
     const remaining = (schema?.fields ?? [])
       .map((f: any) => f.name)
       .filter((name: string) => !specified.includes(name) && fieldsByName.has(name))
@@ -599,4 +601,12 @@ function reorderIds(board: KanbanGroup[], columnValue: string, activeId: string,
   next.splice(fromIndex, 1)
   next.splice(toIndex, 0, activeId)
   return next
+}
+
+/** Fallback visible fields when the view declares none — mirrors table layout. */
+function defaultKanbanOrder(schema: any): string[] {
+  return (schema?.fields ?? [])
+    .filter((field: any) => !["textarea", "richText", "json", "blocks"].includes(field.type))
+    .slice(0, 5)
+    .map((field: any) => field.name)
 }

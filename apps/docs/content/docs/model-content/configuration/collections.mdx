@@ -105,6 +105,23 @@ export const GuestResponses = defineCollection({
 
 If you omit `views`, Dyrected synthesizes a `list` table view from `admin.defaultColumns` or the first five display fields — so `/collections/:slug` always has a route. Keep `slug` and view `slug`s stable; they are part of the URL and preference keys.
 
+You can shape that default table without a `views` array. These `admin` options apply directly to the default list and match the same keys on `defineView`:
+
+```ts
+export const Orders = defineCollection({
+  slug: "orders",
+  admin: {
+    defaultColumns: ["customer", "total", "status"],
+    filter: { status: { equals: "paid" } },
+    sort: { field: "createdAt", direction: "desc" },
+    groupBy: "status",
+  },
+  fields: [/* ... */],
+});
+```
+
+`filter` narrows the default list before the editor's toolbar filters, `sort` sets the opening order, `groupBy` organizes it into collapsible sections, and `metrics` adds KPI cards on top. When a default view redirect (`defaultView`, or a view with `default: true`) is configured, that view's own settings win on its route.
+
 For layouts, actions, metrics, and UX taste, read [Operational Views](/docs/model-content/operational-views/overview).
 
 ## When to choose a collection

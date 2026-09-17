@@ -195,6 +195,16 @@ Supported inline editable field types include text, textareas, numbers, currenci
 
 ---
 
+## Open related rows in a drawer
+
+When a Detail View shows related rows through a join field, clicking a row opens it in a side drawer instead of navigating away. The parent record stays on screen while the related document opens beside it, so editors never lose their place while fixing a line item.
+
+The drawer follows the related collection's own Detail View. When that collection sets `detail` (a custom schema or `detail: true`), the drawer opens on the read-only summary with a pencil toggle to switch into the form. Collections without `detail` open straight into the form — the same edit-first behavior as the rest of the admin.
+
+Inside the drawer, the Previous/Next buttons step through the sibling rows without closing it, and the Open-full-page button jumps to the record's full edit page when the change outgrows a quick fix. Saving in the drawer writes through the normal collection update pipeline, so hooks and access rules run exactly as they would on the edit page. On mobile the drawer becomes a bottom sheet.
+
+---
+
 ## Custom badge colors with `badgeColors`
 
 When displaying statuses, priority levels, or tags using `display: "badge"`, `display: "badges"`, or `display: "tags"`, you can map raw document values to distinct color tones with `badgeColors`.

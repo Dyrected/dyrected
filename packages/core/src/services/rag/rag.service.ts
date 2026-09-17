@@ -5,7 +5,7 @@ import { AI_CHUNKS_COLLECTION, isAICollection } from '../../types/ai.js';
 import { isAccessAllowed } from '../../auth/access.js';
 import { extractTextFromDoc } from './normalizer.js';
 import { chunkText, hashContent } from './chunker.js';
-import { EmbeddingService, cosineSimilarity } from './embedding.service.js';
+import { EmbeddingService, cosineSimilarity, hasEmbeddingApiKey } from './embedding.service.js';
 import { sanitizeDocForAI } from '../../utils/ai-pii.js';
 
 export interface IndexDocumentOptions {
@@ -90,6 +90,13 @@ export class RAGService {
 
     const col = config.collections?.find((c) => c.slug === collectionSlug);
     if (!col || !this.isCollectionRAGEnabled(config, col)) {
+      return { indexed: 0, skipped: 0 };
+    }
+
+    // No embedding key configured is a normal state (self-hosted without AI),
+    // not a failure — skip silently instead of throwing into callers' error
+    // logs on every write.
+    if (!hasEmbeddingApiKey(config)) {
       return { indexed: 0, skipped: 0 };
     }
 

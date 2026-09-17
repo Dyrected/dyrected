@@ -1211,7 +1211,11 @@ export class CollectionController {
           });
           resolvedData = (handlerResult ?? {}) as Record<string, unknown>;
         } catch (error) {
-          results.push({ id, ok: false, status: 500, error: error instanceof Error ? error.message : String(error) });
+          const status =
+            typeof (error as { statusCode?: unknown }).statusCode === "number"
+              ? (error as { statusCode: number }).statusCode
+              : 500;
+          results.push({ id, ok: false, status, error: error instanceof Error ? error.message : String(error) });
           continue;
         }
       } else {
@@ -1236,7 +1240,11 @@ export class CollectionController {
     if (requestedIds.length === 1) {
       const single = results[0];
       if (!single.ok) {
-        return c.json(single.error ?? { error: true, message: "Action failed" }, (single.status ?? 500) as any);
+        const body =
+          typeof single.error === "string"
+            ? { error: true, message: single.error }
+            : (single.error ?? { error: true, message: "Action failed" });
+        return c.json(body, (single.status ?? 500) as any);
       }
       return c.json(single.doc);
     }

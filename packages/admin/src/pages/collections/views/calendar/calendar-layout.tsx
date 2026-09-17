@@ -146,7 +146,11 @@ export function CalendarLayout({
     view.dateField ??
     (schema?.fields ?? []).find((field: any) => field.type === "date" || field.type === "datetime")?.name
 
-  const titleField = (view.columns ?? [])[0]
+  const titleField =
+    (view.columns ?? [])[0] ??
+    (schema?.admin as any)?.useAsTitle ??
+    (schema?.fields ?? []).find((field: any) => field.name === "title")?.name ??
+    (schema?.fields ?? [])[0]?.name
   const resourceField = view.resourceField
 
   const dateRange = useMemo(() => {
