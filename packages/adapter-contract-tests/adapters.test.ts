@@ -10,7 +10,7 @@ import { B2StorageAdapter } from "../storage-b2/src/index.js";
 import { CloudinaryStorageAdapter } from "../storage-cloudinary/src/index.js";
 import { LocalStorageAdapter } from "../storage-local/src/index.js";
 import { S3StorageAdapter } from "../storage-s3/src/index.js";
-import { runDatabaseAdapterContract, runAggregateAdapterContract } from "./database-contract.js";
+import { runDatabaseAdapterContract, runAggregateAdapterContract, runIntegrityAndConcurrencyAdapterContract } from "./database-contract.js";
 import { runStorageAdapterContract } from "./storage-contract.js";
 
 const tempPaths: string[] = [];
@@ -73,6 +73,23 @@ runAggregateAdapterContract(
       dbName: process.env.TEST_MONGODB_DB || "dyrected_contract",
     }),
   { skip: !process.env.TEST_MONGODB_URL },
+);
+
+runIntegrityAndConcurrencyAdapterContract(
+  "SQLite",
+  () => new SqliteAdapter({ filename: ":memory:" }),
+);
+
+runIntegrityAndConcurrencyAdapterContract(
+  "PostgreSQL",
+  () => new PostgresAdapter({ url: process.env.TEST_POSTGRES_URL! }),
+  { skip: !process.env.TEST_POSTGRES_URL },
+);
+
+runIntegrityAndConcurrencyAdapterContract(
+  "MySQL",
+  () => new MysqlAdapter({ url: process.env.TEST_MYSQL_URL! }),
+  { skip: !process.env.TEST_MYSQL_URL },
 );
 
 runStorageAdapterContract("Local", async () => {

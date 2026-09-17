@@ -1,5 +1,30 @@
-import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere } from '@dyrected/core';
+import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError } from '@dyrected/core';
+import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
+
+function handleSqliteError(err: any): never {
+  if (err && (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.message?.includes('UNIQUE constraint failed'))) {
+    const match = err.message.match(/UNIQUE constraint failed: (?:[^.]*\.)?(.*)/);
+    const field = match ? match[1] : undefined;
+    throw new DuplicateKeyError(err.message, { field });
+  }
+  throw err;
+}
+
+function toSqliteBind(val: any): any {
+  if (typeof val === 'boolean') return val ? 1 : 0;
+  if (val === undefined) return null;
+  return val;
+}
+
+function isNumericOp(val: any): val is { increment?: number; decrement?: number } {
+  return (
+    val !== null &&
+    typeof val === 'object' &&
+    !Array.isArray(val) &&
+    ('increment' in val || 'decrement' in val)
+  );
+}
 
 export interface SqliteAdapterConfig {
   filename: string;
@@ -77,7 +102,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     return `collection_${slug.replace(/-/g, '_')}`;
   }
 
-  private async ensureTable(slug: string, fields: any[] = []) {
+  private async ensureTable(slug: string, fields: any[] = [], indexes: any[] = []) {
     if (slug === '_dyrected_ai_threads' || slug === '_dyrected_ai_messages') {
       return;
     }
@@ -103,9 +128,19 @@ export class SqliteAdapter implements DatabaseAdapter {
       this.sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`);
     }
 
-    // Handle Promoted Fields
+    // Collect all fields that are indexed
+    const indexedFields = new Set<string>();
+    if (Array.isArray(indexes)) {
+      for (const idx of indexes) {
+        if (Array.isArray(idx.fields)) {
+          for (const f of idx.fields) indexedFields.add(f);
+        }
+      }
+    }
+
+    // Handle Promoted and Indexed Fields
     for (const field of fields) {
-      if (field.promoted) {
+      if (field.promoted || field.unique || indexedFields.has(field.name)) {
         const hasColumn = tableInfo.some(col => col.name === field.name);
         if (!hasColumn) {
           console.log(`[dyrected/sqlite] Promoting field "${field.name}" to column in ${tableName}`);
@@ -114,13 +149,43 @@ export class SqliteAdapter implements DatabaseAdapter {
           if (field.type === 'number') sqlType = 'NUMERIC';
           if (field.type === 'boolean') sqlType = 'INTEGER';
           
-          this.sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN ${field.name} ${sqlType}`);
+          this.sqlite.exec(`ALTER TABLE ${escapeSqliteIdentifier(tableName)} ADD COLUMN ${escapeSqliteIdentifier(field.name)} ${sqlType}`);
+          tableInfo.push({ name: field.name });
         }
+      }
+    }
+
+    // Ensure indexes exist
+    // 1. Single-field unique constraints
+    for (const field of fields) {
+      if (field.unique) {
+        const idxName = `uniq_${tableName}_${field.name}`;
+        this.sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ${escapeSqliteIdentifier(idxName)} ON ${escapeSqliteIdentifier(tableName)}(${escapeSqliteIdentifier(field.name)})`);
+      }
+    }
+
+    // 2. Collection composite/custom indexes
+    if (Array.isArray(indexes)) {
+      for (const idx of indexes) {
+        if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
+        const isUnique = Boolean(idx.unique);
+        const idxName = idx.name || `${isUnique ? 'uniq' : 'idx'}_${tableName}_${idx.fields.join('_')}`;
+        const uniqueKeyword = isUnique ? 'UNIQUE ' : '';
+        const colList = idx.fields.map((f: string) => escapeSqliteIdentifier(f)).join(', ');
+        this.sqlite.exec(`CREATE ${uniqueKeyword}INDEX IF NOT EXISTS ${escapeSqliteIdentifier(idxName)} ON ${escapeSqliteIdentifier(tableName)}(${colList})`);
       }
     }
   }
 
-  async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }) {
+  async find(args: {
+    collection: string;
+    where?: any;
+    limit?: number;
+    page?: number;
+    sort?: string;
+    fields?: any[];
+    lock?: 'for-update';
+  }) {
     await this.ensureTable(args.collection);
     const tableName = this.getTableName(args.collection);
 
@@ -139,10 +204,11 @@ export class SqliteAdapter implements DatabaseAdapter {
       const result = parseSqlWhere(
         args.where,
         (field: string) => {
+          if (field === 'id') return 'id';
           if (field === 'createdAt') return 'created_at';
           if (field === 'updatedAt') return 'updated_at';
           if (columns.includes(field) && !['id', 'data'].includes(field)) {
-            return field;
+            return escapeSqliteIdentifier(field);
           }
           return `json_extract(data, '$.${field}')`;
         },
@@ -157,18 +223,28 @@ export class SqliteAdapter implements DatabaseAdapter {
     // Count with same filter so pagination totals are accurate
     const { count } = this.sqlite
       .prepare(`SELECT COUNT(*) as count FROM ${tableName} ${whereSql}`)
-      .get(...whereParams) as { count: number };
+      .get(...whereParams.map(toSqliteBind)) as { count: number };
 
     const rows = this.sqlite
       .prepare(`SELECT * FROM ${tableName} ${whereSql} ORDER BY ${sort} LIMIT ? OFFSET ?`)
-      .all(...whereParams, limit, offset) as any[];
+      .all(...whereParams.map(toSqliteBind), limit, offset) as any[];
 
-    const docs = rows.map((r) => ({
-      id: r.id,
-      ...JSON.parse(r.data),
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    const docs = rows.map((r) => {
+      const parsedData = typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {});
+      const promotedOverlay: Record<string, any> = {};
+      for (const col of columns) {
+        if (!['id', 'data', 'created_at', 'updated_at'].includes(col) && r[col] !== undefined && r[col] !== null) {
+          promotedOverlay[col] = r[col];
+        }
+      }
+      return {
+        id: r.id,
+        ...parsedData,
+        ...promotedOverlay,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      };
+    });
 
     const totalPages = Math.ceil(count / limit);
     return {
@@ -182,16 +258,28 @@ export class SqliteAdapter implements DatabaseAdapter {
     };
   }
 
-  async findOne(params: { collection: string; id: string }) {
+  async findOne(params: { collection: string; id: string; lock?: 'for-update' }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
+    const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+    const columns = tableInfo.map(col => col.name);
     const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} WHERE id = ?`);
     const id = (params.id && typeof params.id === 'object') ? (params.id as any).id : params.id;
     const row = stmt.get(id) as any;
     if (!row) return null;
+
+    const parsedData = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
+    const promotedOverlay: Record<string, any> = {};
+    for (const col of columns) {
+      if (!['id', 'data', 'created_at', 'updated_at'].includes(col) && row[col] !== undefined && row[col] !== null) {
+        promotedOverlay[col] = row[col];
+      }
+    }
+
     return { 
       id: row.id, 
-      ...JSON.parse(row.data),
+      ...parsedData,
+      ...promotedOverlay,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
@@ -205,7 +293,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
     const columns = tableInfo.map(col => col.name);
     
-    const id = params.data.id || Math.random().toString(36).substring(7);
+    const id = params.data.id || randomUUID();
     const now = new Date().toISOString();
     const createdAt = params.data.createdAt || now;
     const updatedAt = params.data.updatedAt || now;
@@ -221,52 +309,142 @@ export class SqliteAdapter implements DatabaseAdapter {
       if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
       if (data[col] !== undefined) {
         promotedValues[col] = data[col];
-        // We keep it in the JSON blob for now to ensure compatibility, 
-        // but it's now also in a real column for indexing.
       }
     }
 
     const colNames = ['id', 'data', 'created_at', 'updated_at', ...Object.keys(promotedValues)];
     const placeholders = colNames.map(() => '?').join(', ');
-    const values = [id, JSON.stringify(data), createdAt, updatedAt, ...Object.values(promotedValues)];
+    const values = [id, JSON.stringify(data), createdAt, updatedAt, ...Object.values(promotedValues)].map(toSqliteBind);
 
-    const stmt = this.sqlite.prepare(`INSERT INTO ${tableName} (${colNames.join(', ')}) VALUES (${placeholders})`);
-    stmt.run(...values);
-
-    return { id, ...data, createdAt, updatedAt };
+    try {
+      const stmt = this.sqlite.prepare(`INSERT INTO ${tableName} (${colNames.join(', ')}) VALUES (${placeholders})`);
+      stmt.run(...values);
+      return { id, ...data, ...promotedValues, createdAt, updatedAt };
+    } catch (err: any) {
+      handleSqliteError(err);
+    }
   }
 
-  async update(params: { collection: string; id: string; data: any }) {
+  async update(params: { collection: string; id?: string; where?: any; data: any }): Promise<any> {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     
     // Inspect columns for promoted fields
     const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
     const columns = tableInfo.map(col => col.name);
-
-    const existing = await this.findOne({ collection: params.collection, id: params.id });
     const now = new Date().toISOString();
-    const newData = { ...(existing || {}), ...params.data };
-    delete (newData as any).id;
-    delete (newData as any).createdAt;
-    delete (newData as any).updatedAt;
 
-    // Extract promoted fields
-    const promotedValues: Record<string, any> = {};
-    for (const col of columns) {
-      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
-      if (newData[col] !== undefined) {
-        promotedValues[col] = newData[col];
+    // Build WHERE clause
+    let whereSql = '';
+    let whereParams: any[] = [];
+    if (params.id) {
+      whereSql = 'WHERE id = ?';
+      whereParams = [params.id];
+      if (params.where && Object.keys(params.where).length > 0) {
+        const parsed = parseSqlWhere(
+          params.where,
+          (field: string) => {
+            if (field === 'id') return 'id';
+            if (field === 'createdAt') return 'created_at';
+            if (field === 'updatedAt') return 'updated_at';
+            if (columns.includes(field) && !['id', 'data'].includes(field)) {
+              return escapeSqliteIdentifier(field);
+            }
+            return `json_extract(data, '$.${field}')`;
+          },
+          '?',
+        );
+        whereSql += ` AND (${parsed.sql})`;
+        whereParams.push(...parsed.params);
+      }
+    } else if (params.where && Object.keys(params.where).length > 0) {
+      const parsed = parseSqlWhere(
+        params.where,
+        (field: string) => {
+          if (field === 'id') return 'id';
+          if (field === 'createdAt') return 'created_at';
+          if (field === 'updatedAt') return 'updated_at';
+          if (columns.includes(field) && !['id', 'data'].includes(field)) {
+            return escapeSqliteIdentifier(field);
+          }
+          return `json_extract(data, '$.${field}')`;
+        },
+        '?',
+      );
+      whereSql = `WHERE ${parsed.sql}`;
+      whereParams = parsed.params;
+    } else {
+      throw new Error('update requires either id or where clause');
+    }
+
+    const setClauses: string[] = [];
+    const setParams: any[] = [];
+    const jsonPaths: string[] = [];
+    const jsonParams: any[] = [];
+
+    for (const [key, val] of Object.entries(params.data)) {
+      if (['id', 'createdAt', 'updatedAt'].includes(key)) continue;
+
+      const isPromoted = columns.includes(key) && !['id', 'data', 'created_at', 'updated_at'].includes(key);
+
+      if (isNumericOp(val)) {
+        const delta = Number((val.increment ?? 0) - (val.decrement ?? 0));
+        if (isPromoted) {
+          const escapedCol = escapeSqliteIdentifier(key);
+          setClauses.push(`${escapedCol} = COALESCE(${escapedCol}, 0) + ?`);
+          setParams.push(delta);
+          jsonPaths.push(`'$.${key}', ${escapedCol}`);
+        } else {
+          jsonPaths.push(`'$.${key}', json_extract(data, '$.${key}') + ?`);
+          jsonParams.push(delta);
+        }
+      } else {
+        if (isPromoted) {
+          const escapedCol = escapeSqliteIdentifier(key);
+          setClauses.push(`${escapedCol} = ?`);
+          setParams.push(val);
+          jsonPaths.push(`'$.${key}', ${escapedCol}`);
+        } else if (typeof val === 'object' && val !== null) {
+          jsonPaths.push(`'$.${key}', json(?)`);
+          jsonParams.push(JSON.stringify(val));
+        } else {
+          jsonPaths.push(`'$.${key}', ?`);
+          jsonParams.push(val);
+        }
       }
     }
 
-    const setClauses = ['data = ?', 'updated_at = ?', ...Object.keys(promotedValues).map(k => `${k} = ?`)];
-    const values = [JSON.stringify(newData), now, ...Object.values(promotedValues), params.id];
+    setClauses.push('updated_at = ?');
+    setParams.push(now);
 
-    const stmt = this.sqlite.prepare(`UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = ?`);
-    stmt.run(...values);
-    
-    return { id: params.id, ...newData, createdAt: existing?.createdAt, updatedAt: now };
+    if (jsonPaths.length > 0) {
+      setClauses.push(`data = json_set(COALESCE(data, '{}'), ${jsonPaths.join(', ')})`);
+      setParams.push(...jsonParams);
+    }
+
+    const updateSql = `UPDATE ${tableName} SET ${setClauses.join(', ')} ${whereSql}`;
+    try {
+      const stmt = this.sqlite.prepare(updateSql);
+      const info = stmt.run(...[...setParams, ...whereParams].map(toSqliteBind));
+
+      let targetId = params.id;
+      if (!targetId && params.where) {
+        const found = await this.find({ collection: params.collection, where: params.where, limit: 1 });
+        targetId = found.docs[0]?.id;
+      }
+
+      if (targetId) {
+        const doc = await this.findOne({ collection: params.collection, id: targetId });
+        if (doc) {
+          (doc as any).affectedRows = info.changes;
+          return doc;
+        }
+      }
+
+      return { id: targetId, ...params.data, affectedRows: info.changes, updatedAt: now };
+    } catch (err: any) {
+      handleSqliteError(err);
+    }
   }
 
   async delete(params: { collection: string; id: string }) {
@@ -278,7 +456,7 @@ export class SqliteAdapter implements DatabaseAdapter {
 
   async sync(collections: any[]) {
     for (const col of collections) {
-      await this.ensureTable(col.slug);
+      await this.ensureTable(col.slug, col.fields, col.indexes);
     }
   }
 
@@ -392,7 +570,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     if (args.groupBy) {
       const groupCol = toFieldExpr(args.groupBy);
       const query = `SELECT ${groupCol} AS "__group_key", ${selectParts.join(', ')} FROM ${tableName} GROUP BY ${groupCol}`;
-      const rows = (this.sqlite.prepare(query).all(...allParams) as Record<string, unknown>[]) ?? [];
+      const rows = (this.sqlite.prepare(query).all(...allParams.map(toSqliteBind)) as Record<string, unknown>[]) ?? [];
 
       const groups: Record<string, Record<string, any>> = {};
       for (const row of rows) {
@@ -413,7 +591,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     }
 
     const query = `SELECT ${selectParts.join(', ')} FROM ${tableName}`;
-    const row = (this.sqlite.prepare(query).get(...allParams) as Record<string, unknown> | undefined) ?? {};
+    const row = (this.sqlite.prepare(query).get(...allParams.map(toSqliteBind)) as Record<string, unknown> | undefined) ?? {};
 
     const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {

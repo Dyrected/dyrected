@@ -1074,8 +1074,8 @@
     "id": "/deployment-and-operations/infrastructure/database/overview#example-2",
     "page": "/deployment-and-operations/infrastructure/database/overview",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/deployment-and-operations/infrastructure/database/overview#example-3",

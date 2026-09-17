@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CollectionConfig, DatabaseAdapter } from "@dyrected/core";
+import { type CollectionConfig, type DatabaseAdapter, DuplicateKeyError } from "@dyrected/core";
 
 export function runDatabaseAdapterContract(
   name: string,
@@ -454,4 +454,164 @@ export function runAggregateAdapterContract(
     });
   });
 }
+
+export function runIntegrityAndConcurrencyAdapterContract(
+  name: string,
+  createAdapter: () => DatabaseAdapter | Promise<DatabaseAdapter>,
+  options: { skip?: boolean } = {},
+) {
+  const suite = options.skip ? describe.skip : describe;
+  suite(`${name} integrity & concurrency contract`, () => {
+    it("generates UUIDv4 IDs when no id is provided", async () => {
+      const db = await createAdapter();
+      const collection = `uuid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [{ name: "name", type: "text" }],
+      };
+      await db.sync?.([config], []);
+
+      const doc = await db.create({ collection, data: { name: "Alpha" } });
+      expect(doc.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+
+    it("enforces physical unique constraints with DuplicateKeyError", async () => {
+      const db = await createAdapter();
+      const collection = `uniq-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "code", type: "text", unique: true },
+          { name: "description", type: "text" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { code: "TEST-1", description: "First" } });
+      await expect(
+        db.create({ collection, data: { code: "TEST-1", description: "Duplicate" } }),
+      ).rejects.toThrow(DuplicateKeyError);
+    });
+
+    it("enforces physical composite unique indexes with DuplicateKeyError", async () => {
+      const db = await createAdapter();
+      const collection = `comp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "account", type: "text" },
+          { name: "currency", type: "text" },
+        ],
+        indexes: [
+          { fields: ["account", "currency"], unique: true },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { account: "ACC-001", currency: "NGN" } });
+
+      // Same composite key should fail
+      await expect(
+        db.create({ collection, data: { account: "ACC-001", currency: "NGN" } }),
+      ).rejects.toThrow(DuplicateKeyError);
+
+      // Different composite key should succeed
+      const second = await db.create({ collection, data: { account: "ACC-001", currency: "USD" } });
+      expect(second).toBeDefined();
+      expect(second.currency).toBe("USD");
+    });
+
+    it("performs atomic numeric increments and decrements without read-modify-write races", async () => {
+      const db = await createAdapter();
+      const collection = `atomic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "balance", type: "number", promoted: true },
+          { name: "unpromotedBalance", type: "number" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      const doc = await db.create({
+        collection,
+        data: { balance: 100, unpromotedBalance: 100 },
+      });
+
+      // Increment
+      const step1 = await db.update({
+        collection,
+        id: doc.id,
+        data: {
+          balance: { increment: 50 },
+          unpromotedBalance: { increment: 50 },
+        },
+      });
+      expect(Number(step1.balance)).toBe(150);
+      expect(Number(step1.unpromotedBalance)).toBe(150);
+
+      // Decrement
+      const step2 = await db.update({
+        collection,
+        id: doc.id,
+        data: {
+          balance: { decrement: 20 },
+          unpromotedBalance: { decrement: 20 },
+        },
+      });
+      expect(Number(step2.balance)).toBe(130);
+      expect(Number(step2.unpromotedBalance)).toBe(130);
+
+      // Re-fetch to ensure persistence
+      const reFetched = await db.findOne({ collection, id: doc.id });
+      expect(Number(reFetched?.balance)).toBe(130);
+      expect(Number(reFetched?.unpromotedBalance)).toBe(130);
+    });
+
+    it("supports conditional where updates and tracks affectedRows", async () => {
+      const db = await createAdapter();
+      const collection = `cond-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "balance", type: "number", promoted: true },
+          { name: "tier", type: "text" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      const doc = await db.create({
+        collection,
+        data: { balance: 130, tier: "standard" },
+      });
+
+      // Conditional update that does NOT match: balance >= 200
+      const failedCond = await db.update({
+        collection,
+        id: doc.id,
+        where: { balance: { greater_than_equal: 200 } },
+        data: { tier: "vip" },
+      });
+      expect((failedCond as any).affectedRows).toBe(0);
+
+      // Verify row was not changed
+      const unchanged = await db.findOne({ collection, id: doc.id });
+      expect(unchanged?.tier).toBe("standard");
+
+      // Conditional update that DOES match: balance >= 100
+      const successCond = await db.update({
+        collection,
+        id: doc.id,
+        where: { balance: { greater_than_equal: 100 } },
+        data: { tier: "premium" },
+      });
+      expect((successCond as any).affectedRows).toBe(1);
+      expect(successCond.tier).toBe("premium");
+
+      const changed = await db.findOne({ collection, id: doc.id });
+      expect(changed?.tier).toBe("premium");
+    });
+  });
+}
+
 

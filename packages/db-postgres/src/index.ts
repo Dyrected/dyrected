@@ -3,8 +3,29 @@ import {
   PaginatedResult,
   parseSort,
   parseSqlWhere,
+  DuplicateKeyError,
 } from "@dyrected/core";
+import { randomUUID } from "node:crypto";
 import postgres from "postgres";
+
+function handlePgError(err: any): never {
+  if (err && err.code === "23505") {
+    const match = err.detail?.match(/Key \((.*)\)=\((.*)\) already exists/);
+    const field = match ? match[1] : undefined;
+    const value = match ? match[2] : undefined;
+    throw new DuplicateKeyError(err.detail || err.message, { field, value });
+  }
+  throw err;
+}
+
+function isNumericOp(val: any): val is { increment?: number; decrement?: number } {
+  return (
+    val !== null &&
+    typeof val === "object" &&
+    !Array.isArray(val) &&
+    ("increment" in val || "decrement" in val)
+  );
+}
 
 export interface PostgresAdapterConfig {
   url: string;
@@ -238,13 +259,16 @@ export class PostgresAdapter implements DatabaseAdapter {
     return existingCols;
   }
 
-  private async ensureTable(slug: string, fields: any[] = []) {
+  private async ensureTable(slug: string, fields: any[] = [], indexes: any[] = []) {
     await this.ensureInitialized();
     if (slug === '_dyrected_ai_threads' || slug === '_dyrected_ai_messages') {
       return;
     }
     const tableNameOnly = this.getPhysicalTableName(slug);
     const knownTables = this.getKnownTables();
+    const targetTable = slug.includes(".")
+      ? slug
+      : `"${`collection_${slug}`.replace(/"/g, '""')}"`;
 
     if (!knownTables.has(tableNameOnly)) {
       const relation = await this.sql<{ table_name: string | null }[]>`
@@ -265,19 +289,24 @@ export class PostgresAdapter implements DatabaseAdapter {
       knownTables.add(tableNameOnly);
     }
 
-    // Handle Promoted Fields
+    // Handle Promoted and Indexed Fields
     const existingCols = await this.getTableColumns(tableNameOnly);
 
+    const indexedFields = new Set<string>();
+    if (Array.isArray(indexes)) {
+      for (const idx of indexes) {
+        if (Array.isArray(idx.fields)) {
+          for (const f of idx.fields) indexedFields.add(f);
+        }
+      }
+    }
+
     for (const field of fields) {
-      if (field.promoted) {
+      if (field.promoted || field.unique || indexedFields.has(field.name)) {
         let sqlType = "TEXT";
         if (field.type === "number") sqlType = "NUMERIC";
         if (field.type === "boolean") sqlType = "BOOLEAN";
         if (field.type === "date" || field.type === "datetime") sqlType = "TIMESTAMPTZ";
-
-        const targetTable = slug.includes(".")
-          ? slug
-          : `"${`collection_${slug}`.replace(/"/g, '""')}"`;
 
         if (!existingCols.includes(field.name)) {
           console.log(
@@ -310,6 +339,31 @@ export class PostgresAdapter implements DatabaseAdapter {
         }
       }
     }
+
+    // Ensure indexes exist
+    // 1. Single-field unique constraints
+    for (const field of fields) {
+      if (field.unique) {
+        const idxName = `uniq_${tableNameOnly}_${field.name}`;
+        await this.sql.unsafe(
+          `CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON ${targetTable} ("${field.name.replace(/"/g, '""')}")`
+        );
+      }
+    }
+
+    // 2. Collection composite/custom indexes
+    if (Array.isArray(indexes)) {
+      for (const idx of indexes) {
+        if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
+        const isUnique = Boolean(idx.unique);
+        const idxName = idx.name || `${isUnique ? "uniq" : "idx"}_${tableNameOnly}_${idx.fields.join("_")}`;
+        const uniqueKeyword = isUnique ? "UNIQUE " : "";
+        const colList = idx.fields.map((f: string) => `"${f.replace(/"/g, '""')}"`).join(", ");
+        await this.sql.unsafe(
+          `CREATE ${uniqueKeyword}INDEX IF NOT EXISTS "${idxName}" ON ${targetTable} (${colList})`
+        );
+      }
+    }
   }
 
   private formatDoc(row: any, existingCols: string[]): { id: string; [key: string]: any } {
@@ -329,6 +383,8 @@ export class PostgresAdapter implements DatabaseAdapter {
     limit?: number;
     page?: number;
     sort?: string;
+    fields?: any[];
+    lock?: "for-update";
   }): Promise<PaginatedResult> {
     await this.ensureInitialized();
     await this.ensureTable(args.collection);
@@ -351,6 +407,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       const parsed = parseSqlWhere(
         args.where,
         (field: string) => {
+          if (field === "id") return '"id"';
           if (field === "createdAt") return '"created_at"';
           if (field === "updatedAt") return '"updated_at"';
           if (existingCols.includes(field) && !["id", "data"].includes(field)) {
@@ -371,12 +428,13 @@ export class PostgresAdapter implements DatabaseAdapter {
     const total = parseInt(countRes[0].total);
 
     const sort = normalizePgSort(args.sort, existingCols);
+    const lockSql = (this.inTransaction || args.lock === "for-update") ? " FOR UPDATE" : "";
 
     const rowsQuery = `
       SELECT * FROM ${tableName}
       ${whereSql}
       ORDER BY ${sort}
-      LIMIT ${limit} OFFSET ${offset}
+      LIMIT ${limit} OFFSET ${offset}${lockSql}
     `;
     const rows = await this.sql.unsafe(rowsQuery, params);
 
@@ -392,13 +450,14 @@ export class PostgresAdapter implements DatabaseAdapter {
     };
   }
 
-  async findOne(params: { collection: string; id: string }) {
+  async findOne(params: { collection: string; id: string; lock?: "for-update" }) {
     await this.ensureInitialized();
     await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
     const tableNameOnly = this.getPhysicalTableName(params.collection);
     const existingCols = await this.getTableColumns(tableNameOnly);
-    const rows = this.inTransaction
+    const lock = (this.inTransaction || params.lock === "for-update");
+    const rows = lock
       ? await this
           .sql`SELECT * FROM ${table} WHERE id = ${params.id} FOR UPDATE`
       : await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
@@ -416,7 +475,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     // Inspect columns for promoted fields
     const existingCols = await this.getTableColumns(tableNameOnly);
 
-    const id = params.data.id || Math.random().toString(36).substring(7);
+    const id = params.data.id || randomUUID();
     const data = { ...params.data };
     delete data.id;
 
@@ -429,57 +488,147 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
     }
 
-    if (Object.keys(promotedValues).length > 0) {
-      const allData = { id, data, ...promotedValues };
-      await this.sql`INSERT INTO ${table} ${this.sql(allData)}`;
-    } else {
-      await this.sql`INSERT INTO ${table} (id, data) VALUES (${id}, ${data})`;
+    try {
+      if (Object.keys(promotedValues).length > 0) {
+        const allData = { id, data, ...promotedValues };
+        await this.sql`INSERT INTO ${table} ${this.sql(allData)}`;
+      } else {
+        await this.sql`INSERT INTO ${table} (id, data) VALUES (${id}, ${data})`;
+      }
+      return { id, ...data, ...promotedValues };
+    } catch (err: any) {
+      handlePgError(err);
     }
-
-    return { id, ...data };
   }
 
-  async update(params: { collection: string; id: string; data: any }) {
+  async update(params: { collection: string; id?: string; where?: any; data: any }): Promise<any> {
     await this.ensureInitialized();
     await this.ensureTable(params.collection);
-    const table = this.getTableIdentifier(params.collection);
-    const tableNameOnly = this.getPhysicalTableName(params.collection);
-    
+    const tableSlug = params.collection;
+    const tableNameOnly = this.getPhysicalTableName(tableSlug);
+    const targetTable = tableSlug.includes(".")
+      ? tableSlug
+      : `"${tableSlug.startsWith("collection_") ? tableSlug : `collection_${tableSlug}`}"`;
+
     // Inspect columns for promoted fields
     const existingCols = await this.getTableColumns(tableNameOnly);
 
-    const data = { ...params.data };
-    const promotedValues: Record<string, any> = {};
-    for (const col of existingCols) {
-      if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
-      if (data[col] !== undefined) {
-        promotedValues[col] = data[col];
+    // Build WHERE clause
+    let whereSql = "";
+    let whereParams: any[] = [];
+    if (params.id) {
+      whereSql = `WHERE id = $1`;
+      whereParams = [params.id];
+      if (params.where && Object.keys(params.where).length > 0) {
+        const parsed = parseSqlWhere(
+          params.where,
+          (field: string) => {
+            if (field === "id") return '"id"';
+            if (field === "createdAt") return '"created_at"';
+            if (field === "updatedAt") return '"updated_at"';
+            if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+              return `"${field}"`;
+            }
+            return `data->>'${field}'`;
+          },
+          "pg",
+          "ILIKE",
+        );
+        whereSql += ` AND (${parsed.sql})`;
+        whereParams.push(...parsed.params);
+      }
+    } else if (params.where && Object.keys(params.where).length > 0) {
+      const parsed = parseSqlWhere(
+        params.where,
+        (field: string) => {
+          if (field === "id") return '"id"';
+          if (field === "createdAt") return '"created_at"';
+          if (field === "updatedAt") return '"updated_at"';
+          if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+            return `"${field}"`;
+          }
+          return `data->>'${field}'`;
+        },
+        "pg",
+        "ILIKE",
+      );
+      whereSql = `WHERE ${parsed.sql}`;
+      whereParams = parsed.params;
+    } else {
+      throw new Error("update requires either id or where clause");
+    }
+
+    const setClauses: string[] = [];
+    const setParams: any[] = [];
+    const jsonPatch: Record<string, any> = {};
+
+    for (const [key, val] of Object.entries(params.data)) {
+      if (["id", "createdAt", "updatedAt"].includes(key)) continue;
+
+      const isPromoted = existingCols.includes(key) && !["id", "data", "created_at", "updated_at"].includes(key);
+
+      if (isNumericOp(val)) {
+        const delta = Number((val.increment ?? 0) - (val.decrement ?? 0));
+        setParams.push(delta);
+        const pIndex = setParams.length;
+        if (isPromoted) {
+          const escapedCol = `"${key.replace(/"/g, '""')}"`;
+          setClauses.push(`${escapedCol} = COALESCE(${escapedCol}, 0) + $${pIndex}`);
+          setClauses.push(`data = jsonb_set(COALESCE(data, '{}'::jsonb), '{${key}}', to_jsonb(COALESCE(${escapedCol}, 0) + $${pIndex}))`);
+        } else {
+          setClauses.push(`data = jsonb_set(COALESCE(data, '{}'::jsonb), '{${key}}', to_jsonb(COALESCE((data->>'${key}')::numeric, 0) + $${pIndex}))`);
+        }
+      } else {
+        if (isPromoted) {
+          const escapedCol = `"${key.replace(/"/g, '""')}"`;
+          setParams.push(val);
+          const pIndex = setParams.length;
+          setClauses.push(`${escapedCol} = $${pIndex}`);
+        }
+        jsonPatch[key] = val;
       }
     }
 
-    if (Object.keys(promotedValues).length > 0) {
-      await this.sql`
-        UPDATE ${table} 
-        SET data = data || ${data}::jsonb, 
-            updated_at = CURRENT_TIMESTAMP,
-            ${this.sql(promotedValues)}
-        WHERE id = ${params.id}
-      `;
-    } else {
-      await this
-        .sql`UPDATE ${table} SET data = data || ${data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
+    setClauses.push("updated_at = CURRENT_TIMESTAMP");
+
+    if (Object.keys(jsonPatch).length > 0) {
+      setParams.push(JSON.stringify(jsonPatch));
+      const pIndex = setParams.length;
+      setClauses.push(`data = COALESCE(data, '{}'::jsonb) || $${pIndex}::jsonb`);
     }
 
-    const updated = await this.findOne({
-      collection: params.collection,
-      id: params.id,
-    });
-    return updated ?? { id: params.id, ...params.data };
+    // Remap WHERE parameter indices since setParams are first
+    const paramOffset = setParams.length;
+    const adjustedWhereSql = whereSql.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + paramOffset}`);
+
+    const updateSql = `UPDATE ${targetTable} SET ${setClauses.join(", ")} ${adjustedWhereSql}`;
+    try {
+      const res = await this.sql.unsafe(updateSql, [...setParams, ...whereParams]);
+      const count = res?.count ?? 0;
+
+      let targetId = params.id;
+      if (!targetId && params.where) {
+        const found = await this.find({ collection: params.collection, where: params.where, limit: 1 });
+        targetId = found.docs[0]?.id;
+      }
+
+      if (targetId) {
+        const doc = await this.findOne({ collection: params.collection, id: targetId });
+        if (doc) {
+          (doc as any).affectedRows = count;
+          return doc;
+        }
+      }
+
+      return { id: targetId, ...params.data, affectedRows: count };
+    } catch (err: any) {
+      handlePgError(err);
+    }
   }
 
   async sync(collections: any[]) {
     for (const col of collections) {
-      await this.ensureTable(col.slug, col.fields);
+      await this.ensureTable(col.slug, col.fields, col.indexes);
     }
   }
 

@@ -379,10 +379,21 @@ FIX INSTRUCTIONS:
         // Silently continue if alter fails or insufficient permissions
       }
 
+      const indexedFields = new Set<string>();
+      if (Array.isArray(indexes)) {
+        for (const idx of indexes) {
+          if (Array.isArray(idx.fields)) {
+            for (const f of idx.fields) indexedFields.add(f);
+          }
+        }
+      }
+
       for (const field of fields) {
-        if (field.promoted && !existingCols.includes(field.name)) {
+        const shouldPromote = field.promoted || field.unique || indexedFields.has(field.name);
+        if (shouldPromote && !existingCols.includes(field.name)) {
           console.log(`[dyrected/mysql] Promoting field "${field.name}" to column in ${tableName}`);
-          let sqlType = "VARCHAR(191)";
+          const isUniqueOrIndexed = field.unique || indexedFields.has(field.name);
+          let sqlType = isUniqueOrIndexed ? "VARCHAR(191)" : "TEXT";
           if (field.type === "number") sqlType = "DECIMAL(19,4)";
           if (field.type === "boolean") sqlType = "TINYINT(1)";
           if (field.type === "date" || field.type === "datetime") sqlType = "DATETIME(3)";
@@ -423,8 +434,13 @@ FIX INSTRUCTIONS:
       }
 
       // Ensure indexes exist
-      const [existingIndicesRows] = await this.query(`SHOW INDEX FROM \`${tableName}\``);
-      const existingIndexNames = new Set(existingIndicesRows.map((r: any) => r.Key_name));
+      const rawIndices = await this.query(`SHOW INDEX FROM \`${tableName}\``);
+      const existingIndicesRows: any[] = Array.isArray(rawIndices?.[0])
+        ? rawIndices[0]
+        : Array.isArray(rawIndices)
+          ? rawIndices
+          : [];
+      const existingIndexNames = new Set(existingIndicesRows.map((r: any) => r?.Key_name).filter(Boolean));
 
       // 1. Single-field unique constraints
       for (const field of fields) {
