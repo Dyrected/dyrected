@@ -53,6 +53,7 @@ vi.mock("react-hook-form", async (importOriginal) => {
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateSpy,
   useParams: () => paramsRef.current,
+  useSearchParams: () => [new URLSearchParams(), vi.fn()],
 }))
 
 vi.mock("../../../providers/dyrected-context", () => ({
@@ -378,5 +379,67 @@ describe("JoinField", () => {
     await user.click(confirmDeleteBtn)
 
     expect(clientDeleteMock).toHaveBeenCalledWith("comment-1")
+  })
+
+  it("navigates to next and previous items within the drawer without closing it", async () => {
+    const user = userEvent.setup()
+
+    const twoComments = [
+      { id: "comment-1", title: "First comment", body: "Hello world" },
+      { id: "comment-2", title: "Second comment", body: "Second body" },
+    ]
+    useWatchSpy.mockReturnValue({ docs: twoComments, totalDocs: 2 })
+    clientFindMock.mockResolvedValue({
+      docs: twoComments,
+      totalDocs: 2,
+      page: 1,
+      totalPages: 1,
+      hasNextPage: false,
+    })
+    clientFindOneMock.mockImplementation((id: string) =>
+      Promise.resolve(twoComments.find((c) => c.id === id)),
+    )
+
+    renderWithClient(
+      <JoinField schema={{ name: "comments", collection: "comments", on: "post" }} control={{}} />,
+    )
+
+    await user.click(screen.getByText("First comment"))
+    expect(screen.getByText("Document ID: comment-1")).toBeTruthy()
+    expect((screen.getByRole("button", { name: "Previous" }) as HTMLButtonElement).disabled).toBe(true)
+
+    await user.click(screen.getByRole("button", { name: "Next" }))
+
+    await waitFor(() => {
+      expect(screen.getByText("Document ID: comment-2")).toBeTruthy()
+    })
+    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(true)
+
+    await user.click(screen.getByRole("button", { name: "Previous" }))
+
+    await waitFor(() => {
+      expect(screen.getByText("Document ID: comment-1")).toBeTruthy()
+    })
+  }, 15000)
+
+  it("opens Detail-First collections into a read-only view first, with a toggle to the edit form", async () => {
+    const user = userEvent.setup()
+
+    dyrectedRef.current.schemas.collections[0] = {
+      ...dyrectedRef.current.schemas.collections[0],
+      detail: true,
+    }
+
+    renderWithClient(
+      <JoinField schema={{ name: "comments", collection: "comments", on: "post" }} control={{}} />,
+    )
+
+    await user.click(screen.getByText("First comment"))
+
+    expect(screen.getByRole("heading", { name: "View Comment" })).toBeTruthy()
+
+    await user.click(screen.getByRole("button", { name: "Edit" }))
+
+    expect(screen.getByRole("heading", { name: "Edit Comment" })).toBeTruthy()
   })
 })

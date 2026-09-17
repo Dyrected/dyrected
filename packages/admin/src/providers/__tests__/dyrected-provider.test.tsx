@@ -4,6 +4,12 @@ import { DyrectedProvider } from "../dyrected-provider"
 import { useDyrected } from "../dyrected-context"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
+function SchemasConsumer() {
+  const { schemas } = useDyrected()
+  const view = (schemas?.collections as any[])?.[0]?.views?.[0]
+  return <div data-testid="synthesized-view">{view ? JSON.stringify(view) : "no-schemas"}</div>
+}
+
 function makeToken(payload: Record<string, unknown>): string {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))
   const body = btoa(JSON.stringify(payload))
@@ -230,5 +236,94 @@ describe("DyrectedProvider auth and session management", () => {
     })
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["schemas"] })
+  })
+
+  it("seeds the synthesized default view's filter/sort/metrics from collection.admin when no views are defined", async () => {
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string | URL | Request) => {
+      const urlStr = typeof url === "string" ? url : url.toString()
+      if (urlStr.includes("/api/schemas")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            collections: [
+              {
+                slug: "orders",
+                labels: { plural: "Orders" },
+                fields: [{ name: "status", type: "text" }],
+                admin: {
+                  defaultColumns: ["status"],
+                  filter: { status: { equals: "open" } },
+                  sort: { field: "status", direction: "asc" },
+                  metrics: [{ label: "Open orders", aggregate: { count: "*" } }],
+                },
+              },
+            ],
+            globals: [],
+          }),
+        } as Response
+      }
+      return { ok: true, status: 200, json: async () => ({}) } as Response
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DyrectedProvider baseUrl="http://api.test" apiKey="test-key">
+          <SchemasConsumer />
+        </DyrectedProvider>
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("synthesized-view").textContent).not.toBe("no-schemas")
+    })
+
+    const view = JSON.parse(screen.getByTestId("synthesized-view").textContent!)
+    expect(view.slug).toBe("list")
+    expect(view.columns).toEqual(["status"])
+    expect(view.filter).toEqual({ status: { equals: "open" } })
+    expect(view.sort).toEqual({ field: "status", direction: "asc" })
+    expect(view.metrics).toEqual([{ label: "Open orders", aggregate: { count: "*" } }])
+  })
+
+  it("leaves an explicitly-defined views array untouched instead of overwriting it", async () => {
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string | URL | Request) => {
+      const urlStr = typeof url === "string" ? url : url.toString()
+      if (urlStr.includes("/api/schemas")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            collections: [
+              {
+                slug: "orders",
+                labels: { plural: "Orders" },
+                fields: [],
+                admin: { filter: { status: { equals: "open" } } },
+                views: [{ slug: "custom", label: "Custom", layout: "table" }],
+              },
+            ],
+            globals: [],
+          }),
+        } as Response
+      }
+      return { ok: true, status: 200, json: async () => ({}) } as Response
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DyrectedProvider baseUrl="http://api.test" apiKey="test-key">
+          <SchemasConsumer />
+        </DyrectedProvider>
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("synthesized-view").textContent).not.toBe("no-schemas")
+    })
+
+    const view = JSON.parse(screen.getByTestId("synthesized-view").textContent!)
+    expect(view.slug).toBe("custom")
+    expect(view.filter).toBeUndefined()
   })
 })

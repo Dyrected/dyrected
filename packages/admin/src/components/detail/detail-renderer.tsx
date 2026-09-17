@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Loader2 } from "lucide-react"
 import { normalizeDetailItem, isDetailItemVisible } from "@dyrected/core"
 import { DetailSectionComponent } from "./detail-section"
 import { DetailTabsComponent } from "./detail-tabs"
@@ -7,6 +9,10 @@ import { DetailGridComponent } from "./detail-grid"
 import { DetailFieldRenderer } from "./detail-field-renderer"
 import { DetailRepeatComponent } from "./detail-repeat"
 import { DetailComputedComponent } from "./detail-computed"
+import { Button } from "../ui/button"
+import { resolveAdminIcon } from "../../lib/admin-icons"
+import { useCollectionActions } from "../../pages/collections/views/use-view-actions"
+import { ActionDialogs } from "../../pages/collections/views/action-dialogs"
 import { cn } from "../../lib/utils"
 import { useDyrected } from "../../providers/dyrected-context"
 import type { DetailItem, DetailSpan } from "@dyrected/core"
@@ -19,6 +25,8 @@ export interface DetailRendererProps {
   client?: any
   schemas?: any
   onUpdate?: (fieldName: string, newValue: any) => Promise<void> | void
+  /** Called after a `collection.actions` run completes successfully, in addition to this renderer's own cache invalidation. */
+  onActionSuccess?: () => void | Promise<void>
 }
 
 const topLevelSpanClasses: Record<number, string> = {
@@ -75,6 +83,7 @@ export function DetailRenderer({
   client,
   schemas,
   onUpdate,
+  onActionSuccess,
 }: DetailRendererProps) {
   let components: any = {}
   try {
@@ -83,6 +92,53 @@ export function DetailRenderer({
   } catch {
     components = {}
   }
+
+  const queryClient = useQueryClient()
+  const collectionSlug: string = collection?.slug || ""
+  const collectionActions: any[] = Array.isArray(collection?.actions) ? collection.actions : []
+  const actionsByName = new Map(collectionActions.map((action) => [action.name, action]))
+  const headerActions = collectionActions.filter((action) => (action.type ?? "row") === "header")
+
+  const { pending, isRunning, initiate, resolve, cancel, isActionRunning } = useCollectionActions({
+    slug: collectionSlug,
+    onSuccess: async () => {
+      // Callers own the doc's query key, which varies (full page vs. drawer) —
+      // invalidate both naming conventions in use across the app as a safety
+      // net, then let the caller do anything more specific.
+      await queryClient.invalidateQueries({ queryKey: ["collection", collectionSlug] })
+      await queryClient.invalidateQueries({ queryKey: ["collections", collectionSlug] })
+      await onActionSuccess?.()
+    },
+  })
+
+  function renderActionButton(
+    action: any,
+    targetDoc: any,
+    itemOptions?: { span?: DetailSpan; variant?: string; size?: string; label?: string },
+  ) {
+    const ids = targetDoc?.id != null ? [String(targetDoc.id)] : []
+    const running = isActionRunning(action.name, ids)
+    const Icon = action.icon ? resolveAdminIcon(action.icon, null as any) : null
+    return (
+      <Button
+        key={action.name}
+        type="button"
+        variant={(itemOptions?.variant as any) || "outline"}
+        size={(itemOptions?.size as any) || "sm"}
+        disabled={running || !ids.length}
+        onClick={() => initiate(action, ids, { doc: targetDoc })}
+        className="dy-h-8 dy-text-xs"
+      >
+        {running ? (
+          <Loader2 className="dy-h-3.5 dy-w-3.5 dy-mr-1.5 dy-animate-spin" />
+        ) : Icon ? (
+          <Icon className="dy-h-3.5 dy-w-3.5 dy-mr-1.5" />
+        ) : null}
+        {itemOptions?.label || action.label}
+      </Button>
+    )
+  }
+
   function getNestedValue(obj: any, path: string): any {
     if (!obj || !path) return undefined
     if (path in obj) return obj[path]
@@ -181,6 +237,7 @@ export function DetailRenderer({
           fieldDef={parentFieldDef}
           doc={currentDoc}
           client={client}
+          schemas={schemas}
           items={visibleRepeatItems}
           options={item.options}
           data={repeatData}
@@ -281,6 +338,18 @@ export function DetailRenderer({
       )
     }
 
+    if (item.type === "action") {
+      const action = actionsByName.get(item.name)
+      if (!action) {
+        return (
+          <div className="dy-p-3 dy-rounded-lg dy-border dy-border-dashed dy-border-border dy-text-xs dy-text-muted-foreground">
+            Action not found: <span className="dy-font-mono">{item.name}</span>
+          </div>
+        )
+      }
+      return renderActionButton(action, currentDoc, item.options)
+    }
+
     if (item.type === "field") {
       const fieldDef = findNestedFieldDef(scopedFields, item.field) || {
         name: item.field,
@@ -305,20 +374,35 @@ export function DetailRenderer({
   }
 
   return (
-    <div className="dy-grid dy-grid-cols-12 dy-gap-4">
-      {items
-        .filter((rawItem) => isDetailItemVisible(rawItem, doc, user))
-        .map((rawItem, idx) => {
-          const item = normalizeDetailItem(rawItem)
-          const span = getItemSpan(item)
-          const spanClass = topLevelSpanClasses[span] || "dy-col-span-12"
+    <div className="dy-space-y-4">
+      {headerActions.length > 0 && (
+        <div className="dy-flex dy-items-center dy-justify-end dy-gap-2 dy-flex-wrap">
+          {headerActions.map((action) => renderActionButton(action, doc))}
+        </div>
+      )}
+      <div className="dy-grid dy-grid-cols-12 dy-gap-4">
+        {items
+          .filter((rawItem) => isDetailItemVisible(rawItem, doc, user))
+          .map((rawItem, idx) => {
+            const item = normalizeDetailItem(rawItem)
+            const span = getItemSpan(item)
+            const spanClass = topLevelSpanClasses[span] || "dy-col-span-12"
 
-          return (
-            <div key={idx} className={cn(spanClass, "dy-min-w-0")}>
-              {renderSingleItem(item, doc)}
-            </div>
-          )
-        })}
+            return (
+              <div key={idx} className={cn(spanClass, "dy-min-w-0")}>
+                {renderSingleItem(item, doc)}
+              </div>
+            )
+          })}
+      </div>
+      <ActionDialogs
+        collection={collectionSlug}
+        schemas={schemas}
+        pending={pending}
+        isRunning={isRunning}
+        onResolve={resolve}
+        onCancel={cancel}
+      />
     </div>
   )
 }

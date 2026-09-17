@@ -16,6 +16,7 @@ import {
   defineAction,
   displaySection,
   displayField,
+  displayAction,
   displayTabs,
   displayTab,
   displayRepeat,
@@ -795,6 +796,40 @@ const ArticleComments = defineCollection({
     useAsTitle: "authorName",
     defaultColumns: ["authorName", "status", "comment"],
   },
+  // Detail-First: opening a comment from the BlogArticles "comments" join field
+  // drawer (or from this collection's own list) shows this read-only summary
+  // first, with inline-editable status/comment, instead of jumping into the
+  // full edit form.
+  detail: [
+    displaySection("Comment", [
+      displayField("authorName", { span: 6 }),
+      displayField("authorEmail", { span: 6 }),
+      displayField("status", { span: 4, display: "badge", editable: true }),
+      displayField("comment", { span: 12, editable: true }),
+      displayAction("markApproved", { span: 4 }),
+      displayAction("markSpam", { span: 4, variant: "destructive" }),
+    ]),
+  ],
+  // Root-level (view-less) actions: available in the header toolbar of this
+  // collection's own Detail View, and inline above via `displayAction` — same
+  // action, same execution, reused in both places without a `views` array.
+  actions: [
+    defineAction({
+      name: "markApproved",
+      label: "Approve",
+      icon: "CheckCircle",
+      type: "header",
+      mutation: { status: "approved" },
+    }),
+    defineAction({
+      name: "markSpam",
+      label: "Mark as spam",
+      icon: "Ban",
+      type: "header",
+      confirm: "Mark this comment as spam?",
+      mutation: { status: "spam" },
+    }),
+  ],
   fields: [
     defineRelationshipField({
       name: "article",

@@ -1120,20 +1120,26 @@ export class CollectionController {
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
-    if (!this.collection.views?.length) {
-      return c.json({ error: true, message: `Collection ${this.collection.slug} has no views` }, 404);
+    if (!this.collection.views?.length && !this.collection.actions?.length) {
+      return c.json({ error: true, message: `Collection ${this.collection.slug} has no views or actions` }, 404);
     }
 
     const actionName = c.req.param("action");
     const viewSlugParam = c.req.param("viewSlug");
     let action: ActionConfig | undefined;
-    for (const view of this.collection.views) {
+    for (const view of this.collection.views ?? []) {
       if (viewSlugParam && view.slug !== viewSlugParam) continue;
       const match = view.actions?.find((candidate) => candidate.name === actionName);
       if (match) {
         action = match;
         break;
       }
+    }
+    // Root-level (view-less) collection actions are only considered when the
+    // request itself is view-less — a request scoped to a specific view should
+    // only ever resolve that view's own actions.
+    if (!action && !viewSlugParam) {
+      action = this.collection.actions?.find((candidate) => candidate.name === actionName);
     }
     if (!action) {
       return c.json(
@@ -1161,7 +1167,7 @@ export class CollectionController {
 
     // View-level visibility gate.
     const view = viewSlugParam
-      ? this.collection.views.find((candidate) => candidate.slug === viewSlugParam)
+      ? this.collection.views?.find((candidate) => candidate.slug === viewSlugParam)
       : undefined;
     if (view?.access) {
       const allowed = await resolveBooleanAccess(config, view.access.update ?? view.access.read ?? true, {

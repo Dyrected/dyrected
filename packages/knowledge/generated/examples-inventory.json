@@ -2429,6 +2429,27 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/detail-view#example-69",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-70",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-71",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/editor-accounts#example-1",
     "page": "/editor-experience/editor-accounts",
     "language": "ts",
@@ -4062,9 +4083,9 @@
   {
     "id": "/model-content/configuration/collections#example-7",
     "page": "/model-content/configuration/collections",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/model-content/configuration/collections#example-8",
@@ -4091,8 +4112,8 @@
     "id": "/model-content/configuration/collections#example-11",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/configuration/collections#example-12",
@@ -4103,6 +4124,13 @@
   },
   {
     "id": "/model-content/configuration/collections#example-13",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-14",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",

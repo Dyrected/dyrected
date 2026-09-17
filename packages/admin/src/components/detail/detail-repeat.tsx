@@ -1,17 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react"
-import { useQuery } from "@tanstack/react-query"
-import { normalizeDetailItem } from "@dyrected/core"
+import React, { useState, useEffect, useMemo, lazy, Suspense } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "react-router-dom"
+import { normalizeDetailItem, generateDefaultDetailSchema } from "@dyrected/core"
 import { resolveAdminIcon } from "../../lib/admin-icons"
-import { Layers } from "lucide-react"
+import { Layers, Loader2, Maximize2, Pencil, Eye, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { Button } from "../ui/button"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet"
+import { useIsMobile } from "../../hooks/use-mobile"
+import { useAdjacentItems } from "../../hooks/use-adjacent-items"
+import { toast } from "sonner"
 import type { DetailItem, DetailRepeatOptions } from "@dyrected/core"
+
+const FormEngine = lazy(async () => {
+  const module = await import("../forms/form-engine")
+  return { default: module.FormEngine }
+})
+
+const DetailRenderer = lazy(async () => {
+  const module = await import("./detail-renderer")
+  return { default: module.DetailRenderer }
+})
 
 export interface DetailRepeatComponentProps {
   field: string
   fieldDef?: any
   doc?: any
   client?: any
+  schemas?: any
   items: DetailItem[]
   options?: DetailRepeatOptions
   data: any[]
@@ -50,6 +67,7 @@ export function DetailRepeatComponent({
   fieldDef,
   doc,
   client,
+  schemas,
   items,
   options,
   data,
@@ -57,6 +75,9 @@ export function DetailRepeatComponent({
 }: DetailRepeatComponentProps) {
   const layout = options?.layout || "table"
   const emptyText = options?.emptyText || "No items recorded"
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const isMobile = useIsMobile()
 
   const isJoinField = Boolean(
     (fieldDef?.type === "join" || fieldDef?.collection) &&
@@ -68,6 +89,30 @@ export function DetailRepeatComponent({
 
   const targetCol = fieldDef?.collection || fieldDef?.relationTo
   const onField = fieldDef?.on
+
+  const targetSchema = schemas?.collections?.find((c: any) => c.slug === targetCol)
+  const singularLabel = targetSchema?.labels?.singular || targetCol
+
+  // Detail-First collections (schema.detail truthy) open the drawer into a read-only
+  // summary first, matching how their own full detail page behaves; Edit-First
+  // collections (the default) open straight into the form.
+  const targetIsDetailFirst = Boolean(targetSchema?.detail)
+
+  const [activeDocId, setActiveDocId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<"detail" | "form">("form")
+  const isDrawerOpen = Boolean(activeDocId)
+
+  useEffect(() => {
+    const next: "detail" | "form" = targetIsDetailFirst ? "detail" : "form"
+    setViewMode((prev) => (prev === next ? prev : next))
+  }, [activeDocId, targetIsDetailFirst])
+
+  const detailSchemaItems = useMemo(() => {
+    if (!targetIsDetailFirst || !targetSchema) return []
+    return Array.isArray(targetSchema.detail)
+      ? targetSchema.detail
+      : generateDefaultDetailSchema(targetSchema)
+  }, [targetIsDetailFirst, targetSchema])
 
   const { data: fallbackJoinData, isLoading: isJoinLoading } = useQuery({
     queryKey: ["join", targetCol, onField, doc?.id],
@@ -86,6 +131,199 @@ export function DetailRepeatComponent({
   const effectiveData = (Array.isArray(data) && data.length > 0)
     ? data
     : (fallbackJoinData || [])
+
+  const activeFallbackItem = activeDocId
+    ? effectiveData.find((row: any) => String(row?.id) === activeDocId)
+    : undefined
+
+  const { data: activeDocData, isLoading: isLoadingActiveDoc } = useQuery({
+    queryKey: ["collection", targetCol, "detail", activeDocId],
+    queryFn: async () => {
+      if (!client || !targetCol || !activeDocId) return null
+      return client.collection(targetCol).findOne(activeDocId)
+    },
+    enabled: Boolean(client && targetCol && activeDocId),
+    staleTime: 10_000,
+  })
+
+  const handleOpenEdit = (row: any) => {
+    if (isJoinField && row?.id != null) {
+      setActiveDocId(String(row.id))
+    }
+  }
+
+  // Lets the drawer step through the already-loaded rows without closing and
+  // reopening it, mirroring the full edit page's adjacent-document nav.
+  const { prevItem, nextItem, hasPrev, hasNext } = useAdjacentItems(effectiveData, activeDocId)
+
+  const handleCloseDrawer = () => setActiveDocId(null)
+
+  const handleDrawerFieldUpdate = async (fieldName: string, value: unknown) => {
+    if (!client || !targetCol || !activeDocId) return
+    await client.collection(targetCol).update(activeDocId, { [fieldName]: value })
+    queryClient.invalidateQueries({ queryKey: ["collection", targetCol, "detail", activeDocId] })
+    queryClient.invalidateQueries({ queryKey: ["join", targetCol, onField, doc?.id] })
+  }
+
+  const handleNavigateFullEdit = () => {
+    if (activeDocId) {
+      navigate(`/collections/${targetCol}/${activeDocId}/edit`)
+    }
+  }
+
+  const handleDrawerSubmit = async (formData: Record<string, unknown>) => {
+    if (!client || !targetCol || !activeDocId) return
+    try {
+      await client.collection(targetCol).update(activeDocId, formData)
+      toast.success(`${singularLabel} updated`)
+      handleCloseDrawer()
+      queryClient.invalidateQueries({ queryKey: ["join", targetCol, onField, doc?.id] })
+      queryClient.invalidateQueries({ queryKey: ["collection", targetCol] })
+    } catch (err: unknown) {
+      console.error(`Failed to save ${singularLabel}:`, err)
+      toast.error((err as any)?.message || `Failed to save ${singularLabel}`)
+    }
+  }
+
+  const drawerDefaultValues = (activeDocData as Record<string, unknown>) || activeFallbackItem || { id: activeDocId }
+
+  const drawer = (
+    <Sheet open={isDrawerOpen} onOpenChange={(open) => !open && handleCloseDrawer()}>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn(
+          isMobile
+            ? "dy-h-[85vh] dy-rounded-t-2xl dy-max-h-[90vh]"
+            : "sm:dy-max-w-xl md:dy-max-w-2xl lg:dy-max-w-3xl dy-w-full",
+          "dy-overflow-y-auto dy-p-6 dy-flex dy-flex-col"
+        )}
+      >
+        <SheetHeader className="dy-space-y-1.5 dy-border-b dy-border-border/40 dy-pb-4 dy-pr-8">
+          <div className="dy-flex dy-items-center dy-justify-between">
+            <SheetTitle className="dy-text-base dy-font-semibold dy-text-foreground">
+              {viewMode === "detail" ? `View ${singularLabel}` : `Edit ${singularLabel}`}
+            </SheetTitle>
+            <div className="dy-flex dy-items-center dy-gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="Previous"
+                disabled={!hasPrev}
+                onClick={() => prevItem && handleOpenEdit(prevItem)}
+                className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
+              >
+                <ChevronLeft className="dy-h-3.5 dy-w-3.5" />
+                <span className="dy-sr-only">Previous</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="Next"
+                disabled={!hasNext}
+                onClick={() => nextItem && handleOpenEdit(nextItem)}
+                className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
+              >
+                <ChevronRight className="dy-h-3.5 dy-w-3.5" />
+                <span className="dy-sr-only">Next</span>
+              </Button>
+              <div className="dy-w-px dy-h-4 dy-bg-border/60 dy-mx-1" />
+              {targetIsDetailFirst && (
+                viewMode === "detail" ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    title={`Edit ${singularLabel}`}
+                    onClick={() => setViewMode("form")}
+                    className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                  >
+                    <Pencil className="dy-h-3.5 dy-w-3.5" />
+                    <span className="dy-sr-only">Edit</span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    title={`View ${singularLabel}`}
+                    onClick={() => setViewMode("detail")}
+                    className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                  >
+                    <Eye className="dy-h-3.5 dy-w-3.5" />
+                    <span className="dy-sr-only">View</span>
+                  </Button>
+                )
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="Open full page"
+                onClick={handleNavigateFullEdit}
+                className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+              >
+                <Maximize2 className="dy-h-3.5 dy-w-3.5" />
+                <span className="dy-sr-only">Open full page</span>
+              </Button>
+            </div>
+          </div>
+          {activeDocId && (
+            <SheetDescription className="dy-text-xs dy-text-muted-foreground">
+              Document ID: {activeDocId}
+            </SheetDescription>
+          )}
+        </SheetHeader>
+
+        <div className="dy-flex-1">
+          {isLoadingActiveDoc && !activeFallbackItem ? (
+            <div className="dy-flex dy-items-center dy-justify-center dy-py-16">
+              <Loader2 className="dy-w-6 dy-h-6 dy-animate-spin dy-text-muted-foreground" />
+            </div>
+          ) : viewMode === "detail" ? (
+            <Suspense
+              fallback={
+                <div className="dy-flex dy-items-center dy-justify-center dy-py-16">
+                  <Loader2 className="dy-w-6 dy-h-6 dy-animate-spin dy-text-muted-foreground" />
+                </div>
+              }
+            >
+              <DetailRenderer
+                items={detailSchemaItems}
+                doc={drawerDefaultValues}
+                collection={targetSchema}
+                client={client}
+                schemas={schemas}
+                onUpdate={handleDrawerFieldUpdate}
+              />
+            </Suspense>
+          ) : targetSchema?.fields ? (
+            <Suspense
+              fallback={
+                <div className="dy-flex dy-items-center dy-justify-center dy-py-16">
+                  <Loader2 className="dy-w-6 dy-h-6 dy-animate-spin dy-text-muted-foreground" />
+                </div>
+              }
+            >
+              <FormEngine
+                collection={targetCol}
+                fields={targetSchema.fields}
+                defaultValues={drawerDefaultValues}
+                documentId={activeDocId || undefined}
+                onSubmit={handleDrawerSubmit}
+                submitLabel="Save changes"
+              />
+            </Suspense>
+          ) : (
+            <p className="dy-text-sm dy-text-muted-foreground dy-py-8 dy-text-center">
+              Schema for {targetCol} not found.
+            </p>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
 
   if (isJoinLoading) {
     return (
@@ -107,6 +345,15 @@ export function DetailRepeatComponent({
 
   const normalizedItems = items.map(normalizeDetailItem)
   const Icon = options?.icon ? resolveAdminIcon(options.icon, Layers) : null
+
+  // The table layout already shows each field's label as a column header, so
+  // repeating it inside every cell is redundant. Hide it by default there
+  // (list/cards have no header row, so their per-item labels still matter),
+  // unless the schema author explicitly set hideLabel.
+  const tableItems = normalizedItems.map((item) => {
+    if (item.type !== "field" || item.options?.hideLabel !== undefined) return item
+    return { ...item, options: { ...item.options, hideLabel: true } }
+  })
 
   function resolveRowTitle(row: any, rowIdx: number): string | undefined {
     const titleKey = options?.useAsTitle || options?.titleField
@@ -136,14 +383,19 @@ export function DetailRepeatComponent({
             : "dy-grid-cols-1 sm:dy-grid-cols-2 lg:dy-grid-cols-3"
 
     return (
+      <>
       <div className={cn("dy-grid dy-gap-4 dy-w-full", gridCols)}>
-        {data.map((row, rowIdx) => {
+        {effectiveData.map((row, rowIdx) => {
           const rowTitle = resolveRowTitle(row, rowIdx)
 
           return (
             <div
               key={rowIdx}
-              className="dy-p-4 dy-bg-card dy-border dy-border-border/60 dy-rounded-xl dy-shadow-sm dy-flex dy-flex-col dy-justify-between"
+              onClick={isJoinField ? () => handleOpenEdit(row) : undefined}
+              className={cn(
+                "dy-p-4 dy-bg-card dy-border dy-border-border/60 dy-rounded-xl dy-shadow-sm dy-flex dy-flex-col dy-justify-between dy-transition-colors",
+                isJoinField && "dy-cursor-pointer hover:dy-bg-muted/20"
+              )}
             >
               <div>
                 {rowTitle && (
@@ -175,17 +427,27 @@ export function DetailRepeatComponent({
           )
         })}
       </div>
+      {drawer}
+      </>
     )
   }
 
   if (layout === "list") {
     return (
+      <>
       <div className="dy-divide-y dy-divide-border/40 dy-border dy-border-border/60 dy-rounded-xl dy-overflow-hidden dy-bg-card dy-w-full">
-        {data.map((row, rowIdx) => {
+        {effectiveData.map((row, rowIdx) => {
           const rowTitle = resolveRowTitle(row, rowIdx)
 
           return (
-            <div key={rowIdx} className="dy-p-4 hover:dy-bg-muted/20 dy-transition-colors dy-space-y-2.5">
+            <div
+              key={rowIdx}
+              onClick={isJoinField ? () => handleOpenEdit(row) : undefined}
+              className={cn(
+                "dy-p-4 hover:dy-bg-muted/20 dy-transition-colors dy-space-y-2.5",
+                isJoinField && "dy-cursor-pointer"
+              )}
+            >
               {rowTitle && (
                 <div className="dy-flex dy-items-center dy-justify-between dy-mb-1">
                   <div className="dy-flex dy-items-center dy-gap-2">
@@ -214,11 +476,14 @@ export function DetailRepeatComponent({
           )
         })}
       </div>
+      {drawer}
+      </>
     )
   }
 
   // Default: Table layout
   return (
+    <>
     <div className="dy-w-full dy-border dy-border-border/60 dy-rounded-xl dy-overflow-x-auto dy-shadow-sm dy-bg-card">
       <table className="dy-w-full dy-text-sm dy-text-left">
         <thead className="dy-bg-muted/50 dy-text-xs dy-uppercase dy-text-muted-foreground dy-border-b dy-border-border/60">
@@ -241,9 +506,16 @@ export function DetailRepeatComponent({
           </tr>
         </thead>
         <tbody className="dy-divide-y dy-divide-border/40">
-          {data.map((row, rowIdx) => (
-            <tr key={rowIdx} className="hover:dy-bg-muted/20 dy-transition-colors">
-              {normalizedItems.map((item, colIdx) => (
+          {effectiveData.map((row, rowIdx) => (
+            <tr
+              key={rowIdx}
+              onClick={isJoinField ? () => handleOpenEdit(row) : undefined}
+              className={cn(
+                "hover:dy-bg-muted/20 dy-transition-colors",
+                isJoinField && "dy-cursor-pointer"
+              )}
+            >
+              {tableItems.map((item, colIdx) => (
                 <td key={colIdx} className="dy-px-4 dy-py-3 dy-align-top">
                   {renderItemContent(item, row)}
                 </td>
@@ -253,5 +525,7 @@ export function DetailRepeatComponent({
         </tbody>
       </table>
     </div>
+    {drawer}
+    </>
   )
 }

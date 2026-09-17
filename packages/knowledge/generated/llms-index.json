@@ -949,6 +949,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:DetailAction",
+      "name": "DetailAction",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DetailActionOptions",
+      "name": "DetailActionOptions",
+      "category": "detail",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:DetailComputed",
       "name": "DetailComputed",
       "category": "detail",
@@ -1090,6 +1102,12 @@
       "id": "@dyrected/core:dispatchPendingLifecycleEvents",
       "name": "dispatchPendingLifecycleEvents",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:displayAction",
+      "name": "displayAction",
+      "category": "detail",
       "sourcePackage": "@dyrected/core"
     },
     {

@@ -462,6 +462,32 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     filterable?: boolean;
 
     /**
+     * Base query filter applied to this collection's default list view,
+     * before user toolbar filters (e.g. `{ status: { equals: "published" } }`
+     * or a JEXL string). Equivalent to `filter` on `defineView`, without
+     * having to define a separate view and set it as the default.
+     */
+    filter?: Record<string, any> | string;
+
+    /**
+     * Default sort applied to this collection's default list view when first
+     * opened. Equivalent to `sort` on `defineView`.
+     */
+    sort?: { field: string; direction: "asc" | "desc" };
+
+    /**
+     * KPI summary cards rendered above this collection's default list view.
+     * Equivalent to `metrics` on `defineView`.
+     */
+    metrics?: ViewMetric[];
+
+    /**
+     * Field name used to organize this collection's default list view into
+     * collapsible grouped sections. Equivalent to `groupBy` on `defineView`.
+     */
+    groupBy?: string;
+
+    /**
      * Enables draft autosave in the Admin editor for workflow-enabled
      * collections. Defaults to `true` when the collection uses `workflow` or
      * `drafts: true`.
@@ -598,6 +624,30 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}
    */
   views?: ViewConfig[];
+
+  /**
+   * Custom workflow actions for this collection, independent of any single view.
+   * These run against one document at a time (no `viewSlug` required), so they
+   * work anywhere a document is in scope — most notably the read-only Detail
+   * View, where they can render in the header toolbar (`type: 'header'`) and/or
+   * inline via `displayAction(name)` in the `detail` schema. The same action
+   * definitions can also be referenced from a `defineView`'s own `actions` for
+   * list-page use — they are not mutually exclusive.
+   *
+   * @example
+   * ```ts
+   * actions: [
+   *   defineAction({
+   *     name: "markShipped",
+   *     label: "Mark as shipped",
+   *     type: "header",
+   *     confirm: "Mark this order as shipped?",
+   *     mutation: { status: "shipped" },
+   *   }),
+   * ]
+   * ```
+   */
+  actions?: ActionConfig[];
 }
 ```
 
@@ -622,6 +672,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>detail</code> (optional) | Detail view layout configuration for the Admin UI.  By default, collections are **Edit-First** (&#96;detail: false&#96;). Clicking a record in the table or cards view navigates directly to the editing form with Live Preview.  Set to &#96;true&#96; to enable the automatic read-only summary layout, or provide a &#96;DetailSchema&#96; array using display helpers (&#96;displaySection&#96;, &#96;displayField&#96;, &#96;displayTabs&#96;, etc.) for a custom operational dashboard layout. |
 | <code>defaultView</code> (optional) | Slug of the operational view to render by default when navigating to &#96;/collections/:slug&#96;.  When set: 1. Navigating to &#96;/collections/:slug&#96; automatically redirects to &#96;/collections/:slug/views/:defaultView&#96;. 2. The main collection link in the sidebar directly opens this default view. 3. The sidebar submenu cleanly lists only your defined views without showing a generic &#96;All [Collection]&#96; item. |
 | <code>views</code> (optional) | Tailored operational workspaces for this collection (&#96;table&#96;, &#96;spreadsheet&#96;, &#96;kanban&#96;, &#96;calendar&#96;, &#96;cards&#96;, &#96;gantt&#96;). Each view provides curated columns, filters, metrics, and workflow buttons for a specific job.  See: [Operational views overview](https://dyrected.com/docs/model-content/operational-views/overview) |
+| <code>actions</code> (optional) | Custom workflow actions for this collection, independent of any single view. These run against one document at a time (no &#96;viewSlug&#96; required), so they work anywhere a document is in scope — most notably the read-only Detail View, where they can render in the header toolbar (&#96;type: 'header'&#96;) and/or inline via &#96;displayAction(name)&#96; in the &#96;detail&#96; schema. The same action definitions can also be referenced from a &#96;defineView&#96;'s own &#96;actions&#96; for list-page use — they are not mutually exclusive. |
 {/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}
 
 ## `admin` options

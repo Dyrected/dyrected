@@ -402,6 +402,42 @@ export interface DetailCustom<TDoc = any> {
 }
 
 /**
+ * Configuration options for rendering an action button in a Detail View.
+ */
+export interface DetailActionOptions {
+  /** Grid column span across the 12-column grid. */
+  span?: DetailSpan;
+  /** Button visual style. Defaults to `'outline'`. */
+  variant?: "default" | "outline" | "secondary" | "ghost" | "destructive";
+  /** Button size. Defaults to `'sm'`. */
+  size?: "sm" | "default";
+  /** Overrides the action's own `label` for this placement. */
+  label?: string;
+  /**
+   * Visibility condition for this action item.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
+}
+
+/**
+ * Renders a button for a named action from `collection.actions` at this
+ * position in a Detail View. The same action (and its confirm dialog, modal
+ * fields, and execution) can also render automatically in the Detail View's
+ * header toolbar when the action's `type` is `'header'` — placing it here
+ * too does not duplicate that config, it just adds another entry point to
+ * the same action.
+ */
+export interface DetailAction {
+  /** Identifies this item as an action button. */
+  type: "action";
+  /** Name of the action, matching an entry in `collection.actions`. */
+  name: string;
+  /** Display and visibility options for this placement. */
+  options?: DetailActionOptions;
+}
+
+/**
  * Union of all valid item types in a Detail View schema.
  */
 export type DetailItem<TDoc = any> =
@@ -414,6 +450,7 @@ export type DetailItem<TDoc = any> =
   | DetailDivider
   | DetailText
   | DetailCustom<TDoc>
+  | DetailAction
   | string;
 
 /**

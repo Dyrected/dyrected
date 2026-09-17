@@ -1047,7 +1047,7 @@ export function DetailFieldRenderer({
                   setDraftValue(value)
                   setIsEditing(true)
                 }}
-                className="dy-opacity-0 group-hover/field:dy-opacity-100 focus:dy-opacity-100 dy-text-muted-foreground/70 hover:dy-text-foreground dy-p-0.5 dy-rounded dy-transition-all"
+                className="dy-opacity-100 sm:dy-opacity-0 sm:group-hover/field:dy-opacity-100 focus:dy-opacity-100 dy-text-muted-foreground/70 hover:dy-text-foreground dy-p-0.5 dy-rounded dy-transition-all"
                 title={`Edit ${label}`}
                 aria-label={`Edit ${label}`}
               >

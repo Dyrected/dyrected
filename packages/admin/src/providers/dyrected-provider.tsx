@@ -49,11 +49,16 @@ function ensureDefaultView(collection: any): any {
   const views = collection.views as unknown[] | undefined
   if (Array.isArray(views) && views.length > 0) return collection
   const columns = getDefaultViewColumns(collection)
+  const admin = collection.admin ?? {}
   const defaultView = {
     slug: "list",
     label: collection.labels?.plural || collection.slug,
     layout: "table" as const,
     columns,
+    filter: admin.filter,
+    sort: admin.sort,
+    metrics: admin.metrics,
+    groupBy: admin.groupBy,
   }
   return { ...collection, views: [defaultView] }
 }

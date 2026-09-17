@@ -187,4 +187,37 @@ describe('DyrectedClient', () => {
     expect(init.body).toBe(JSON.stringify({ ids: ['id-1', 'id-2'] }));
     expect(res).toEqual({ message: 'Deleted', deleted: ['id-1', 'id-2'] });
   });
+
+  it('sends POST /api/collections/:slug/views/:viewSlug/actions/:action for runAction', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ id: 'guest-1', checkedIn: true }),
+    });
+
+    const res = await client.collection('guest-responses').runAction('attending-guests', 'checkIn', { id: 'guest-1' });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('http://api.test/api/collections/guest-responses/views/attending-guests/actions/checkIn');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe(JSON.stringify({ id: 'guest-1' }));
+    expect(res).toEqual({ id: 'guest-1', checkedIn: true });
+  });
+
+  it('sends POST /api/collections/:slug/actions/:action (no view segment) for runCollectionAction', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ id: 'order-1', status: 'shipped' }),
+    });
+
+    const res = await client.collection('orders').runCollectionAction('markShipped', { id: 'order-1' });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('http://api.test/api/collections/orders/actions/markShipped');
+    expect(url).not.toContain('/views/');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe(JSON.stringify({ id: 'order-1' }));
+    expect(res).toEqual({ id: 'order-1', status: 'shipped' });
+  });
 });

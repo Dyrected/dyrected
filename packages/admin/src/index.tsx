@@ -209,14 +209,16 @@ function CollectionRoute() {
     return <Navigate to={`/collections/${slug}/views/${configuredDefaultView.slug}`} replace />;
   }
 
+  const schemaAdmin = (schema as any).admin ?? {};
   const defaultMasterView = {
     slug: "default",
     label: (schema as any).labels?.plural ?? slug,
     layout: "table" as const,
-    filter: undefined as Record<string, any> | string | undefined,
-    columns: undefined,
-    sort: undefined,
-    metrics: undefined,
+    filter: schemaAdmin.filter as Record<string, any> | string | undefined,
+    columns: schemaAdmin.defaultColumns as string[] | undefined,
+    sort: schemaAdmin.sort as { field: string; direction: "asc" | "desc" } | undefined,
+    metrics: schemaAdmin.metrics,
+    groupBy: schemaAdmin.groupBy as string | undefined,
     actions: [],
   };
 

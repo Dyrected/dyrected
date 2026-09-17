@@ -1,8 +1,9 @@
-import { useState, useMemo, lazy, Suspense } from "react"
+import { useState, useEffect, useMemo, lazy, Suspense } from "react"
 import { useWatch } from "react-hook-form"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { useNavigate, useParams } from "react-router-dom"
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
+import { generateDefaultDetailSchema } from "@dyrected/core"
 import {
   ExternalLink,
   FileText,
@@ -11,8 +12,13 @@ import {
   LayoutList,
   Table as TableIcon,
   Maximize2,
+  Pencil,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
 } from "lucide-react"
+import { useAdjacentItems } from "../../../hooks/use-adjacent-items"
 import { Button } from "../../ui/button"
 import { cn } from "../../../lib/utils"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table"
@@ -34,6 +40,7 @@ import {
 } from "../../ui/dialog"
 import { useIsMobile } from "../../../hooks/use-mobile"
 import { toast } from "sonner"
+import { DetailRenderer } from "../../detail/detail-renderer"
 import type { FieldSchema } from "../form-engine"
 
 const FormEngine = lazy(async () => {
@@ -68,8 +75,14 @@ export function JoinField({ schema, control }: JoinFieldProps) {
   const defaultLayout = (schema.admin?.layout === "table" ? "table" : "list") as "list" | "table"
   const [layout, setLayout] = useState<"list" | "table">(defaultLayout)
 
+  // Detail-First collections (schema.detail truthy) open the drawer into a read-only
+  // summary first, matching how their own full detail page behaves; Edit-First
+  // collections (the default) open straight into the form, as before.
+  const targetIsDetailFirst = Boolean(targetSchema?.detail)
+
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
   const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [viewMode, setViewMode] = useState<"detail" | "form">("form")
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -130,6 +143,20 @@ export function JoinField({ schema, control }: JoinFieldProps) {
     staleTime: 10_000,
   })
 
+  // Reset the drawer's view mode whenever the target document (or create/edit
+  // intent) changes, so each opened item starts on its collection's preferred view.
+  useEffect(() => {
+    const next: "detail" | "form" = isCreatingNew || !targetIsDetailFirst ? "form" : "detail"
+    setViewMode((prev) => (prev === next ? prev : next))
+  }, [activeDocId, isCreatingNew, targetIsDetailFirst])
+
+  const detailSchemaItems = useMemo(() => {
+    if (!targetIsDetailFirst || !targetSchema) return []
+    return Array.isArray(targetSchema.detail)
+      ? targetSchema.detail
+      : generateDefaultDetailSchema(targetSchema)
+  }, [targetIsDetailFirst, targetSchema])
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queriedDocs = infiniteData?.pages?.flatMap((page: any) => page?.docs || [])
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,9 +194,20 @@ export function JoinField({ schema, control }: JoinFieldProps) {
     }
   }
 
+  // Lets the drawer step through the already-loaded rows without closing and
+  // reopening it, mirroring the full edit page's adjacent-document nav.
+  const { prevItem, nextItem, hasPrev, hasNext } = useAdjacentItems(items, activeDocId)
+
   const handleCloseDrawer = () => {
     setActiveDocId(null)
     setIsCreatingNew(false)
+  }
+
+  const handleDrawerFieldUpdate = async (fieldName: string, value: unknown) => {
+    if (!client || !activeDocId) return
+    await client.collection(targetCollection).update(activeDocId, { [fieldName]: value })
+    queryClient.invalidateQueries({ queryKey: ["collection", targetCollection, "detail", activeDocId] })
+    queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
   }
 
   const handleViewAll = () => {
@@ -518,9 +556,69 @@ export function JoinField({ schema, control }: JoinFieldProps) {
           <SheetHeader className="dy-space-y-1.5 dy-border-b dy-border-border/40 dy-pb-4 dy-pr-8">
             <div className="dy-flex dy-items-center dy-justify-between">
               <SheetTitle className="dy-text-base dy-font-semibold dy-text-foreground">
-                {isCreatingNew ? `Create new ${singularLabel}` : `Edit ${singularLabel}`}
+                {isCreatingNew
+                  ? `Create new ${singularLabel}`
+                  : viewMode === "detail"
+                    ? `View ${singularLabel}`
+                    : `Edit ${singularLabel}`}
               </SheetTitle>
               <div className="dy-flex dy-items-center dy-gap-1">
+                {activeDocId && !isCreatingNew && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Previous"
+                      disabled={!hasPrev}
+                      onClick={() => prevItem && handleOpenEdit(prevItem)}
+                      className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
+                    >
+                      <ChevronLeft className="dy-h-3.5 dy-w-3.5" />
+                      <span className="dy-sr-only">Previous</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Next"
+                      disabled={!hasNext}
+                      onClick={() => nextItem && handleOpenEdit(nextItem)}
+                      className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
+                    >
+                      <ChevronRight className="dy-h-3.5 dy-w-3.5" />
+                      <span className="dy-sr-only">Next</span>
+                    </Button>
+                    <div className="dy-w-px dy-h-4 dy-bg-border/60 dy-mx-1" />
+                  </>
+                )}
+                {activeDocId && targetIsDetailFirst && (
+                  viewMode === "detail" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title={`Edit ${singularLabel}`}
+                      onClick={() => setViewMode("form")}
+                      className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                    >
+                      <Pencil className="dy-h-3.5 dy-w-3.5" />
+                      <span className="dy-sr-only">Edit</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title={`View ${singularLabel}`}
+                      onClick={() => setViewMode("detail")}
+                      className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                    >
+                      <Eye className="dy-h-3.5 dy-w-3.5" />
+                      <span className="dy-sr-only">View</span>
+                    </Button>
+                  )
+                )}
                 {activeDocId && (
                   <Button
                     type="button"
@@ -559,6 +657,15 @@ export function JoinField({ schema, control }: JoinFieldProps) {
               <div className="dy-flex dy-items-center dy-justify-center dy-py-16">
                 <Loader2 className="dy-w-6 dy-h-6 dy-animate-spin dy-text-muted-foreground" />
               </div>
+            ) : viewMode === "detail" ? (
+              <DetailRenderer
+                items={detailSchemaItems}
+                doc={drawerDefaultValues}
+                collection={targetSchema}
+                client={client}
+                schemas={schemas}
+                onUpdate={handleDrawerFieldUpdate}
+              />
             ) : targetSchema?.fields ? (
               <Suspense
                 fallback={

@@ -32,16 +32,18 @@ interface ActionLike {
 }
 
 /**
- * Orchestrates operational view actions end-to-end:
- * confirmation/input dialogs → `runAction` request → cache invalidation → toasts.
- *
- * Actions that declare `confirm` or input `fields` are staged in `pending`
- * first; everything else runs immediately. The in-flight action is tracked so
- * triggering buttons can render loading states.
+ * The confirm/input-dialog → request → toast state machine shared by every
+ * action runner, regardless of where the request itself goes (a view-scoped
+ * `runAction`, a view-less `runCollectionAction`, or anything else). Callers
+ * supply `runRequest` (how to actually execute the action) and `onSuccess`
+ * (which caches to invalidate) — the staging, confirm/fields dialogs, and
+ * running-state tracking never change.
  */
-export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: string }) {
-  const { client } = useDyrected()
-  const queryClient = useQueryClient()
+function useActionRunner(options: {
+  runRequest: (action: PendingAction, input?: Record<string, unknown>) => Promise<unknown>
+  onSuccess?: (action: PendingAction) => void | Promise<void>
+}) {
+  const { runRequest, onSuccess } = options
   const [pending, setPending] = useState<PendingAction | null>(null)
   const [runningKey, setRunningKey] = useState<string | null>(null)
 
@@ -52,20 +54,12 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
 
   const execute = useCallback(
     async (action: PendingAction, input?: Record<string, unknown>): Promise<boolean> => {
-      if (!client) {
-        toast.error(`${action.label} failed`, { description: "Dyrected client unavailable." })
-        return false
-      }
       setRunningKey(keyOf(action.actionName, action.ids))
       try {
-        await (client as any).collection(slug).runAction(viewSlug, action.actionName, {
-          ...(action.ids.length === 1 ? { id: action.ids[0] } : { ids: action.ids }),
-          input,
-        })
+        await runRequest(action, input)
         const scope = action.ids.length > 1 ? `${action.ids.length} items` : undefined
         toast.success(`${action.label} completed${scope ? ` — ${scope}` : ""}`)
-        await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
-        await queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] })
+        await onSuccess?.(action)
         return true
       } catch (error: any) {
         const message = error?.message || "Something went wrong while running this action."
@@ -75,7 +69,7 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
         setRunningKey(null)
       }
     },
-    [client, queryClient, slug, viewSlug, keyOf],
+    [runRequest, onSuccess, keyOf],
   )
 
   /** Entry point for action button clicks. Stages dialogs when required. */
@@ -125,4 +119,53 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
   )
 
   return { pending, isRunning, initiate, resolve, cancel, execute, isActionRunning }
+}
+
+/**
+ * Orchestrates operational view actions end-to-end:
+ * confirmation/input dialogs → `runAction` request → cache invalidation → toasts.
+ *
+ * Actions that declare `confirm` or input `fields` are staged in `pending`
+ * first; everything else runs immediately. The in-flight action is tracked so
+ * triggering buttons can render loading states.
+ */
+export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: string }) {
+  const { client } = useDyrected()
+  const queryClient = useQueryClient()
+
+  return useActionRunner({
+    runRequest: (action, input) => {
+      if (!client) throw new Error("Dyrected client unavailable.")
+      return (client as any).collection(slug).runAction(viewSlug, action.actionName, {
+        ...(action.ids.length === 1 ? { id: action.ids[0] } : { ids: action.ids }),
+        input,
+      })
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] })
+    },
+  })
+}
+
+/**
+ * Same action-running pipeline as `useViewActions`, but for collection-root
+ * actions (`collection.actions`) that run against a single document
+ * independent of any view — used by the Detail View page and by the
+ * Detail-First drawers (join field / detail-repeat), which share this exact
+ * context (doc, client, user) with the full Detail View.
+ */
+export function useCollectionActions({ slug, onSuccess }: { slug: string; onSuccess?: () => void | Promise<void> }) {
+  const { client } = useDyrected()
+
+  return useActionRunner({
+    runRequest: (action, input) => {
+      if (!client) throw new Error("Dyrected client unavailable.")
+      return (client as any).collection(slug).runCollectionAction(action.actionName, {
+        ...(action.ids.length === 1 ? { id: action.ids[0] } : { ids: action.ids }),
+        input,
+      })
+    },
+    onSuccess,
+  })
 }

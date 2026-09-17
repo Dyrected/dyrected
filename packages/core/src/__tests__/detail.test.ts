@@ -146,6 +146,52 @@ describe("Detail View Helpers & Schemas", () => {
     expect((generated[1] as any).title).toBe("Overview");
     expect((generated[1] as any).options?.span).toBe(4);
   });
+
+  it("routes join fields into a table-layout repeat instead of the field-level badge renderer", () => {
+    const generated = generateDefaultDetailSchema({
+      slug: "blog-articles",
+      labels: { singular: "Article", plural: "Articles" },
+      fields: [
+        { name: "title", type: "text" },
+        {
+          name: "comments",
+          type: "join",
+          collection: "article-comments",
+          on: "article",
+          admin: { columns: ["authorName", "status"] },
+        } as any,
+      ],
+    });
+
+    const mainSection = generated.find((item: any) => item.type === "section" && item.title === "Article") as any;
+    const commentsItem = mainSection.items.find((item: any) => item.field === "comments");
+
+    expect(commentsItem.type).toBe("repeat");
+    expect(commentsItem.options?.layout).toBe("table");
+    expect(commentsItem.items).toEqual([
+      { type: "field", field: "authorName", options: { span: 12 } },
+      { type: "field", field: "status", options: { span: 12 } },
+    ]);
+  });
+
+  it("falls back to a computed label column for join fields with no configured admin.columns", () => {
+    const generated = generateDefaultDetailSchema({
+      slug: "blog-articles",
+      labels: { singular: "Article", plural: "Articles" },
+      fields: [
+        { name: "reactions", type: "join", collection: "reactions", on: "article" } as any,
+      ],
+    });
+
+    const section = generated[0] as any;
+    const reactionsItem = section.items.find((item: any) => item.field === "reactions");
+
+    expect(reactionsItem.type).toBe("repeat");
+    expect(reactionsItem.options?.layout).toBe("table");
+    expect(reactionsItem.items).toHaveLength(1);
+    expect(reactionsItem.items[0].type).toBe("computed");
+    expect(reactionsItem.items[0].expression).toContain("doc.id");
+  });
 });
 
 describe("JEXL Shared Evaluator & Math Functions", () => {

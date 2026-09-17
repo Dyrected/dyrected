@@ -15,7 +15,7 @@ import type {
 import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
 import type { DetailSchema } from "./detail.js";
-import type { ViewConfig } from "./views.js";
+import type { ViewConfig, ViewMetric, ActionConfig } from "./views.js";
 
 /**
  * Configures account lockout behavior for an auth-enabled collection.
@@ -376,6 +376,32 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     filterable?: boolean;
 
     /**
+     * Base query filter applied to this collection's default list view,
+     * before user toolbar filters (e.g. `{ status: { equals: "published" } }`
+     * or a JEXL string). Equivalent to `filter` on `defineView`, without
+     * having to define a separate view and set it as the default.
+     */
+    filter?: Record<string, any> | string;
+
+    /**
+     * Default sort applied to this collection's default list view when first
+     * opened. Equivalent to `sort` on `defineView`.
+     */
+    sort?: { field: string; direction: "asc" | "desc" };
+
+    /**
+     * KPI summary cards rendered above this collection's default list view.
+     * Equivalent to `metrics` on `defineView`.
+     */
+    metrics?: ViewMetric[];
+
+    /**
+     * Field name used to organize this collection's default list view into
+     * collapsible grouped sections. Equivalent to `groupBy` on `defineView`.
+     */
+    groupBy?: string;
+
+    /**
      * Enables draft autosave in the Admin editor for workflow-enabled
      * collections. Defaults to `true` when the collection uses `workflow` or
      * `drafts: true`.
@@ -512,6 +538,30 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * @see {@link https://dyrected.com/docs/model-content/operational-views/overview Operational views overview}
    */
   views?: ViewConfig[];
+
+  /**
+   * Custom workflow actions for this collection, independent of any single view.
+   * These run against one document at a time (no `viewSlug` required), so they
+   * work anywhere a document is in scope — most notably the read-only Detail
+   * View, where they can render in the header toolbar (`type: 'header'`) and/or
+   * inline via `displayAction(name)` in the `detail` schema. The same action
+   * definitions can also be referenced from a `defineView`'s own `actions` for
+   * list-page use — they are not mutually exclusive.
+   *
+   * @example
+   * ```ts
+   * actions: [
+   *   defineAction({
+   *     name: "markShipped",
+   *     label: "Mark as shipped",
+   *     type: "header",
+   *     confirm: "Mark this order as shipped?",
+   *     mutation: { status: "shipped" },
+   *   }),
+   * ]
+   * ```
+   */
+  actions?: ActionConfig[];
 }
 
 /**

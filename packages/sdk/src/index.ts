@@ -983,6 +983,28 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             body: JSON.stringify(args),
           },
         ),
+      /**
+       * Run a collection-root action (`defineAction` in `collection.actions`) against
+       * one document, independent of any view — e.g. from a Detail View page.
+       *
+       * Sends `POST /api/collections/:collection/actions/:action`.
+       *
+       * @example
+       * ```ts
+       * await client.collection('orders').runCollectionAction('markShipped', { id: order.id });
+       * ```
+       */
+      runCollectionAction: <T = UnknownRecord>(
+        actionName: string,
+        args: RunActionArgs = {},
+      ) =>
+        this.request<T>(
+          `/api/collections/${slug}/actions/${encodeURIComponent(actionName)}`,
+          {
+            method: "POST",
+            body: JSON.stringify(args),
+          },
+        ),
     };
   }
 

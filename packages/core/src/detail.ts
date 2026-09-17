@@ -21,6 +21,8 @@ import type {
   DetailTextOptions,
   DetailCustom,
   DetailCustomOptions,
+  DetailAction,
+  DetailActionOptions,
   DisplayFieldOptions,
 } from "./types/detail.js";
 import type { Field } from "./types/index.js";
@@ -259,6 +261,24 @@ export function displayCustomComponent<TDoc = any>(
 }
 
 /**
+ * Renders a button for a named action (defined in `collection.actions`) at this
+ * position in a Detail View — the same action, dialog, and execution as the
+ * header toolbar, just placed inline.
+ *
+ * @example
+ * ```ts
+ * displayAction('markShipped', { variant: 'default', span: 4 })
+ * ```
+ */
+export function displayAction(name: string, options?: DetailActionOptions): DetailAction {
+  return {
+    type: "action",
+    name,
+    options,
+  };
+}
+
+/**
  * Evaluates server-side computed functions and JEXL expressions from a detail schema
  * and attaches them to `doc._meta.computed`.
  */
@@ -365,6 +385,17 @@ export function generateDefaultDetailSchema(schema: {
     if (SENSITIVE_DETAIL_FIELDS.has(field.name)) continue;
     if ((field as any).hidden) continue;
     if (field.admin?.hidden) continue;
+
+    if (field.type === "join") {
+      const joinColumns = (field.admin as { columns?: string[] } | undefined)?.columns;
+      const repeatItems: DetailItem[] =
+        Array.isArray(joinColumns) && joinColumns.length > 0
+          ? joinColumns.map((col) => displayField(col, { span: 12 }))
+          : [displayComputed("Item", "doc.title || doc.name || doc.label || doc.slug || doc.id")];
+
+      mainFields.push(displayRepeat(field.name, repeatItems, { span: 12, layout: "table" }));
+      continue;
+    }
 
     const isSidebar = sidebarFieldTypes.has(field.type) && field.type !== "relationship" && !field.hasMany;
 

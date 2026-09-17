@@ -1,17 +1,23 @@
-import { render as rtlRender, screen, fireEvent } from "@testing-library/react"
+import { render as rtlRender, screen, fireEvent, waitFor, cleanup } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { DetailRenderer } from "../detail-renderer"
 
-vi.mock("../../providers/dyrected-context", () => ({
-  useDyrected: () => ({
-    client: {},
-    user: { id: "user-1", email: "admin@dyrected.com" },
-    schemas: { collections: [] },
-    components: {},
-  }),
+const useDyrectedMock = vi.fn(() => ({
+  client: {},
+  user: { id: "user-1", email: "admin@dyrected.com" },
+  schemas: { collections: [] },
+  components: {},
 }))
+
+vi.mock("../../../providers/dyrected-context", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../providers/dyrected-context")>()
+  return {
+    ...actual,
+    useDyrected: () => useDyrectedMock(),
+  }
+})
 import { DetailHeader } from "../detail-header"
 import { DetailFieldRenderer } from "../detail-field-renderer"
 import { DetailSectionComponent } from "../detail-section"
@@ -23,7 +29,16 @@ import {
   displayDivider,
   displayText,
   displayCustom,
+  displayRepeat,
+  displayAction,
 } from "@dyrected/core"
+
+const defaultDyrectedValue = {
+  client: {},
+  user: { id: "user-1", email: "admin@dyrected.com" },
+  schemas: { collections: [] },
+  components: {},
+}
 
 function render(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -37,6 +52,11 @@ function render(ui: React.ReactElement) {
 }
 
 describe("Admin Detail View Components", () => {
+  afterEach(() => {
+    cleanup()
+    useDyrectedMock.mockReturnValue(defaultDyrectedValue)
+  })
+
   it("renders DetailHeader with title, ID, copy action, and edit button", () => {
     const doc = { id: "doc-123", title: "Wireless Headphones", status: "published" }
     const collection = {
@@ -139,13 +159,15 @@ describe("Admin Detail View Components", () => {
     ]
 
     render(
-      <DetailRepeatComponent
-        field="variants"
-        items={[displayField("name", { label: "Variant Name" }), displayField("price", { label: "Price" })]}
-        options={{ layout: "table" }}
-        data={data}
-        renderItemContent={(item: any, row) => <span>{row[item.field]}</span>}
-      />,
+      <MemoryRouter>
+        <DetailRepeatComponent
+          field="variants"
+          items={[displayField("name", { label: "Variant Name" }), displayField("price", { label: "Price" })]}
+          options={{ layout: "table" }}
+          data={data}
+          renderItemContent={(item: any, row) => <span>{row[item.field]}</span>}
+        />
+      </MemoryRouter>,
     )
 
     expect(screen.getByText("Variant Name")).toBeDefined()
@@ -160,13 +182,15 @@ describe("Admin Detail View Components", () => {
     ]
 
     render(
-      <DetailRepeatComponent
-        field="categories"
-        items={[displayField("summary", { label: "Summary" })]}
-        options={{ layout: "cards", useAsTitle: "title" }}
-        data={data}
-        renderItemContent={(item: any, row) => <span>{row[item.field]}</span>}
-      />,
+      <MemoryRouter>
+        <DetailRepeatComponent
+          field="categories"
+          items={[displayField("summary", { label: "Summary" })]}
+          options={{ layout: "cards", useAsTitle: "title" }}
+          data={data}
+          renderItemContent={(item: any, row) => <span>{row[item.field]}</span>}
+        />
+      </MemoryRouter>,
     )
 
     expect(screen.getByText("Leadership")).toBeDefined()
@@ -608,5 +632,274 @@ describe("Admin Detail View Components", () => {
     fireEvent.click(saveBtn)
 
     expect(onUpdate).toHaveBeenCalledWith("accentColor", "#6366f1")
+  })
+
+  it("navigates prev/next between joined rows inside the DetailRepeatComponent drawer", async () => {
+    const rows = [
+      { id: "c1", authorName: "Ann" },
+      { id: "c2", authorName: "Ben" },
+    ]
+    const client = {
+      collection: () => ({
+        find: () => ({ exec: () => Promise.resolve({ docs: [] }) }),
+        findOne: (id: string) => Promise.resolve(rows.find((r) => r.id === id)),
+        update: vi.fn(),
+      }),
+    }
+    const schemas = {
+      collections: [
+        { slug: "article-comments", fields: [{ name: "authorName", type: "text", label: "Author" }] },
+      ],
+    }
+
+    render(
+      <MemoryRouter>
+        <DetailRepeatComponent
+          field="comments"
+          fieldDef={{ type: "join", collection: "article-comments", on: "article" }}
+          doc={{ id: "article-1" }}
+          client={client}
+          schemas={schemas}
+          items={[displayField("authorName")]}
+          options={{ layout: "table" }}
+          data={rows}
+          renderItemContent={(item: any, row: any) => <span>{row[item.field]}</span>}
+        />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByText("Ann"))
+    await waitFor(() => {
+      expect(screen.getByText("Document ID: c1")).toBeDefined()
+    })
+    expect((screen.getByRole("button", { name: "Previous" }) as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }))
+    await waitFor(() => {
+      expect(screen.getByText("Document ID: c2")).toBeDefined()
+    })
+    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it("opens Detail-First collections into a read-only view first in the DetailRepeatComponent drawer", async () => {
+    const rows = [{ id: "c1", authorName: "Ann" }]
+    const client = {
+      collection: () => ({
+        find: () => ({ exec: () => Promise.resolve({ docs: [] }) }),
+        findOne: (id: string) => Promise.resolve(rows.find((r) => r.id === id)),
+        update: vi.fn(),
+      }),
+    }
+    const schemas = {
+      collections: [
+        {
+          slug: "article-comments",
+          labels: { singular: "Comment" },
+          fields: [{ name: "authorName", type: "text", label: "Author" }],
+          detail: true,
+        },
+      ],
+    }
+
+    render(
+      <MemoryRouter>
+        <DetailRepeatComponent
+          field="comments"
+          fieldDef={{ type: "join", collection: "article-comments", on: "article" }}
+          doc={{ id: "article-1" }}
+          client={client}
+          schemas={schemas}
+          items={[displayField("authorName")]}
+          options={{ layout: "table" }}
+          data={rows}
+          renderItemContent={(item: any, row: any) => <span>{row[item.field]}</span>}
+        />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByText("Ann"))
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "View Comment" })).toBeDefined()
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }))
+
+    expect(screen.getByRole("heading", { name: "Edit Comment" })).toBeDefined()
+  })
+
+  it("hides per-cell field labels by default in table-layout repeats, since the column header already shows them", () => {
+    const doc = {
+      id: "order-1",
+      payments: [{ amount: 100 }, { amount: 200 }],
+    }
+    const collection = {
+      slug: "orders",
+      fields: [
+        {
+          name: "payments",
+          type: "array",
+          fields: [{ name: "amount", type: "number", label: "Amount" }],
+        },
+      ],
+    }
+
+    render(
+      <MemoryRouter>
+      <DetailRenderer
+        items={[displayRepeat("payments", [displayField("amount")], { layout: "table" })]}
+        doc={doc}
+        collection={collection}
+      />,
+      </MemoryRouter>,
+    )
+
+    // Column header renders the label once...
+    expect(screen.getAllByText(/amount/i)).toHaveLength(1)
+    // ...but each cell just shows the value, no repeated per-row label.
+    expect(screen.getByText("100")).toBeDefined()
+    expect(screen.getByText("200")).toBeDefined()
+  })
+
+  it("still shows per-item field labels in list-layout repeats, where there is no column header", () => {
+    const doc = {
+      id: "order-1",
+      payments: [{ amount: 100 }, { amount: 200 }],
+    }
+    const collection = {
+      slug: "orders",
+      fields: [
+        {
+          name: "payments",
+          type: "array",
+          fields: [{ name: "amount", type: "number", label: "Amount" }],
+        },
+      ],
+    }
+
+    render(
+      <MemoryRouter>
+      <DetailRenderer
+        items={[displayRepeat("payments", [displayField("amount")], { layout: "list" })]}
+        doc={doc}
+        collection={collection}
+      />,
+      </MemoryRouter>,
+    )
+
+    expect(screen.getAllByText("Amount")).toHaveLength(2)
+  })
+
+  it("respects an explicit hideLabel: false override in a table-layout repeat", () => {
+    const doc = { id: "order-1", payments: [{ amount: 100 }] }
+    const collection = {
+      slug: "orders",
+      fields: [
+        {
+          name: "payments",
+          type: "array",
+          fields: [{ name: "amount", type: "number", label: "Amount" }],
+        },
+      ],
+    }
+
+    render(
+      <MemoryRouter>
+      <DetailRenderer
+        items={[
+          displayRepeat("payments", [displayField("amount", { hideLabel: false })], { layout: "table" }),
+        ]}
+        doc={doc}
+        collection={collection}
+      />,
+      </MemoryRouter>,
+    )
+
+    // Header ("amount") + the explicitly-shown per-row label ("Amount")
+    expect(screen.getAllByText(/amount/i)).toHaveLength(2)
+  })
+
+  it("renders and runs a header-type collection action defined on the collection", async () => {
+    const runCollectionActionMock = vi.fn().mockResolvedValue({ id: "order-1", status: "shipped" })
+    useDyrectedMock.mockReturnValue({
+      ...defaultDyrectedValue,
+      client: { collection: () => ({ runCollectionAction: runCollectionActionMock }) },
+    })
+
+    const doc = { id: "order-1", status: "pending" }
+    const collection = {
+      slug: "orders",
+      fields: [{ name: "status", type: "text", label: "Status" }],
+      actions: [{ name: "markShipped", label: "Mark as shipped", type: "header", mutation: { status: "shipped" } }],
+    }
+
+    render(
+      <MemoryRouter>
+        <DetailRenderer items={[displayField("status")]} doc={doc} collection={collection} />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark as shipped" }))
+
+    await waitFor(() => {
+      expect(runCollectionActionMock).toHaveBeenCalledWith("markShipped", { id: "order-1", input: undefined })
+    })
+  })
+
+  it("renders a displayAction item inline and stages a confirm dialog before executing", async () => {
+    const runCollectionActionMock = vi.fn().mockResolvedValue({ id: "order-1", status: "shipped" })
+    useDyrectedMock.mockReturnValue({
+      ...defaultDyrectedValue,
+      client: { collection: () => ({ runCollectionAction: runCollectionActionMock }) },
+    })
+
+    const doc = { id: "order-1", status: "pending" }
+    const collection = {
+      slug: "orders",
+      fields: [{ name: "status", type: "text", label: "Status" }],
+      actions: [
+        {
+          name: "markShipped",
+          label: "Mark as shipped",
+          confirm: "Mark this order shipped?",
+          mutation: { status: "shipped" },
+        },
+      ],
+    }
+
+    render(
+      <MemoryRouter>
+        <DetailRenderer
+          items={[displaySection("Order", [displayField("status"), displayAction("markShipped")])]}
+          doc={doc}
+          collection={collection}
+        />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark as shipped" }))
+
+    expect(runCollectionActionMock).not.toHaveBeenCalled()
+    expect(await screen.findByText("Mark this order shipped?")).toBeDefined()
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }))
+
+    await waitFor(() => {
+      expect(runCollectionActionMock).toHaveBeenCalledWith("markShipped", { id: "order-1", input: undefined })
+    })
+  })
+
+  it("shows a placeholder when displayAction references an action name that doesn't exist", () => {
+    const doc = { id: "order-1" }
+    const collection = { slug: "orders", fields: [], actions: [] }
+
+    render(
+      <MemoryRouter>
+        <DetailRenderer items={[displayAction("doesNotExist")]} doc={doc} collection={collection} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText(/action not found/i)).toBeDefined()
+    expect(screen.getByText("doesNotExist")).toBeDefined()
   })
 })
