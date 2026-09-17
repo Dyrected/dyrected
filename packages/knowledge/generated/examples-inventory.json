@@ -4784,8 +4784,8 @@
     "id": "/model-content/content-rules/hooks#example-2",
     "page": "/model-content/content-rules/hooks",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/hooks#example-3",
@@ -4999,6 +4999,13 @@
   },
   {
     "id": "/model-content/content-rules/hooks#example-33",
+    "page": "/model-content/content-rules/hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/content-rules/hooks#example-34",
     "page": "/model-content/content-rules/hooks",
     "language": "ts",
     "classification": "syntax-checked",
