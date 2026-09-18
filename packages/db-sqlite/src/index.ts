@@ -1,5 +1,4 @@
-import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError } from '@dyrected/core';
-import { randomUUID } from 'node:crypto';
+import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId } from '@dyrected/core';
 import Database from 'better-sqlite3';
 
 function handleSqliteError(err: any): never {
@@ -51,6 +50,7 @@ function normalizeSqliteSort(sort: string | undefined, columns: string[]) {
 export class SqliteAdapter implements DatabaseAdapter {
   private sqlite: Database.Database;
   private transactionQueue: Promise<void> = Promise.resolve();
+  private collectionConfigs = new Map<string, any>();
 
   constructor(config: SqliteAdapterConfig) {
     this.sqlite = new Database(config.filename);
@@ -293,7 +293,8 @@ export class SqliteAdapter implements DatabaseAdapter {
     const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
     const columns = tableInfo.map(col => col.name);
     
-    const id = params.data.id || randomUUID();
+    const colConfig = this.collectionConfigs.get(params.collection);
+    const id = params.data.id || generateDocumentId(colConfig || params.collection);
     const now = new Date().toISOString();
     const createdAt = params.data.createdAt || now;
     const updatedAt = params.data.updatedAt || now;
@@ -456,6 +457,7 @@ export class SqliteAdapter implements DatabaseAdapter {
 
   async sync(collections: any[]) {
     for (const col of collections) {
+      this.collectionConfigs.set(col.slug, col);
       await this.ensureTable(col.slug, col.fields, col.indexes);
     }
   }

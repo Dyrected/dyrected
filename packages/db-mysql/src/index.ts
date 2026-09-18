@@ -1,5 +1,4 @@
-import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError } from "@dyrected/core";
-import { randomUUID } from "node:crypto";
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId } from "@dyrected/core";
 import mysql from "mysql2/promise";
 
 function parseMysqlDuplicateKey(message: string): { field?: string; value?: string } {
@@ -88,6 +87,7 @@ export class MysqlAdapter implements DatabaseAdapter {
   private tableLocks = new Map<string, Promise<void>>();
   private ensuredTables = new Set<string>();
   private tableColumnsCache = new Map<string, string[]>();
+  private collectionConfigs = new Map<string, any>();
 
   constructor(config: MysqlAdapterConfig) {
     this.config = config;
@@ -627,7 +627,8 @@ FIX INSTRUCTIONS:
     // Inspect columns for promoted fields
     const existingCols = await this.getTableColumns(tableName);
 
-    const id = params.data.id ?? randomUUID();
+    const colConfig = this.collectionConfigs.get(params.collection);
+    const id = params.data.id ?? generateDocumentId(colConfig || params.collection);
     const now = new Date().toISOString().replace("T", " ").replace("Z", "");
 
     const data = { ...params.data };
@@ -770,6 +771,7 @@ FIX INSTRUCTIONS:
 
   async sync(collections: any[]) {
     for (const col of collections) {
+      this.collectionConfigs.set(col.slug, col);
       await this.ensureTable(col.slug, col.fields, col.indexes);
     }
   }

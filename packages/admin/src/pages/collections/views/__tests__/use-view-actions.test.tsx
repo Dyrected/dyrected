@@ -133,4 +133,35 @@ describe("useViewActions / useCollectionActions", () => {
     expect(result.current.pending).toBeNull()
     expect(runCollectionActionMock).not.toHaveBeenCalled()
   })
+
+  it("useViewActions runs a type: 'header' action with empty ids immediately", async () => {
+    runActionMock.mockResolvedValue({ success: true })
+
+    const { result } = renderHook(() => useViewActions({ slug: "guests", viewSlug: "attending" }), { wrapper })
+
+    act(() => {
+      result.current.initiate({ name: "recomputeAll", label: "Recompute", type: "header" }, [])
+    })
+
+    await waitFor(() => {
+      expect(runActionMock).toHaveBeenCalledWith("attending", "recomputeAll", { input: undefined })
+    })
+    expect(toast.success).toHaveBeenCalledWith("Recompute completed")
+    expect(result.current.pending).toBeNull()
+  })
+
+  it("useViewActions stages a confirm-required type: 'header' action with empty ids", () => {
+    const { result } = renderHook(() => useViewActions({ slug: "guests", viewSlug: "attending" }), { wrapper })
+
+    act(() => {
+      result.current.initiate(
+        { name: "recomputeAll", label: "Recompute", type: "header", confirm: "Recompute all?" },
+        [],
+      )
+    })
+
+    expect(runActionMock).not.toHaveBeenCalled()
+    expect(result.current.pending).toMatchObject({ actionName: "recomputeAll", confirm: "Recompute all?", ids: [] })
+  })
 })
+

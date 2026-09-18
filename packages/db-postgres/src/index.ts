@@ -4,8 +4,8 @@ import {
   parseSort,
   parseSqlWhere,
   DuplicateKeyError,
+  generateDocumentId,
 } from "@dyrected/core";
-import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 
 function handlePgError(err: any): never {
@@ -229,6 +229,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   private knownTables: Set<string> = new Set<string>();
   private tableColumnsCache: Map<string, string[]> = new Map<string, string[]>();
+  private collectionConfigs = new Map<string, any>();
 
   private getKnownTables(): Set<string> {
     if (!this.knownTables) {
@@ -475,7 +476,8 @@ export class PostgresAdapter implements DatabaseAdapter {
     // Inspect columns for promoted fields
     const existingCols = await this.getTableColumns(tableNameOnly);
 
-    const id = params.data.id || randomUUID();
+    const colConfig = this.collectionConfigs.get(params.collection);
+    const id = params.data.id || generateDocumentId(colConfig || params.collection);
     const data = { ...params.data };
     delete data.id;
 
@@ -628,6 +630,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async sync(collections: any[]) {
     for (const col of collections) {
+      this.collectionConfigs.set(col.slug, col);
       await this.ensureTable(col.slug, col.fields, col.indexes);
     }
   }

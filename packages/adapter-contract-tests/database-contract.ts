@@ -462,9 +462,9 @@ export function runIntegrityAndConcurrencyAdapterContract(
 ) {
   const suite = options.skip ? describe.skip : describe;
   suite(`${name} integrity & concurrency contract`, () => {
-    it("generates UUIDv4 IDs when no id is provided", async () => {
+    it("generates default prefixed NanoID when no id is provided", async () => {
       const db = await createAdapter();
-      const collection = `uuid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const collection = `col-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const config: CollectionConfig = {
         slug: collection,
         fields: [{ name: "name", type: "text" }],
@@ -472,7 +472,45 @@ export function runIntegrityAndConcurrencyAdapterContract(
       await db.sync?.([config], []);
 
       const doc = await db.create({ collection, data: { name: "Alpha" } });
-      expect(doc.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+      expect(doc.id).toMatch(/^col_[0-9a-zA-Z]{16}$/);
+    });
+
+    it("generates custom prefixed IDs when idPrefix is configured", async () => {
+      const db = await createAdapter();
+      const collection = `custom-coll-${Date.now()}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        idPrefix: "cob",
+        fields: [{ name: "name", type: "text" }],
+      };
+      await db.sync?.([config], []);
+
+      const doc = await db.create({ collection, data: { name: "Report" } });
+      expect(doc.id).toMatch(/^cob_[0-9a-zA-Z]{16}$/);
+    });
+
+    it("supports ULID, NanoID, and UUID ID strategies via collection config", async () => {
+      const db = await createAdapter();
+
+      // ULID
+      const ulidColl = `ulid-${Date.now()}`;
+      await db.sync?.([{ slug: ulidColl, idType: "ulid", fields: [{ name: "x", type: "text" }] }], []);
+      const ulidDoc = await db.create({ collection: ulidColl, data: { x: "1" } });
+      expect(ulidDoc.id).toHaveLength(26);
+      expect(ulidDoc.id).toMatch(/^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/);
+
+      // NanoID
+      const nanoColl = `nano-${Date.now()}`;
+      await db.sync?.([{ slug: nanoColl, idType: "nanoid", fields: [{ name: "x", type: "text" }] }], []);
+      const nanoDoc = await db.create({ collection: nanoColl, data: { x: "1" } });
+      expect(nanoDoc.id).toHaveLength(21);
+      expect(nanoDoc.id).toMatch(/^[0-9a-zA-Z_-]{21}$/);
+
+      // UUID
+      const uuidColl = `uuid-${Date.now()}`;
+      await db.sync?.([{ slug: uuidColl, idType: "uuid", fields: [{ name: "x", type: "text" }] }], []);
+      const uuidDoc = await db.create({ collection: uuidColl, data: { x: "1" } });
+      expect(uuidDoc.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     });
 
     it("enforces physical unique constraints with DuplicateKeyError", async () => {

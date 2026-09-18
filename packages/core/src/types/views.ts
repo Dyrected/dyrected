@@ -227,9 +227,9 @@ export type ActionConfig<TDoc extends Record<string, unknown> = Record<string, u
  * Context passed to an action's server handler function.
  */
 export interface ActionContext<TDoc extends Record<string, unknown> = Record<string, unknown>> {
-  /** The target document (for row actions). */
-  doc: TDoc;
-  /** All targeted documents (for bulk actions). */
+  /** The target document (for row actions), or null for header actions. */
+  doc: TDoc | null;
+  /** All targeted documents (for bulk actions). Empty array for header actions. */
   docs: TDoc[];
   /** The authenticated acting user, if available. */
   user: Record<string, unknown> | null;

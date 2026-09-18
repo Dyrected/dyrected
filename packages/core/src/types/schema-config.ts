@@ -81,6 +81,11 @@ export interface NumericUpdateOperator {
   decrement?: number;
 }
 
+/**
+ * Strategy for generating document IDs.
+ */
+export type IdStrategy = "prefixed-nanoid" | "nanoid" | "ulid" | "uuid";
+
 
 /**
  * Use this contract when you want the exact shape of a collection config.
@@ -220,6 +225,28 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * Fields participating in indexes are automatically promoted to physical columns.
    */
   indexes?: CollectionIndex[];
+
+  /**
+   * Optional custom prefix for auto-generated document IDs (e.g. `'usr'`, `'cob'`, `'sub'`).
+   * When using the default prefixed ID generator, IDs will follow the format `${idPrefix}_${random}`.
+   */
+  idPrefix?: string;
+
+  /**
+   * Strategy for generating document IDs when not explicitly provided.
+   * - `'prefixed-nanoid'`: Stripe-style prefixed NanoID (default), e.g. `cob_8xK2p9LmQwRt9a`
+   * - `'nanoid'`: Compact URL-friendly random ID, e.g. `V1StGXR8_Z5jdHi6B-myT`
+   * - `'ulid'`: 26-character Crockford Base32 time-sortable ID, e.g. `01J8K3R4Q7V9N2M1P6W0XYZA3C`
+   * - `'uuid'`: 36-character RFC 4122 UUIDv4, e.g. `f47ac10b-58cc-4372-a567-0e02b2c3d479`
+   *
+   * Defaults to `'prefixed-nanoid'`.
+   */
+  idType?: IdStrategy;
+
+  /**
+   * Custom function to generate document IDs. Overrides `idType` and `idPrefix`.
+   */
+  idGenerator?: (slug: string) => string;
 
   /**
    * If `true`, Dyrected automatically adds the built-in system fields

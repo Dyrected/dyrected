@@ -9,6 +9,7 @@ import {
   assertValidDeclarativeHooksInConfig,
   assertValidPreviewUrlsInConfig,
 } from "./declarative-hooks.js";
+import { resolvePrefix } from "./id.js";
 
 const AUDIT_COLLECTION_SLUG = "__audit";
 
@@ -376,8 +377,12 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
     });
 
     const workflow = col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
+    const idPrefix = col.idPrefix || resolvePrefix(col.slug);
+    const idType = col.idType || "prefixed-nanoid";
     return {
       ...col,
+      idPrefix,
+      idType,
       workflow,
       fields: allFields,
     };

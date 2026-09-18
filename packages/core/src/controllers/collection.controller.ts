@@ -29,6 +29,7 @@ import {
   toHookRequestContext,
 } from "../utils/access-control.js";
 import { resolveActionMutation } from "../utils/action-mutation.js";
+import { generateDocumentId } from "../utils/id.js";
 import {
   WORKFLOW_HISTORY_COLLECTION,
   createWorkflowDocument,
@@ -642,6 +643,10 @@ export class CollectionController {
       path: `collection:${this.collection.slug}.hooks.beforeChange`,
     });
 
+    if (!data.id) {
+      data = { ...data, id: generateDocumentId(this.collection) };
+    }
+
     const doc = this.collection.workflow
       ? (
           await createWorkflowDocument({
@@ -828,6 +833,10 @@ export class CollectionController {
       surface: "collection.beforeChange",
       path: `collection:${this.collection.slug}.hooks.beforeChange`,
     });
+
+    if (!data.id) {
+      data = { ...data, id: generateDocumentId(this.collection) };
+    }
 
     const doc = await db.create({
       collection: this.collection.slug,
@@ -1154,7 +1163,8 @@ export class CollectionController {
       : typeof body?.id === "string"
         ? [body.id]
         : [];
-    if (!requestedIds.length) {
+    const isHeaderAction = action.type === "header";
+    if (!requestedIds.length && !isHeaderAction) {
       return c.json(
         { error: true, message: "Provide an `id` or an `ids` array of documents to act on." },
         400,
@@ -1188,6 +1198,34 @@ export class CollectionController {
       if (!actionAccess) {
         return c.json({ error: true, message: `Access denied: action "${action.name}"` }, 403);
       }
+    }
+
+    if (isHeaderAction && !requestedIds.length) {
+      if (typeof action.handler === "function") {
+        try {
+          const handlerResult = await action.handler({
+            doc: null,
+            docs: [],
+            user: (user as unknown as Record<string, unknown>) ?? null,
+            input,
+            collection: {
+              slug: this.collection.slug,
+              label: this.collection.labels?.singular ?? this.collection.slug,
+            },
+          });
+          return c.json((handlerResult ?? { success: true }) as any);
+        } catch (error) {
+          const status =
+            typeof (error as { statusCode?: unknown }).statusCode === "number"
+              ? (error as { statusCode: number }).statusCode
+              : 500;
+          return c.json(
+            { error: true, message: error instanceof Error ? error.message : String(error) },
+            status as any,
+          );
+        }
+      }
+      return c.json({ success: true });
     }
 
     // Bulk runs sequentially so per-document hooks observe a consistent state.

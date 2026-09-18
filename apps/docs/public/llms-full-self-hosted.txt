@@ -18787,6 +18787,28 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   indexes?: CollectionIndex[];
 
   /**
+   * Optional custom prefix for auto-generated document IDs (e.g. `'usr'`, `'cob'`, `'sub'`).
+   * When using the default prefixed ID generator, IDs will follow the format `${idPrefix}_${random}`.
+   */
+  idPrefix?: string;
+
+  /**
+   * Strategy for generating document IDs when not explicitly provided.
+   * - `'prefixed-nanoid'`: Stripe-style prefixed NanoID (default), e.g. `cob_8xK2p9LmQwRt9a`
+   * - `'nanoid'`: Compact URL-friendly random ID, e.g. `V1StGXR8_Z5jdHi6B-myT`
+   * - `'ulid'`: 26-character Crockford Base32 time-sortable ID, e.g. `01J8K3R4Q7V9N2M1P6W0XYZA3C`
+   * - `'uuid'`: 36-character RFC 4122 UUIDv4, e.g. `f47ac10b-58cc-4372-a567-0e02b2c3d479`
+   *
+   * Defaults to `'prefixed-nanoid'`.
+   */
+  idType?: IdStrategy;
+
+  /**
+   * Custom function to generate document IDs. Overrides `idType` and `idPrefix`.
+   */
+  idGenerator?: (slug: string) => string;
+
+  /**
    * If `true`, Dyrected automatically adds the built-in system fields
    * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.
    * Defaults to `true`.
@@ -19170,6 +19192,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>upload</code> (optional) | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;.  Turn this on when each document in the collection should represent a stored file, such as an image, PDF, video, or downloadable asset.  See: [Upload overview](https://docs.dyrected.com/docs/self-hosted/model-content/media/overview) |
 | <code>fields</code> (required) | Field definitions that make up the document schema for this collection.  This is the main schema contract for every document in the collection. It decides what editors can fill in, how data is validated, how records are stored, and what the API and SDK return.  In practice, fields are where you model the actual content structure of the collection: simple values such as text and dates, relationships to other collections, nested objects and arrays, and flexible &#96;blocks&#96; fields for reusable page sections or long-form layouts.  See: [Fields overview](https://dyrected.com/docs/model-content/fields/overview), [Blocks and page sections](https://dyrected.com/docs/model-content/fields/blocks) |
 | <code>indexes</code> (optional) | Database indexes to create on this collection.  Fields participating in indexes are automatically promoted to physical columns. |
+| <code>idPrefix</code> (optional) | Optional custom prefix for auto-generated document IDs (e.g. &#96;'usr'&#96;, &#96;'cob'&#96;, &#96;'sub'&#96;). When using the default prefixed ID generator, IDs will follow the format &#96;$&#123;idPrefix&#125;_$&#123;random&#125;&#96;. |
+| <code>idType</code> (optional) | Strategy for generating document IDs when not explicitly provided. - &#96;'prefixed-nanoid'&#96;: Stripe-style prefixed NanoID (default), e.g. &#96;cob_8xK2p9LmQwRt9a&#96; - &#96;'nanoid'&#96;: Compact URL-friendly random ID, e.g. &#96;V1StGXR8_Z5jdHi6B-myT&#96; - &#96;'ulid'&#96;: 26-character Crockford Base32 time-sortable ID, e.g. &#96;01J8K3R4Q7V9N2M1P6W0XYZA3C&#96; - &#96;'uuid'&#96;: 36-character RFC 4122 UUIDv4, e.g. &#96;f47ac10b-58cc-4372-a567-0e02b2c3d479&#96;  Defaults to &#96;'prefixed-nanoid'&#96;. |
+| <code>idGenerator</code> (optional) | Custom function to generate document IDs. Overrides &#96;idType&#96; and &#96;idPrefix&#96;. |
 | <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds the built-in system fields &#96;createdAt&#96;, &#96;updatedAt&#96;, &#96;createdBy&#96;, and &#96;updatedBy&#96; to every document. Defaults to &#96;true&#96;. |
 | <code>initialData</code> (optional) | Initial documents to seed into this collection the first time it is fetched and found to be empty.  Use this for starter records, demo content, or sensible defaults that should appear automatically before editors create anything themselves. |
 | <code>audit</code> (optional) | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity.  Turn this on when you need accountability around changes, such as knowing who changed what, inspecting before-and-after state, or supporting compliance and operational review. |
