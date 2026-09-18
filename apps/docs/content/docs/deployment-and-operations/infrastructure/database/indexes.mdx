@@ -39,25 +39,60 @@ Reach for promotion on fields that are:
 
 You don't need to promote everything. Fields you rarely filter on are perfectly fine left in the JSON body, and promoting them just adds columns you don't benefit from.
 
-## Promotion adds a column, not automatically an index
+## Creating database indexes
 
-Promotion gives the database a real column to work with, which is already a meaningful speedup over JSON extraction. It does not, on its own, create a database index on that column. For most collections that's plenty. On a very large table where a promoted field is still slow to filter, add a true index on the column using your database's own tooling — for example a `CREATE INDEX` in Postgres against `collection_posts(slug)`. Promotion is what makes that possible, because the column now exists.
+In addition to promotion, Dyrected allows you to declare single-field and composite indexes directly on your collection definition using the `indexes` array:
+
+```ts
+import { defineCollection, defineTextField, defineSelectField } from '@dyrected/core'
+
+export const Accounts = defineCollection({
+  slug: 'accounts',
+  indexes: [
+    {
+      name: 'uq_accounts_user_currency',
+      fields: ['userId', 'currency'],
+      unique: true,
+    },
+    {
+      name: 'idx_accounts_status_created',
+      fields: ['status', 'createdAt'],
+    },
+  ],
+  fields: [
+    defineTextField({ name: 'userId', required: true }),
+    defineSelectField({ name: 'currency', options: ['NGN', 'USD', 'EUR'], required: true }),
+    defineSelectField({ name: 'status', options: ['active', 'frozen'], defaultValue: 'active' }),
+  ],
+})
+```
+
+When you declare an index:
+1. Every field listed in `fields` is **automatically promoted** to a physical column during startup schema sync.
+2. In SQL adapters (Postgres, MySQL, SQLite), string columns with indexes or unique constraints are automatically typed as `VARCHAR(191)` (rather than unbounded text) to support standard B-Tree indexing.
+3. If `unique: true` is specified, the database creates a true compound unique constraint.
 
 ## Enforcing uniqueness
 
-Mark a field with `unique: true` when its values should never repeat across a collection — a slug, an email, an external reference:
+Mark a field with `unique: true` when its values must never repeat across a collection — such as an email, slug, account number, or external reference:
 
 ```ts
-defineTextField({ name: 'slug', label: 'Slug', unique: true, promoted: true })
+defineTextField({
+  name: 'slug',
+  label: 'Slug',
+  unique: true,
+  promoted: true,
+})
 ```
 
-Here's the important part to understand: `unique: true` is a declaration of intent, not a database constraint. Dyrected does not create a unique index and does not reject a duplicate write on its own — this holds both self-hosted and on Dyrected Cloud. The admin panel shows a "Unique" badge next to the field as a hint, but it doesn't block duplicates either.
-
-So if you depend on uniqueness, enforce it in your own logic — for example, a `beforeChange` hook that looks for an existing document with that value and rejects the write if it finds one. See [Collection hooks](/docs/deployment-and-operations/server-runtime/hooks/collections).
+When `unique: true` is set:
+- Dyrected's database adapters create a **physical database unique constraint or unique index** (`uq_<collection>_<field>`).
+- If an insert or update attempts to write a duplicate value, the database blocks it and throws a normalized `DuplicateKeyError` (HTTP 409 Conflict) containing the conflicting `{ field, value }`.
+- The admin panel displays a "Unique" badge next to the field to inform editors.
 
 ## MongoDB
 
-MongoDB stores every field natively, so there's nothing to promote — `promoted` has no effect there. Query performance instead comes from MongoDB's own indexes, which Dyrected does not create for you. Add the indexes you need directly in MongoDB. See [MongoDB](/docs/deployment-and-operations/infrastructure/database/mongodb) for the details.
+MongoDB stores fields natively without JSON extraction. When you declare `indexes` or `unique: true`, the MongoDB adapter automatically creates native collection indexes (with `unique: true` and `sparse: true` for unique fields). See [MongoDB](/docs/deployment-and-operations/infrastructure/database/mongodb) for more details.
 
 ## What's already fast
 

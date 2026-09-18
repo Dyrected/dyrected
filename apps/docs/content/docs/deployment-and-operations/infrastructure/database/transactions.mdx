@@ -47,6 +47,58 @@ export const Posts = defineCollection({
 
 This assumes an `activity` collection defined in the same config. Use the `tx` argument inside the callback rather than the outer `db` — that's what ties each operation to the transaction.
 
+## Pessimistic row locking (`lock: 'for-update'`)
+
+When multiple concurrent requests attempt to read and modify the same document (for example, debiting an account balance or reserving inventory), a standard `findOne` can lead to race conditions.
+
+Within an active transaction, pass `lock: 'for-update'` to acquire an exclusive pessimistic row lock on the matched record:
+
+```ts
+await db.transaction(async (tx) => {
+  // Acquires exclusive row lock (SELECT ... FOR UPDATE)
+  const wallet = await tx.findOne({
+    collection: 'wallets',
+    id: walletId,
+    lock: 'for-update',
+  })
+
+  if (!wallet || wallet.balance < amount) {
+    throw new Error('Insufficient balance')
+  }
+
+  await tx.update({
+    collection: 'wallets',
+    id: walletId,
+    data: {
+      balance: { decrement: amount },
+    },
+  })
+})
+```
+
+In Postgres and MySQL, `lock: 'for-update'` appends `FOR UPDATE` to the SQL query. Other transactions attempting to lock or mutate the same row will wait until this transaction commits.
+
+## Atomic numeric mutations and conditional updates
+
+For counter increments, balance changes, or high-throughput updates, Dyrected supports native atomic numeric operators and conditional `where` clauses on `db.update()`:
+
+```ts
+// Atomic decrement with condition guard
+await db.update({
+  collection: 'wallets',
+  where: {
+    id: { equals: walletId },
+    balance: { greater_than_equal: 5000 },
+  },
+  data: {
+    balance: { decrement: 5000 },
+  },
+})
+```
+
+- Promoted numeric columns are mutated directly at the SQL level (e.g. `SET balance = balance - 5000`).
+- Unpromoted JSON fields are modified atomically using database JSON functions (`JSON_SET` in MySQL/SQLite, `jsonb_set` in Postgres), eliminating read-modify-write overwrite hazards.
+
 ## Keep transactions short
 
 A transaction holds resources for as long as its callback runs, so keep the work inside it to reading and writing the database — and nothing slow.

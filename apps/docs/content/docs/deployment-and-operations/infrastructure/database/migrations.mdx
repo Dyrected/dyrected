@@ -99,9 +99,9 @@ WHERE data->>'status' IS NULL;
 
 ## Promoting a field on an existing collection
 
-Adding `promoted: true` to a field that already has data adds the column on the next startup, and every new write populates it. Existing rows are not backfilled: their value stays in the JSON body, and the new column is left empty for them.
+Adding `promoted: true` (or adding a field to an `indexes` array) creates a dedicated physical column during the next startup schema sync.
 
-Reads still return the right value, because Dyrected reads the document body rather than the promoted column. Filtering and sorting, though, use the column — so a query on a freshly promoted field only "sees" the rows written since promotion. For a large existing table, plan a rewrite of the affected documents if you need every row covered — for example, load and re-save them so each write fills the new column.
+On SQL adapters (Postgres and MySQL), Dyrected automatically **backfills existing records** by extracting their values from the JSON document body into the newly promoted column. That means filtering and sorting against the freshly promoted field immediately indexes both historical and newly written rows without requiring a manual migration script. If a column was originally created as `TEXT` before an index was applied, Dyrected automatically widens it to `VARCHAR(191)` before establishing the index.
 
 ## Pushing your schema to Dyrected Cloud
 
