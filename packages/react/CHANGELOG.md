@@ -1,5 +1,15 @@
 # @dyrected/react
 
+## 2.16.0
+
+### Patch Changes
+
+- Updated dependencies [89a696c]
+- Updated dependencies [3456e3d]
+  - @dyrected/core@2.16.0
+  - @dyrected/admin@2.16.0
+  - @dyrected/sdk@2.16.0
+
 ## 2.15.0
 
 ### Patch Changes
