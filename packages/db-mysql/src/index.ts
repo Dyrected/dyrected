@@ -86,6 +86,7 @@ export class MysqlAdapter implements DatabaseAdapter {
   private inTransaction = false;
   private tableLocks = new Map<string, Promise<void>>();
   private ensuredTables = new Set<string>();
+  private failedIndexes = new Set<string>();
   private tableColumnsCache = new Map<string, string[]>();
   private collectionConfigs = new Map<string, any>();
 
@@ -446,7 +447,7 @@ FIX INSTRUCTIONS:
       for (const field of fields) {
         if (field.unique) {
           const idxName = `uniq_${tableName}_${field.name}`;
-          if (!existingIndexNames.has(idxName) && !existingIndexNames.has(field.name)) {
+          if (!existingIndexNames.has(idxName) && !existingIndexNames.has(field.name) && !this.failedIndexes.has(idxName)) {
             try {
               const [colInfoRows] = await this.query(`SHOW COLUMNS FROM \`${tableName}\` WHERE Field = ?`, [field.name]);
               const colType = colInfoRows?.[0]?.Type?.toLowerCase() || "";
@@ -461,7 +462,14 @@ FIX INSTRUCTIONS:
               existingIndexNames.add(idxName);
             } catch (err: any) {
               if (err.errno !== 1061 && err.code !== "ER_DUP_KEYNAME") {
-                console.warn(`[dyrected/mysql] Could not create unique index ${idxName} on ${tableName}:`, err.message);
+                this.failedIndexes.add(idxName);
+                if (err.errno === 1062 || err.code === "ER_DUP_ENTRY") {
+                  console.warn(
+                    `[dyrected/mysql] Could not create unique index ${idxName} on ${tableName} because duplicate values already exist: ${err.message}. To enforce uniqueness, remove duplicate records.`
+                  );
+                } else {
+                  console.warn(`[dyrected/mysql] Could not create unique index ${idxName} on ${tableName}:`, err.message);
+                }
               }
             }
           }
@@ -474,7 +482,7 @@ FIX INSTRUCTIONS:
           if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
           const isUnique = Boolean(idx.unique);
           const idxName = idx.name || `${isUnique ? "uniq" : "idx"}_${tableName}_${idx.fields.join("_")}`;
-          if (!existingIndexNames.has(idxName)) {
+          if (!existingIndexNames.has(idxName) && !this.failedIndexes.has(idxName)) {
             for (const fName of idx.fields) {
               try {
                 const [colInfoRows] = await this.query(`SHOW COLUMNS FROM \`${tableName}\` WHERE Field = ?`, [fName]);
@@ -493,7 +501,14 @@ FIX INSTRUCTIONS:
               existingIndexNames.add(idxName);
             } catch (err: any) {
               if (err.errno !== 1061 && err.code !== "ER_DUP_KEYNAME") {
-                console.warn(`[dyrected/mysql] Could not create index ${idxName} on ${tableName}:`, err.message);
+                this.failedIndexes.add(idxName);
+                if (err.errno === 1062 || err.code === "ER_DUP_ENTRY") {
+                  console.warn(
+                    `[dyrected/mysql] Could not create ${isUnique ? "unique " : ""}index ${idxName} on ${tableName} because duplicate values already exist: ${err.message}. To enforce uniqueness, remove duplicate records.`
+                  );
+                } else {
+                  console.warn(`[dyrected/mysql] Could not create index ${idxName} on ${tableName}:`, err.message);
+                }
               }
             }
           }
@@ -956,6 +971,7 @@ FIX INSTRUCTIONS:
     const cacheKey = getMysqlCacheKey(this.config);
     cache.delete(cacheKey);
     this.ensuredTables.clear();
+    this.failedIndexes.clear();
     this.tableColumnsCache.clear();
     if (this.initPromise) {
       try {
