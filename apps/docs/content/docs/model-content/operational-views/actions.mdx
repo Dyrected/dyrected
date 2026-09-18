@@ -232,6 +232,28 @@ export const chargeGuestAction = defineAction({
 
 The data returned from `handler` automatically merges into the document through the collection's validation and hook pipeline.
 
+### View-wide header action handlers
+
+Header actions (`type: "header"`) run at the view or collection level rather than against a single row. Because there is no single target row, the handler receives `doc: null` and `docs: []`:
+
+```ts
+import { defineAction } from "@dyrected/core";
+
+export const syncReportsAction = defineAction({
+  name: "syncReports",
+  label: "Sync Reports",
+  type: "header",
+  confirm: "Recompute and synchronize all daily reports?",
+  handler: async ({ input, user, collection }) => {
+    // doc is null because header actions are view-wide operations
+    const result = await syncExternalReports({ triggeredBy: user?.email });
+    return { recomputed: result.count };
+  },
+});
+```
+
+Header action handlers can accept user input through `fields`, enforce permissions with `access`, and return custom payloads to the caller (or return void to default to `{ success: true }`). If the handler throws an error, the admin toast displays your error message directly.
+
 ### Throwing friendly errors from a handler
 
 When a handler cannot complete, throw an error with a message written for the editor who will read it. `@dyrected/core` provides classes that carry the right HTTP status, so you never hand-roll status codes:

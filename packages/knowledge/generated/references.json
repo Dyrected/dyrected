@@ -16,17 +16,17 @@
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
     "description": "Context passed to an action's server handler function.",
-    "signature": "export interface ActionContext<TDoc extends Record<string, unknown> = Record<string, unknown>> {\n  /** The target document (for row actions). */\n  doc: TDoc;\n  /** All targeted documents (for bulk actions). */\n  docs: TDoc[];\n  /** The authenticated acting user, if available. */\n  user: Record<string, unknown> | null;\n  /** User inputs submitted via the action's modal form fields. */\n  input: Record<string, unknown>;\n  /** The collection configuration object. */\n  collection: Record<string, unknown>;\n}",
+    "signature": "export interface ActionContext<TDoc extends Record<string, unknown> = Record<string, unknown>> {\n  /** The target document (for row actions), or null for header actions. */\n  doc: TDoc | null;\n  /** All targeted documents (for bulk actions). Empty array for header actions. */\n  docs: TDoc[];\n  /** The authenticated acting user, if available. */\n  user: Record<string, unknown> | null;\n  /** User inputs submitted via the action's modal form fields. */\n  input: Record<string, unknown>;\n  /** The collection configuration object. */\n  collection: Record<string, unknown>;\n}",
     "members": [
       {
         "name": "doc",
-        "signature": "doc: TDoc",
-        "description": "The target document (for row actions)."
+        "signature": "doc: TDoc | null",
+        "description": "The target document (for row actions), or null for header actions."
       },
       {
         "name": "docs",
         "signature": "docs: TDoc[]",
-        "description": "All targeted documents (for bulk actions)."
+        "description": "All targeted documents (for bulk actions). Empty array for header actions."
       },
       {
         "name": "user",

@@ -64,7 +64,7 @@ await client.collection("guest-responses").runAction(
 );
 ```
 
-For row actions the method returns the updated document. For bulk actions it returns `{ modified: number }`. In both cases the type is `UnknownRecord` until you narrow it with your `DyrectedSchema`.
+For row actions the method returns the updated document. For bulk actions it returns `{ modified: number }`. For header actions it returns the result payload from your handler, defaulting to `{ success: true }` when no custom payload is returned. In all cases the type is `UnknownRecord` until you narrow it with your `DyrectedSchema`.
 
 The action runs through the same `beforeChange` and `afterChange` hooks as a dashboard click — handlers don't bypass access or side effects.
 
@@ -74,8 +74,8 @@ The action runs through the same `beforeChange` and `afterChange` hooks as a das
 | --- | --- | --- |
 | `viewSlug` | `string` | The slug of the operational view (`defineView({ slug })`). |
 | `actionName` | `string` | The name of the action (`defineAction({ name })`). |
-| `args.id` | `string` | Target document ID for row actions. |
-| `args.ids` | `string[]` | Target document IDs for bulk actions. |
+| `args.id` | `string` | Target document ID for row actions (omit for header actions). |
+| `args.ids` | `string[]` | Target document IDs for bulk actions (omit for header actions). |
 | `args.input` | `Record<string, unknown>` | Values matching any `fields` declared on the action. Validated before the mutation runs. |
 
 Input values are validated against the action's field schemas before the mutation or handler executes.

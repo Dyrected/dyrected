@@ -6,6 +6,31 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
+## v2.16.0
+
+- Align drawer saves with edit-page mutation pipeline and parent query invalidation:
+
+  - Unify drawer mutations across `JoinField` and `DetailRepeatComponent` via a shared `drawerSavePipeline`.
+  - Support password changes (`oldPassword`, `newPassword`, `confirmPassword`) from drawers using `client.changePassword(...)`.
+  - Immediately seed React Query document detail caches upon mutation for zero-flicker UI updates.
+  - Optimistically update parent join lists and caches (`["join", target, onField, parentDocId]`).
+  - Thoroughly invalidate parent document queries (`detail` and `entry`), parent collection list queries, and relation join queries so parent pages update immediately without manual page reload.
+  - Trigger parent query invalidations when executing custom actions in drawer views via `onActionSuccess`.
+  - Provide standardized success and error notifications matching edit-page conventions. (`@dyrected/admin`)
+
+- Schema Integrity, Physical Indexes & Atomic Concurrency
+
+  - add duplicate key error handling, auto-migration for index creation, and expanded column lengths.
+  - add production concurrency and fintech readiness specification with database adapter and documentation updates.
+
+- View Header Action Execution:
+
+  - Allow `type: 'header'` actions to execute without requiring document IDs in `@dyrected/admin` and `@dyrected/core`.
+  - Pass `{ doc: null, docs: [], user, input, collection }` to header action handlers, returning handler results or defaulting to `{ success: true }`.
+  - Prevent dropped clicks in the admin view toolbar when `ids.length === 0`. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.15.0
 
 - Detail View drawers, workflow actions, and list config improvements:
@@ -836,20 +861,6 @@ Release notes and version history across all Dyrected packages.
 ## v2.5.56
 
 - Render single-field arrays as a flat, reorderable list instead of accordion cards, with the label shown once and per-row actions (duplicate, move, delete) in an overflow menu. Add a `hideLabel` admin option to suppress a field's label where it would be redundant. Hide the admin's own mobile header when embedded so the host dashboard renders a single top bar, driven via a `dyrected:toggle-menu` window event. Fix the mobile nav drawer closing immediately after opening (the close-on-navigation effect depended on the open state and re-triggered itself); it now closes only when the route changes. Refresh the dashboard update-check cache on a TTL so the banner reflects newly published versions instead of freezing on the first value seen. (`@dyrected/admin`, `@dyrected/core`)
-
----
-
-## v2.5.55
-
-- Improve table cell rendering with default string truncation, protect primary title columns from shrinking, enlarge row actions layout, and resolve local origin preview overrides for development.
-  - @dyrected/core@2.5.55
-  - @dyrected/sdk@2.5.55 (`@dyrected/admin`)
-
-- @dyrected/core@2.5.55
-
-- @dyrected/sdk@2.5.55 (`dyrected`, `@dyrected/next`)
-
-- @dyrected/react@2.5.55 (`@dyrected/next`)
 
 ---
 
