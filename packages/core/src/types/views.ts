@@ -130,46 +130,7 @@ export interface ViewMetric {
   subMetrics?: ViewSubMetric[];
 }
 
-/**
- * Complete configuration for a tailored operational view.
- */
-export interface ViewConfig {
-  /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug`). */
-  slug: string;
-  /** Human-readable title displayed in the sidebar navigation and view header. */
-  label: string;
-  /** Lucide icon name (e.g. `"UserCheck"`, `"Calendar"`, `"Shirt"`, `"TableProperties"`). */
-  icon?: string;
-  /** Layout engine to render: `'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards'`. Defaults to `'table'`. */
-  layout?: ViewLayout;
-  /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */
-  filter?: WhereClause | string;
-  /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */
-  groupBy?: string;
-  /** Field name containing the ISO date string for calendar placement. Required when `layout: 'calendar'`. */
-  dateField?: string;
-  /** Field name for the start date in timeline/gantt views. Required when `layout: 'gantt'`. */
-  startDateField?: string;
-  /** Field name for the end date in timeline/gantt views. Required when `layout: 'gantt'`. */
-  endDateField?: string;
-  /** Field names to show in this view, in order. If omitted, Dyrected infers default display fields. */
-  columns?: string[];
-  /** Default sorting rule when entering the view. */
-  sort?: { field: string; direction: 'asc' | 'desc' };
-  /** Custom workflow actions available in this view. */
-  actions?: ActionConfig[];
-  /** Toggles built-in operations (view/edit/duplicate/delete/export). */
-  features?: ViewActionFeatures;
-  /**
-   * Explicit display order for action buttons — mixing custom action names and built-in names
-   * (`"view"`, `"edit"`, `"duplicate"`, `"delete"`). Unlisted actions append in default order.
-   */
-  actionOrder?: string[];
-  /** KPI summary cards rendered in the hero row above the view. */
-  metrics?: ViewMetric[];
-  /** Role-based access rules controlling who can see or use this view. */
-  access?: AccessConfig;
-}
+
 
 /**
  * Base configuration shared by all action types.
@@ -250,17 +211,19 @@ export interface AccessConfig {
 }
 
 /**
- * Base options shared by all operational view types.
+ * Base options shared by all operational view configurations.
  */
-export interface DefineViewBaseOptions {
-  /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug`). */
+export interface ViewConfigBase {
+  /** Stable URL slug for the view (`/collections/:slug/views/:viewSlug` or `/:workspaceSlug/:viewSlug`). */
   slug: string;
   /** Human-readable title displayed in the sidebar navigation and view header. */
   label: string;
   /** Lucide icon name (e.g. `"UserCheck"`, `"Calendar"`, `"Shirt"`, `"TableProperties"`). */
   icon?: string;
+  /** Optional target collection slug for views defined inside standalone operational workspaces. */
+  collection?: string;
   /** Base query filter applied before user toolbar filters (e.g. `{ attending: { equals: true } }` or JEXL string). */
-  filter?: Record<string, any> | string;
+  filter?: WhereClause | Record<string, any> | string;
   /** Field names to show in this view, in order. If omitted, Dyrected infers default display fields. */
   columns?: string[];
   /** Default sorting rule when entering the view. */
@@ -283,28 +246,28 @@ export interface DefineViewBaseOptions {
 }
 
 /** Table view — requires no special fields. */
-export interface DefineTableViewOptions extends DefineViewBaseOptions {
+export interface TableViewConfig extends ViewConfigBase {
   layout?: 'table' | 'spreadsheet';
   /** Field name used to organize records into kanban columns or collapsible grouped sections in table, cards, and spreadsheet. */
   groupBy?: string;
 }
 
 /** Kanban view — requires `groupBy` to organize into columns. */
-export interface DefineKanbanViewOptions extends DefineViewBaseOptions {
+export interface KanbanViewConfig extends ViewConfigBase {
   layout: 'kanban';
   /** Field name to organize records into kanban columns. */
   groupBy: string;
 }
 
 /** Calendar view — requires `dateField` to place records on the calendar. */
-export interface DefineCalendarViewOptions extends DefineViewBaseOptions {
+export interface CalendarViewConfig extends ViewConfigBase {
   layout: 'calendar';
   /** Field name containing the ISO date string for calendar placement. */
   dateField: string;
 }
 
 /** Gantt view — requires both `startDateField` and `endDateField`. */
-export interface DefineGanttViewOptions extends DefineViewBaseOptions {
+export interface GanttViewConfig extends ViewConfigBase {
   layout: 'gantt';
   /** Field name for the start date in the gantt timeline. */
   startDateField: string;
@@ -313,36 +276,32 @@ export interface DefineGanttViewOptions extends DefineViewBaseOptions {
 }
 
 /** Cards view — shows records as image/thumbnail gallery. */
-export interface DefineCardsViewOptions extends DefineViewBaseOptions {
+export interface CardsViewConfig extends ViewConfigBase {
   layout: 'cards';
   /** Field name used to organize records into groups. */
   groupBy?: string;
 }
 
 /**
- * Options for defining an operational view with `defineView`.
- * Use layout-specific overloads to ensure required fields are provided.
- *
- * @example
- * ```ts
- * export const attendingGuests = defineView({
- *   slug: "attending-guests",
- *   label: "Attending Guests",
- *   icon: "UserCheck",
- *   layout: "table",
- *   groupBy: "tableNumber",
- *   filter: { attending: { equals: true } },
- *   columns: ["name", "email", "guestCount", "checkedIn"],
- *   sort: { field: "name", direction: "asc" },
- * });
- * ```
+ * Complete configuration for a tailored operational view.
  */
-export type DefineViewOptions =
-  | DefineTableViewOptions
-  | DefineKanbanViewOptions
-  | DefineCalendarViewOptions
-  | DefineGanttViewOptions
-  | DefineCardsViewOptions;
+export type ViewConfig =
+  | TableViewConfig
+  | KanbanViewConfig
+  | CalendarViewConfig
+  | GanttViewConfig
+  | CardsViewConfig;
+
+/**
+ * Backwards-compatible aliases for builder types.
+ */
+export type DefineViewBaseOptions = ViewConfigBase;
+export type DefineTableViewOptions = TableViewConfig;
+export type DefineKanbanViewOptions = KanbanViewConfig;
+export type DefineCalendarViewOptions = CalendarViewConfig;
+export type DefineGanttViewOptions = GanttViewConfig;
+export type DefineCardsViewOptions = CardsViewConfig;
+export type DefineViewOptions = ViewConfig;
 
 /**
  * Options for defining a custom workflow action with `defineAction`.

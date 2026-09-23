@@ -27,6 +27,8 @@ Dyrected config normalization will automatically infer and mark `promoted: true`
    - *Rationale:* Essential for high-performance join operations, population, and indexed relationship traversals.
 4. **Auth Identifiers:**
    - Fields such as `email` or custom login credentials on auth-enabled collections.
+5. **User Preferences (`__preferences`):**
+   - Automatically promoted to a physical column (`type: "json"`) on all auth collections to enable isolated preference updates and prevent read-modify-write lost-update collisions with profile data.
 
 ---
 

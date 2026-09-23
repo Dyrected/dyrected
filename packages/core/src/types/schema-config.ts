@@ -421,6 +421,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     group?: string;
 
     /**
+     * Numeric sort order within navigation or sidebar group (lower numbers appear first).
+     */
+    order?: number;
+
+    /**
      * Slug of the view to render by default when navigating to `/collections/:slug`.
      * If not specified, defaults to the view with `default: true` or the all-records table view.
      */
@@ -703,6 +708,11 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
     /** Groups this global under a named section in the Admin sidebar. */
     group?: string;
+
+    /**
+     * Numeric sort order within navigation or sidebar group (lower numbers appear first).
+     */
+    order?: number;
 
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;

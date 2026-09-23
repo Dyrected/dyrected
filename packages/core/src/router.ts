@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { DyrectedContext } from "./app.js";
-import type { DyrectedConfig } from "./types/index.js";
+import type { DyrectedConfig, CompiledNavItem } from "./types/index.js";
 import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";
@@ -15,6 +15,7 @@ import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig, isUserAdmin } from "./utils/admin-auth.js";
+import { compileNavigation, pruneNavigationForUser } from "./utils/navigation.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
 import {
@@ -610,6 +611,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const user = c.get("user");
     const key = c.req.param("key");
     const scope = c.req.query("scope");
+    const roleParam = c.req.query("role");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
     if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
@@ -622,35 +624,80 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       return globalDoc ? globalDoc.value : null;
     };
 
-    if (scope === "global" || !user?.collection || !user.sub) {
-      const globalValue = await getGlobalPreference();
-      return c.json({ key, value: globalValue });
-    }
+    const getRolePreference = async (r: string) => {
+      const roleDoc = await db.findOne({
+        collection: "__role_preferences",
+        id: `${r}_${key}`,
+      });
+      return roleDoc ? roleDoc.value : null;
+    };
 
-    const doc = await db.findOne({ collection: user.collection, id: user.sub });
-    if (!doc) {
-      const globalValue = await getGlobalPreference();
-      return c.json({ key, value: globalValue });
-    }
-
-    const preferences =
-      typeof doc.__preferences === "object" && doc.__preferences !== null
+    const getUserPreferences = async () => {
+      if (!user?.collection || !user.sub) return null;
+      const doc = await db.findOne({ collection: user.collection, id: user.sub });
+      if (!doc) return null;
+      return typeof doc.__preferences === "object" && doc.__preferences !== null
         ? (doc.__preferences as Record<string, unknown>)
         : {};
+    };
 
-    if (key in preferences) {
-      return c.json({ key, value: preferences[key] ?? null });
+    if (scope === "global") {
+      const globalValue = await getGlobalPreference();
+      return c.json({ key, value: globalValue });
+    }
+
+    if (scope === "role") {
+      if (roleParam) {
+        const val = await getRolePreference(roleParam);
+        return c.json({ key, value: val, role: roleParam });
+      }
+      const userRoles = Array.isArray(user?.roles)
+        ? user.roles
+        : typeof user?.role === "string"
+          ? [user.role]
+          : [];
+      for (const r of userRoles) {
+        const val = await getRolePreference(r);
+        if (val !== null && val !== undefined) {
+          return c.json({ key, value: val, role: r });
+        }
+      }
+      return c.json({ key, value: null });
+    }
+
+    if (scope === "personal") {
+      const prefs = await getUserPreferences();
+      return c.json({ key, value: prefs && key in prefs ? prefs[key] ?? null : null });
+    }
+
+    // Default Waterfall: Personal -> Role Default -> Global Default -> null
+    const prefs = await getUserPreferences();
+    if (prefs && key in prefs && prefs[key] !== null && prefs[key] !== undefined) {
+      return c.json({ key, value: prefs[key] });
+    }
+
+    const userRoles = Array.isArray(user?.roles)
+      ? user.roles
+      : typeof user?.role === "string"
+        ? [user.role]
+        : [];
+    for (const r of userRoles) {
+      const val = await getRolePreference(r);
+      if (val !== null && val !== undefined) {
+        return c.json({ key, value: val });
+      }
     }
 
     const globalValue = await getGlobalPreference();
-    return c.json({ key, value: globalValue });
+    return c.json({ key, value: globalValue ?? null });
   });
 
   app.put("/api/preferences/:key", requireAuth(config), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
-    const scope = c.req.query("scope");
+    const scope = c.req.query("scope") || "personal";
+    const roleParam = c.req.query("role");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
     if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
@@ -688,9 +735,53 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         });
       }
 
-      return c.json({ key, value: body.value });
+      return c.json({ key, value: body.value, scope: "global" });
     }
 
+    if (scope === "role") {
+      const userCol = config.collections?.find((col) => col.slug === user?.collection);
+      const isAdminUser = isUserAdmin(user, userCol);
+      if (!isAdminUser) {
+        return c.json(
+          {
+            error: true,
+            message: "Only administrators can save role preferences.",
+          },
+          403,
+        );
+      }
+      if (!roleParam) {
+        return c.json(
+          {
+            error: true,
+            message: "Role query parameter is required for role-scoped preferences.",
+          },
+          400,
+        );
+      }
+
+      const roleDocId = `${roleParam}_${key}`;
+      const existing = await db.findOne({
+        collection: "__role_preferences",
+        id: roleDocId,
+      });
+      if (existing) {
+        await db.update({
+          collection: "__role_preferences",
+          id: roleDocId,
+          data: { value: body.value, role: roleParam, key },
+        });
+      } else {
+        await db.create({
+          collection: "__role_preferences",
+          data: { id: roleDocId, role: roleParam, key, value: body.value },
+        });
+      }
+
+      return c.json({ key, value: body.value, role: roleParam, scope: "role" });
+    }
+
+    // Default: Personal
     const doc = await db.findOne({ collection: user.collection, id: user.sub });
     if (!doc) return c.json({ error: true, message: "User not found." }, 404);
 
@@ -706,14 +797,15 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       data: { __preferences: nextPreferences },
     });
 
-    return c.json({ key, value: body.value });
+    return c.json({ key, value: body.value, scope: "personal" });
   });
 
   app.delete("/api/preferences/:key", requireAuth(config), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
-    const scope = c.req.query("scope");
+    const scope = c.req.query("scope") || "personal";
+    const roleParam = c.req.query("role");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
     if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
@@ -735,6 +827,32 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       return c.json({ success: true });
     }
 
+    if (scope === "role") {
+      const userCol = config.collections?.find((col) => col.slug === user?.collection);
+      const isAdminUser = isUserAdmin(user, userCol);
+      if (!isAdminUser) {
+        return c.json(
+          {
+            error: true,
+            message: "Only administrators can delete role preferences.",
+          },
+          403,
+        );
+      }
+      if (!roleParam) {
+        return c.json(
+          {
+            error: true,
+            message: "Role query parameter is required for role-scoped preferences.",
+          },
+          400,
+        );
+      }
+      await db.delete({ collection: "__role_preferences", id: `${roleParam}_${key}` });
+      return c.json({ success: true });
+    }
+
+    // Default: Personal
     const doc = await db.findOne({ collection: user.collection, id: user.sub });
     if (!doc) return c.json({ error: true, message: "User not found." }, 404);
 
@@ -752,6 +870,83 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     });
 
     return c.json({ success: true });
+  });
+
+  // Dynamic Navigation and Badges endpoints
+  app.get("/api/admin/navigation", optionalAuth(config), async (c) => {
+    const user = c.get("user");
+    const compiled = compileNavigation(config);
+    const pruned = pruneNavigationForUser(compiled, user);
+    return c.json(pruned);
+  });
+
+  app.get("/api/admin/navigation/badges", optionalAuth(config), async (c) => {
+    const db = config.db;
+    if (!db) return c.json({ badges: {} });
+
+    const user = c.get("user");
+    const compiled = compileNavigation(config);
+    const pruned = pruneNavigationForUser(compiled, user);
+
+    const allItems: CompiledNavItem[] = [
+      ...pruned.ungrouped,
+      ...pruned.groups.flatMap((g) => g.items),
+    ];
+
+    const badges: Record<string, { count: number | string; variant?: string }> = {};
+
+    await Promise.allSettled(
+      allItems.map(async (item) => {
+        if (!item.badge) return;
+        const badgeKey = item.slug || item.collection || item.global || item.id;
+
+        if (typeof item.badge === "string") {
+          badges[badgeKey] = { count: item.badge, variant: "default" };
+          return;
+        }
+
+        const badgeConfig = item.badge;
+        const variant = badgeConfig.variant ?? "default";
+
+        let targetCol: string | undefined;
+        let targetWhere: Record<string, unknown> | undefined;
+
+        if (badgeConfig.aggregate) {
+          targetCol = badgeConfig.aggregate.collection;
+          targetWhere = badgeConfig.aggregate.where;
+        } else if (badgeConfig.count) {
+          targetCol = item.collection || (item.views?.[0] as any)?.collection;
+          const primaryView = item.views?.[0] as any;
+          if (primaryView?.filter) {
+            targetWhere = primaryView.filter;
+          }
+        }
+
+        if (!targetCol) return;
+
+        try {
+          if (typeof db.aggregate === "function") {
+            const agg = await db.aggregate({
+              collection: targetCol,
+              aggregates: { count: { count: "*", where: targetWhere } },
+            });
+            badges[badgeKey] = { count: typeof agg?.count === "number" ? agg.count : 0, variant };
+          } else {
+            const res = await db.find({
+              collection: targetCol,
+              where: targetWhere,
+              limit: 1,
+            });
+            const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
+            badges[badgeKey] = { count: total, variant };
+          }
+        } catch {
+          badges[badgeKey] = { count: 0, variant };
+        }
+      }),
+    );
+
+    return c.json({ badges });
   });
 
   // Global Media Fallback (Proxies to the 'media' collection)

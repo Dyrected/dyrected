@@ -308,6 +308,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         if (field.type === "number") sqlType = "NUMERIC";
         if (field.type === "boolean") sqlType = "BOOLEAN";
         if (field.type === "date" || field.type === "datetime") sqlType = "TIMESTAMPTZ";
+        if (field.type === "json") sqlType = "JSONB";
 
         if (!existingCols.includes(field.name)) {
           console.log(
@@ -329,6 +330,8 @@ export class PostgresAdapter implements DatabaseAdapter {
           castExpr = `(data->>'${escapedFieldStr}')::BOOLEAN`;
         } else if (field.type === "date" || field.type === "datetime") {
           castExpr = `(data->>'${escapedFieldStr}')::TIMESTAMPTZ`;
+        } else if (field.type === "json") {
+          castExpr = `(data->'${escapedFieldStr}')`;
         }
 
         try {

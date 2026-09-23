@@ -256,8 +256,35 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
         ];
       }
 
+      if (!existingFieldNames.has("__preferences")) {
+        fields = [
+          ...fields,
+          {
+            name: "__preferences",
+            type: "json",
+            label: "Preferences",
+            promoted: true,
+            admin: {
+              hidden: true,
+              readOnly: true,
+            },
+          },
+        ];
+      }
+
       // Enforce access control rules for email, password, and roles fields even if explicitly defined
       fields = fields.map((field) => {
+        if (field.name === "__preferences") {
+          return {
+            ...field,
+            promoted: true,
+            admin: {
+              ...(field.admin || {}),
+              hidden: true,
+              readOnly: true,
+            },
+          };
+        }
         if (field.name === "email") {
           return {
             ...field,
