@@ -42,6 +42,7 @@ import {
 } from "lucide-react"
 
 import type { CompiledNavGroup, CompiledNavItem, DefineWorkspaceOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
+import { ViewFilterBuilder } from "./view-filter-builder"
 import { ViewMetricsBuilder } from "./view-metrics-builder"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
@@ -119,6 +120,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   const [viewBadgeText, setViewBadgeText] = React.useState("")
   const [viewBadgeVariant, setViewBadgeVariant] = React.useState<"default" | "info" | "warning" | "destructive" | "success">("default")
   const [viewMetrics, setViewMetrics] = React.useState<ViewMetric[]>([])
+  const [viewFilter, setViewFilter] = React.useState<Record<string, any> | undefined>(undefined)
 
   // Form states for Editing Subview
   const [editingView, setEditingView] = React.useState<{ itemSlug: string; viewSlug: string } | null>(null)
@@ -130,6 +132,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   const [editViewBadgeText, setEditViewBadgeText] = React.useState("")
   const [editViewBadgeVariant, setEditViewBadgeVariant] = React.useState<"default" | "info" | "warning" | "destructive" | "success">("default")
   const [editViewMetrics, setEditViewMetrics] = React.useState<ViewMetric[]>([])
+  const [editViewFilter, setEditViewFilter] = React.useState<Record<string, any> | undefined>(undefined)
 
   // Reconciled tree for interactive editing
   const tree = React.useMemo(() => {
@@ -267,9 +270,10 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   const handleCreateItem = () => {
     if (!itemLabel.trim()) return
 
-    const existingSlugs = (prefs.items || []).map((i) => i.slug).concat(
-      tree.groups.flatMap((g) => g.items.map((i) => i.slug))
-    )
+    const existingSlugs = (prefs.items || [])
+      .map((i) => i.slug)
+      .concat(tree.groups.flatMap((g) => g.items.map((i) => i.slug)))
+      .filter((s): s is string => typeof s === "string" && Boolean(s))
     const slug = generateUniqueSlug(itemLabel, existingSlugs)
 
     const newItem: DefineWorkspaceOptions = {
@@ -320,6 +324,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
         collection: viewCollection || undefined,
         badge,
         metrics: viewMetrics.length > 0 ? viewMetrics : undefined,
+        filter: viewFilter,
       } as any
 
       const targetItemIdx = customItems.findIndex((i) => i.slug === activeItemForNewView)
@@ -355,6 +360,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     setViewBadgeText("")
     setViewBadgeVariant("default")
     setViewMetrics([])
+    setViewFilter(undefined)
     setActiveItemForNewView(null)
   }
 
@@ -385,6 +391,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     }
 
     setEditViewMetrics(view.metrics ? [...view.metrics] : [])
+    setEditViewFilter(view.filter && typeof view.filter === "object" ? { ...view.filter } : undefined)
     if (activeItemForNewView) setActiveItemForNewView(null)
   }
 
@@ -398,6 +405,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     setEditViewBadgeText("")
     setEditViewBadgeVariant("default")
     setEditViewMetrics([])
+    setEditViewFilter(undefined)
   }
 
   const handleUpdateView = () => {
@@ -428,6 +436,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             collection: editViewCollection || undefined,
             badge,
             metrics: editViewMetrics.length > 0 ? editViewMetrics : undefined,
+            filter: editViewFilter,
           } as any
         } else {
           const allItems = tree.groups.flatMap((g) => g.items)
@@ -441,6 +450,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             collection: editViewCollection || undefined,
             badge,
             metrics: editViewMetrics.length > 0 ? editViewMetrics : undefined,
+            filter: editViewFilter,
           } as any)
         }
 
@@ -464,6 +474,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
               collection: editViewCollection || undefined,
               badge,
               metrics: editViewMetrics.length > 0 ? editViewMetrics : undefined,
+              filter: editViewFilter,
             } as any
           }
           return v
@@ -1171,6 +1182,14 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                             schemas={schemas}
                                           />
 
+                                          {/* View Filter Builder */}
+                                          <ViewFilterBuilder
+                                            filter={editViewFilter}
+                                            onChange={setEditViewFilter}
+                                            collectionSlug={editViewCollection || item.collection}
+                                            schemas={schemas}
+                                          />
+
                                           <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
                                             <Button
                                               variant="ghost"
@@ -1414,6 +1433,14 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                     schemas={schemas}
                                   />
 
+                                  {/* View Filter Builder */}
+                                  <ViewFilterBuilder
+                                    filter={viewFilter}
+                                    onChange={setViewFilter}
+                                    collectionSlug={viewCollection || item.collection}
+                                    schemas={schemas}
+                                  />
+
                                   <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
                                     <Button
                                       variant="ghost"
@@ -1421,6 +1448,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                       className="dy-h-6 dy-px-2 dy-text-xs"
                                       onClick={() => {
                                         setViewLabel("")
+                                        setViewFilter(undefined)
                                         setActiveItemForNewView(null)
                                       }}
                                     >

@@ -184,6 +184,12 @@ export interface AdminConfig {
    * The canonical/base URL of the frontend website for links and iframe live previews.
    */
   siteUrl?: string;
+  /**
+   * Public URL of the Admin UI, used for links in invite and password-reset emails.
+   * Falls back to the `DYRECTED_ADMIN_URL` env var, then the page the admin is running on,
+   * then `/admin` (resolved against the request origin).
+   */
+  adminUrl?: string;
 }
 ```
 
@@ -194,6 +200,7 @@ export interface AdminConfig {
 | <code>branding</code> (optional) |  |
 | <code>meta</code> (optional) |  |
 | <code>siteUrl</code> (optional) | The canonical/base URL of the frontend website for links and iframe live previews. |
+| <code>adminUrl</code> (optional) | Public URL of the Admin UI, used for links in invite and password-reset emails. Falls back to the &#96;DYRECTED_ADMIN_URL&#96; env var, then the page the admin is running on, then &#96;/admin&#96; (resolved against the request origin). |
 
 
 ## AggregateArgs
