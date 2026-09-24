@@ -1,5 +1,22 @@
 # @dyrected/db-sqlite
 
+## 2.18.0
+
+### Patch Changes
+
+- b3eefea: Make boolean filters behave the same on every adapter. The strings `"true"`/`"false"` are now coerced to booleans for fields declared as boolean (`coerceBooleanWhere`), where they previously matched nothing on SQLite and MongoDB and returned the wrong rows on Postgres for promoted columns. The shorthand `{ flag: false }` form also works on SQLite now.
+- 1f0979c: Make `groupBy` aggregates return the same keys and values on every adapter. Group keys are normalized by field type (`"true"`/`"false"` for booleans, `"1"` for numbers, ISO strings for dates, `__unassigned__` for null), MySQL treats JSON null as SQL NULL and `avg` returns double precision, and Postgres and MySQL return promoted date columns as ISO strings. MySQL now accepts ISO timestamps written to promoted date and datetime columns, which previously failed.
+- 6e18768: Close the remaining P0 integrity gaps. `findOne` now accepts a `where` filter (with `lock: "for-update"`) in addition to an `id`. The MongoDB adapter now generates string IDs like the SQL adapters, enforces `unique` fields and collection `indexes`, throws `DuplicateKeyError` on duplicate keys, and supports atomic `increment`/`decrement` and conditional `where` updates. MySQL promoted `select`, `radio`, `relationship` and `email` columns use bounded `VARCHAR` types. The adapter contract suite gains concurrency tests for unique inserts and conditional debits.
+- 97f4d7b: Add transactional write hooks and exact money handling. Collections can define `hooks.beforeCommit`, which runs inside the write transaction with a writable `tx` so secondary writes commit or roll back with the document. Workflow transitions can define `onTransition`, run inside the transition transaction and given an optional request `input`. Fields accept `immutable: true`, which rejects any update that changes the value. The new `money` field (`defineMoneyField`) stores integer minor units, validates them on write, maps to `BIGINT` in SQL adapters, and is edited and displayed in major units in the Admin.
+- Updated dependencies [5ab8e4f]
+- Updated dependencies [b3eefea]
+- Updated dependencies [1f0979c]
+- Updated dependencies [c9f015d]
+- Updated dependencies [6e18768]
+- Updated dependencies [97f4d7b]
+- Updated dependencies [02f1757]
+  - @dyrected/core@2.18.0
+
 ## 2.17.0
 
 ### Minor Changes

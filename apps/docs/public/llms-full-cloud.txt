@@ -27741,6 +27741,30 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.18.0
+
+- Add transactional write hooks and exact money handling. Collections can define `hooks.beforeCommit`, which runs inside the write transaction with a writable `tx` so secondary writes commit or roll back with the document. Workflow transitions can define `onTransition`, run inside the transition transaction and given an optional request `input`. Fields accept `immutable: true`, which rejects any update that changes the value. The new `money` field (`defineMoneyField`) stores integer minor units, validates them on write, maps to `BIGINT` in SQL adapters, and is edited and displayed in major units in the Admin.
+
+- Add view filter builder to navigation customizer. Enables configuring visual and raw JSON where-clause filters for collection subviews directly from the admin UI with schema field introspection, operator presets, and type coercion. (`@dyrected/admin`)
+
+- Fix collection-level `actions` not appearing in the admin, and fix invite and password-reset links. `/api/schemas` now includes root-level `collection.actions`, so `displayAction` items on a detail view resolve instead of showing "Action not found". Invite and reset emails now link to the admin UI instead of the site URL. The base URL comes from the new `admin.adminUrl` option, then the `DYRECTED_ADMIN_URL` env var, then the page the admin is running on, then `/admin`, and relative values resolve against the request origin. The invite dialog's "Copy" field now shows the full invite link with its token. (`@dyrected/admin`, `@dyrected/core`)
+
+- Fix bugs found by running the adapter contract suite against live databases. Postgres atomic `increment`/`decrement` no longer fails with "multiple assignments to same column data", and conditional `where` updates by id no longer collide on parameter numbers. MySQL and Postgres unique and compound indexes on collections with long names are now created (over-long index names are shortened with a stable hash instead of being silently rejected, which left `unique` unenforced). MongoDB compound indexes no longer fail when `sparse` is unset. The `money` field also gets its numeric list filter in the Admin.
+
+- Close the remaining P0 integrity gaps. `findOne` now accepts a `where` filter (with `lock: "for-update"`) in addition to an `id`. The MongoDB adapter now generates string IDs like the SQL adapters, enforces `unique` fields and collection `indexes`, throws `DuplicateKeyError` on duplicate keys, and supports atomic `increment`/`decrement` and conditional `where` updates. MySQL promoted `select`, `radio`, `relationship` and `email` columns use bounded `VARCHAR` types. The adapter contract suite gains concurrency tests for unique inserts and conditional debits.
+
+- Add a background task runner and Nuxt import aliases. `defineTask` and `createTaskRunner` (exported from `@dyrected/core`) run cron-scheduled jobs from the `tasks` config, with a per-task database lock so each scheduled run happens once across instances, a `lockTimeout` that aborts overrunning runs, and `runDue()` for platform crons. `@dyrected/nuxt` registers `#dyrected` and `#dyrected/server` aliases anchored to the project root (fixing `~` resolving to `app/` in Nuxt 4), can start the runner with the new `runTasks` option, and no longer blocks dev server boot while validating the config. (`@dyrected/core`, `@dyrected/nuxt`)
+
+- Make boolean filters behave the same on every adapter. The strings `"true"`/`"false"` are now coerced to booleans for fields declared as boolean (`coerceBooleanWhere`), where they previously matched nothing on SQLite and MongoDB and returned the wrong rows on Postgres for promoted columns. The shorthand `{ flag: false }` form also works on SQLite now.
+
+- Make `groupBy` aggregates return the same keys and values on every adapter. Group keys are normalized by field type (`"true"`/`"false"` for booleans, `"1"` for numbers, ISO strings for dates, `__unassigned__` for null), MySQL treats JSON null as SQL NULL and `avg` returns double precision, and Postgres and MySQL return promoted date columns as ISO strings. MySQL now accepts ISO timestamps written to promoted date and datetime columns, which previously failed.
+
+- Fix aggregate bugs found on live databases. MySQL no longer fails on `distinct` aggregates (it has no `DISTINCT` for `JSON_ARRAYAGG`, so values are de-duplicated in the adapter), groups by numeric columns now use keys like `"1"` instead of `"1.0000"`, and filters on unpromoted boolean fields now match. MongoDB grouped aggregates now honour each aggregate's `where`. (`@dyrected/db-mongodb`, `@dyrected/db-mysql`)
+
+- `client.collection(slug).transition(id, name, opts)` now accepts an optional `input` object. It is sent with the transition request and passed to the transition's server-side `onTransition` handler, for example an amount the handler needs to act on. (`@dyrected/sdk`)
+
+---
+
 ## v2.17.0
 
 - Operational views and dynamic navigation
@@ -28586,20 +28610,6 @@ Release notes and version history across all Dyrected packages.
   Make Cloud schema sync safe by stripping function-based access rules from synced payloads, preserving only booleans, Jexl strings, and named policies, with clear warnings for unsupported rules.
 
   Harden the admin hooks sandbox message listener so it only accepts messages from the expected iframe source. (`@dyrected/admin`, `dyrected`, `@dyrected/core`)
-
----
-
-## v2.5.57
-
-- Centralize preview URL resolution into a shared admin utility and standardize project initialization with updated defaults and enhanced schema configuration. (`@dyrected/admin`, `dyrected`)
-
-- Add type-safe field builder helpers and related updates.
-
-  - Add `defineField`, `defineBlock`, and a dedicated `define<Type>Field` helper for every field type (`defineTextField`, `defineRichTextField`, `defineRelationshipField`, …) to `@dyrected/core`. Each is an identity helper that injects the field `type` and preserves full document-shape inference through `defineCollection`/`defineGlobal`.
-  - Add configurable `features` and `headingLevels` to rich-text fields. The Admin rich-text editor now enables only the configured toolbar controls and editor capabilities (disabling a feature also removes its keyboard shortcut and paste handling).
-  - Migrate documentation examples, the `dyrected init` scaffold, and the `@dyrected/knowledge` recipes and prompt templates to use the new `define*Field` helpers.
-  - Rename the `JWT_SECRET` environment variable to `DYRECTED_JWT_SECRET` — update your `.env` accordingly.
-  - Filter unpublished documents out of public read responses. (`@dyrected/admin`, `dyrected`, `@dyrected/core`, `@dyrected/nuxt`)
 
 ---
 

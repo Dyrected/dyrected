@@ -1,5 +1,18 @@
 # @dyrected/storage-s3
 
+## 2.18.0
+
+### Patch Changes
+
+- Updated dependencies [5ab8e4f]
+- Updated dependencies [b3eefea]
+- Updated dependencies [1f0979c]
+- Updated dependencies [c9f015d]
+- Updated dependencies [6e18768]
+- Updated dependencies [97f4d7b]
+- Updated dependencies [02f1757]
+  - @dyrected/core@2.18.0
+
 ## 2.17.0
 
 ### Patch Changes

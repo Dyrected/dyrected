@@ -1,5 +1,27 @@
 # @dyrected/admin
 
+## 2.18.0
+
+### Minor Changes
+
+- 97f4d7b: Add transactional write hooks and exact money handling. Collections can define `hooks.beforeCommit`, which runs inside the write transaction with a writable `tx` so secondary writes commit or roll back with the document. Workflow transitions can define `onTransition`, run inside the transition transaction and given an optional request `input`. Fields accept `immutable: true`, which rejects any update that changes the value. The new `money` field (`defineMoneyField`) stores integer minor units, validates them on write, maps to `BIGINT` in SQL adapters, and is edited and displayed in major units in the Admin.
+- 0b70f62: Add view filter builder to navigation customizer. Enables configuring visual and raw JSON where-clause filters for collection subviews directly from the admin UI with schema field introspection, operator presets, and type coercion.
+
+### Patch Changes
+
+- 5ab8e4f: Fix collection-level `actions` not appearing in the admin, and fix invite and password-reset links. `/api/schemas` now includes root-level `collection.actions`, so `displayAction` items on a detail view resolve instead of showing "Action not found". Invite and reset emails now link to the admin UI instead of the site URL. The base URL comes from the new `admin.adminUrl` option, then the `DYRECTED_ADMIN_URL` env var, then the page the admin is running on, then `/admin`, and relative values resolve against the request origin. The invite dialog's "Copy" field now shows the full invite link with its token.
+- c9f015d: Fix bugs found by running the adapter contract suite against live databases. Postgres atomic `increment`/`decrement` no longer fails with "multiple assignments to same column data", and conditional `where` updates by id no longer collide on parameter numbers. MySQL and Postgres unique and compound indexes on collections with long names are now created (over-long index names are shortened with a stable hash instead of being silently rejected, which left `unique` unenforced). MongoDB compound indexes no longer fail when `sparse` is unset. The `money` field also gets its numeric list filter in the Admin.
+- Updated dependencies [5ab8e4f]
+- Updated dependencies [b3eefea]
+- Updated dependencies [1f0979c]
+- Updated dependencies [c9f015d]
+- Updated dependencies [6e18768]
+- Updated dependencies [97f4d7b]
+- Updated dependencies [02f1757]
+- Updated dependencies [cc65f29]
+  - @dyrected/core@2.18.0
+  - @dyrected/sdk@2.18.0
+
 ## 2.17.0
 
 ### Minor Changes

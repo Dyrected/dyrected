@@ -1,5 +1,21 @@
 # dyrected
 
+## 2.18.0
+
+### Patch Changes
+
+- 97f4d7b: Add transactional write hooks and exact money handling. Collections can define `hooks.beforeCommit`, which runs inside the write transaction with a writable `tx` so secondary writes commit or roll back with the document. Workflow transitions can define `onTransition`, run inside the transition transaction and given an optional request `input`. Fields accept `immutable: true`, which rejects any update that changes the value. The new `money` field (`defineMoneyField`) stores integer minor units, validates them on write, maps to `BIGINT` in SQL adapters, and is edited and displayed in major units in the Admin.
+- Updated dependencies [5ab8e4f]
+- Updated dependencies [b3eefea]
+- Updated dependencies [1f0979c]
+- Updated dependencies [c9f015d]
+- Updated dependencies [6e18768]
+- Updated dependencies [97f4d7b]
+- Updated dependencies [02f1757]
+- Updated dependencies [cc65f29]
+  - @dyrected/core@2.18.0
+  - @dyrected/sdk@2.18.0
+
 ## 2.17.0
 
 ### Minor Changes
