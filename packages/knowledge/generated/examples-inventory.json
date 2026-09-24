@@ -1799,6 +1799,34 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment-and-operations/server-runtime/tasks#example-1",
+    "page": "/deployment-and-operations/server-runtime/tasks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/tasks#example-2",
+    "page": "/deployment-and-operations/server-runtime/tasks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/tasks#example-3",
+    "page": "/deployment-and-operations/server-runtime/tasks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/tasks#example-4",
+    "page": "/deployment-and-operations/server-runtime/tasks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/editor-experience/ai-assistant#example-1",
     "page": "/editor-experience/ai-assistant",
     "language": "",
@@ -3747,12 +3775,26 @@
   {
     "id": "/guides/nuxt/package-reference#example-4",
     "page": "/guides/nuxt/package-reference",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/nuxt/package-reference#example-5",
+    "page": "/guides/nuxt/package-reference",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/nuxt/package-reference#example-6",
+    "page": "/guides/nuxt/package-reference",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/nuxt/package-reference#example-5",
+    "id": "/guides/nuxt/package-reference#example-7",
     "page": "/guides/nuxt/package-reference",
     "language": "vue",
     "classification": "syntax-checked",

@@ -1,0 +1,98 @@
+---
+title: Background Tasks
+description: Run recurring jobs such as reconciliation, retries and cleanup from your Dyrected server, with a database lock so each run happens once.
+runtime: self-hosted
+runtimeGroup: tasks
+runtimeNotes: Tasks run inside your own server process, so they are self-hosted only.
+---
+
+Some work has to happen on a schedule instead of in response to a request: checking a ledger for drift every fifteen minutes, retrying failed payouts, closing out stale sessions. Dyrected ships a small task runner for exactly this, so you don't need a separate scheduler service for the common cases.
+
+A task is a name, a schedule, and a function. The runner takes care of the part that is easy to get wrong: making sure that when you run several instances of your app, each scheduled run still happens only once.
+
+## Define a task
+
+```ts
+import { defineConfig, defineTask } from '@dyrected/core'
+
+export const ledgerDrift = defineTask({
+  name: 'wallet:ledger-drift',
+  cron: '*/15 * * * *',
+  lockTimeout: 300,
+  async run({ db, logger }) {
+    const drifts = await checkLedgerDrift(db)
+    if (drifts.length > 0) {
+      logger.error({ drifts }, 'Ledger drift detected')
+    }
+  },
+})
+
+export default defineConfig({
+  collections: [],
+  globals: [],
+  db,
+  tasks: [ledgerDrift],
+})
+```
+
+`defineTask` checks the name, the cron expression and the timeout right away, so a typo fails when the server starts, not at 3am. If you leave out `cron`, the task only runs when you call it yourself.
+
+The cron expression has the usual five fields (`minute hour day-of-month month day-of-week`) and is evaluated in **UTC**. Lists, ranges, steps and month or weekday names all work, for example `0 3 * * mon`.
+
+## Start the runner
+
+Dyrected doesn't start the runner for you, because a timer is only reliable in a process that stays alive. You choose how it runs.
+
+**On a long-lived Node server**, create the runner and start it. `start()` returns immediately, so it never delays your server booting:
+
+```ts
+import { createTaskRunner } from '@dyrected/core'
+
+const runner = createTaskRunner(config)
+runner.start()
+
+// on shutdown
+await runner.stop()
+```
+
+**On Nuxt**, set `runTasks: true` in the module options and Dyrected starts and stops the runner with the server.
+
+**On serverless**, there is no process to keep a timer alive. Call `runDue()` from your platform's cron (Vercel Cron, Cloudflare Cron Triggers) every minute:
+
+```ts
+const results = await createTaskRunner(config).runDue()
+```
+
+You can also run one task on demand, ignoring its schedule, with `runner.runTask('wallet:ledger-drift')`.
+
+## How duplicate runs are prevented
+
+Every task has a lock row in the database. Before running, an instance claims the lock with a single conditional update, and only the instance whose update matched goes ahead. For scheduled runs it also claims the specific time slot, so a slow instance can't run a slot that another instance already handled.
+
+That means you can run as many instances as you like, and `runDue()` is safe to call from all of them at once.
+
+If a task throws, the run is recorded as failed, the lock is released, and the next slot runs normally. The last status and error are stored on the task's lock row.
+
+## Lock timeout
+
+`lockTimeout` is how many seconds a run may hold its lock, and it defaults to 300. If a run goes past it, Dyrected records it as failed and aborts the `signal` passed to your function. If the process dies mid-run, the lock simply expires after the timeout and another instance takes over.
+
+Pass `signal` to anything cancellable, such as `fetch`, or check it inside long loops, so a run that has lost its lock stops writing data:
+
+```ts
+async run({ db, signal }) {
+  for (const account of accounts) {
+    if (signal.aborted) return
+    await reconcile(db, account)
+  }
+}
+```
+
+Choose a timeout comfortably longer than the task's normal runtime.
+
+## Good to know
+
+- A missed slot isn't replayed. After downtime the task runs once for the current slot, not once per missed slot.
+- Runs are checked about every 30 seconds, so a task starts within that window of its scheduled minute. Pass `intervalMs` to `start()` to change it.
+- Make tasks safe to run twice. The lock prevents overlap, but a run that fails halfway can be picked up again on the next slot.
+- Do slow or external work here, not inside a [transaction](/docs/deployment-and-operations/infrastructure/database/transactions) held open around it.

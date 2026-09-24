@@ -2,6 +2,7 @@
   "title": "Server Runtime",
   "runtimeDefault": "self-hosted",
   "pages": [
-    "hooks"
+    "hooks",
+    "tasks"
   ]
 }

@@ -9,6 +9,7 @@ import type {
 } from "./adapters.js";
 import type { AuthenticatedUser } from "./request.js";
 import type { LifecycleEventHandler } from "./workflows.js";
+import type { TaskConfig } from "./tasks.js";
 import type { Block } from "./schema-core.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 import type { DestinationStream, Logger, LoggerOptions } from "pino";
@@ -264,6 +265,12 @@ export interface DyrectedConfig<
   redis?: {
     url: string;
   };
+
+  /**
+   * Background tasks. Define each with `defineTask`, then run them with
+   * `createTaskRunner(config)`.
+   */
+  tasks?: TaskConfig[];
 
   /** Durable lifecycle-event delivery configuration. */
   events?: {

@@ -1,5 +1,6 @@
 import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
 import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
+import { TASK_LOCKS_COLLECTION, TASK_LOCKS_COLLECTION_CONFIG } from "../tasks.js";
 import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
 import { getAdminAuthCollection } from "./admin-auth.js";
 import { normalizeSchemaFragment } from "./block-references.js";
@@ -173,6 +174,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   const globals = schemaAwareConfig?.globals || [];
   const needsAudit = collections.some((col) => col.audit);
   const needsWorkflow = collections.some((col) => col.workflow || col.drafts);
+  const needsTasks = (config.tasks?.length ?? 0) > 0;
   const needsAuthSessions = collections.some((col) => !!col.auth);
   const adminAuthCollectionSlug = getAdminAuthCollection({
     collections,
@@ -423,6 +425,9 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   }
   if (needsWorkflow && !normalizedCollections.some((col) => col.slug === LIFECYCLE_EVENTS_COLLECTION)) {
     systemCollections.push(LIFECYCLE_EVENTS_COLLECTION_CONFIG);
+  }
+  if (needsTasks && !normalizedCollections.some((col) => col.slug === TASK_LOCKS_COLLECTION)) {
+    systemCollections.push(TASK_LOCKS_COLLECTION_CONFIG);
   }
   if (needsAuthSessions && !normalizedCollections.some((col) => col.slug === AUTH_SESSIONS_COLLECTION)) {
     systemCollections.push(AUTH_SESSIONS_COLLECTION_CONFIG);

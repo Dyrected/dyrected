@@ -768,6 +768,7 @@ export * from "./utils/jexl-helpers.js";
 export * from "./utils/hooks.js";
 export * from "./utils/openapi.js";
 export * from "./workflows.js";
+export * from "./tasks.js";
 export * from "./detail.js";
 export * from "./utils/conditions.js";
 export * from "./utils/tenant.js";

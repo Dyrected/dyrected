@@ -80,6 +80,35 @@ export default defineNuxtConfig({
 
 With a relative `apiBase`, the module registers the server handler for you and serves Dyrected under that path.
 
+## Import your Dyrected files with `#dyrected`
+
+Nuxt 4 points `~` at the `app/` folder, so an import like `~/server/dyrected/access` looks for `app/server/dyrected/access` and fails. The module adds two aliases that always start from your project root, whichever Nuxt version you use:
+
+| Alias | Resolves to |
+| --- | --- |
+| `#dyrected` | `<root>/dyrected` |
+| `#dyrected/server` | `<root>/server/dyrected` |
+
+```ts
+import { isFinance } from '#dyrected/access'
+import { getDyrectedDb } from '#dyrected/server/db'
+```
+
+If you already define either alias in `nuxt.config.ts`, yours wins.
+
+## Run background tasks
+
+If your config defines [background tasks](/docs/deployment-and-operations/server-runtime/tasks), set `runTasks: true` and the module starts the runner with your server and stops it on shutdown. It's off by default, so nothing runs unless you ask for it.
+
+```ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: { ...config, runTasks: true },
+});
+```
+
+Use this on a long-lived Node server. On serverless hosts, call `runDue()` from a platform cron instead.
+
 ## Add the admin page
 
 The module auto-registers `DyrectedAdmin`, but you still choose the route that renders it:

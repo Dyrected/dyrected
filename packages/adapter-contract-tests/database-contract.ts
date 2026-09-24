@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { type CollectionConfig, type DatabaseAdapter, DuplicateKeyError } from "@dyrected/core";
+import {
+  type CollectionConfig,
+  type DatabaseAdapter,
+  DuplicateKeyError,
+  createTaskRunner,
+  defineConfig,
+  defineTask,
+} from "@dyrected/core";
 
 export function runDatabaseAdapterContract(
   name: string,
@@ -747,6 +754,39 @@ export function runIntegrityAndConcurrencyAdapterContract(
       const stored = await db.findOne({ collection, id: account.id });
       expect(stored?.balance).toBe(100 + 200 * 37);
       expect(Number.isInteger(stored?.balance)).toBe(true);
+    });
+
+    it("runs a scheduled task on exactly one of several concurrent runners", async () => {
+      const db = await createAdapter();
+      let runs = 0;
+      const config = defineConfig({
+        collections: [],
+        globals: [],
+        db,
+        tasks: [
+          defineTask({
+            name: "contract:task",
+            cron: "*/5 * * * *",
+            run: async () => {
+              runs++;
+              await new Promise((r) => setTimeout(r, 20));
+            },
+          }),
+        ],
+      });
+      // No manual sync: the runner registers its own lock collection.
+      const start = new Date();
+      await createTaskRunner(config).runDue(start); // registers the task
+      const later = new Date(start.getTime() + 6 * 60_000);
+      const results = (
+        await Promise.all(Array.from({ length: 10 }, () => createTaskRunner(config).runDue(later)))
+      ).flat();
+
+      expect(results.filter((r) => r.status === "completed")).toHaveLength(1);
+      expect(runs).toBe(1);
+      const row = await db.findOne({ collection: "__task_locks", id: "contract:task" });
+      expect(Number(row?.lockedUntil)).toBe(0);
+      expect(row?.lastStatus).toBe("completed");
     });
   });
 }

@@ -14195,6 +14195,35 @@ export default defineNuxtConfig({
 
 With a relative `apiBase`, the module registers the server handler for you and serves Dyrected under that path.
 
+## Import your Dyrected files with `#dyrected`
+
+Nuxt 4 points `~` at the `app/` folder, so an import like `~/server/dyrected/access` looks for `app/server/dyrected/access` and fails. The module adds two aliases that always start from your project root, whichever Nuxt version you use:
+
+| Alias | Resolves to |
+| --- | --- |
+| `#dyrected` | `<root>/dyrected` |
+| `#dyrected/server` | `<root>/server/dyrected` |
+
+```ts
+
+
+```
+
+If you already define either alias in `nuxt.config.ts`, yours wins.
+
+## Run background tasks
+
+If your config defines [background tasks](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), set `runTasks: true` and the module starts the runner with your server and stops it on shutdown. It's off by default, so nothing runs unless you ask for it.
+
+```ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: { ...config, runTasks: true },
+});
+```
+
+Use this on a long-lived Node server. On serverless hosts, call `runDue()` from a platform cron instead.
+
 ## Add the admin page
 
 The module auto-registers `DyrectedAdmin`, but you still choose the route that renders it:
@@ -19149,6 +19178,12 @@ export interface DyrectedConfig<
     url: string;
   };
 
+  /**
+   * Background tasks. Define each with `defineTask`, then run them with
+   * `createTaskRunner(config)`.
+   */
+  tasks?: TaskConfig[];
+
   /** Durable lifecycle-event delivery configuration. */
   events?: {
     handlers: LifecycleEventHandler[];
@@ -19220,6 +19255,7 @@ export interface DyrectedConfig<
 | <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;.  A policy can be a **function** (full server logic, evaluated to a static boolean when serialized for the admin panel) or a **Jexl string** (or boolean). String policies are inlined when the schema is sent to the admin, so the admin panel evaluates them live against the current form — the same way it evaluates inline Jexl rules. |
 | <code>email</code> (optional) | Email transport configuration. Required for welcome emails, password resets, and invite links. |
 | <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
+| <code>tasks</code> (optional) | Background tasks. Define each with &#96;defineTask&#96;, then run them with &#96;createTaskRunner(config)&#96;. |
 | <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |
 | <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
 | <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
@@ -37566,6 +37602,103 @@ export interface HookRequestContext {
 
 ---
 
+## Background Tasks
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/tasks
+
+Some work has to happen on a schedule instead of in response to a request: checking a ledger for drift every fifteen minutes, retrying failed payouts, closing out stale sessions. Dyrected ships a small task runner for exactly this, so you don't need a separate scheduler service for the common cases.
+
+A task is a name, a schedule, and a function. The runner takes care of the part that is easy to get wrong: making sure that when you run several instances of your app, each scheduled run still happens only once.
+
+## Define a task
+
+```ts
+
+
+export const ledgerDrift = defineTask({
+  name: 'wallet:ledger-drift',
+  cron: '*/15 * * * *',
+  lockTimeout: 300,
+  async run({ db, logger }) {
+    const drifts = await checkLedgerDrift(db)
+    if (drifts.length > 0) {
+      logger.error({ drifts }, 'Ledger drift detected')
+    }
+  },
+})
+
+export default defineConfig({
+  collections: [],
+  globals: [],
+  db,
+  tasks: [ledgerDrift],
+})
+```
+
+`defineTask` checks the name, the cron expression and the timeout right away, so a typo fails when the server starts, not at 3am. If you leave out `cron`, the task only runs when you call it yourself.
+
+The cron expression has the usual five fields (`minute hour day-of-month month day-of-week`) and is evaluated in **UTC**. Lists, ranges, steps and month or weekday names all work, for example `0 3 * * mon`.
+
+## Start the runner
+
+Dyrected doesn't start the runner for you, because a timer is only reliable in a process that stays alive. You choose how it runs.
+
+**On a long-lived Node server**, create the runner and start it. `start()` returns immediately, so it never delays your server booting:
+
+```ts
+
+
+const runner = createTaskRunner(config)
+runner.start()
+
+// on shutdown
+await runner.stop()
+```
+
+**On Nuxt**, set `runTasks: true` in the module options and Dyrected starts and stops the runner with the server.
+
+**On serverless**, there is no process to keep a timer alive. Call `runDue()` from your platform's cron (Vercel Cron, Cloudflare Cron Triggers) every minute:
+
+```ts
+const results = await createTaskRunner(config).runDue()
+```
+
+You can also run one task on demand, ignoring its schedule, with `runner.runTask('wallet:ledger-drift')`.
+
+## How duplicate runs are prevented
+
+Every task has a lock row in the database. Before running, an instance claims the lock with a single conditional update, and only the instance whose update matched goes ahead. For scheduled runs it also claims the specific time slot, so a slow instance can't run a slot that another instance already handled.
+
+That means you can run as many instances as you like, and `runDue()` is safe to call from all of them at once.
+
+If a task throws, the run is recorded as failed, the lock is released, and the next slot runs normally. The last status and error are stored on the task's lock row.
+
+## Lock timeout
+
+`lockTimeout` is how many seconds a run may hold its lock, and it defaults to 300. If a run goes past it, Dyrected records it as failed and aborts the `signal` passed to your function. If the process dies mid-run, the lock simply expires after the timeout and another instance takes over.
+
+Pass `signal` to anything cancellable, such as `fetch`, or check it inside long loops, so a run that has lost its lock stops writing data:
+
+```ts
+async run({ db, signal }) {
+  for (const account of accounts) {
+    if (signal.aborted) return
+    await reconcile(db, account)
+  }
+}
+```
+
+Choose a timeout comfortably longer than the task's normal runtime.
+
+## Good to know
+
+- A missed slot isn't replayed. After downtime the task runs once for the current slot, not once per missed slot.
+- Runs are checked about every 30 seconds, so a task starts within that window of its scheduled minute. Pass `intervalMs` to `start()` to change it.
+- Make tasks safe to run twice. The lock prevents overlap, but a run that fails halfway can be picked up again on the next slot.
+- Do slow or external work here, not inside a [transaction](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/transactions) held open around it.
+
+---
+
 ## Document Locking
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/__document-locking
@@ -47468,6 +47601,35 @@ export default defineNuxtConfig({
 
 With a relative `apiBase`, the module registers the server handler for you and serves Dyrected under that path.
 
+## Import your Dyrected files with `#dyrected`
+
+Nuxt 4 points `~` at the `app/` folder, so an import like `~/server/dyrected/access` looks for `app/server/dyrected/access` and fails. The module adds two aliases that always start from your project root, whichever Nuxt version you use:
+
+| Alias | Resolves to |
+| --- | --- |
+| `#dyrected` | `<root>/dyrected` |
+| `#dyrected/server` | `<root>/server/dyrected` |
+
+```ts
+
+
+```
+
+If you already define either alias in `nuxt.config.ts`, yours wins.
+
+## Run background tasks
+
+If your config defines [background tasks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/tasks), set `runTasks: true` and the module starts the runner with your server and stops it on shutdown. It's off by default, so nothing runs unless you ask for it.
+
+```ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: { ...config, runTasks: true },
+});
+```
+
+Use this on a long-lived Node server. On serverless hosts, call `runDue()` from a platform cron instead.
+
 ## Add the admin page
 
 The module auto-registers `DyrectedAdmin`, but you still choose the route that renders it:
@@ -50376,6 +50538,12 @@ export interface DyrectedConfig<
     url: string;
   };
 
+  /**
+   * Background tasks. Define each with `defineTask`, then run them with
+   * `createTaskRunner(config)`.
+   */
+  tasks?: TaskConfig[];
+
   /** Durable lifecycle-event delivery configuration. */
   events?: {
     handlers: LifecycleEventHandler[];
@@ -50447,6 +50615,7 @@ export interface DyrectedConfig<
 | <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;.  A policy can be a **function** (full server logic, evaluated to a static boolean when serialized for the admin panel) or a **Jexl string** (or boolean). String policies are inlined when the schema is sent to the admin, so the admin panel evaluates them live against the current form — the same way it evaluates inline Jexl rules. |
 | <code>email</code> (optional) | Email transport configuration. Required for welcome emails, password resets, and invite links. |
 | <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
+| <code>tasks</code> (optional) | Background tasks. Define each with &#96;defineTask&#96;, then run them with &#96;createTaskRunner(config)&#96;. |
 | <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |
 | <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
 | <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |

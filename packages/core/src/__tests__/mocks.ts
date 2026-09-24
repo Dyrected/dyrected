@@ -43,16 +43,16 @@ export class InMemoryAdapter implements DatabaseAdapter {
         continue;
       }
 
-      const [[op, operand]] = Object.entries(condition as object);
+      for (const [op, operand] of Object.entries(condition as object)) {
       switch (op) {
         case 'equals':      if (docVal !== operand) return false; break;
         case 'not_equals':  if (docVal === operand) return false; break;
         case 'in':          if (!Array.isArray(operand) || !operand.includes(docVal)) return false; break;
         case 'not_in':      if (Array.isArray(operand) && operand.includes(docVal)) return false; break;
-        case 'gt':          if (!(docVal > operand)) return false; break;
-        case 'gte':         if (!(docVal >= operand)) return false; break;
-        case 'lt':          if (!(docVal < operand)) return false; break;
-        case 'lte':         if (!(docVal <= operand)) return false; break;
+        case 'gt': case 'greater_than': if (!(docVal > operand)) return false; break;
+        case 'gte': case 'greater_than_equal': case 'greater_than_or_equal': if (!(docVal >= operand)) return false; break;
+        case 'lt': case 'less_than': if (!(docVal < operand)) return false; break;
+        case 'lte': case 'less_than_equal': case 'less_than_or_equal': if (!(docVal <= operand)) return false; break;
         case 'contains':
           if (Array.isArray(docVal)) {
             const needle = typeof operand === "string" ? operand.replaceAll('"', '') : operand;
@@ -63,6 +63,7 @@ export class InMemoryAdapter implements DatabaseAdapter {
           break;
         case 'starts_with': if (typeof docVal !== 'string' || !docVal.startsWith(operand)) return false; break;
         case 'exists':      if (operand ? docVal == null : docVal != null) return false; break;
+      }
       }
     }
     return true;
@@ -100,12 +101,30 @@ export class InMemoryAdapter implements DatabaseAdapter {
     return doc;
   }
 
-  async update(params: { collection: string; id: string; data: any }) {
+  async update(params: { collection: string; id?: string; where?: any; data: any }) {
     const col = this.getCollection(params.collection);
-    const existing = col[params.id] ?? {};
-    const updated = { ...existing, ...params.data, id: params.id };
-    col[params.id] = updated;
-    return updated;
+    const candidates = params.id !== undefined ? [col[params.id]].filter(Boolean) : Object.values(col);
+    const matches = candidates.filter((doc: any) => !params.where || this.matchesWhere(doc, params.where));
+    const target: any = matches[0];
+    if (!target) {
+      if (params.id !== undefined && !params.where) {
+        const created = { ...params.data, id: params.id };
+        col[params.id] = created;
+        return created;
+      }
+      return { id: params.id, ...params.data, affectedRows: 0 };
+    }
+    const data: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(params.data)) {
+      data[key] =
+        val && typeof val === 'object' && ('increment' in (val as object) || 'decrement' in (val as object))
+          ? Number(target[key] ?? 0) + Number((val as any).increment ?? 0) - Number((val as any).decrement ?? 0)
+          : val;
+    }
+    const updated = { ...target, ...data, id: target.id, affectedRows: undefined };
+    delete (updated as any).affectedRows;
+    col[target.id] = updated;
+    return { ...updated, affectedRows: 1 };
   }
 
   async delete(params: { collection: string; id: string }) {

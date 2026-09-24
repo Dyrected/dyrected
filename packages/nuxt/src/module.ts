@@ -9,7 +9,7 @@ import {
   addTemplate,
   installModule,
 } from "@nuxt/kit";
-import { join } from "path";
+import { join, resolve } from "path";
 import { existsSync } from "fs";
 import { createRequire } from "module";
 import {
@@ -39,6 +39,13 @@ export interface ModuleOptions extends DyrectedConfig {
    * @default 'cms'
    */
   adminPath?: string;
+  /**
+   * Start the `tasks` from your Dyrected config on this server. Off by default:
+   * turn it on for a long-lived Node server. On serverless hosts, call
+   * `createTaskRunner(config).runDue()` from a platform cron instead.
+   * @default false
+   */
+  runTasks?: boolean;
 }
 
 import { NuxtModule } from "@nuxt/schema";
@@ -60,6 +67,18 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       assertValidDeclarativeHooksInConfig(configObj, source);
       assertValidDeclarativeAccessInConfig(configObj, source);
     };
+
+    // Stable import roots. In Nuxt 4 `~` points at `app/`, so `~/server/dyrected/...`
+    // resolves to a path that does not exist. These aliases always anchor to the
+    // project root, whichever Nuxt version is in use. The more specific alias is
+    // registered first so it is never shadowed by its prefix. User-defined aliases win.
+    const aliases: Record<string, string> = {
+      "#dyrected/server": resolve(nuxt.options.rootDir, "server/dyrected"),
+      "#dyrected": resolve(nuxt.options.rootDir, "dyrected"),
+    };
+    for (const [name, target] of Object.entries(aliases)) {
+      nuxt.options.alias[name] ??= target;
+    }
 
     // Render images through @nuxt/image (<NuxtImg>) so the Dyrected image and
     // media components get optimization, the way the Next integration uses
@@ -230,6 +249,14 @@ export default defineNitroPlugin(async (nitroApp) => {
       }
     }
 
+    if (runtimeConfig?.runTasks && configObj?.db && configObj.tasks?.length) {
+      const { createTaskRunner } = await import("@dyrected/core");
+      const runner = createTaskRunner(configObj);
+      runner.start();
+      nitroApp.hooks.hook("close", () => runner.stop());
+      console.log("[dyrected/nuxt] Task runner started (" + configObj.tasks.length + " task(s))");
+    }
+
     if (process.env.NODE_ENV !== 'production' && runtimeConfig?.configPath) {
       const { watch } = await import('fs');
       // @ts-ignore
@@ -278,27 +305,32 @@ export default defineNitroPlugin(async (nitroApp) => {
       });
       addServerPlugin(dbPluginTemplate.dst);
 
-      try {
-        const { loadDyrectedConfig } = await import("./runtime/server/plugins/loadConfig.js");
-        const configModule = await loadDyrectedConfig(configPath);
-        const userConfig = (configModule as { default?: unknown }).default ?? configModule;
-        const configObj =
-          userConfig &&
-          typeof userConfig === "object" &&
-          "default" in (userConfig as Record<string, unknown>) &&
-          (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.collections ||
-            ((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.globals ||
-            ((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.db)
-            ? ((userConfig as Record<string, unknown>).default as Pick<
-                DyrectedConfig,
-                "blocks" | "collections" | "globals" | "accessPolicies"
-              >)
-            : (userConfig as Pick<DyrectedConfig, "blocks" | "collections" | "globals" | "accessPolicies">);
+      // Validate in the background. Loading the user's config imports their database
+      // drivers, which can be slow; it must never hold up the dev server booting.
+      // Failures are reported the same way, just without blocking.
+      void (async () => {
+        try {
+          const { loadDyrectedConfig } = await import("./runtime/server/plugins/loadConfig.js");
+          const configModule = await loadDyrectedConfig(configPath);
+          const userConfig = (configModule as { default?: unknown }).default ?? configModule;
+          const configObj =
+            userConfig &&
+            typeof userConfig === "object" &&
+            "default" in (userConfig as Record<string, unknown>) &&
+            (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.collections ||
+              ((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.globals ||
+              ((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.db)
+              ? ((userConfig as Record<string, unknown>).default as Pick<
+                  DyrectedConfig,
+                  "blocks" | "collections" | "globals" | "accessPolicies"
+                >)
+              : (userConfig as Pick<DyrectedConfig, "blocks" | "collections" | "globals" | "accessPolicies">);
 
-        validateDeclarativeConfig(configObj, configPath);
-      } catch (error) {
-        console.error("[dyrected/nuxt] Config validation failed:", error);
-      }
+          validateDeclarativeConfig(configObj, configPath);
+        } catch (error) {
+          console.error("[dyrected/nuxt] Config validation failed:", error);
+        }
+      })();
     } else {
       console.warn("[dyrected/nuxt] Could not find dyrected.config.ts. Self-hosted database re-hydration might fail.");
     }

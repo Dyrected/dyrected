@@ -885,6 +885,21 @@
     "status": "classified"
   },
   {
+    "id": "deployment-and-operations--server-runtime--tasks",
+    "relativePath": "deployment-and-operations/server-runtime/tasks",
+    "title": "Background Tasks",
+    "description": "Run recurring jobs such as reconciliation, retries and cleanup from your Dyrected server, with a database lock so each run happens once.",
+    "runtime": "self-hosted",
+    "runtimeGroup": "tasks",
+    "runtimeNotes": "Tasks run inside your own server process, so they are self-hosted only.",
+    "sectionPath": "deployment-and-operations/server-runtime",
+    "sourceFile": "apps/docs/content/docs/deployment-and-operations/server-runtime/tasks.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/deployment-and-operations/server-runtime/tasks",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/deployment-and-operations/server-runtime/tasks",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/tasks",
+    "status": "classified"
+  },
+  {
     "id": "editor-experience--__document-locking",
     "relativePath": "editor-experience/__document-locking",
     "title": "Document Locking",
