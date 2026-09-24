@@ -92,11 +92,16 @@ export interface DefineNavItemOptions {
 }
 
 /**
- * Helper to define an operational navigation item or customize placement of collections/globals.
+ * Configuration options for defining an operational workspace or customizing placement of collections/globals.
+ */
+export type DefineWorkspaceOptions = DefineNavItemOptions;
+
+/**
+ * Helper to define an operational workspace or customize placement of collections/globals.
  *
  * @example
  * ```ts
- * export const kycQueue = defineNavItem({
+ * export const kycQueue = defineWorkspace({
  *   slug: "kyc-review",
  *   label: "KYC Review",
  *   icon: "ShieldAlert",
@@ -107,8 +112,16 @@ export interface DefineNavItemOptions {
  * });
  * ```
  */
-export function defineNavItem(options: DefineNavItemOptions): DefineNavItemOptions {
+export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspaceOptions {
   return options;
+}
+
+/**
+ * Helper to define an operational navigation item or customize placement of collections/globals.
+ * @deprecated Use `defineWorkspace` instead.
+ */
+export function defineNavItem(options: DefineNavItemOptions): DefineNavItemOptions {
+  return defineWorkspace(options);
 }
 
 /**

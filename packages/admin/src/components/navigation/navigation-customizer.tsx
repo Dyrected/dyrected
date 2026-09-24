@@ -395,6 +395,37 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     }))
   }
 
+  const deleteView = (itemSlug: string, viewSlug: string) => {
+    setPrefs((prev) => {
+      const items = [...(prev.items || [])]
+      const targetItemIdx = items.findIndex((i) => i.slug === itemSlug)
+
+      if (targetItemIdx >= 0) {
+        const dest = { ...items[targetItemIdx] }
+        dest.views = (dest.views || []).filter((v) => v.slug !== viewSlug)
+        items[targetItemIdx] = dest
+        return { ...prev, items }
+      }
+
+      // If the item is codebase-defined, add an override without that view
+      const allItems = tree.groups.flatMap((g) => g.items)
+      const baseItem = allItems.find((i) => i.slug === itemSlug)
+      if (baseItem) {
+        items.push({
+          slug: baseItem.slug,
+          label: baseItem.label,
+          icon: baseItem.icon,
+          group: baseItem.group,
+          collection: baseItem.collection,
+          views: (baseItem.views || []).filter((v) => v.slug !== viewSlug),
+        })
+        return { ...prev, items }
+      }
+
+      return prev
+    })
+  }
+
   const deleteCustomGroup = (groupName: string) => {
     setPrefs((prev) => ({
       ...prev,
@@ -920,6 +951,14 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                                     {dest.label}
                                                   </DropdownMenuItem>
                                                 ))}
+                                              <DropdownMenuSeparator />
+                                              <DropdownMenuItem
+                                                className="dy-text-destructive focus:dy-text-destructive"
+                                                onClick={() => deleteView(item.slug, view.slug)}
+                                              >
+                                                <Trash2 className="dy-h-3.5 dy-w-3.5 dy-mr-1.5" />
+                                                <span>Delete View</span>
+                                              </DropdownMenuItem>
                                             </DropdownMenuContent>
                                           </DropdownMenu>
 

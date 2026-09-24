@@ -13,7 +13,7 @@ import {
   defineTextField,
   defineTextareaField,
   defineView,
-  defineNavItem,
+  defineWorkspace,
   defineAction,
   displaySection,
   displayField,
@@ -1797,7 +1797,7 @@ export default defineConfig({
       // 1. Multi-view Operational Workspace:
       // Demonstrates custom group icon ("Briefcase"), subviews with accordion chevrons,
       // and live badge counting attending guests.
-      defineNavItem({
+      defineWorkspace({
         slug: "guest-operations",
         label: "Guest Operations",
         icon: "Users",
@@ -1822,7 +1822,7 @@ export default defineConfig({
       // Demonstrates Phase 2 Smart Single-View Accordion: because there is only 1 view,
       // it renders cleanly as a direct clickable nav link WITHOUT an accordion chevron,
       // and has a live warning badge for guests awaiting door check-in.
-      defineNavItem({
+      defineWorkspace({
         slug: "door-checkin",
         label: "Door Check-In",
         icon: "UserCheck",
@@ -1845,7 +1845,7 @@ export default defineConfig({
       }),
 
       // 3. Collection view placement within Operations
-      // defineNavItem({
+      // defineWorkspace({
       //   collection: "guest-responses",
       //   label: "Guest Responses (Raw)",
       //   group: "Operations",
@@ -1853,7 +1853,7 @@ export default defineConfig({
       // }),
 
       // 4. Content Group: with FileText icon, sparse ordering, and badge counters
-      defineNavItem({
+      defineWorkspace({
         collection: "blog-articles",
         group: { name: "Content", icon: "FileText", defaultExpanded: true, order: 20 },
         order: 1,
@@ -1864,39 +1864,39 @@ export default defineConfig({
           variant: "info",
         },
       }),
-      defineNavItem({
+      defineWorkspace({
         collection: "article-comments",
         group: "Content",
         order: 2,
       }),
-      defineNavItem({
+      defineWorkspace({
         collection: "pages",
         group: "Content",
         order: 3,
       }),
-      defineNavItem({
+      defineWorkspace({
         collection: "services",
         group: "Content",
         order: 4,
       }),
-      defineNavItem({
+      defineWorkspace({
         collection: "media",
         group: "Content",
         order: 5,
       }),
 
       // 5. Settings Group: with Settings icon, collapsed by default
-      defineNavItem({
+      defineWorkspace({
         global: "site-settings",
         group: { name: "Settings", icon: "Settings", defaultExpanded: false, order: 30 },
         order: 1,
       }),
-      defineNavItem({
+      defineWorkspace({
         global: "assessment-categories",
         group: "Settings",
         order: 2,
       }),
-      defineNavItem({
+      defineWorkspace({
         collection: "__admins",
         label: "Administrators",
         icon: "Shield",
