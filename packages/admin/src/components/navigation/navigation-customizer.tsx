@@ -97,7 +97,7 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
 
   // Reconciled tree for interactive editing
   const tree = React.useMemo(() => {
-    return reconcileNavigation(baseTree, prefs, schemas as any)
+    return reconcileNavigation(baseTree, prefs, schemas as any, { includeHidden: true })
   }, [baseTree, prefs, schemas])
 
   const sensors = useSensors(
@@ -166,12 +166,13 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
   const toggleHide = (id: string, slug?: string) => {
     setPrefs((prev) => {
       const currentHidden = new Set(prev.hidden || [])
-      const target = slug || id
-      if (currentHidden.has(target)) {
-        currentHidden.delete(target)
+      const isCurrentlyHidden = currentHidden.has(id) || (!!slug && currentHidden.has(slug))
+      if (isCurrentlyHidden) {
         currentHidden.delete(id)
+        if (slug) currentHidden.delete(slug)
       } else {
-        currentHidden.add(target)
+        currentHidden.add(id)
+        if (slug) currentHidden.add(slug)
       }
       return { ...prev, hidden: Array.from(currentHidden) }
     })

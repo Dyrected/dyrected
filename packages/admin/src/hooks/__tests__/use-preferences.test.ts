@@ -150,4 +150,20 @@ describe("usePreference Hook", () => {
       { scope: "role", role: "compliance-reviewer" }
     )
   })
+
+  it("synchronizes updates across multiple hook instances in real-time without reloads", () => {
+    const { result: hook1 } = renderHook(() => usePreference("shared-key", "initial"))
+    const { result: hook2 } = renderHook(() => usePreference("shared-key", "initial"))
+
+    expect(hook1.current[0]).toBe("initial")
+    expect(hook2.current[0]).toBe("initial")
+
+    act(() => {
+      hook1.current[1]("updated-from-customizer")
+    })
+
+    // Both instances update immediately in 0ms!
+    expect(hook1.current[0]).toBe("updated-from-customizer")
+    expect(hook2.current[0]).toBe("updated-from-customizer")
+  })
 })

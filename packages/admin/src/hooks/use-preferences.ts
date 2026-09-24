@@ -119,6 +119,8 @@ export function usePreference<T>(
     }
   })
 
+  const instanceIdRef = React.useRef(Math.random().toString(36).slice(2))
+
   // Sync local state if key, scope, or role changes
   React.useEffect(() => {
     if (typeof window === "undefined") return
@@ -131,6 +133,52 @@ export function usePreference<T>(
       console.warn(`[usePreference] Error syncing key "${key}":`, e)
     }
   }, [key, localStorageKey, processStoredData])
+
+  // Listen for local custom events (real-time cross-component sync in same window)
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handlePreferenceChange = (event: Event) => {
+      const ce = event as CustomEvent<{
+        key: string
+        localStorageKey: string
+        value: unknown
+        senderId: string
+      }>
+      if (ce.detail?.senderId === instanceIdRef.current) return
+      if (ce.detail?.key === key || ce.detail?.localStorageKey === localStorageKey) {
+        const nextValue = processStoredData(ce.detail.value)
+        setValue((prev) => (arePreferenceValuesEqual(prev, nextValue) ? prev : nextValue))
+      }
+    }
+
+    window.addEventListener("dyrected:preference-change", handlePreferenceChange)
+    return () => {
+      window.removeEventListener("dyrected:preference-change", handlePreferenceChange)
+    }
+  }, [key, localStorageKey, processStoredData])
+
+  // Listen for storage events (real-time cross-tab sync)
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === localStorageKey && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue)
+          const nextValue = processStoredData(parsed)
+          setValue((prev) => (arePreferenceValuesEqual(prev, nextValue) ? prev : nextValue))
+        } catch {
+          // ignore parsing error
+        }
+      }
+    }
+
+    window.addEventListener("storage", handleStorage)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+    }
+  }, [localStorageKey, processStoredData])
 
   // Remote fetching with cancellation flag and write version guarding
   React.useEffect(() => {
@@ -181,10 +229,20 @@ export function usePreference<T>(
 
         if (arePreferenceValuesEqual(prev, newValue)) return prev
 
-        // 1. Synchronous 0ms immediate persistence in localStorage
+        // 1. Synchronous 0ms immediate persistence in localStorage and cross-component broadcast
         if (typeof window !== "undefined") {
           try {
             window.localStorage.setItem(localStorageKey, JSON.stringify(newValue))
+            window.dispatchEvent(
+              new CustomEvent("dyrected:preference-change", {
+                detail: {
+                  key,
+                  localStorageKey,
+                  value: newValue,
+                  senderId: instanceIdRef.current,
+                },
+              })
+            )
           } catch (e) {
             console.warn(`[usePreference] Error saving key "${key}" to localStorage:`, e)
           }

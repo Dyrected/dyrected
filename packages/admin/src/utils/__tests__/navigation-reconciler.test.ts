@@ -159,4 +159,27 @@ describe("Navigation Delta Reconciler", () => {
     const articleItem = contentGroup?.items[0] as any
     expect(articleItem.isTombstone).toBe(true)
   })
+
+  it("filters out hidden subviews from item.views by default", () => {
+    const prefs: UserNavigationPreferences = {
+      _version: 1,
+      hidden: ["kyc_pending"],
+    }
+
+    const res = reconcileNavigation(baseTree, prefs)
+    const kycItem = res.groups[0].items.find((i) => i.slug === "kyc")
+    expect(kycItem?.views).toHaveLength(0)
+  })
+
+  it("retains hidden items and subviews when includeHidden is true", () => {
+    const prefs: UserNavigationPreferences = {
+      _version: 1,
+      hidden: ["workspace_kyc", "kyc_pending"],
+    }
+
+    const res = reconcileNavigation(baseTree, prefs, undefined, { includeHidden: true })
+    expect(res.groups[0].items).toHaveLength(2)
+    const kycItem = res.groups[0].items.find((i) => i.slug === "kyc")
+    expect(kycItem?.views).toHaveLength(1)
+  })
 })

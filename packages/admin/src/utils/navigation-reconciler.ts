@@ -24,10 +24,20 @@ const normalizeKey = (val?: string) => (val || "").toLowerCase().replace(/[^a-z0
  * 5. Pinned favorite shortcuts are extracted.
  * 6. Tombstone shielding: deleted collections/views don't crash the sidebar.
  */
+export interface ReconcileNavigationOptions {
+  /**
+   * If true, hidden groups, items, and views are retained in the returned tree
+   * (useful for customizers/editors that need to display and unhide them).
+   * If false (default), hidden groups, items, and views are omitted.
+   */
+  includeHidden?: boolean
+}
+
 export function reconcileNavigation(
   baseTree: CompiledNavTree | null | undefined,
   prefs: UserNavigationPreferences | null | undefined,
-  schemas?: { collections?: Array<{ slug: string; [key: string]: unknown }>; globals?: Array<{ slug: string; [key: string]: unknown }> }
+  schemas?: { collections?: Array<{ slug: string; [key: string]: unknown }>; globals?: Array<{ slug: string; [key: string]: unknown }> },
+  options?: ReconcileNavigationOptions
 ): ReconciledNavTree {
   if (!baseTree) {
     return {
@@ -37,6 +47,7 @@ export function reconcileNavigation(
     }
   }
 
+  const includeHidden = options?.includeHidden ?? false
   const effectivePrefs = prefs || DEFAULT_USER_NAV_PREFERENCES
   const hiddenSet = new Set(effectivePrefs.hidden || [])
   const knownCollectionSlugs = new Set((schemas?.collections || []).map((c) => c.slug))
@@ -131,15 +142,26 @@ export function reconcileNavigation(
   const reconciledGroups: CompiledNavGroup[] = []
 
   for (const group of groupsList) {
-    if (hiddenSet.has(group.id) || (group.slug && hiddenSet.has(group.slug)) || hiddenSet.has(group.name)) {
+    const isGroupHidden = hiddenSet.has(group.id) || (!!group.slug && hiddenSet.has(group.slug)) || hiddenSet.has(group.name)
+    if (!includeHidden && isGroupHidden) {
       continue
     }
 
     const visibleItems: CompiledNavItem[] = []
     for (const item of group.items) {
-      if (hiddenSet.has(item.id) || (item.slug && hiddenSet.has(item.slug))) {
+      const isItemHidden = hiddenSet.has(item.id) || (!!item.slug && hiddenSet.has(item.slug))
+      if (!includeHidden && isItemHidden) {
         continue
       }
+
+      // Filter subviews for this item
+      const allViews = item.views || []
+      const visibleViews = includeHidden
+        ? allViews
+        : allViews.filter((v) => {
+            const compoundKey = `${item.slug}_${v.slug}`
+            return !hiddenSet.has(compoundKey) && !hiddenSet.has(v.slug)
+          })
 
       // Tombstone check: if schemas are provided and item references an unknown collection/global
       let isTombstone = false
@@ -154,7 +176,11 @@ export function reconcileNavigation(
         }
       }
 
-      const processedItem = isTombstone ? { ...item, isTombstone: true } : item
+      const processedItem: CompiledNavItem = {
+        ...item,
+        views: visibleViews,
+        ...(isTombstone ? { isTombstone: true } : {}),
+      }
       visibleItems.push(processedItem)
       allAvailableItems.push(processedItem)
     }
@@ -198,10 +224,21 @@ export function reconcileNavigation(
 
   // 6. Filter ungrouped items
   const reconciledUngrouped = (baseTree.ungrouped || [])
-    .filter((item) => !hiddenSet.has(item.id) && (!item.slug || !hiddenSet.has(item.slug)))
+    .filter((item) => {
+      const isItemHidden = hiddenSet.has(item.id) || (!!item.slug && hiddenSet.has(item.slug))
+      return includeHidden || !isItemHidden
+    })
     .map((item) => {
-      allAvailableItems.push(item)
-      return item
+      const allViews = item.views || []
+      const visibleViews = includeHidden
+        ? allViews
+        : allViews.filter((v) => {
+            const compoundKey = `${item.slug}_${v.slug}`
+            return !hiddenSet.has(compoundKey) && !hiddenSet.has(v.slug)
+          })
+      const processed = { ...item, views: visibleViews }
+      allAvailableItems.push(processed)
+      return processed
     })
 
   // 7. Extract pinned items
