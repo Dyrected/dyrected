@@ -1,6 +1,6 @@
 # Automatic Field Promotion, Smart Indexing & Uniqueness Specification
 
-**Status:** Proposed  
+**Status:** Implemented  
 **Owner:** Core / Database Engine Team  
 **Scope:** `@dyrected/core`, `@dyrected/db-postgres`, `@dyrected/db-sqlite`, `@dyrected/db-mysql`, `@dyrected/db-mongodb`, and `@dyrected/admin`.
 

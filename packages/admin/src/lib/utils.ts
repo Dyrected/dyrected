@@ -247,6 +247,16 @@ export function getDisplayFilename(filename?: string): string {
 }
 
 /**
+ * URL of the admin UI's own page, used as the base for links that land on the
+ * admin login screen (invites, password resets). Unlike the site URL, this is
+ * wherever the admin is actually mounted, so the token is handled by the login page.
+ */
+export function getAdminActionUrl(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+/**
  * Resolves the site URL, overriding it with the current origin during local development on localhost/127.0.0.1.
  */
 export function getSiteUrl(configuredSiteUrl?: string): string {

@@ -105,4 +105,10 @@ export interface AdminConfig {
    * The canonical/base URL of the frontend website for links and iframe live previews.
    */
   siteUrl?: string;
+  /**
+   * Public URL of the Admin UI, used for links in invite and password-reset emails.
+   * Falls back to the `DYRECTED_ADMIN_URL` env var, then the page the admin is running on,
+   * then `/admin` (resolved against the request origin).
+   */
+  adminUrl?: string;
 }

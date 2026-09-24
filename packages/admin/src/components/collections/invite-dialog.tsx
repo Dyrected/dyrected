@@ -26,7 +26,6 @@ interface InviteDialogProps {
   collectionSlug: string
   collectionLabel: string
   inviteRoleField?: { fieldName: string; hasMany: boolean; options: { label: string; value: string }[] }
-  inviteUrl: string
   defaultRole?: string
 }
 
@@ -34,7 +33,6 @@ export function InviteDialog({
   collectionSlug,
   collectionLabel,
   inviteRoleField,
-  inviteUrl,
   defaultRole,
 }: InviteDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false)
@@ -62,17 +60,13 @@ export function InviteDialog({
   const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      await inviteMutation.mutateAsync({
+      const invite = await inviteMutation.mutateAsync({
         email,
         role: role || undefined,
-        inviteUrl,
       })
-      setResult({
-        email,
-        inviteUrl: inviteUrl, // Will be replaced by actual URL from mutation
-      })
+      setResult(invite)
     },
-    [email, role, inviteUrl, inviteMutation],
+    [email, role, inviteMutation],
   )
 
   const handleCopyInviteLink = async () => {

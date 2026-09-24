@@ -68,7 +68,7 @@ import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import { MediaGrid } from "../../components/media/media-grid"
 import { resolvePreviewUrl } from "../../lib/preview-url"
-import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
+import { getMediaUrl, cn, getSiteUrl, getAdminActionUrl } from "../../lib/utils"
 import jexl from 'jexl'
 import { useDebouncedValue } from "../../hooks/use-debounced-value"
 import { WorkflowTransitionMenu } from "../../components/workflow/workflow-transition-controls"
@@ -137,13 +137,8 @@ function SortableColumnItem({
   )
 }
 
-function buildAdminActionUrl() {
-  if (typeof window === "undefined") return undefined
-  return `${window.location.origin}${window.location.pathname}`
-}
-
 function buildInviteLink(inviteToken: string) {
-  const baseUrl = buildAdminActionUrl()
+  const baseUrl = getAdminActionUrl()
   if (!baseUrl) return undefined
   return `${baseUrl}?inviteToken=${encodeURIComponent(inviteToken)}`
 }
@@ -836,7 +831,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
         ) => Promise<{ inviteUrl?: string; token?: string }>
       }
       const response = await authCollectionClient.invite(email, {
-        inviteUrl: buildAdminActionUrl(),
+        inviteUrl: getAdminActionUrl(),
         data: role && inviteRoleField
           ? {
             [inviteRoleField.fieldName]: inviteRoleField.hasMany ? [role] : role,

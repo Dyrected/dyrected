@@ -395,7 +395,6 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
               collectionSlug={slug}
               collectionLabel={schema.labels?.singular || schema.slug}
               inviteRoleField={inviteConfig.roleField}
-              inviteUrl={getSiteUrl((schemas as any)?.admin?.siteUrl)}
             />
           )}
 

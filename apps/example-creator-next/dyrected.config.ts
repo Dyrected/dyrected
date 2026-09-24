@@ -807,8 +807,8 @@ const ArticleComments = defineCollection({
       displayField("authorEmail", { span: 6 }),
       displayField("status", { span: 4, display: "badge", editable: true }),
       displayField("comment", { span: 12, editable: true }),
-      displayAction("markApproved", { span: 4 }),
-      displayAction("markSpam", { span: 4, variant: "destructive" }),
+      displayAction("markApproved", { span: 2 }),
+      displayAction("markSpam", { span: 2, variant: "destructive" }),
     ]),
   ],
   // Root-level (view-less) actions: available in the header toolbar of this

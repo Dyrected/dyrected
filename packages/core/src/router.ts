@@ -199,6 +199,36 @@ export function serializeDetailForApi(detail?: any): any {
 }
 
 /**
+ * Serializes a list of operational actions (view-level or collection-level)
+ * for the Admin API. Function properties (self-hosted handlers) are stripped so
+ * the payload stays JSON-safe; access rules are resolved to static values.
+ */
+export async function serializeActionsForApi(actions: any[] | undefined, serializeAccess: (access: any) => Promise<any>): Promise<any[]> {
+  const serializeAccessConfig = async (access: any): Promise<any> => {
+    if (!access) return undefined;
+    const serialized: Record<string, unknown> = {};
+    for (const key of ["read", "create", "update", "delete"] as const) {
+      if (access[key] !== undefined) serialized[key] = await serializeAccess(access[key]);
+    }
+    return serialized;
+  };
+  return Promise.all(
+    (actions || []).map(async (action: any) => ({
+      name: action.name,
+      label: action.label,
+      icon: action.icon,
+      type: action.type ?? "row",
+      confirm: action.confirm,
+      submitLabel: action.submitLabel,
+      fields: action.fields?.map(serializeFieldForApi),
+      mutation: action.mutation,
+      // Self-hosted handlers are intentionally omitted: they never leave the server.
+      access: action.access ? await serializeAccessConfig(action.access) : undefined,
+    })),
+  );
+}
+
+/**
  * Serializes an operational view config for the Admin API.
  * Function properties (action handlers) are stripped so the payload stays
  * JSON-safe; access rules are resolved to static values the admin can evaluate.
@@ -229,20 +259,7 @@ export async function serializeViewForApi(view: any, serializeAccess: (access: a
     features: view.features,
     actionOrder: view.actionOrder,
     components: view.components,
-    actions: await Promise.all(
-      (view.actions || []).map(async (action: any) => ({
-        name: action.name,
-        label: action.label,
-        icon: action.icon,
-        type: action.type ?? "row",
-        confirm: action.confirm,
-        submitLabel: action.submitLabel,
-        fields: action.fields?.map(serializeFieldForApi),
-        mutation: action.mutation,
-        // Self-hosted handlers are intentionally omitted: they never leave the server.
-        access: action.access ? await serializeAccessConfig(action.access) : undefined,
-      })),
-    ),
+    actions: await serializeActionsForApi(view.actions, serializeAccess),
     access: view.access ? await serializeAccessConfig(view.access) : undefined,
   };
 }
@@ -342,6 +359,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           drafts: !!col.drafts,
           defaultView: col.defaultView ?? col.admin?.defaultView,
           views: await Promise.all((col.views || []).map((view: any) => serializeViewForApi(view, serializeAccess))),
+          actions: await serializeActionsForApi(col.actions, serializeAccess),
           admin: col.admin,
           detail: serializeDetailForApi(col.detail),
           workflow: col.workflow

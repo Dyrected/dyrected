@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../providers/dyrected-context"
+import { getAdminActionUrl } from "../lib/utils"
 
 interface InviteResult {
   email: string
@@ -19,13 +20,12 @@ export function useCollectionInvite({ collectionSlug, inviteRoleField }: UseColl
     mutationFn: async ({
       email,
       role,
-      inviteUrl: inviteBaseUrl,
     }: {
       email: string
       role?: string
-      inviteUrl: string
     }): Promise<InviteResult> => {
       if (!client) throw new Error("Client not initialized")
+      const inviteBaseUrl = getAdminActionUrl()
 
       const authCollectionClient = client.collection(collectionSlug) as {
         invite: (
@@ -45,7 +45,10 @@ export function useCollectionInvite({ collectionSlug, inviteRoleField }: UseColl
       })
 
       const inviteUrl =
-        response.inviteUrl ?? (response.token ? `${inviteBaseUrl}?token=${response.token}` : undefined)
+        response.inviteUrl ??
+        (response.token && inviteBaseUrl
+          ? `${inviteBaseUrl}?inviteToken=${encodeURIComponent(response.token)}`
+          : undefined)
       if (!inviteUrl) {
         throw new Error("Invite link could not be generated.")
       }

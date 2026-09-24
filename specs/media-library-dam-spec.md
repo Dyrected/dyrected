@@ -1,6 +1,6 @@
 # Dyrected — Media Library & Digital Asset Manager (DAM) Specification
 
-> **Status:** Approved Proposed Specification  
+> **Status:** Implemented
 > **Target Package:** `@dyrected/admin`, `@dyrected/core`, `@dyrected/storage-cloudinary`, `@dyrected/storage-s3`, `@dyrected/storage-local`, `@dyrected/sdk`  
 > **Authors:** Dyrected Core Team & AI Architecture  
 > **Date:** September 2026

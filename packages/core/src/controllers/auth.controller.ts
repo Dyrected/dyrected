@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { appendQueryParam, resolveAdminUrl } from "../utils/admin-url.js";
 import { randomBytes } from "node:crypto";
 import type { DyrectedContext } from "../app.js";
 import type { CollectionConfig } from "../types/index.js";
@@ -529,11 +530,7 @@ export class AuthController {
         "1h",
       );
 
-      // Append token to resetUrl if provided
-      const resetUrl = body?.resetUrl;
-      const url = resetUrl
-        ? `${resetUrl}${resetUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(resetToken)}`
-        : undefined;
+      const url = appendQueryParam(resolveAdminUrl(c, config, body?.resetUrl), "token", resetToken);
 
       try {
         const { subject, html } = buildResetPasswordEmail(config, {
@@ -694,10 +691,7 @@ export class AuthController {
       "7d",
     );
 
-    const inviteUrl = body?.inviteUrl;
-    const url = inviteUrl
-      ? `${inviteUrl}${inviteUrl.includes("?") ? "&" : "?"}inviteToken=${encodeURIComponent(inviteToken)}`
-      : undefined;
+    const url = appendQueryParam(resolveAdminUrl(c, config, body?.inviteUrl), "inviteToken", inviteToken);
 
     try {
       const { subject, html } = buildInviteEmail(config, {
