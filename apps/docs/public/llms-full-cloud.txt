@@ -1632,6 +1632,8 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getPreference</code> (optional) |  |
 | <code>setPreference</code> (optional) |  |
 | <code>deletePreference</code> (optional) |  |
+| <code>getNavigation</code> (required) | Fetches the dynamic runtime navigation tree compiled for the current user. |
+| <code>getNavigationBadges</code> (optional) | Fetches real-time badge counts and status for navigation items. |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
 | <code>ai</code> (optional) | AI Assistant methods for managing threads, messaging, human-in-the-loop action approvals, semantic RAG search, and AI chat. |
@@ -17431,6 +17433,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     group?: string;
 
     /**
+     * Numeric sort order within navigation or sidebar group (lower numbers appear first).
+     */
+    order?: number;
+
+    /**
      * Slug of the view to render by default when navigating to `/collections/:slug`.
      * If not specified, defaults to the view with `default: true` or the all-records table view.
      */
@@ -18153,6 +18160,11 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
     /** Groups this global under a named section in the Admin sidebar. */
     group?: string;
 
+    /**
+     * Numeric sort order within navigation or sidebar group (lower numbers appear first).
+     */
+    order?: number;
+
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
   };
@@ -18399,6 +18411,11 @@ Branding and metadata options for the Dyrected Admin UI.
 
 ```ts
 export interface AdminConfig {
+  /**
+   * Custom navigation layout for the admin sidebar.
+   * If omitted, all collections and globals appear in default sections.
+   */
+  navigation?: DefineNavItemOptions[];
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {
@@ -18458,6 +18475,7 @@ export interface AdminConfig {
 
 | Option | Description |
 | --- | --- |
+| <code>navigation</code> (optional) | Custom navigation layout for the admin sidebar. If omitted, all collections and globals appear in default sections. |
 | <code>components</code> (optional) | Custom component slots around the built-in dashboard. |
 | <code>branding</code> (optional) |  |
 | <code>meta</code> (optional) |  |

@@ -994,6 +994,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment-and-operations/infrastructure/database/indexes#example-3",
+    "page": "/deployment-and-operations/infrastructure/database/indexes",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deployment-and-operations/infrastructure/database/migrations#example-1",
     "page": "/deployment-and-operations/infrastructure/database/migrations",
     "language": "ts",
@@ -1121,6 +1128,20 @@
   },
   {
     "id": "/deployment-and-operations/infrastructure/database/transactions#example-1",
+    "page": "/deployment-and-operations/infrastructure/database/transactions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/database/transactions#example-2",
+    "page": "/deployment-and-operations/infrastructure/database/transactions",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/database/transactions#example-3",
     "page": "/deployment-and-operations/infrastructure/database/transactions",
     "language": "ts",
     "classification": "syntax-checked",

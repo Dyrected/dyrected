@@ -12,6 +12,8 @@ import {
 } from "../utils/nav-serializer.js";
 import { patchConfigNavigation } from "../utils/config-patcher.js";
 
+import { sanitizeSchemaForCloudSync } from "./sync-schema.js";
+
 export function registerNav(program: Command) {
   const navCommand = program
     .command("nav")
@@ -187,6 +189,7 @@ Examples:
     .option("-t, --token <token>", "Bearer token for authentication")
     .option("-s, --scope <scope>", "Preference scope to push: 'global' | 'role'", "global")
     .option("-r, --role <role>", "Role name (required if scope is 'role')")
+    .option("--site-id <id>", "Your Dyrected Site ID (for Cloud sync)")
     .option("-o, --output <path>", "Export navigation preferences to a local JSON file instead of pushing to server")
     .option("--env-path <path>", "Path to an env file to load")
     .addHelpText(
@@ -195,6 +198,9 @@ Examples:
 Examples:
   # Push current code navigation to server as global default
   $ npx dyrected nav push
+
+  # Push code navigation to Dyrected Cloud dashboard
+  $ npx dyrected nav push --site-id <id>
 
   # Push code navigation as default for a specific role
   $ npx dyrected nav push --scope role --role manager
@@ -216,6 +222,54 @@ Examples:
         const jiti = createJiti(configPath);
         const configModule = (await jiti.import(configPath)) as any;
         const config = configModule.default || configModule;
+
+        const siteId =
+          options.siteId ||
+          process.env.DYRECTED_SITE_ID ||
+          process.env.NUXT_PUBLIC_DYRECTED_SITE_ID ||
+          process.env.NEXT_PUBLIC_DYRECTED_SITE_ID;
+
+        const apiKey = options.apiKey || process.env.DYRECTED_API_KEY;
+        const token = options.token || process.env.DYRECTED_TOKEN;
+
+        // If targeting Dyrected Cloud (siteId and apiKey available)
+        if (siteId && apiKey) {
+          const cloudUrl =
+            options.url ||
+            process.env.DYRECTED_URL ||
+            process.env.NEXT_PUBLIC_DYRECTED_URL ||
+            process.env.NUXT_PUBLIC_DYRECTED_URL ||
+            "https://cloud.dyrected.com";
+
+          console.log(chalk.blue(`Syncing navigation to Dyrected Cloud for site ${siteId}...`));
+
+          const { payload: cloudPayload } = sanitizeSchemaForCloudSync({
+            blocks: config.blocks || [],
+            collections: config.collections || [],
+            globals: config.globals || [],
+            accessPolicies: config.accessPolicies || {},
+            admin: config.admin || {},
+          });
+
+          const cloudSyncUrl = `${cloudUrl.replace(/\/$/, "")}/cloud/workspaces/sites/${siteId}/schema/sync`;
+          const response = await fetch(cloudSyncUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              "X-API-Key": apiKey,
+            },
+            body: JSON.stringify(cloudPayload),
+          });
+
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(`Cloud sync failed: ${error.message || response.statusText}`);
+          }
+
+          console.log(chalk.green(`✔  Navigation successfully pushed to Dyrected Cloud for site ${siteId}`));
+          return;
+        }
 
         const compiledTree = compileNavigation(config);
 
@@ -274,8 +328,6 @@ Examples:
           process.env.VITE_DYRECTED_URL ||
           "http://localhost:3000";
 
-        const apiKey = options.apiKey || process.env.DYRECTED_API_KEY;
-        const token = options.token || process.env.DYRECTED_TOKEN;
         const scope = options.scope || "global";
         const roleQuery = options.role ? `&role=${encodeURIComponent(options.role)}` : "";
 
@@ -285,21 +337,26 @@ Examples:
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
         };
-        if (apiKey) {
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        } else if (apiKey) {
           headers["Authorization"] = `Bearer ${apiKey}`;
           headers["X-API-Key"] = apiKey;
-        } else if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const response = await fetch(url, {
           method: "PUT",
           headers,
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ value: payload }),
         });
 
         if (!response.ok) {
           const errBody = await response.text();
+          if (response.status === 401) {
+            throw new Error(
+              `401 Unauthorized: Self-hosted /api/preferences requires an admin JWT session token. Provide one using --token <jwt> or set DYRECTED_TOKEN in your environment. (If this is a Cloud project, configure DYRECTED_SITE_ID).`,
+            );
+          }
           throw new Error(`Failed to push preferences: ${response.status} ${response.statusText} (${errBody})`);
         }
 

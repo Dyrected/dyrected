@@ -171,6 +171,8 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getPreference</code> (optional) |  |
 | <code>setPreference</code> (optional) |  |
 | <code>deletePreference</code> (optional) |  |
+| <code>getNavigation</code> (required) | Fetches the dynamic runtime navigation tree compiled for the current user. |
+| <code>getNavigationBadges</code> (optional) | Fetches real-time badge counts and status for navigation items. |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
 | <code>ai</code> (optional) | AI Assistant methods for managing threads, messaging, human-in-the-loop action approvals, semantic RAG search, and AI chat. |

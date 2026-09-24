@@ -10,10 +10,13 @@ vi.mock("../../../providers/dyrected-context", () => ({
   useDyrected: () => useDyrectedMock(),
 }))
 
+const mockSetTheme = vi.fn()
+
 vi.mock("../../../hooks/use-admin-theme", () => ({
   useAdminTheme: () => ({
     theme: "light",
-    setTheme: vi.fn(),
+    resolvedTheme: "light",
+    setTheme: mockSetTheme,
     actualTheme: "light",
   }),
 }))
@@ -153,4 +156,33 @@ describe("AdminShell Navigation & Polymorphic Sidebar", () => {
     expect(screen.getAllByText("Pending Invoices").length).toBeGreaterThan(0)
     expect(screen.getAllByText("Paid Invoices").length).toBeGreaterThan(0)
   })
+
+  it("toggles the theme when clicking the theme button without opening a dropdown", () => {
+    useDyrectedMock.mockReturnValue({
+      user: { email: "admin@example.com", role: "admin" },
+      config: { siteId: "default" },
+      schemas: { collections: [], globals: [] },
+      navigation: mockNavigation,
+      badges: {},
+      client: {
+        getBaseUrl: () => "http://localhost:3000",
+      },
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/"]}>
+          <AdminShell>
+            <div>Child Content</div>
+          </AdminShell>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    const themeButtons = screen.getAllByRole("button", { name: "Switch to dark theme" })
+    expect(themeButtons.length).toBeGreaterThan(0)
+    fireEvent.click(themeButtons[0])
+    expect(mockSetTheme).toHaveBeenCalledWith("dark")
+  })
 })
+

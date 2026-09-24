@@ -1632,6 +1632,8 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getPreference</code> (optional) |  |
 | <code>setPreference</code> (optional) |  |
 | <code>deletePreference</code> (optional) |  |
+| <code>getNavigation</code> (required) | Fetches the dynamic runtime navigation tree compiled for the current user. |
+| <code>getNavigationBadges</code> (optional) | Fetches real-time badge counts and status for navigation items. |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
 | <code>ai</code> (optional) | AI Assistant methods for managing threads, messaging, human-in-the-loop action approvals, semantic RAG search, and AI chat. |
@@ -3594,25 +3596,60 @@ Reach for promotion on fields that are:
 
 You don't need to promote everything. Fields you rarely filter on are perfectly fine left in the JSON body, and promoting them just adds columns you don't benefit from.
 
-## Promotion adds a column, not automatically an index
+## Creating database indexes
 
-Promotion gives the database a real column to work with, which is already a meaningful speedup over JSON extraction. It does not, on its own, create a database index on that column. For most collections that's plenty. On a very large table where a promoted field is still slow to filter, add a true index on the column using your database's own tooling — for example a `CREATE INDEX` in Postgres against `collection_posts(slug)`. Promotion is what makes that possible, because the column now exists.
+In addition to promotion, Dyrected allows you to declare single-field and composite indexes directly on your collection definition using the `indexes` array:
+
+```ts
+
+
+export const Accounts = defineCollection({
+  slug: 'accounts',
+  indexes: [
+    {
+      name: 'uq_accounts_user_currency',
+      fields: ['userId', 'currency'],
+      unique: true,
+    },
+    {
+      name: 'idx_accounts_status_created',
+      fields: ['status', 'createdAt'],
+    },
+  ],
+  fields: [
+    defineTextField({ name: 'userId', required: true }),
+    defineSelectField({ name: 'currency', options: ['NGN', 'USD', 'EUR'], required: true }),
+    defineSelectField({ name: 'status', options: ['active', 'frozen'], defaultValue: 'active' }),
+  ],
+})
+```
+
+When you declare an index:
+1. Every field listed in `fields` is **automatically promoted** to a physical column during startup schema sync.
+2. In SQL adapters (Postgres, MySQL, SQLite), string columns with indexes or unique constraints are automatically typed as `VARCHAR(191)` (rather than unbounded text) to support standard B-Tree indexing.
+3. If `unique: true` is specified, the database creates a true compound unique constraint.
 
 ## Enforcing uniqueness
 
-Mark a field with `unique: true` when its values should never repeat across a collection — a slug, an email, an external reference:
+Mark a field with `unique: true` when its values must never repeat across a collection — such as an email, slug, account number, or external reference:
 
 ```ts
-defineTextField({ name: 'slug', label: 'Slug', unique: true, promoted: true })
+defineTextField({
+  name: 'slug',
+  label: 'Slug',
+  unique: true,
+  promoted: true,
+})
 ```
 
-Here's the important part to understand: `unique: true` is a declaration of intent, not a database constraint. Dyrected does not create a unique index and does not reject a duplicate write on its own — this holds both self-hosted and on Dyrected Cloud. The admin panel shows a "Unique" badge next to the field as a hint, but it doesn't block duplicates either.
-
-So if you depend on uniqueness, enforce it in your own logic — for example, a `beforeChange` hook that looks for an existing document with that value and rejects the write if it finds one. See [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections).
+When `unique: true` is set:
+- Dyrected's database adapters create a **physical database unique constraint or unique index** (`uq_<collection>_<field>`).
+- If an insert or update attempts to write a duplicate value, the database blocks it and throws a normalized `DuplicateKeyError` (HTTP 409 Conflict) containing the conflicting `{ field, value }`.
+- The admin panel displays a "Unique" badge next to the field to inform editors.
 
 ## MongoDB
 
-MongoDB stores every field natively, so there's nothing to promote — `promoted` has no effect there. Query performance instead comes from MongoDB's own indexes, which Dyrected does not create for you. Add the indexes you need directly in MongoDB. See [MongoDB](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/mongodb) for the details.
+MongoDB stores fields natively without JSON extraction. When you declare `indexes` or `unique: true`, the MongoDB adapter automatically creates native collection indexes (with `unique: true` and `sparse: true` for unique fields). See [MongoDB](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/mongodb) for more details.
 
 ## What's already fast
 
@@ -3722,9 +3759,9 @@ WHERE data->>'status' IS NULL;
 
 ## Promoting a field on an existing collection
 
-Adding `promoted: true` to a field that already has data adds the column on the next startup, and every new write populates it. Existing rows are not backfilled: their value stays in the JSON body, and the new column is left empty for them.
+Adding `promoted: true` (or adding a field to an `indexes` array) creates a dedicated physical column during the next startup schema sync.
 
-Reads still return the right value, because Dyrected reads the document body rather than the promoted column. Filtering and sorting, though, use the column — so a query on a freshly promoted field only "sees" the rows written since promotion. For a large existing table, plan a rewrite of the affected documents if you need every row covered — for example, load and re-save them so each write fills the new column.
+On SQL adapters (Postgres and MySQL), Dyrected automatically **backfills existing records** by extracting their values from the JSON document body into the newly promoted column. That means filtering and sorting against the freshly promoted field immediately indexes both historical and newly written rows without requiring a manual migration script. If a column was originally created as `TEXT` before an index was applied, Dyrected automatically widens it to `VARCHAR(191)` before establishing the index.
 
 ## Pushing your schema to Dyrected Cloud
 
@@ -4287,6 +4324,58 @@ export const Posts = defineCollection({
 ```
 
 This assumes an `activity` collection defined in the same config. Use the `tx` argument inside the callback rather than the outer `db` — that's what ties each operation to the transaction.
+
+## Pessimistic row locking (`lock: 'for-update'`)
+
+When multiple concurrent requests attempt to read and modify the same document (for example, debiting an account balance or reserving inventory), a standard `findOne` can lead to race conditions.
+
+Within an active transaction, pass `lock: 'for-update'` to acquire an exclusive pessimistic row lock on the matched record:
+
+```ts
+await db.transaction(async (tx) => {
+  // Acquires exclusive row lock (SELECT ... FOR UPDATE)
+  const wallet = await tx.findOne({
+    collection: 'wallets',
+    id: walletId,
+    lock: 'for-update',
+  })
+
+  if (!wallet || wallet.balance < amount) {
+    throw new Error('Insufficient balance')
+  }
+
+  await tx.update({
+    collection: 'wallets',
+    id: walletId,
+    data: {
+      balance: { decrement: amount },
+    },
+  })
+})
+```
+
+In Postgres and MySQL, `lock: 'for-update'` appends `FOR UPDATE` to the SQL query. Other transactions attempting to lock or mutate the same row will wait until this transaction commits.
+
+## Atomic numeric mutations and conditional updates
+
+For counter increments, balance changes, or high-throughput updates, Dyrected supports native atomic numeric operators and conditional `where` clauses on `db.update()`:
+
+```ts
+// Atomic decrement with condition guard
+await db.update({
+  collection: 'wallets',
+  where: {
+    id: { equals: walletId },
+    balance: { greater_than_equal: 5000 },
+  },
+  data: {
+    balance: { decrement: 5000 },
+  },
+})
+```
+
+- Promoted numeric columns are mutated directly at the SQL level (e.g. `SET balance = balance - 5000`).
+- Unpromoted JSON fields are modified atomically using database JSON functions (`JSON_SET` in MySQL/SQLite, `jsonb_set` in Postgres), eliminating read-modify-write overwrite hazards.
 
 ## Keep transactions short
 
@@ -18981,6 +19070,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     group?: string;
 
     /**
+     * Numeric sort order within navigation or sidebar group (lower numbers appear first).
+     */
+    order?: number;
+
+    /**
      * Slug of the view to render by default when navigating to `/collections/:slug`.
      * If not specified, defaults to the view with `default: true` or the all-records table view.
      */
@@ -19703,6 +19797,11 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
     /** Groups this global under a named section in the Admin sidebar. */
     group?: string;
 
+    /**
+     * Numeric sort order within navigation or sidebar group (lower numbers appear first).
+     */
+    order?: number;
+
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
   };
@@ -19949,6 +20048,11 @@ Branding and metadata options for the Dyrected Admin UI.
 
 ```ts
 export interface AdminConfig {
+  /**
+   * Custom navigation layout for the admin sidebar.
+   * If omitted, all collections and globals appear in default sections.
+   */
+  navigation?: DefineNavItemOptions[];
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {
@@ -20008,6 +20112,7 @@ export interface AdminConfig {
 
 | Option | Description |
 | --- | --- |
+| <code>navigation</code> (optional) | Custom navigation layout for the admin sidebar. If omitted, all collections and globals appear in default sections. |
 | <code>components</code> (optional) | Custom component slots around the built-in dashboard. |
 | <code>branding</code> (optional) |  |
 | <code>meta</code> (optional) |  |

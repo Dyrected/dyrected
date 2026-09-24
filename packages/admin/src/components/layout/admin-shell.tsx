@@ -10,7 +10,6 @@ import {
   X,
   ChevronRight,
   ChevronDown,
-  Monitor,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -37,15 +36,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
-import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
+import { useAdminTheme } from "../../hooks/use-admin-theme"
 const DyrectedAILipTrigger = React.lazy(() =>
   import("../ai/DyrectedAILipTrigger").then((m) => ({ default: m.DyrectedAILipTrigger }))
 )
@@ -508,67 +505,42 @@ function ThemeSelector({
   iconOnly?: boolean
 }) {
   const { resolvedTheme, setTheme, theme } = useAdminTheme()
-  const Icon = resolvedTheme === "dark" ? Moon : Sun
-
-  const options: Array<{ value: AdminThemePreference; label: string; icon: React.ElementType }> = [
-    { value: "system", label: "System", icon: Monitor },
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-  ]
+  const isDark = (resolvedTheme ?? theme) === "dark"
+  const nextTheme = isDark ? "light" : "dark"
+  const Icon = isDark ? Moon : Sun
+  const label = `Switch to ${nextTheme} theme`
 
   const showTooltip = collapsed || mobile || iconOnly
-  const triggerButton = (
+  const button = (
     <Button
       type="button"
       variant="ghost"
       size={mobile || collapsed || iconOnly ? "icon" : "sm"}
+      onClick={() => setTheme(nextTheme)}
       className={cn(
         "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
         collapsed || mobile || iconOnly ? "dy-h-7 dy-w-7 dy-px-0 dy-justify-center" : "dy-h-7 dy-w-full dy-justify-start dy-px-2.5 dy-text-[11px]"
       )}
-      aria-label="Change admin theme"
+      aria-label={label}
+      title={showTooltip ? undefined : label}
     >
       <Icon className="dy-h-3.5 dy-w-3.5" />
       {!collapsed && !mobile && !iconOnly && <span>Theme</span>}
     </Button>
   )
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {showTooltip ? (
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
-            <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
-              Theme — {theme}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          triggerButton
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side={collapsed || mobile ? "bottom" : "top"} align="end" sideOffset={8} className="dy-w-40">
-        <DropdownMenuLabel className="dy-px-2 dy-py-1.5 dy-text-xs dy-text-muted-foreground">
-          Theme
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup
-          value={theme}
-          onValueChange={(value) => setTheme(value as AdminThemePreference)}
-        >
-          {options.map((option) => {
-            const OptionIcon = option.icon
-            return (
-              <DropdownMenuRadioItem key={option.value} value={option.value} className="dy-cursor-pointer">
-                <OptionIcon className="dy-h-4 dy-w-4 mr-2" />
-                {option.label}
-              </DropdownMenuRadioItem>
-            )
-          })}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
+  if (showTooltip) {
+    return (
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return button
 }
 
 // ---------------------------------------------------------------------------
