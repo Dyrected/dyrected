@@ -42,7 +42,6 @@ import type { CompiledNavGroup, CompiledNavItem, DefineNavItemOptions, NavGroup,
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
-import { Badge } from "../ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
@@ -413,7 +412,7 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="dy-w-full sm:dy-max-w-xl dy-flex dy-flex-col dy-p-0 dy-h-full">
+      <SheetContent side="right" className="dy-w-full sm:dy-max-w-xl dy-flex dy-flex-col dy-p-0 dy-h-full !dy-gap-0">
         <SheetHeader className="dy-px-6 dy-pt-6 dy-pb-4 dy-border-b">
           <div className="dy-flex dy-items-center dy-justify-between">
             <SheetTitle className="dy-text-xl dy-font-semibold">Customize Navigation</SheetTitle>
@@ -455,7 +454,7 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
         </SheetHeader>
 
         {/* Tree Content */}
-        <div className="dy-flex-1 dy-overflow-y-auto dy-p-6 dy-space-y-4">
+        <div className="dy-flex-1 dy-overflow-y-auto dy-p-6 dy-space-y-6">
           {publishStatus && (
             <div className="dy-p-2.5 dy-rounded-md dy-bg-emerald-500/10 dy-border dy-border-emerald-500/30 dy-text-xs dy-text-emerald-600 dark:dy-text-emerald-400 dy-flex dy-items-center dy-gap-2">
               <Check className="dy-h-4 dy-w-4" />
@@ -474,61 +473,66 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
                 return (
                   <div
                     key={group.id}
-                    className={`dy-border dy-rounded-lg dy-p-3 dy-bg-card/50 ${
-                      groupHidden ? "dy-opacity-50 dy-border-dashed" : ""
-                    }`}
+                    className={`dy-group/group dy-space-y-1 ${groupHidden ? "dy-opacity-60" : ""}`}
                   >
                     {/* Group Header */}
-                    <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+                    <div className="dy-flex dy-items-center dy-justify-between dy-py-1.5 dy-px-2 dy-rounded-md hover:dy-bg-muted/40 dy-transition-colors">
                       <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
                         <button
                           type="button"
                           onClick={() => toggleGroupExpand(group.id)}
-                          className="dy-text-muted-foreground hover:dy-text-foreground dy-p-0.5"
+                          className="dy-text-muted-foreground hover:dy-text-foreground dy-p-0.5 dy-rounded hover:dy-bg-muted/60 dy-transition-colors"
                         >
-                          {isExpanded ? <ChevronDown className="dy-h-4 dy-w-4" /> : <ChevronRight className="dy-h-4 dy-w-4" />}
+                          {isExpanded ? <ChevronDown className="dy-h-3.5 dy-w-3.5" /> : <ChevronRight className="dy-h-3.5 dy-w-3.5" />}
                         </button>
-                        <GroupIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-shrink-0" />
-                        <span className="dy-font-semibold dy-text-sm dy-truncate">{group.name}</span>
+                        <GroupIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground/80 dy-shrink-0" />
+                        <span className="dy-text-xs dy-font-semibold dy-uppercase dy-tracking-wider dy-text-foreground/80 dy-truncate">
+                          {group.name}
+                        </span>
                         {isCustomGroup && (
-                          <Badge variant="outline" className="dy-text-[10px] dy-px-1.5 dy-py-0">
+                          <span className="dy-text-[9px] dy-font-medium dy-text-muted-foreground/70 dy-bg-muted/60 dy-px-1.5 dy-py-0.2 dy-rounded">
                             Custom
-                          </Badge>
+                          </span>
+                        )}
+                        {groupHidden && (
+                          <span className="dy-text-[9px] dy-font-medium dy-text-amber-600 dark:dy-text-amber-400 dy-bg-amber-500/10 dy-px-1.5 dy-py-0.2 dy-rounded">
+                            Hidden
+                          </span>
                         )}
                       </div>
 
-                      <div className="dy-flex dy-items-center dy-gap-1">
+                      <div className="dy-flex dy-items-center dy-gap-0.5 sm:dy-opacity-0 sm:group-hover/group:dy-opacity-100 sm:focus-within:dy-opacity-100 dy-transition-opacity">
                         {/* Move Up/Down Steppers */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="dy-h-7 dy-w-7"
+                          className="dy-h-6 dy-w-6 dy-text-muted-foreground hover:dy-text-foreground"
                           disabled={groupIndex === 0}
                           onClick={() => moveGroup(groupIndex, "up")}
                           title="Move Group Up"
                         >
-                          <ArrowUp className="dy-h-3.5 dy-w-3.5" />
+                          <ArrowUp className="dy-h-3 dy-w-3" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="dy-h-7 dy-w-7"
+                          className="dy-h-6 dy-w-6 dy-text-muted-foreground hover:dy-text-foreground"
                           disabled={groupIndex === filteredGroups.length - 1}
                           onClick={() => moveGroup(groupIndex, "down")}
                           title="Move Group Down"
                         >
-                          <ArrowDown className="dy-h-3.5 dy-w-3.5" />
+                          <ArrowDown className="dy-h-3 dy-w-3" />
                         </Button>
 
                         {/* Visibility Toggle */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="dy-h-7 dy-w-7"
+                          className={`dy-h-6 dy-w-6 ${groupHidden ? "!dy-opacity-100 dy-text-destructive" : "dy-text-muted-foreground hover:dy-text-foreground"}`}
                           onClick={() => toggleHide(group.id, group.slug)}
                           title={groupHidden ? "Unhide Group" : "Hide Group"}
                         >
-                          {groupHidden ? <EyeOff className="dy-h-3.5 dy-w-3.5 dy-text-destructive" /> : <Eye className="dy-h-3.5 dy-w-3.5" />}
+                          {groupHidden ? <EyeOff className="dy-h-3 dy-w-3" /> : <Eye className="dy-h-3 dy-w-3" />}
                         </Button>
 
                         {/* Delete Custom Group */}
@@ -536,11 +540,11 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="dy-h-7 dy-w-7 dy-text-destructive"
+                            className="dy-h-6 dy-w-6 dy-text-muted-foreground hover:dy-text-destructive"
                             onClick={() => deleteCustomGroup(group.name)}
                             title="Delete Group"
                           >
-                            <Trash2 className="dy-h-3.5 dy-w-3.5" />
+                            <Trash2 className="dy-h-3 dy-w-3" />
                           </Button>
                         )}
                       </div>
@@ -548,9 +552,9 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
 
                     {/* Group Items */}
                     {isExpanded && (
-                      <div className="dy-mt-3 dy-space-y-2 dy-pl-4 dy-border-l dy-border-border/60">
+                      <div className="dy-ml-3 dy-pl-2.5 dy-border-l dy-border-border/30 dy-space-y-0.5 dy-py-0.5">
                         {group.items.length === 0 ? (
-                          <div className="dy-text-xs dy-text-muted-foreground dy-py-2 dy-italic">
+                          <div className="dy-text-xs dy-text-muted-foreground/60 dy-py-1.5 dy-pl-2 dy-italic">
                             No items in this group.
                           </div>
                         ) : (
@@ -564,70 +568,80 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
                             return (
                               <div
                                 key={item.id || item.slug}
-                                className={`dy-border dy-rounded-md dy-p-2 dy-bg-background ${
-                                  itemHidden ? "dy-opacity-50 dy-border-dashed" : ""
-                                } ${isTombstone ? "dy-border-destructive/50 dy-bg-destructive/5" : ""}`}
+                                className={`dy-group/item dy-rounded-md dy-p-1.5 dy-transition-colors hover:dy-bg-accent/30 ${
+                                  itemHidden ? "dy-opacity-50" : ""
+                                } ${isTombstone ? "dy-bg-destructive/5" : ""}`}
                               >
                                 <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
                                   <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
-                                    <GripVertical className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/50 dy-shrink-0" />
-                                    <ItemIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-shrink-0" />
+                                    <GripVertical className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/30 group-hover/item:dy-text-muted-foreground dy-shrink-0 dy-cursor-grab" />
+                                    <ItemIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground/80 dy-shrink-0" />
                                     <span className="dy-text-xs dy-font-medium dy-truncate">{item.label}</span>
                                     {isTombstone && (
-                                      <Badge variant="destructive" className="dy-text-[9px] dy-px-1 dy-py-0">
+                                      <span className="dy-text-[9px] dy-font-medium dy-text-destructive dy-bg-destructive/10 dy-px-1.5 dy-py-0.2 dy-rounded">
                                         Archived
-                                      </Badge>
+                                      </span>
                                     )}
                                     {isCustomItem && (
-                                      <Badge variant="outline" className="dy-text-[9px] dy-px-1 dy-py-0">
+                                      <span className="dy-text-[9px] dy-font-medium dy-text-muted-foreground/70 dy-bg-muted/50 dy-px-1.5 dy-py-0.2 dy-rounded">
                                         Workspace
-                                      </Badge>
+                                      </span>
                                     )}
                                   </div>
 
                                   <div className="dy-flex dy-items-center dy-gap-0.5">
                                     {/* Move Item Stepper */}
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="dy-h-6 dy-w-6"
-                                      disabled={itemIndex === 0}
-                                      onClick={() => moveItem(group.id, itemIndex, "up")}
-                                      title="Move Item Up"
-                                    >
-                                      <ArrowUp className="dy-h-3 dy-w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="dy-h-6 dy-w-6"
-                                      disabled={itemIndex === group.items.length - 1}
-                                      onClick={() => moveItem(group.id, itemIndex, "down")}
-                                      title="Move Item Down"
-                                    >
-                                      <ArrowDown className="dy-h-3 dy-w-3" />
-                                    </Button>
+                                    <div className="dy-flex dy-items-center dy-gap-0.5 sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100 dy-transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="dy-h-6 dy-w-6 dy-text-muted-foreground hover:dy-text-foreground"
+                                        disabled={itemIndex === 0}
+                                        onClick={() => moveItem(group.id, itemIndex, "up")}
+                                        title="Move Item Up"
+                                      >
+                                        <ArrowUp className="dy-h-3 dy-w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="dy-h-6 dy-w-6 dy-text-muted-foreground hover:dy-text-foreground"
+                                        disabled={itemIndex === group.items.length - 1}
+                                        onClick={() => moveItem(group.id, itemIndex, "down")}
+                                        title="Move Item Down"
+                                      >
+                                        <ArrowDown className="dy-h-3 dy-w-3" />
+                                      </Button>
+                                    </div>
 
                                     {/* Pin / Unpin */}
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="dy-h-6 dy-w-6"
+                                      className={`dy-h-6 dy-w-6 ${
+                                        itemPinned
+                                          ? "dy-text-primary !dy-opacity-100"
+                                          : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100"
+                                      } dy-transition-opacity`}
                                       onClick={() => togglePin(item)}
                                       title={itemPinned ? "Unpin Item" : "Pin Item"}
                                     >
-                                      {itemPinned ? <PinOff className="dy-h-3 dy-w-3 dy-text-primary" /> : <Pin className="dy-h-3 dy-w-3" />}
+                                      {itemPinned ? <PinOff className="dy-h-3 dy-w-3" /> : <Pin className="dy-h-3 dy-w-3" />}
                                     </Button>
 
                                     {/* Hide / Unhide */}
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="dy-h-6 dy-w-6"
+                                      className={`dy-h-6 dy-w-6 ${
+                                        itemHidden
+                                          ? "dy-text-destructive !dy-opacity-100"
+                                          : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100"
+                                      } dy-transition-opacity`}
                                       onClick={() => toggleHide(item.id, item.slug)}
                                       title={itemHidden ? "Unhide Item" : "Hide Item"}
                                     >
-                                      {itemHidden ? <EyeOff className="dy-h-3 dy-w-3 dy-text-destructive" /> : <Eye className="dy-h-3 dy-w-3" />}
+                                      {itemHidden ? <EyeOff className="dy-h-3 dy-w-3" /> : <Eye className="dy-h-3 dy-w-3" />}
                                     </Button>
 
                                     {/* Delete Custom / Tombstone Item */}
@@ -635,7 +649,7 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="dy-h-6 dy-w-6 dy-text-destructive"
+                                        className="dy-h-6 dy-w-6 dy-text-muted-foreground hover:dy-text-destructive sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100 dy-transition-opacity"
                                         onClick={() => deleteCustomItem(item.slug)}
                                         title="Remove from Sidebar"
                                       >
@@ -647,29 +661,37 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
 
                                 {/* Subviews list */}
                                 {item.views && item.views.length > 0 && (
-                                  <div className="dy-mt-2 dy-pl-4 dy-space-y-1.5 dy-border-t dy-pt-2 dy-border-border/40">
+                                  <div className="dy-ml-5 dy-mt-1 dy-space-y-0.5 dy-border-l dy-border-border/30 dy-pl-2.5">
                                     {item.views.map((view) => {
                                       const viewHidden = isHidden(`${item.slug}_${view.slug}`, view.slug)
                                       return (
                                         <div
                                           key={view.slug}
-                                          className="dy-flex dy-items-center dy-justify-between dy-text-xs dy-text-muted-foreground dy-py-1"
+                                          className={`dy-group/view dy-flex dy-items-center dy-justify-between dy-py-1 dy-px-1.5 dy-rounded hover:dy-bg-accent/40 dy-transition-colors dy-text-xs ${
+                                            viewHidden ? "dy-opacity-50" : ""
+                                          }`}
                                         >
                                           <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
-                                            <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/60" />
-                                            <span className="dy-truncate">{view.label}</span>
+                                            <span className="dy-h-1 dy-w-1 dy-rounded-full dy-bg-muted-foreground/40" />
+                                            <span className="dy-truncate dy-text-muted-foreground group-hover/view:dy-text-foreground">
+                                              {view.label}
+                                            </span>
                                             {view.layout && (
-                                              <Badge variant="outline" className="dy-text-[9px] dy-px-1 dy-py-0 dy-capitalize">
+                                              <span className="dy-text-[9px] dy-font-normal dy-text-muted-foreground/60 dy-bg-muted/40 dy-px-1.5 dy-py-0.2 dy-rounded dy-capitalize">
                                                 {view.layout}
-                                              </Badge>
+                                              </span>
                                             )}
                                           </div>
 
-                                          <div className="dy-flex dy-items-center dy-gap-1">
+                                          <div className="dy-flex dy-items-center dy-gap-0.5">
                                             {/* Move To Another Workspace Menu */}
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="dy-h-5 dy-w-5">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="dy-h-5 dy-w-5 dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/view:dy-opacity-100 sm:focus-within:dy-opacity-100 dy-transition-opacity"
+                                                >
                                                   <MoreVertical className="dy-h-3 dy-w-3" />
                                                 </Button>
                                               </DropdownMenuTrigger>
@@ -695,11 +717,16 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="dy-h-5 dy-w-5"
+                                              className={`dy-h-5 dy-w-5 ${
+                                                viewHidden
+                                                  ? "!dy-opacity-100 dy-text-destructive"
+                                                  : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/view:dy-opacity-100 sm:focus-within:dy-opacity-100"
+                                              } dy-transition-opacity`}
                                               onClick={() => toggleHide(`${item.slug}_${view.slug}`, view.slug)}
+                                              title={viewHidden ? "Unhide View" : "Hide View"}
                                             >
                                               {viewHidden ? (
-                                                <EyeOff className="dy-h-3 dy-w-3 dy-text-destructive" />
+                                                <EyeOff className="dy-h-3 dy-w-3" />
                                               ) : (
                                                 <Eye className="dy-h-3 dy-w-3" />
                                               )}
@@ -711,20 +738,19 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
                                   </div>
                                 )}
 
-                                {/* Add Subview button */}
-                                <div className="dy-mt-2 dy-pt-1.5 dy-border-t dy-border-border/30">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="dy-h-6 dy-text-[11px] dy-gap-1 dy-text-muted-foreground hover:dy-text-foreground"
+                                {/* Inline Add Subview button */}
+                                <div className="dy-ml-5 dy-pl-2.5 dy-pt-0.5">
+                                  <button
+                                    type="button"
+                                    className="dy-inline-flex dy-items-center dy-gap-1 dy-text-[11px] dy-text-muted-foreground/60 hover:dy-text-foreground dy-py-0.5 dy-px-1.5 dy-rounded hover:dy-bg-accent/30 dy-transition-colors"
                                     onClick={() => {
                                       setActiveItemForNewView(item.slug)
                                       setNewViewOpen(true)
                                     }}
                                   >
                                     <Plus className="dy-h-3 dy-w-3" />
-                                    Add Subview
-                                  </Button>
+                                    <span>Add view</span>
+                                  </button>
                                 </div>
                               </div>
                             )
@@ -737,6 +763,67 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
               })}
             </SortableContext>
           </DndContext>
+
+          {/* Ungrouped Items (if any) */}
+          {tree.ungrouped && tree.ungrouped.length > 0 && (
+            <div className="dy-space-y-1 dy-pt-2 dy-border-t dy-border-border/30">
+              <div className="dy-py-1.5 dy-px-2">
+                <span className="dy-text-xs dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground/70">
+                  Ungrouped
+                </span>
+              </div>
+              <div className="dy-ml-3 dy-pl-2.5 dy-border-l dy-border-border/30 dy-space-y-0.5 dy-py-0.5">
+                {tree.ungrouped.map((item) => {
+                  const itemHidden = isHidden(item.id, item.slug)
+                  const itemPinned = isPinned(item.slug)
+                  const ItemIcon = resolveAdminIcon(item.icon, Briefcase)
+                  return (
+                    <div
+                      key={item.id || item.slug}
+                      className={`dy-group/item dy-rounded-md dy-p-1.5 dy-transition-colors hover:dy-bg-accent/30 ${
+                        itemHidden ? "dy-opacity-50" : ""
+                      }`}
+                    >
+                      <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+                        <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+                          <ItemIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground/80 dy-shrink-0" />
+                          <span className="dy-text-xs dy-font-medium dy-truncate">{item.label}</span>
+                        </div>
+                        <div className="dy-flex dy-items-center dy-gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`dy-h-6 dy-w-6 ${
+                              itemPinned
+                                ? "dy-text-primary !dy-opacity-100"
+                                : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100"
+                            } dy-transition-opacity`}
+                            onClick={() => togglePin(item)}
+                            title={itemPinned ? "Unpin Item" : "Pin Item"}
+                          >
+                            {itemPinned ? <PinOff className="dy-h-3 dy-w-3" /> : <Pin className="dy-h-3 dy-w-3" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`dy-h-6 dy-w-6 ${
+                              itemHidden
+                                ? "dy-text-destructive !dy-opacity-100"
+                                : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100"
+                            } dy-transition-opacity`}
+                            onClick={() => toggleHide(item.id, item.slug)}
+                            title={itemHidden ? "Unhide Item" : "Hide Item"}
+                          >
+                            {itemHidden ? <EyeOff className="dy-h-3 dy-w-3" /> : <Eye className="dy-h-3 dy-w-3" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
