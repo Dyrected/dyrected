@@ -27,11 +27,12 @@ import {
   EyeOff,
   Folder,
   FolderPlus,
-  GripVertical,
+  LayoutGrid,
   MoreVertical,
   Pin,
   PinOff,
   Plus,
+  Pencil,
   RotateCcw,
   Search,
   Share2,
@@ -40,7 +41,8 @@ import {
   X,
 } from "lucide-react"
 
-import type { CompiledNavGroup, CompiledNavItem, DefineNavItemOptions, NavGroup, ViewConfig, ViewLayout } from "@dyrected/core"
+import type { CompiledNavGroup, CompiledNavItem, DefineNavItemOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
+import { ViewMetricsBuilder } from "./view-metrics-builder"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -113,6 +115,21 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   const [viewLayout, setViewLayout] = React.useState<ViewLayout>("table")
   const [viewCollection, setViewCollection] = React.useState("")
   const [viewIcon, setViewIcon] = React.useState("LayoutGrid")
+  const [viewBadgeType, setViewBadgeType] = React.useState<"none" | "count" | "text">("none")
+  const [viewBadgeText, setViewBadgeText] = React.useState("")
+  const [viewBadgeVariant, setViewBadgeVariant] = React.useState<"default" | "info" | "warning" | "destructive" | "success">("default")
+  const [viewMetrics, setViewMetrics] = React.useState<ViewMetric[]>([])
+
+  // Form states for Editing Subview
+  const [editingView, setEditingView] = React.useState<{ itemSlug: string; viewSlug: string } | null>(null)
+  const [editViewLabel, setEditViewLabel] = React.useState("")
+  const [editViewLayout, setEditViewLayout] = React.useState<ViewLayout>("table")
+  const [editViewCollection, setEditViewCollection] = React.useState("")
+  const [editViewIcon, setEditViewIcon] = React.useState("LayoutGrid")
+  const [editViewBadgeType, setEditViewBadgeType] = React.useState<"none" | "count" | "text">("none")
+  const [editViewBadgeText, setEditViewBadgeText] = React.useState("")
+  const [editViewBadgeVariant, setEditViewBadgeVariant] = React.useState<"default" | "info" | "warning" | "destructive" | "success">("default")
+  const [editViewMetrics, setEditViewMetrics] = React.useState<ViewMetric[]>([])
 
   // Reconciled tree for interactive editing
   const tree = React.useMemo(() => {
@@ -288,12 +305,21 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
       const existingViewSlugs = (targetItem?.views || []).map((v) => v.slug)
       const slug = generateUniqueSlug(viewLabel, existingViewSlugs)
 
+      let badge: any = undefined
+      if (viewBadgeType === "count") {
+        badge = { count: true, variant: viewBadgeVariant }
+      } else if (viewBadgeType === "text" && viewBadgeText.trim()) {
+        badge = { text: viewBadgeText.trim(), variant: viewBadgeVariant }
+      }
+
       const newView: ViewConfig = {
         slug,
         label: viewLabel.trim(),
         layout: viewLayout,
         icon: viewIcon,
         collection: viewCollection || undefined,
+        badge,
+        metrics: viewMetrics.length > 0 ? viewMetrics : undefined,
       } as any
 
       const targetItemIdx = customItems.findIndex((i) => i.slug === activeItemForNewView)
@@ -325,7 +351,138 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     setViewCollection("")
     setViewIcon("LayoutGrid")
     setViewLayout("table")
+    setViewBadgeType("none")
+    setViewBadgeText("")
+    setViewBadgeVariant("default")
+    setViewMetrics([])
     setActiveItemForNewView(null)
+  }
+
+  const startEditView = (itemSlug: string, view: ViewConfig) => {
+    setEditingView({ itemSlug, viewSlug: view.slug })
+    setEditViewLabel(view.label || "")
+    setEditViewLayout((view.layout as ViewLayout) || "table")
+    setEditViewCollection(view.collection || "")
+    setEditViewIcon(view.icon || "LayoutGrid")
+
+    if (typeof view.badge === "string") {
+      setEditViewBadgeType("text")
+      setEditViewBadgeText(view.badge)
+      setEditViewBadgeVariant("default")
+    } else if (typeof view.badge === "object" && view.badge) {
+      if ((view.badge as any).text) {
+        setEditViewBadgeType("text")
+        setEditViewBadgeText((view.badge as any).text)
+      } else {
+        setEditViewBadgeType("count")
+        setEditViewBadgeText("")
+      }
+      setEditViewBadgeVariant((view.badge as any).variant || "default")
+    } else {
+      setEditViewBadgeType("none")
+      setEditViewBadgeText("")
+      setEditViewBadgeVariant("default")
+    }
+
+    setEditViewMetrics(view.metrics ? [...view.metrics] : [])
+    if (activeItemForNewView) setActiveItemForNewView(null)
+  }
+
+  const cancelEditView = () => {
+    setEditingView(null)
+    setEditViewLabel("")
+    setEditViewCollection("")
+    setEditViewIcon("LayoutGrid")
+    setEditViewLayout("table")
+    setEditViewBadgeType("none")
+    setEditViewBadgeText("")
+    setEditViewBadgeVariant("default")
+    setEditViewMetrics([])
+  }
+
+  const handleUpdateView = () => {
+    if (!editingView || !editViewLabel.trim()) return
+
+    let badge: any = undefined
+    if (editViewBadgeType === "count") {
+      badge = { count: true, variant: editViewBadgeVariant }
+    } else if (editViewBadgeType === "text" && editViewBadgeText.trim()) {
+      badge = { text: editViewBadgeText.trim(), variant: editViewBadgeVariant }
+    }
+
+    setPrefs((prev) => {
+      const items = [...(prev.items || [])]
+      const targetItemIdx = items.findIndex((i) => i.slug === editingView.itemSlug)
+
+      if (targetItemIdx >= 0) {
+        const dest = { ...items[targetItemIdx] }
+        const views = [...(dest.views || [])]
+        const viewIdx = views.findIndex((v) => v.slug === editingView.viewSlug)
+
+        if (viewIdx >= 0) {
+          views[viewIdx] = {
+            ...views[viewIdx],
+            label: editViewLabel.trim(),
+            layout: editViewLayout,
+            icon: editViewIcon,
+            collection: editViewCollection || undefined,
+            badge,
+            metrics: editViewMetrics.length > 0 ? editViewMetrics : undefined,
+          } as any
+        } else {
+          const allItems = tree.groups.flatMap((g) => g.items)
+          const baseItem = allItems.find((i) => i.slug === editingView.itemSlug)
+          const originalView = baseItem?.views?.find((v) => v.slug === editingView.viewSlug)
+          views.push({
+            ...(originalView || { slug: editingView.viewSlug }),
+            label: editViewLabel.trim(),
+            layout: editViewLayout,
+            icon: editViewIcon,
+            collection: editViewCollection || undefined,
+            badge,
+            metrics: editViewMetrics.length > 0 ? editViewMetrics : undefined,
+          } as any)
+        }
+
+        dest.views = views
+        items[targetItemIdx] = dest
+        return { ...prev, items }
+      }
+
+      // If the parent item is codebase-defined and not yet in prefs.items
+      const allItems = tree.groups.flatMap((g) => g.items)
+      const baseItem = allItems.find((i) => i.slug === editingView.itemSlug)
+      if (baseItem) {
+        const baseViews = baseItem.views || []
+        const updatedViews = baseViews.map((v) => {
+          if (v.slug === editingView.viewSlug) {
+            return {
+              ...v,
+              label: editViewLabel.trim(),
+              layout: editViewLayout,
+              icon: editViewIcon,
+              collection: editViewCollection || undefined,
+              badge,
+              metrics: editViewMetrics.length > 0 ? editViewMetrics : undefined,
+            } as any
+          }
+          return v
+        })
+        items.push({
+          slug: baseItem.slug,
+          label: baseItem.label,
+          icon: baseItem.icon,
+          group: baseItem.group,
+          collection: baseItem.collection,
+          views: updatedViews,
+        })
+        return { ...prev, items }
+      }
+
+      return prev
+    })
+
+    cancelEditView()
   }
 
   // --- Relocation & Delete ---
@@ -808,13 +965,13 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                           return (
                             <div
                               key={item.id || item.slug}
-                              className={`dy-group/item dy-rounded-md dy-p-1.5 dy-transition-colors hover:dy-bg-accent/30 ${
-                                itemHidden ? "dy-opacity-50" : ""
-                              } ${isTombstone ? "dy-bg-destructive/5" : ""}`}
+                              className={`dy-group/item dy-rounded-md dy-p-1.5 dy-transition-colors hover:dy-bg-accent/30 ${itemHidden ? "dy-opacity-50" : ""
+                                } ${isTombstone ? "dy-bg-destructive/5" : ""}`}
                             >
                               <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
                                 <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
-                                  <GripVertical className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/30 group-hover/item:dy-text-muted-foreground dy-shrink-0 dy-cursor-grab" />
+                                  {/* Remove for now since no drag and drop is implemented */}
+                                  {/* <GripVertical className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/30 group-hover/item:dy-text-muted-foreground dy-shrink-0 dy-cursor-grab" /> */}
                                   <ItemIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground/80 dy-shrink-0" />
                                   <span className="dy-text-xs dy-font-medium dy-truncate">{item.label}</span>
                                   {isTombstone && (
@@ -858,11 +1015,10 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`dy-h-6 dy-w-6 ${
-                                      itemPinned
-                                        ? "dy-text-primary !dy-opacity-100"
-                                        : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100"
-                                    } dy-transition-opacity`}
+                                    className={`dy-h-6 dy-w-6 ${itemPinned
+                                      ? "dy-text-primary !dy-opacity-100"
+                                      : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100"
+                                      } dy-transition-opacity`}
                                     onClick={() => togglePin(item)}
                                     title={itemPinned ? "Unpin Item" : "Pin Item"}
                                   >
@@ -873,11 +1029,10 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`dy-h-6 dy-w-6 ${
-                                      itemHidden
-                                        ? "dy-text-destructive !dy-opacity-100"
-                                        : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100"
-                                    } dy-transition-opacity`}
+                                    className={`dy-h-6 dy-w-6 ${itemHidden
+                                      ? "dy-text-destructive !dy-opacity-100"
+                                      : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100 sm:focus-within:dy-opacity-100"
+                                      } dy-transition-opacity`}
                                     onClick={() => toggleHide(item.id, item.slug)}
                                     title={itemHidden ? "Unhide Item" : "Hide Item"}
                                   >
@@ -903,16 +1058,157 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                               {item.views && item.views.length > 0 && (
                                 <div className="dy-ml-5 dy-mt-1 dy-space-y-0.5 dy-border-l dy-border-border/30 dy-pl-2.5">
                                   {item.views.map((view) => {
+                                    const isEditingThisView =
+                                      editingView?.itemSlug === item.slug && editingView?.viewSlug === view.slug
+
+                                    if (isEditingThisView) {
+                                      return (
+                                        <div
+                                          key={view.slug}
+                                          className="dy-my-1.5 dy-p-2 dy-rounded-lg dy-border dy-border-border dy-bg-muted/30 dy-space-y-1.5"
+                                        >
+                                          <div className="dy-flex dy-items-center dy-justify-between">
+                                            <span className="dy-text-[11px] dy-font-semibold dy-text-foreground">Edit View</span>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="dy-h-4 dy-w-4 dy-text-muted-foreground hover:dy-text-foreground"
+                                              onClick={cancelEditView}
+                                            >
+                                              <X className="dy-h-3 dy-w-3" />
+                                            </Button>
+                                          </div>
+
+                                          <Input
+                                            size="sm"
+                                            placeholder="View title (e.g. VIP Concierge)..."
+                                            value={editViewLabel}
+                                            onChange={(e) => setEditViewLabel(e.target.value)}
+                                            className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+                                            autoFocus
+                                          />
+
+                                          <Select value={editViewCollection} onValueChange={setEditViewCollection}>
+                                            <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                                              <SelectValue placeholder="Target collection..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {(schemas?.collections || []).map((col) => (
+                                                <SelectItem key={col.slug} value={col.slug} className="dy-text-xs">
+                                                  {col.labels?.plural || col.slug}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+
+                                          <div className="dy-grid dy-grid-cols-2 dy-gap-1.5">
+                                            <Select value={editViewLayout} onValueChange={(val) => setEditViewLayout(val as ViewLayout)}>
+                                              <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                                                <SelectValue placeholder="Layout..." />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="table" className="dy-text-xs">Table</SelectItem>
+                                                <SelectItem value="kanban" className="dy-text-xs">Kanban</SelectItem>
+                                                <SelectItem value="cards" className="dy-text-xs">Cards</SelectItem>
+                                                <SelectItem value="calendar" className="dy-text-xs">Calendar</SelectItem>
+                                                <SelectItem value="gantt" className="dy-text-xs">Gantt</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+
+                                            <IconPicker
+                                              field={{ value: editViewIcon, onChange: setEditViewIcon }}
+                                              hidePreview
+                                              placeholder="Icon..."
+                                              className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+                                            />
+                                          </div>
+
+                                          {/* Badge Configuration Row */}
+                                          <div className="dy-flex dy-items-center dy-gap-1.5 dy-pt-0.5">
+                                            <span className="dy-text-[11px] dy-text-muted-foreground dy-w-11 dy-shrink-0">Badge:</span>
+                                            <Select value={editViewBadgeType} onValueChange={(val: any) => setEditViewBadgeType(val)}>
+                                              <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background dy-w-28">
+                                                <SelectValue placeholder="Badge..." />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="none" className="dy-text-xs">None</SelectItem>
+                                                <SelectItem value="count" className="dy-text-xs">Auto Count</SelectItem>
+                                                <SelectItem value="text" className="dy-text-xs">Custom Text</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+
+                                            {editViewBadgeType === "text" && (
+                                              <Input
+                                                size="sm"
+                                                placeholder="e.g. VIP, Live..."
+                                                value={editViewBadgeText}
+                                                onChange={(e) => setEditViewBadgeText(e.target.value)}
+                                                className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background dy-flex-1"
+                                              />
+                                            )}
+
+                                            {editViewBadgeType !== "none" && (
+                                              <Select value={editViewBadgeVariant} onValueChange={(val: any) => setEditViewBadgeVariant(val)}>
+                                                <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background dy-w-24">
+                                                  <SelectValue placeholder="Color..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="default" className="dy-text-xs">Default</SelectItem>
+                                                  <SelectItem value="info" className="dy-text-xs">Info</SelectItem>
+                                                  <SelectItem value="warning" className="dy-text-xs">Warning</SelectItem>
+                                                  <SelectItem value="destructive" className="dy-text-xs">Destructive</SelectItem>
+                                                  <SelectItem value="success" className="dy-text-xs">Success</SelectItem>
+                                                </SelectContent>
+                                              </Select>
+                                            )}
+                                          </div>
+
+                                          {/* View Metrics Builder */}
+                                          <ViewMetricsBuilder
+                                            metrics={editViewMetrics}
+                                            onChange={setEditViewMetrics}
+                                            collectionSlug={editViewCollection || item.collection}
+                                            schemas={schemas}
+                                          />
+
+                                          <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="dy-h-6 dy-px-2 dy-text-xs"
+                                              onClick={cancelEditView}
+                                            >
+                                              Cancel
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              className="dy-h-6 dy-px-2.5 dy-text-xs"
+                                              onClick={handleUpdateView}
+                                              disabled={!editViewLabel.trim()}
+                                            >
+                                              Save Changes
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )
+                                    }
+
                                     const viewHidden = isHidden(`${item.slug}_${view.slug}`, view.slug)
                                     return (
                                       <div
                                         key={view.slug}
-                                        className={`dy-group/view dy-flex dy-items-center dy-justify-between dy-py-1 dy-px-1.5 dy-rounded hover:dy-bg-accent/40 dy-transition-colors dy-text-xs ${
-                                          viewHidden ? "dy-opacity-50" : ""
-                                        }`}
+                                        className={`dy-group/view dy-flex dy-items-center dy-justify-between dy-py-1 dy-px-1.5 dy-rounded hover:dy-bg-accent/40 dy-transition-colors dy-text-xs ${viewHidden ? "dy-opacity-50" : ""
+                                          }`}
                                       >
                                         <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
-                                          <span className="dy-h-1 dy-w-1 dy-rounded-full dy-bg-muted-foreground/40" />
+                                          {view.icon ? (
+                                            (() => {
+                                              const IconComp = resolveAdminIcon(view.icon, LayoutGrid)
+                                              return <IconComp className="dy-h-3 dy-w-3 dy-text-muted-foreground/70" />
+                                            })()
+                                          ) : (
+                                            <span className="dy-h-1 dy-w-1 dy-rounded-full dy-bg-muted-foreground/40" />
+                                          )}
                                           <span className="dy-truncate dy-text-muted-foreground group-hover/view:dy-text-foreground">
                                             {view.label}
                                           </span>
@@ -921,10 +1217,31 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                               {view.layout}
                                             </span>
                                           )}
+                                          {view.badge && (
+                                            <span className="dy-text-[9px] dy-font-semibold dy-text-primary dy-bg-primary/10 dy-px-1.5 dy-py-0.2 dy-rounded-full">
+                                              {typeof view.badge === "string" ? view.badge : (view.badge as any).text || "count"}
+                                            </span>
+                                          )}
+                                          {view.metrics && view.metrics.length > 0 && (
+                                            <span className="dy-text-[9px] dy-font-medium dy-text-muted-foreground dy-bg-muted/50 dy-px-1.5 dy-py-0.2 dy-rounded">
+                                              {view.metrics.length} KPI{view.metrics.length > 1 ? "s" : ""}
+                                            </span>
+                                          )}
                                         </div>
 
                                         <div className="dy-flex dy-items-center dy-gap-0.5">
-                                          {/* Move To Another Workspace Menu */}
+                                          {/* Quick Edit View Button on Hover */}
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="dy-h-5 dy-w-5 dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/view:dy-opacity-100 sm:focus-within:dy-opacity-100 dy-transition-opacity"
+                                            onClick={() => startEditView(item.slug, view)}
+                                            title="Edit View"
+                                          >
+                                            <Pencil className="dy-h-3 dy-w-3" />
+                                          </Button>
+
+                                          {/* View Actions Menu */}
                                           <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                               <Button
@@ -936,6 +1253,11 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                               </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="dy-w-48">
+                                              <DropdownMenuItem onClick={() => startEditView(item.slug, view)}>
+                                                <Pencil className="dy-h-3.5 dy-w-3.5 dy-mr-1.5" />
+                                                <span>Edit View</span>
+                                              </DropdownMenuItem>
+                                              <DropdownMenuSeparator />
                                               <div className="dy-px-2 dy-py-1.5 dy-text-[11px] dy-font-semibold dy-text-muted-foreground">
                                                 Move view to...
                                               </div>
@@ -965,11 +1287,10 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            className={`dy-h-5 dy-w-5 ${
-                                              viewHidden
-                                                ? "!dy-opacity-100 dy-text-destructive"
-                                                : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/view:dy-opacity-100 sm:focus-within:dy-opacity-100"
-                                            } dy-transition-opacity`}
+                                            className={`dy-h-5 dy-w-5 ${viewHidden
+                                              ? "!dy-opacity-100 dy-text-destructive"
+                                              : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/view:dy-opacity-100 sm:focus-within:dy-opacity-100"
+                                              } dy-transition-opacity`}
                                             onClick={() => toggleHide(`${item.slug}_${view.slug}`, view.slug)}
                                             title={viewHidden ? "Unhide View" : "Hide View"}
                                           >
@@ -1045,6 +1366,54 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                     />
                                   </div>
 
+                                  {/* Badge Configuration Row */}
+                                  <div className="dy-flex dy-items-center dy-gap-1.5 dy-pt-0.5">
+                                    <span className="dy-text-[11px] dy-text-muted-foreground dy-w-11 dy-shrink-0">Badge:</span>
+                                    <Select value={viewBadgeType} onValueChange={(val: any) => setViewBadgeType(val)}>
+                                      <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background dy-w-28">
+                                        <SelectValue placeholder="Badge..." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none" className="dy-text-xs">None</SelectItem>
+                                        <SelectItem value="count" className="dy-text-xs">Auto Count</SelectItem>
+                                        <SelectItem value="text" className="dy-text-xs">Custom Text</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+
+                                    {viewBadgeType === "text" && (
+                                      <Input
+                                        size="sm"
+                                        placeholder="e.g. VIP, Live..."
+                                        value={viewBadgeText}
+                                        onChange={(e) => setViewBadgeText(e.target.value)}
+                                        className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background dy-flex-1"
+                                      />
+                                    )}
+
+                                    {viewBadgeType !== "none" && (
+                                      <Select value={viewBadgeVariant} onValueChange={(val: any) => setViewBadgeVariant(val)}>
+                                        <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background dy-w-24">
+                                          <SelectValue placeholder="Color..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="default" className="dy-text-xs">Default</SelectItem>
+                                          <SelectItem value="info" className="dy-text-xs">Info</SelectItem>
+                                          <SelectItem value="warning" className="dy-text-xs">Warning</SelectItem>
+                                          <SelectItem value="destructive" className="dy-text-xs">Destructive</SelectItem>
+                                          <SelectItem value="success" className="dy-text-xs">Success</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  </div>
+
+                                  {/* View Metrics Builder */}
+                                  <ViewMetricsBuilder
+                                    metrics={viewMetrics}
+                                    onChange={setViewMetrics}
+                                    collectionSlug={viewCollection || item.collection}
+                                    schemas={schemas}
+                                  />
+
                                   <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
                                     <Button
                                       variant="ghost"
@@ -1111,9 +1480,8 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                 return (
                   <div
                     key={item.id || item.slug}
-                    className={`dy-group/item dy-rounded-md dy-p-1.5 dy-transition-colors hover:dy-bg-accent/30 ${
-                      itemHidden ? "dy-opacity-50" : ""
-                    }`}
+                    className={`dy-group/item dy-rounded-md dy-p-1.5 dy-transition-colors hover:dy-bg-accent/30 ${itemHidden ? "dy-opacity-50" : ""
+                      }`}
                   >
                     <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
                       <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
@@ -1124,11 +1492,10 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`dy-h-6 dy-w-6 ${
-                            itemPinned
-                              ? "dy-text-primary !dy-opacity-100"
-                              : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100"
-                          } dy-transition-opacity`}
+                          className={`dy-h-6 dy-w-6 ${itemPinned
+                            ? "dy-text-primary !dy-opacity-100"
+                            : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100"
+                            } dy-transition-opacity`}
                           onClick={() => togglePin(item)}
                           title={itemPinned ? "Unpin Item" : "Pin Item"}
                         >
@@ -1137,11 +1504,10 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`dy-h-6 dy-w-6 ${
-                            itemHidden
-                              ? "dy-text-destructive !dy-opacity-100"
-                              : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100"
-                          } dy-transition-opacity`}
+                          className={`dy-h-6 dy-w-6 ${itemHidden
+                            ? "dy-text-destructive !dy-opacity-100"
+                            : "dy-text-muted-foreground hover:dy-text-foreground sm:dy-opacity-0 sm:group-hover/item:dy-opacity-100"
+                            } dy-transition-opacity`}
                           onClick={() => toggleHide(item.id, item.slug)}
                           title={itemHidden ? "Unhide Item" : "Hide Item"}
                         >

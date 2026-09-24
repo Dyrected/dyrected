@@ -67,31 +67,37 @@ Tier 1: Group (Collapsible Section Header)
 
 ## 3. Developer API (`@dyrected/core`)
 
-### 3.1 The Unified Navigation Primitive: `defineNavItem`
+### 3.1 The Unified Navigation Primitive: `defineWorkspace`
 
 Instead of fragmenting the API into multiple single-purpose functions, Dyrected provides **one unified, strongly-typed primitive**:
 
 ```ts
-defineNavItem({ ... })
+defineWorkspace({ ... })
 ```
+
+> [!NOTE]
+> **API Unification & Multi-Tenancy Disambiguation:**
+> `defineWorkspace` is the canonical primitive for operational workspaces, custom navigation items, and collection-level views. `defineNavItem` is maintained as a 100% backwards-compatible alias.
+>
+> To avoid naming collision with multi-tenancy (which previously used `WorkspaceSwitcher`), multi-tenancy will be renamed to `Tenant` / `TenantSwitcher` in an upcoming PR, reserving the term "Workspace" strictly for operational hubs.
 
 #### How Grouping Works: Consistent with Collections
 
 In Dyrected collections, grouping is achieved simply by setting `group: "Operations"`. **Navigation items follow the exact same model:**
 
-- Every `defineNavItem` can declare `group: "Operations"`.
+- Every `defineWorkspace` can declare `group: "Operations"`.
 - Dyrected automatically aggregates all collections, operational views, and links sharing that group into a collapsible section in the sidebar.
 - No bulky wrapper functions or artificial nesting required.
 
 #### The "First View is Default" Rule
 
-When defining views on an operational nav item, **the first view in the `views` array is automatically the default view**, eliminating redundant `default: true` flags.
+When defining views on an operational workspace item, **the first view in the `views` array is automatically the default view**, eliminating redundant `default: true` flags.
 
 ---
 
-### 3.2 Covering All Existing Scenarios with `defineNavItem`
+### 3.2 Covering All Existing Scenarios with `defineWorkspace`
 
-`defineNavItem` elegantly satisfies every admin navigation requirement across the framework:
+`defineWorkspace` (and its alias `defineNavItem`) elegantly satisfies every admin navigation requirement across the framework:
 
 #### Scenario 1: Standalone Operational Workspace (Multi-Collection)
 
@@ -272,7 +278,7 @@ Developers only declare what they care about customizing. Dyrected's navigation 
 
 ---
 
-### 3.3 TypeScript Definitions for `defineNavItem`
+### 3.3 TypeScript Definitions for `defineWorkspace`
 
 ```ts
 export interface NavGroup {
@@ -337,8 +343,17 @@ export interface DefineNavItemOptions {
   views?: DefineViewOptions[];
 }
 
-export function defineNavItem(options: DefineNavItemOptions): DefineNavItemOptions {
+/** Configuration options for defining an operational workspace or customizing placement of collections/globals. */
+export type DefineWorkspaceOptions = DefineNavItemOptions;
+
+/** Helper to define an operational workspace or customize placement of collections/globals. */
+export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspaceOptions {
   return options;
+}
+
+/** @deprecated Use `defineWorkspace` instead. */
+export function defineNavItem(options: DefineNavItemOptions): DefineNavItemOptions {
+  return defineWorkspace(options);
 }
 ```
 
@@ -722,7 +737,7 @@ When building customizable navigation, operational views, and user preferences i
 
 | Package | Responsibility |
 | :--- | :--- |
-| `@dyrected/core` | • Export `defineNavItem`<br>• Normalize and validate `admin.navigation`<br>• Enforce reserved slug validation (`/collections`, `/globals`, `/setup`, `/api`, etc.)<br>• Serve `/api/admin/navigation` and `/api/admin/navigation/badges`<br>• Implement 3-tier cascading resolution waterfall on `GET /api/preferences/:key`<br>• Support `scope=role` in addition to `personal` and `global`<br>• Enforce RBAC write access (only admins can mutate role/global preferences)<br>• Perform server-side RBAC pruning on navigation trees |
+| `@dyrected/core` | • Export `defineWorkspace` (and deprecated alias `defineNavItem`)<br>• Normalize and validate `admin.navigation`<br>• Enforce reserved slug validation (`/collections`, `/globals`, `/setup`, `/api`, etc.)<br>• Serve `/api/admin/navigation` and `/api/admin/navigation/badges`<br>• Implement 3-tier cascading resolution waterfall on `GET /api/preferences/:key`<br>• Support `scope=role` in addition to `personal` and `global`<br>• Enforce RBAC write access (only admins can mutate role/global preferences)<br>• Perform server-side RBAC pruning on navigation trees |
 | `@dyrected/admin` | • Render dynamic, polymorphic sidebar in `admin-shell.tsx`<br>• Register `/:workspaceSlug/:viewSlug` routes directly at root in React Router without `/ops`<br>• Implement "Customize Navigation" drawer with `@dnd-kit/sortable` and step buttons<br>• Upgrade `usePreference` hook with typed registry, 400ms debounce, and client migrations<br>• Persist sparse layout deltas via `usePreference("admin:navigation")` |
 | `@dyrected/sdk` | • Expose `scope: "role"` in `client.getPreference` and `client.setPreference`<br>• Export `DyrectedPreferences` registry interface for end-to-end type safety |
 
@@ -752,7 +767,7 @@ All preference state updates and route transitions must adhere to Dyrected's Rea
 
 ### Phase 1: Core Schema, Compiler & Preferences Engine (`@dyrected/core`, Database Adapters)
 
-- **Unified Navigation Types:** Export canonical `defineNavItem`, `NavGroup`, `DefineNavItemOptions`, and deprecation alias `NavGroupMetadata`.
+- **Unified Navigation Types:** Export canonical `defineWorkspace`, `DefineWorkspaceOptions`, `NavGroup`, and deprecation aliases `defineNavItem` / `DefineNavItemOptions` / `NavGroupMetadata`.
 - **Navigation Compiler Pipeline:**
   - Auto-discovery of collections, globals, and media resources.
   - Deterministic 5-step compiler with sparse relative splicing (`after`, `before`) and numeric sorting (`order`, `position`).

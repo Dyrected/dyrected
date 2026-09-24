@@ -2,11 +2,32 @@
  * Formats resolved metric values for display in stat cards.
  */
 export function formatMetricValue(
-  value: number | null | undefined,
+  value: number | string | null | undefined,
   format: string | undefined,
   currency: string | undefined,
 ): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—"
+  if (value === null || value === undefined) return "—"
+  if (typeof value === "number" && Number.isNaN(value)) return "—"
+
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+      const d = new Date(value)
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      }
+    }
+    const num = Number(value)
+    if (!isNaN(num) && value.trim() !== "") {
+      value = num
+    } else {
+      return value
+    }
+  }
 
   switch (format) {
     case "currency": {

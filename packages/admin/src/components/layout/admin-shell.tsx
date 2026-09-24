@@ -157,17 +157,62 @@ function NavItem({
 // ---------------------------------------------------------------------------
 // Nav Group (Collapsible)
 // ---------------------------------------------------------------------------
+function renderViewBadgeNode(badges: any, parentSlug: string, view: any) {
+  if (!view) return null
+  const badgeMap = (badges as any)?.badges ?? badges
+  const badgeInfo =
+    badgeMap?.[`${parentSlug}:${view.slug}`] ??
+    badgeMap?.[`${parentSlug}_${view.slug}`] ??
+    badgeMap?.[view.slug]
+
+  const badgeCount = badgeInfo?.count
+  const badgeText =
+    badgeInfo?.text ??
+    (typeof view.badge === "string"
+      ? view.badge
+      : typeof view.badge === "object" && view.badge && "text" in view.badge
+        ? (view.badge as any).text
+        : badgeCount !== undefined && badgeCount !== null
+          ? String(badgeCount)
+          : undefined)
+
+  if (!badgeText) return null
+
+  const badgeVariant =
+    badgeInfo?.variant ??
+    (typeof view.badge === "object" && view.badge && "variant" in view.badge
+      ? (view.badge as any).variant
+      : "default")
+
+  return (
+    <span
+      className={cn(
+        "dy-ml-auto dy-rounded-full dy-px-1.5 dy-py-0.5 dy-text-[9px] dy-font-semibold dy-leading-none dy-shrink-0",
+        badgeVariant === "warning" && "dy-bg-amber-500/15 dy-text-amber-600 dark:dy-text-amber-400",
+        badgeVariant === "destructive" && "dy-bg-destructive/15 dy-text-destructive",
+        badgeVariant === "info" && "dy-bg-blue-500/15 dy-text-blue-600 dark:dy-text-blue-400",
+        badgeVariant === "success" && "dy-bg-emerald-500/15 dy-text-emerald-600 dark:dy-text-emerald-400",
+        (!badgeVariant || badgeVariant === "default") && "dy-bg-muted dy-text-muted-foreground"
+      )}
+    >
+      {badgeText}
+    </span>
+  )
+}
+
 function NavSubItem({
   to,
   icon,
   label,
   active,
+  badge,
   onClick,
 }: {
   to: string
   icon?: string
   label: string
   active: boolean
+  badge?: React.ReactNode
   onClick?: () => void
 }) {
   const Icon = icon && isAdminIconName(icon) ? icons[icon] : null
@@ -202,6 +247,7 @@ function NavSubItem({
         />
       )}
       <span className="dy-truncate">{label}</span>
+      {badge}
     </Link>
   )
 }
@@ -239,7 +285,7 @@ function NavGroup({
       >
         <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
           {GroupIcon && <GroupIcon className="dy-h-3 dy-w-3 dy-text-muted-foreground/40 dy-shrink-0" />}
-          <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/40 dy-group-hover:dy-text-muted-foreground/60 dy-transition-colors dy-truncate">
+          <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/70 dy-group-hover:dy-text-muted-foreground/85 dy-transition-colors dy-truncate">
             {label}
           </span>
         </div>
@@ -289,6 +335,7 @@ function CollapsedCollectionMenu({
   onNavigate?: () => void
   location: ReturnType<typeof useLocation>
 }) {
+  const { badges } = useDyrected()
   const [open, setOpen] = useState(false)
   const timeoutRef = useRef<number | null>(null)
 
@@ -370,6 +417,7 @@ function CollapsedCollectionMenu({
           const viewPath = `/collections/${col.slug}/views/${view.slug}`
           const active = location.pathname === viewPath
           const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
+          const viewBadgeNode = renderViewBadgeNode(badges, col.slug, view)
           return (
             <DropdownMenuItem
               key={viewPath}
@@ -378,7 +426,8 @@ function CollapsedCollectionMenu({
             >
               <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
                 {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
-                {view.label}
+                <span className="dy-truncate">{view.label}</span>
+                {viewBadgeNode}
               </Link>
             </DropdownMenuItem>
           )
@@ -407,6 +456,7 @@ function CollapsedNavMenu({
   onNavigate?: () => void
   location: ReturnType<typeof useLocation>
 }) {
+  const { badges } = useDyrected()
   const [open, setOpen] = useState(false)
   const timeoutRef = useRef<number | null>(null)
 
@@ -477,6 +527,7 @@ function CollapsedNavMenu({
             : `/${item.slug}/${view.slug}`
           const active = location.pathname === viewPath
           const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
+          const viewBadgeNode = renderViewBadgeNode(badges, item.slug, view)
           return (
             <DropdownMenuItem
               key={viewPath}
@@ -485,7 +536,8 @@ function CollapsedNavMenu({
             >
               <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
                 {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
-                {view.label || view.slug}
+                <span className="dy-truncate">{view.label || view.slug}</span>
+                {viewBadgeNode}
               </Link>
             </DropdownMenuItem>
           )
@@ -703,7 +755,7 @@ function SidebarInner({
     const hasMeaningfulViews = views.length > 1 || (views.length === 1 && views[0].slug !== "list")
     const isChildActive = location.pathname.startsWith(`/collections/${col.slug}/views/`)
     const isExactActive =
-      !isChildActive && location.pathname.startsWith(`/collections/${col.slug}`)
+      !isChildActive && (location.pathname === `/collections/${col.slug}` || location.pathname.startsWith(`/collections/${col.slug}/`))
     const isCollectionActive = isChildActive || isExactActive
     const isExpanded = isCollectionActive
       ? !userToggledClosed.has(col.slug)
@@ -766,13 +818,16 @@ function SidebarInner({
             )}
             {views.map((view) => {
               const viewPath = `/collections/${col.slug}/views/${view.slug}`
+              const isSubActive = location.pathname === viewPath || location.pathname.startsWith(`${viewPath}/`)
+              const viewBadgeNode = renderViewBadgeNode(badges, col.slug, view)
               return (
                 <NavSubItem
                   key={viewPath}
                   to={viewPath}
                   icon={view.icon}
                   label={view.label}
-                  active={location.pathname === viewPath}
+                  active={isSubActive}
+                  badge={viewBadgeNode}
                   onClick={onNavigate}
                 />
               )
@@ -850,10 +905,10 @@ function SidebarInner({
       isExactActive = location.pathname === `/globals/${item.slug}` || location.pathname === `/globals/${item.slug}/edit`
     } else if (item.type === "collection") {
       isChildActive = location.pathname.startsWith(`/collections/${item.slug}/views/`)
-      isExactActive = !isChildActive && location.pathname.startsWith(`/collections/${item.slug}`)
+      isExactActive = !isChildActive && (location.pathname === `/collections/${item.slug}` || location.pathname.startsWith(`/collections/${item.slug}/`))
     } else if (item.type === "workspace") {
-      isChildActive = views.some((v) => location.pathname === `/${item.slug}/${v.slug}`)
-      isExactActive = !isChildActive && location.pathname.startsWith(`/${item.slug}`)
+      isChildActive = views.some((v) => location.pathname === `/${item.slug}/${v.slug}` || location.pathname.startsWith(`/${item.slug}/${v.slug}/`))
+      isExactActive = !isChildActive && (location.pathname === `/${item.slug}` || location.pathname.startsWith(`/${item.slug}/`))
     }
 
     const isItemActive = isChildActive || isExactActive
@@ -864,9 +919,9 @@ function SidebarInner({
     const col = item.type === "collection" ? schemas?.collections?.find((c: any) => c.slug === item.slug) : undefined
     const FallbackIcon = item.type === "dashboard" ? LayoutDashboard :
       item.type === "global" ? Settings :
-      item.type === "link" ? ExternalLink :
-      item.type === "collection" ? (col?.auth ? Users : col?.upload ? ImageIcon : Database) :
-      Briefcase
+        item.type === "link" ? ExternalLink :
+          item.type === "collection" ? (col?.auth ? Users : col?.upload ? ImageIcon : Database) :
+            Briefcase
 
     const Icon = resolveAdminIcon(item.icon, FallbackIcon)
 
@@ -898,8 +953,8 @@ function SidebarInner({
           className={cn(
             "dy-absolute -dy-top-1 -dy-right-1 dy-h-2 dy-w-2 dy-rounded-full",
             badgeVariant === "warning" ? "dy-bg-amber-500" :
-            badgeVariant === "destructive" ? "dy-bg-destructive" :
-            badgeVariant === "info" ? "dy-bg-blue-500" : "dy-bg-primary"
+              badgeVariant === "destructive" ? "dy-bg-destructive" :
+                badgeVariant === "info" ? "dy-bg-blue-500" : "dy-bg-primary"
           )}
         />
       ) : (
@@ -968,7 +1023,8 @@ function SidebarInner({
               const viewPath = item.type === "collection"
                 ? `/collections/${item.slug}/views/${view.slug}`
                 : `/${item.slug}/${view.slug}`
-              const isSubActive = location.pathname === viewPath
+              const isSubActive = location.pathname === viewPath || location.pathname.startsWith(`${viewPath}/`)
+              const viewBadgeNode = renderViewBadgeNode(badges, item.slug, view)
               return (
                 <NavSubItem
                   key={viewPath}
@@ -976,6 +1032,7 @@ function SidebarInner({
                   icon={view.icon}
                   label={view.label || view.slug}
                   active={isSubActive}
+                  badge={viewBadgeNode}
                   onClick={onNavigate}
                 />
               )
@@ -1578,7 +1635,7 @@ export function AdminShell({
             </div>
 
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetContent side="left" className="dy-w-[220px] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
+              <SheetContent side="left" className="dy-min-w-[220px] dy-max-w-[85%] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
                 <SheetHeader className="dy-sr-only">
                   <SheetTitle>Navigation menu</SheetTitle>
                   <SheetDescription>Displays the mobile admin navigation.</SheetDescription>

@@ -16,6 +16,7 @@ import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig, isUserAdmin } from "./utils/admin-auth.js";
 import { compileNavigation, pruneNavigationForUser } from "./utils/navigation.js";
+import { reconcileNavigation } from "./utils/navigation-reconciler.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
 import {
@@ -880,71 +881,196 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.json(pruned);
   });
 
-  app.get("/api/admin/navigation/badges", optionalAuth(config), async (c) => {
+  app.on(["GET", "POST"], "/api/admin/navigation/badges", optionalAuth(config), async (c) => {
     const db = config.db;
     if (!db) return c.json({ badges: {} });
 
     const user = c.get("user");
     const compiled = compileNavigation(config);
-    const pruned = pruneNavigationForUser(compiled, user);
 
-    const allItems: CompiledNavItem[] = [
-      ...pruned.ungrouped,
-      ...pruned.groups.flatMap((g) => g.items),
-    ];
+    // Reconcile with navigation preferences (client query/body, user document, or global)
+    let userNavPrefs: any = null;
+
+    const prefsQuery = c.req.query("prefs");
+    if (prefsQuery) {
+      try {
+        userNavPrefs = JSON.parse(decodeURIComponent(prefsQuery));
+      } catch {}
+    }
+
+    if (!userNavPrefs && c.req.method === "POST") {
+      try {
+        const body = await c.req.json();
+        if (body?.preferences) userNavPrefs = body.preferences;
+      } catch {}
+    }
+
+    if (!userNavPrefs && user?.collection && user?.sub) {
+      try {
+        const userDoc = await db.findOne({ collection: user.collection, id: user.sub });
+        if (userDoc?.__preferences && typeof userDoc.__preferences === "object") {
+          userNavPrefs = (userDoc.__preferences as any)["admin:navigation"];
+        }
+      } catch {}
+    }
+
+    if (!userNavPrefs) {
+      try {
+        const globalDoc = await db.findOne({
+          collection: "__global_preferences",
+          id: "admin:navigation",
+        });
+        if (globalDoc?.value) {
+          userNavPrefs = globalDoc.value;
+        }
+      } catch {}
+    }
+
+    let allItems: CompiledNavItem[];
+    if (userNavPrefs) {
+      const reconciled = reconcileNavigation(compiled, userNavPrefs, {
+        collections: config.collections as any,
+        globals: config.globals as any,
+      });
+      allItems = [
+        ...(reconciled.ungrouped || []),
+        ...(reconciled.pinnedItems || []),
+        ...(reconciled.groups || []).flatMap((g) => g.items || []),
+      ];
+    } else {
+      const pruned = pruneNavigationForUser(compiled, user);
+      allItems = [
+        ...pruned.ungrouped,
+        ...pruned.groups.flatMap((g) => g.items),
+      ];
+    }
 
     const badges: Record<string, { count: number | string; variant?: string }> = {};
+    const badgeTasks: Promise<void>[] = [];
 
-    await Promise.allSettled(
-      allItems.map(async (item) => {
-        if (!item.badge) return;
-        const badgeKey = item.slug || item.collection || item.global || item.id;
+    for (const item of allItems) {
+      if (item.badge) {
+        const itemBadge = item.badge;
+        badgeTasks.push(
+          (async () => {
+            const badgeKey = item.slug || item.collection || item.global || item.id;
 
-        if (typeof item.badge === "string") {
-          badges[badgeKey] = { count: item.badge, variant: "default" };
-          return;
+            if (typeof itemBadge === "string") {
+              badges[badgeKey] = { count: itemBadge, variant: "default" };
+              return;
+            }
+
+            const badgeConfig = itemBadge;
+            const variant = badgeConfig.variant ?? "default";
+            if (badgeConfig.text) {
+              badges[badgeKey] = { count: badgeConfig.text, variant };
+              return;
+            }
+
+            let targetCol: string | undefined;
+            let targetWhere: Record<string, unknown> | undefined;
+
+            if (badgeConfig.aggregate) {
+              targetCol = badgeConfig.aggregate.collection;
+              targetWhere = badgeConfig.aggregate.where;
+            } else if (badgeConfig.count) {
+              targetCol = item.collection || (item.views?.[0] as any)?.collection;
+              const primaryView = item.views?.[0] as any;
+              if (primaryView?.filter) {
+                targetWhere = primaryView.filter;
+              }
+            }
+
+            if (!targetCol) return;
+
+            try {
+              if (typeof db.aggregate === "function") {
+                const agg = await db.aggregate({
+                  collection: targetCol,
+                  aggregates: { count: { count: "*", where: targetWhere } },
+                });
+                badges[badgeKey] = { count: typeof agg?.count === "number" ? agg.count : 0, variant };
+              } else {
+                const res = await db.find({
+                  collection: targetCol,
+                  where: targetWhere,
+                  limit: 1,
+                });
+                const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
+                badges[badgeKey] = { count: total, variant };
+              }
+            } catch {
+              badges[badgeKey] = { count: 0, variant };
+            }
+          })(),
+        );
+      }
+
+      if (item.views && item.views.length > 0) {
+        for (const view of item.views) {
+          if (!view.badge) continue;
+          const viewBadge = view.badge;
+          badgeTasks.push(
+            (async () => {
+              const viewKey = `${item.slug}:${view.slug}`;
+              const altKey = `${item.slug}_${view.slug}`;
+              const plainKey = view.slug;
+
+              const setBadgeResult = (res: { count: number | string; variant?: string }) => {
+                badges[viewKey] = res;
+                badges[altKey] = res;
+                if (!badges[plainKey]) {
+                  badges[plainKey] = res;
+                }
+                if (view.collection) {
+                  badges[`${view.collection}:${view.slug}`] = res;
+                  badges[`${view.collection}_${view.slug}`] = res;
+                }
+              };
+
+              if (typeof viewBadge === "string") {
+                setBadgeResult({ count: viewBadge, variant: "default" });
+                return;
+              }
+
+              const badgeConfig = viewBadge as any;
+              const variant = badgeConfig.variant ?? "default";
+              if (badgeConfig.text) {
+                setBadgeResult({ count: badgeConfig.text, variant });
+                return;
+              }
+
+              const targetCol = badgeConfig.aggregate?.collection || view.collection || item.collection || (item.type === "collection" ? item.slug : undefined);
+              const targetWhere = badgeConfig.aggregate?.where || (typeof view.filter === "object" ? view.filter : undefined);
+
+              if (!targetCol) return;
+
+              try {
+                if (typeof db.aggregate === "function") {
+                  const agg = await db.aggregate({
+                    collection: targetCol,
+                    aggregates: { count: { count: "*", where: targetWhere } },
+                  });
+                  setBadgeResult({ count: typeof agg?.count === "number" ? agg.count : 0, variant });
+                } else {
+                  const res = await db.find({
+                    collection: targetCol,
+                    where: targetWhere,
+                    limit: 1,
+                  });
+                  const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
+                  setBadgeResult({ count: total, variant });
+                }
+              } catch {
+                setBadgeResult({ count: 0, variant });
+              }
+            })(),
+          );
         }
+      }
+    }
 
-        const badgeConfig = item.badge;
-        const variant = badgeConfig.variant ?? "default";
-
-        let targetCol: string | undefined;
-        let targetWhere: Record<string, unknown> | undefined;
-
-        if (badgeConfig.aggregate) {
-          targetCol = badgeConfig.aggregate.collection;
-          targetWhere = badgeConfig.aggregate.where;
-        } else if (badgeConfig.count) {
-          targetCol = item.collection || (item.views?.[0] as any)?.collection;
-          const primaryView = item.views?.[0] as any;
-          if (primaryView?.filter) {
-            targetWhere = primaryView.filter;
-          }
-        }
-
-        if (!targetCol) return;
-
-        try {
-          if (typeof db.aggregate === "function") {
-            const agg = await db.aggregate({
-              collection: targetCol,
-              aggregates: { count: { count: "*", where: targetWhere } },
-            });
-            badges[badgeKey] = { count: typeof agg?.count === "number" ? agg.count : 0, variant };
-          } else {
-            const res = await db.find({
-              collection: targetCol,
-              where: targetWhere,
-              limit: 1,
-            });
-            const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
-            badges[badgeKey] = { count: total, variant };
-          }
-        } catch {
-          badges[badgeKey] = { count: 0, variant };
-        }
-      }),
-    );
+    await Promise.allSettled(badgeTasks);
 
     return c.json({ badges });
   });

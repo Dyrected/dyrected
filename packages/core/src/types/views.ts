@@ -2,6 +2,7 @@ import type { Field } from "./schema-core.js";
 import type { AccessRule } from "./access.js";
 import type { AggregateOperation } from "./aggregate.js";
 import type { CollectionViewComponentSlots } from "./admin.js";
+import type { NavBadgeConfig } from "./navigation.js";
 import type { WhereClause } from "../utils/parse-where.js";
 
 /**
@@ -239,6 +240,8 @@ export interface ViewConfigBase {
   actionOrder?: string[];
   /** KPI summary cards rendered in the hero row above the view. */
   metrics?: ViewMetric[];
+  /** Optional real-time counter badge or status indicator displayed on this view in navigation and tabs. */
+  badge?: NavBadgeConfig | string;
   /** Custom component slots rendered around this operational view. */
   components?: ViewComponentSlots;
   /** Role-based access rules controlling who can see or use this view. */

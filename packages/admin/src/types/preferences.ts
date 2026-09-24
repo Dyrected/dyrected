@@ -1,3 +1,5 @@
+import type { UserNavigationPreferences } from "@dyrected/core";
+
 export {
   type PinnedNavItemRef,
   type UserNavigationPreferences,

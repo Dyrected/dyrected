@@ -873,7 +873,7 @@ FIX INSTRUCTIONS:
       const base = toFieldExpr(rawField);
       if (cast === "string") return base;
       if (cast === "boolean") return `IF(${base} IS NOT NULL, IF(${base} IN ('true','1'), 1, 0), NULL)`;
-      if (cast === "date") return `CAST(${base} AS DATETIME)`;
+      if (cast === "date") return `IF(${base} REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}', CAST(${base} AS DATETIME), NULL)`;
       // number / integer / float — safe NULL on invalid input
       const sqlType = cast === "integer" ? "SIGNED" : "DECIMAL(20,6)";
       return `IF(${base} REGEXP '^-?[0-9]+(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$', CAST(${base} AS ${sqlType}), NULL)`;
@@ -956,11 +956,16 @@ FIX INSTRUCTIONS:
     const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {
       const raw = row[name];
+      const op = args.aggregates[name];
       if (isDistinctMap[name]) {
         const parsed = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
         result[name] = Array.isArray(parsed) ? parsed.filter((v: any) => v !== null && v !== undefined) : [];
+      } else if (raw instanceof Date) {
+        result[name] = raw.toISOString();
+      } else if (op?.cast === "date") {
+        result[name] = raw === null || raw === undefined ? null : String(raw);
       } else {
-        result[name] = raw === null || raw === undefined ? null : Number(raw);
+        result[name] = raw === null || raw === undefined ? null : (isNaN(Number(raw)) ? raw : Number(raw));
       }
     }
     return result;

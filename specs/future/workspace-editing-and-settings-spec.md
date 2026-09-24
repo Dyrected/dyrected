@@ -8,7 +8,18 @@
 
 ## 1. Context & Motivation
 
-In multi-tenant Dyrected applications, tenants or workspaces are represented by a designated workspace collection (e.g. `workspaces`, `tenants`, `sites`, or configured via `admin.workspaceCollection`). 
+In multi-tenant Dyrected applications, tenants have historically been referred to as "workspaces" represented by a designated collection (e.g. `workspaces`, `tenants`, `sites`, or configured via `admin.workspaceCollection`). 
+
+> [!NOTE]
+> **Terminology Alignment Plan (Tenant vs. Workspace):**
+> With the unification of operational navigation under `defineWorkspace(...)` (in `@dyrected/core`), the term "Workspace" is the canonical name for operational hubs and multi-collection views in the navigation tree.
+> 
+> In an upcoming PR, the multi-tenancy subsystem will be transitioned from "Workspace" to "Tenant" to eliminate naming ambiguity:
+> - Component: `WorkspaceSwitcher` → `TenantSwitcher`
+> - Config: `admin.workspaceCollection` → `admin.tenantCollection` (aliased for backwards compatibility)
+> - Query Key: `["admin-workspaces-collection"]` → `["admin-tenants-collection"]`
+> 
+> In this document, "tenant" and "workspace" are used interchangeably during the transition period.
 
 Currently:
 1. **Creation**: Users can create a new workspace directly from the sidebar `WorkspaceSwitcher` dropdown via an "Add Workspace..." dialog rendered by `FormEngine`.

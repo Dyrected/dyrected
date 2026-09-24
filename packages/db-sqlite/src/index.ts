@@ -527,7 +527,7 @@ export class SqliteAdapter implements DatabaseAdapter {
       const base = toFieldExpr(rawField);
       if (cast === 'string') return base;
       if (cast === 'boolean') return `CAST(${base} AS INTEGER)`;
-      if (cast === 'date') return base; // SQLite stores dates as text
+      if (cast === 'date') return `CASE WHEN (${base} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*') THEN ${base} ELSE NULL END`;
       // number / integer / float: return NULL for non-numeric values
       return `CASE WHEN (${base} GLOB '[0-9]*' OR ${base} GLOB '[+-]*') AND (${base} NOT GLOB '*[^0-9.eE+-]*') THEN CAST(${base} AS REAL) ELSE NULL END`;
     };
@@ -580,11 +580,14 @@ export class SqliteAdapter implements DatabaseAdapter {
         const groupResult: Record<string, any> = {};
         for (const name of Object.keys(args.aggregates)) {
           const raw = row[name];
+          const op = args.aggregates[name];
           if (isDistinctMap[name]) {
             const rawArr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
             groupResult[name] = Array.isArray(rawArr) ? rawArr.filter((v: any) => v !== null && v !== undefined) : [];
+          } else if (op?.cast === 'date') {
+            groupResult[name] = raw === null || raw === undefined ? null : String(raw);
           } else {
-            groupResult[name] = raw === null || raw === undefined ? null : Number(raw);
+            groupResult[name] = raw === null || raw === undefined ? null : (isNaN(Number(raw)) ? raw : Number(raw));
           }
         }
         groups[key] = groupResult;
@@ -598,11 +601,14 @@ export class SqliteAdapter implements DatabaseAdapter {
     const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {
       const raw = row[name];
+      const op = args.aggregates[name];
       if (isDistinctMap[name]) {
         const rawArr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []));
         result[name] = Array.isArray(rawArr) ? rawArr.filter((v: any) => v !== null && v !== undefined) : [];
+      } else if (op?.cast === 'date') {
+        result[name] = raw === null || raw === undefined ? null : String(raw);
       } else {
-        result[name] = raw === null || raw === undefined ? null : Number(raw);
+        result[name] = raw === null || raw === undefined ? null : (isNaN(Number(raw)) ? raw : Number(raw));
       }
     }
     return result;

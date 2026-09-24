@@ -29,13 +29,15 @@ export type NavGroupMetadata = NavGroup;
 export interface NavBadgeConfig {
   /** If true, automatically calculates a count based on the primary view's filter. */
   count?: boolean;
+  /** Static text override for the badge (e.g. "Live", "New", "Urgent"). */
+  text?: string;
   /** Custom aggregate filter evaluated on the database. */
   aggregate?: {
     collection: string;
     where?: Record<string, unknown>;
   };
   /** Visual badge color variant. */
-  variant?: "default" | "warning" | "destructive" | "info";
+  variant?: "default" | "warning" | "destructive" | "info" | "success";
 }
 
 /**

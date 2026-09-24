@@ -756,8 +756,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     const toCastExpr = (rawField: string, cast: string | undefined): string => {
       const base = toFieldExpr(rawField);
       if (cast === "string") return base;
-      if (cast === "boolean") return `(${base})::boolean`;
-      if (cast === "date") return `(${base})::timestamptz`;
+      if (cast === "boolean") {
+        return `CASE WHEN (${base})::text IN ('true', 't', '1', 'yes') THEN true WHEN (${base})::text IN ('false', 'f', '0', 'no') THEN false ELSE NULL END`;
+      }
+      if (cast === "date") {
+        return `CASE WHEN (${base})::text ~ '^\\d{4}-\\d{2}-\\d{2}' THEN (${base})::timestamptz ELSE NULL END`;
+      }
       // By default for numeric operations (or number / integer / float), safe numeric cast is required.
       // We cast base to text before regex check so it works on both json text extraction and promoted numeric columns.
       const pgType = cast === "integer" ? "bigint" : "double precision";
@@ -821,11 +825,16 @@ export class PostgresAdapter implements DatabaseAdapter {
         const groupResult: Record<string, any> = {};
         for (const name of Object.keys(args.aggregates)) {
           const raw = row[name];
+          const op = args.aggregates[name];
           if (isDistinctMap[name]) {
             const rawArr = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
             groupResult[name] = Array.isArray(rawArr) ? rawArr.filter((v: any) => v !== null && v !== undefined) : [];
+          } else if (raw instanceof Date) {
+            groupResult[name] = raw.toISOString();
+          } else if (op?.cast === "date") {
+            groupResult[name] = raw === null || raw === undefined ? null : String(raw);
           } else {
-            groupResult[name] = raw === null || raw === undefined ? null : Number(raw);
+            groupResult[name] = raw === null || raw === undefined ? null : (isNaN(Number(raw)) ? raw : Number(raw));
           }
         }
         groups[key] = groupResult;
@@ -840,11 +849,16 @@ export class PostgresAdapter implements DatabaseAdapter {
     const result: Record<string, any> = {};
     for (const name of Object.keys(args.aggregates)) {
       const raw = row[name];
+      const op = args.aggregates[name];
       if (isDistinctMap[name]) {
         const rawArr = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
         result[name] = Array.isArray(rawArr) ? rawArr.filter((v: any) => v !== null && v !== undefined) : [];
+      } else if (raw instanceof Date) {
+        result[name] = raw.toISOString();
+      } else if (op?.cast === "date") {
+        result[name] = raw === null || raw === undefined ? null : String(raw);
       } else {
-        result[name] = raw === null || raw === undefined ? null : Number(raw);
+        result[name] = raw === null || raw === undefined ? null : (isNaN(Number(raw)) ? raw : Number(raw));
       }
     }
     return result;

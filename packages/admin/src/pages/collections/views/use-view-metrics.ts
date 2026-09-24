@@ -7,13 +7,13 @@ import { formatMetricValue } from "./format-metric"
 
 export interface ResolvedSubMetric {
   label: string
-  value: number | null
+  value: number | string | null
   formatted: string
 }
 
 export interface ResolvedMetric {
   label: string
-  value: number | null
+  value: number | string | null
   formatted: string
   color?: string
   unit?: string
@@ -105,7 +105,7 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
       })
       if (!Object.keys(input).length) return metrics.map(emptyMetric)
 
-      let raw: Record<string, number | null>
+      let raw: Record<string, number | string | null>
       try {
         raw = await (client as any).collection(slug).aggregate(input)
       } catch {
@@ -113,13 +113,13 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
       }
 
       return plan.map(({ metric, single, named, subPlans }) => {
-        let value: number | null = null
+        let value: number | string | null = null
 
         if (metric.expression && named) {
           // Named-aggregate expression, e.g. 'aggregates.totalBooked * aggregates.avgRate'
           const context: Record<string, number | null> = {}
           for (const name of Object.keys(metric.aggregates ?? {})) {
-            context[name] = raw[named[name]] ?? null
+            context[name] = typeof raw[named[name]] === "number" ? (raw[named[name]] as number) : null
           }
           value = evalJexl(metric.expression, { aggregates: context })
         } else if (!metric.expression) {
@@ -130,11 +130,11 @@ export function useViewMetrics({ slug, viewSlug, metrics, filter }: UseViewMetri
         }
 
         const resolvedSubMetrics: ResolvedSubMetric[] = (subPlans ?? []).map(({ subMetric, single: subSingle, named: subNamed }) => {
-          let subValue: number | null = null
+          let subValue: number | string | null = null
           if (subMetric.expression && subNamed) {
             const context: Record<string, number | null> = {}
             for (const name of Object.keys(subMetric.aggregates ?? {})) {
-              context[name] = raw[subNamed[name]] ?? null
+              context[name] = typeof raw[subNamed[name]] === "number" ? (raw[subNamed[name]] as number) : null
             }
             subValue = evalJexl(subMetric.expression, { aggregates: context })
           } else if (!subMetric.expression) {
@@ -196,6 +196,9 @@ function emptyMetric(metric: SerializedViewMetric): ResolvedMetric {
 function sanitizeAggregate(operation: NonNullable<SerializedViewMetric["aggregate"]>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   if (operation.count) out.count = "*"
+  if ((operation as any).countDistinct && typeof (operation as any).countDistinct === "string") {
+    out.countDistinct = (operation as any).countDistinct
+  }
   for (const key of ["sum", "avg", "min", "max"] as const) {
     if (typeof operation[key] === "string") out[key] = operation[key]
   }
