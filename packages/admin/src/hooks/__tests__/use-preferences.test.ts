@@ -151,18 +151,17 @@ describe("usePreference Hook", () => {
     )
   })
 
-  it("synchronizes updates across multiple hook instances in real-time without reloads", () => {
+  it("synchronizes updates across multiple hook instances in real-time without reloads", async () => {
     const { result: hook1 } = renderHook(() => usePreference("shared-key", "initial"))
     const { result: hook2 } = renderHook(() => usePreference("shared-key", "initial"))
 
     expect(hook1.current[0]).toBe("initial")
     expect(hook2.current[0]).toBe("initial")
 
-    act(() => {
+    await act(async () => {
       hook1.current[1]("updated-from-customizer")
     })
 
-    // Both instances update immediately in 0ms!
     expect(hook1.current[0]).toBe("updated-from-customizer")
     expect(hook2.current[0]).toBe("updated-from-customizer")
   })

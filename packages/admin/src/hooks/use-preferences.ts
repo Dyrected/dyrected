@@ -221,49 +221,60 @@ export function usePreference<T>(
     }
   }, [])
 
+  const latestValueRef = React.useRef<T>(value)
+  latestValueRef.current = value
+
   const updateValue = React.useCallback(
     (updater: Updater<T>) => {
-      setValue((prev) => {
-        localWriteVersionRef.current += 1
-        const newValue = typeof updater === "function" ? (updater as (old: T) => T)(prev) : updater
+      localWriteVersionRef.current += 1
+      const prev = latestValueRef.current
+      const newValue = typeof updater === "function" ? (updater as (old: T) => T)(prev) : updater
 
-        if (arePreferenceValuesEqual(prev, newValue)) return prev
+      if (arePreferenceValuesEqual(prev, newValue)) return
 
-        // 1. Synchronous 0ms immediate persistence in localStorage and cross-component broadcast
-        if (typeof window !== "undefined") {
-          try {
-            window.localStorage.setItem(localStorageKey, JSON.stringify(newValue))
-            window.dispatchEvent(
-              new CustomEvent("dyrected:preference-change", {
-                detail: {
-                  key,
-                  localStorageKey,
-                  value: newValue,
-                  senderId: instanceIdRef.current,
-                },
-              })
-            )
-          } catch (e) {
-            console.warn(`[usePreference] Error saving key "${key}" to localStorage:`, e)
-          }
+      latestValueRef.current = newValue
+      setValue(newValue)
+
+      // 1. Synchronous 0ms immediate persistence in localStorage
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(localStorageKey, JSON.stringify(newValue))
+        } catch (e) {
+          console.warn(`[usePreference] Error saving key "${key}" to localStorage:`, e)
         }
 
-        // 2. Debounced remote network sync (default 400ms)
-        if (client && user) {
-          if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current)
-          }
+        // 2. Dispatch cross-component broadcast asynchronously via microtask
+        // so listener components don't invoke setState synchronously during the current component's render
+        const detail = {
+          key,
+          localStorageKey,
+          value: newValue,
+          senderId: instanceIdRef.current,
+        }
+        if (typeof queueMicrotask === "function") {
+          queueMicrotask(() => {
+            window.dispatchEvent(new CustomEvent("dyrected:preference-change", { detail }))
+          })
+        } else {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent("dyrected:preference-change", { detail }))
+          }, 0)
+        }
+      }
 
-          debounceTimerRef.current = setTimeout(() => {
-            client.setPreference(key, newValue, { scope, role }).catch((e) => {
-              if (e?.statusCode === 401 || (e instanceof Error && e.message.includes("401"))) return
-              console.warn(`[usePreference] Error saving remote key "${key}":`, e)
-            })
-          }, debounceMs)
+      // 3. Debounced remote network sync (default 400ms)
+      if (client && user) {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current)
         }
 
-        return newValue
-      })
+        debounceTimerRef.current = setTimeout(() => {
+          client.setPreference(key, newValue, { scope, role }).catch((e) => {
+            if (e?.statusCode === 401 || (e instanceof Error && e.message.includes("401"))) return
+            console.warn(`[usePreference] Error saving remote key "${key}":`, e)
+          })
+        }, debounceMs)
+      }
     },
     [client, user, key, scope, role, localStorageKey, debounceMs]
   )
