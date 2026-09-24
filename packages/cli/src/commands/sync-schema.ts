@@ -308,16 +308,12 @@ export function registerSyncSchema(program: Command) {
     .option("--env-path <path>", "Path to an env file to load before syncing")
     .option("--skip-on-error", "Do not exit with error if sync fails (useful for CI builds)")
     .option("--skip-types", "Skip automatic type generation after a successful sync")
-    .option("--nav", "Synchronize admin navigation configuration along with schema")
     .addHelpText(
       "after",
       `
 Examples:
   # Sync using env vars (DYRECTED_API_KEY, DYRECTED_SITE_ID)
   $ npx dyrected sync:schema
-
-  # Sync schema and navigation layout
-  $ npx dyrected sync:schema --nav
 
   # Sync using a specific env file
   $ npx dyrected sync:schema --env-path ./.env.local
