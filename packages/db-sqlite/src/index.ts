@@ -1,4 +1,4 @@
-import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId } from '@dyrected/core';
+import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, coerceBooleanWhere } from '@dyrected/core';
 import Database from 'better-sqlite3';
 
 function handleSqliteError(err: any): never {
@@ -203,7 +203,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     let whereParams: any[] = [];
     if (args.where && Object.keys(args.where).length > 0) {
       const result = parseSqlWhere(
-        args.where,
+        this.coerceBooleanWhere(args.collection, args.where),
         (field: string) => {
           if (field === 'id') return 'id';
           if (field === 'createdAt') return 'created_at';
@@ -349,7 +349,7 @@ export class SqliteAdapter implements DatabaseAdapter {
       whereParams = [params.id];
       if (params.where && Object.keys(params.where).length > 0) {
         const parsed = parseSqlWhere(
-          params.where,
+          this.coerceBooleanWhere(params.collection, params.where),
           (field: string) => {
             if (field === 'id') return 'id';
             if (field === 'createdAt') return 'created_at';
@@ -366,7 +366,7 @@ export class SqliteAdapter implements DatabaseAdapter {
       }
     } else if (params.where && Object.keys(params.where).length > 0) {
       const parsed = parseSqlWhere(
-        params.where,
+        this.coerceBooleanWhere(params.collection, params.where),
         (field: string) => {
           if (field === 'id') return 'id';
           if (field === 'createdAt') return 'created_at';
@@ -461,6 +461,11 @@ export class SqliteAdapter implements DatabaseAdapter {
     stmt.run(params.id);
   }
 
+  /** Applies {@link coerceBooleanWhere} using the collection's declared field types. */
+  private coerceBooleanWhere(collection: string, where: any): any {
+    return coerceBooleanWhere(where, this.collectionConfigs.get(collection)?.fields);
+  }
+
   async sync(collections: any[]) {
     for (const col of collections) {
       this.collectionConfigs.set(col.slug, col);
@@ -545,7 +550,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     for (const [name, op] of Object.entries(args.aggregates)) {
       let filterClause = '';
       if (op.where && Object.keys(op.where).length > 0) {
-        const parsed = parseSqlWhere(op.where, toFieldExpr, '?');
+        const parsed = parseSqlWhere(this.coerceBooleanWhere(args.collection, op.where), toFieldExpr, '?');
         filterClause = `FILTER (WHERE ${parsed.sql})`;
         allParams.push(...parsed.params);
       }

@@ -1,4 +1,4 @@
-import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, resolveIndexName } from "@dyrected/core";
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, resolveIndexName, coerceBooleanWhere } from "@dyrected/core";
 import mysql from "mysql2/promise";
 
 function parseMysqlDuplicateKey(message: string): { field?: string; value?: string } {
@@ -809,41 +809,9 @@ FIX INSTRUCTIONS:
     return { id: targetId, ...params.data, affectedRows: res?.affectedRows ?? 0, updatedAt: now };
   }
 
-  /**
-   * Turns the strings "true"/"false" into booleans for fields the schema declares as boolean, so
-   * callers that send `{ active: "true" }` keep matching. Booleans are what the where translator
-   * binds as 1/0, and the JSON boolean expression compares against that.
-   */
+  /** Applies {@link coerceBooleanWhere} using the collection's declared field types. */
   private coerceBooleanWhere(collection: string, where: any): any {
-    const booleanFields = new Set<string>(
-      (this.collectionConfigs.get(collection)?.fields ?? [])
-        .filter((f: any) => f.type === "boolean" && f.name)
-        .map((f: any) => f.name),
-    );
-    if (booleanFields.size === 0) return where;
-    const toBool = (v: unknown) => (v === "true" ? true : v === "false" ? false : v);
-    const walk = (node: any): any => {
-      if (Array.isArray(node)) return node.map(walk);
-      if (!node || typeof node !== "object") return node;
-      const out: Record<string, any> = {};
-      for (const [key, value] of Object.entries(node)) {
-        if (key === "AND" || key === "OR" || key === "and" || key === "or") {
-          out[key] = walk(value);
-        } else if (booleanFields.has(key)) {
-          if (value && typeof value === "object" && !Array.isArray(value)) {
-            out[key] = Object.fromEntries(
-              Object.entries(value).map(([op, operand]) => [op, Array.isArray(operand) ? operand.map(toBool) : toBool(operand)]),
-            );
-          } else {
-            out[key] = toBool(value);
-          }
-        } else {
-          out[key] = value;
-        }
-      }
-      return out;
-    };
-    return walk(where);
+    return coerceBooleanWhere(where, this.collectionConfigs.get(collection)?.fields);
   }
 
   async sync(collections: any[]) {

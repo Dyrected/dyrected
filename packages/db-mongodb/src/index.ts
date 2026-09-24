@@ -4,6 +4,7 @@ import {
   CollectionConfig,
   DuplicateKeyError,
   generateDocumentId,
+  coerceBooleanWhere,
   parseMongoWhere,
   parseSort,
 } from "@dyrected/core";
@@ -96,7 +97,7 @@ export class MongoAdapter implements DatabaseAdapter {
     const page = args.page || 1;
     const skip = (page - 1) * limit;
 
-    const query = args.where ? this.buildFilter(args.where) : {};
+    const query = args.where ? this.buildFilter(args.collection, args.where) : {};
     const total = await col.countDocuments(query, { session: this.session });
 
     const sortObj = normalizeMongoSort(args.sort);
@@ -137,7 +138,7 @@ export class MongoAdapter implements DatabaseAdapter {
     if (params.id === undefined && !params.where) {
       throw new Error("findOne requires either id or where");
     }
-    const query: Record<string, any> = params.where ? this.buildFilter(params.where) : {};
+    const query: Record<string, any> = params.where ? this.buildFilter(params.collection, params.where) : {};
     if (params.id !== undefined) query._id = params.id;
     const doc = await col.findOne(query, { session: this.session });
     if (!doc) return null;
@@ -171,7 +172,7 @@ export class MongoAdapter implements DatabaseAdapter {
       throw new Error("update requires either id or where clause");
     }
 
-    const filter: Record<string, any> = params.where ? this.buildFilter(params.where) : {};
+    const filter: Record<string, any> = params.where ? this.buildFilter(params.collection, params.where) : {};
     if (params.id !== undefined) filter._id = params.id;
 
     const { id, createdAt, updatedAt, ...updateData } = params.data;
@@ -286,8 +287,10 @@ export class MongoAdapter implements DatabaseAdapter {
   }
 
   /** Translate a where clause to a Mongo filter, mapping the public `id` field to `_id`. */
-  private buildFilter(where: Record<string, unknown>): Record<string, any> {
-    const filter = parseMongoWhere(where);
+  private buildFilter(collection: string, where: Record<string, unknown>): Record<string, any> {
+    const filter = parseMongoWhere(
+      coerceBooleanWhere(where, this.collectionConfigs.get(collection)?.fields),
+    );
     const mapId = (node: any): any => {
       if (Array.isArray(node)) return node.map(mapId);
       if (!node || typeof node !== "object") return node;
@@ -379,7 +382,7 @@ export class MongoAdapter implements DatabaseAdapter {
       const perAggregate = new Map<string, Map<string, any>>();
       for (const [name, op] of Object.entries(args.aggregates)) {
         const match =
-          op.where && Object.keys(op.where).length > 0 ? [{ $match: this.buildFilter(op.where) }] : [];
+          op.where && Object.keys(op.where).length > 0 ? [{ $match: this.buildFilter(args.collection, op.where) }] : [];
         const docs = await col
           .aggregate(
             [...match, { $group: { _id: `$${groupField}`, ...buildGroupAccumulator(op) } }],
@@ -419,7 +422,7 @@ export class MongoAdapter implements DatabaseAdapter {
     for (const [name, op] of Object.entries(args.aggregates)) {
       const matchStage =
         op.where && Object.keys(op.where).length > 0
-          ? [{ $match: parseMongoWhere(op.where) }]
+          ? [{ $match: this.buildFilter(args.collection, op.where) }]
           : [];
 
       facets[name] = [

@@ -123,7 +123,12 @@ export function parseSqlWhere(
         params.push('');
         return `(${c})::text = ${next()}`;
       }
-      params.push(typeof value === 'boolean' && isJsonExtract ? String(value) : value);
+      if (typeof value === 'boolean') {
+        // Same binding as `equals`: 1/0 for '?' dialects, text only for Postgres JSON extraction.
+        params.push(placeholder === '?' ? (value ? 1 : 0) : isJsonExtract ? String(value) : value);
+      } else {
+        params.push(value);
+      }
       return `${c} = ${next()}`;
     }
 
@@ -375,4 +380,51 @@ export function parseMongoWhere(where: WhereClause): Record<string, any> {
   }
 
   return buildClause(where);
+}
+
+
+/**
+ * Turns the strings "true"/"false" into booleans for the fields the schema declares as boolean.
+ *
+ * Adapters bind booleans natively (1/0, `true`, BSON bool), but a client that sends the string
+ * `"true"` would otherwise match nothing on some adapters and the wrong rows on others (Postgres
+ * serializes any non-`true` value to `false` for a boolean column). Coercing once, before the
+ * where clause is translated, gives every adapter the same behavior. Fields that are not
+ * declared boolean are left untouched.
+ */
+export function coerceBooleanWhere(
+  where: WhereClause,
+  fields: ReadonlyArray<{ name?: string; type?: string }> | undefined,
+): WhereClause {
+  const booleanFields = new Set<string>(
+    (fields ?? []).filter((f) => f.type === 'boolean' && f.name).map((f) => f.name as string),
+  );
+  if (booleanFields.size === 0) return where;
+
+  const toBool = (v: unknown) => (v === 'true' ? true : v === 'false' ? false : v);
+  const walk = (node: any): any => {
+    if (Array.isArray(node)) return node.map(walk);
+    if (!node || typeof node !== 'object') return node;
+    const out: Record<string, any> = {};
+    for (const [key, value] of Object.entries(node)) {
+      if (key.toUpperCase() === 'AND' || key.toUpperCase() === 'OR') {
+        out[key] = walk(value);
+      } else if (booleanFields.has(key)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          out[key] = Object.fromEntries(
+            Object.entries(value).map(([op, operand]) => [
+              op,
+              Array.isArray(operand) ? operand.map(toBool) : toBool(operand),
+            ]),
+          );
+        } else {
+          out[key] = toBool(value);
+        }
+      } else {
+        out[key] = value;
+      }
+    }
+    return out;
+  };
+  return walk(where);
 }

@@ -793,19 +793,33 @@ export function runIntegrityAndConcurrencyAdapterContract(
       expect(row?.lastStatus).toBe("completed");
     });
 
-    it("filters unpromoted boolean fields with true and false", async () => {
-      const db = await createAdapter();
-      const collection = `bool-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      await db.sync?.([{ slug: collection, fields: [{ name: "active", type: "boolean" }, { name: "n", type: "text" }] }], []);
-      await db.create({ collection, data: { active: true, n: "a" } });
-      await db.create({ collection, data: { active: false, n: "b" } });
+    for (const promoted of [false, true]) {
+      it(`filters ${promoted ? "promoted" : "unpromoted"} boolean fields with booleans and "true"/"false" strings`, async () => {
+        const db = await createAdapter();
+        const collection = `bool-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        await db.sync?.(
+          [{ slug: collection, fields: [{ name: "active", type: "boolean", promoted }, { name: "n", type: "text" }] }],
+          [],
+        );
+        await db.create({ collection, data: { active: true, n: "a" } });
+        await db.create({ collection, data: { active: false, n: "b" } });
 
-      const names = async (where: Record<string, unknown>) =>
-        (await db.find({ collection, where, limit: 10 })).docs.map((d) => d.n).sort();
-      expect(await names({ active: { equals: true } })).toEqual(["a"]);
-      expect(await names({ active: { equals: false } })).toEqual(["b"]);
-      expect(await names({ active: { in: [true] } })).toEqual(["a"]);
-      expect(await names({ active: { not_equals: true } })).toEqual(["b"]);
-    });
+        const names = async (where: Record<string, unknown>) =>
+          (await db.find({ collection, where, limit: 10 })).docs.map((d) => d.n).sort();
+
+        expect(await names({ active: { equals: true } })).toEqual(["a"]);
+        expect(await names({ active: { equals: false } })).toEqual(["b"]);
+        expect(await names({ active: { in: [true] } })).toEqual(["a"]);
+        expect(await names({ active: { not_equals: true } })).toEqual(["b"]);
+
+        // Clients that send strings (for example from a query string) must match the same rows.
+        expect(await names({ active: { equals: "true" } })).toEqual(["a"]);
+        expect(await names({ active: { equals: "false" } })).toEqual(["b"]);
+        expect(await names({ active: { in: ["true"] } })).toEqual(["a"]);
+        expect(await names({ active: { not_equals: "true" } })).toEqual(["b"]);
+        expect(await names({ active: "false" })).toEqual(["b"]);
+        expect(await names({ OR: [{ active: "true" }, { n: "zzz" }] })).toEqual(["a"]);
+      });
+    }
   });
 }

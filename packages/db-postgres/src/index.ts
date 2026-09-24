@@ -5,6 +5,7 @@ import {
   parseSqlWhere,
   DuplicateKeyError,
   resolveIndexName,
+  coerceBooleanWhere,
   generateDocumentId,
 } from "@dyrected/core";
 import postgres from "postgres";
@@ -438,7 +439,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     let params: any[] = [];
     if (args.where && Object.keys(args.where).length > 0) {
       const parsed = parseSqlWhere(
-        args.where,
+        this.coerceBooleanWhere(args.collection, args.where),
         (field: string) => {
           if (field === "id") return '"id"';
           if (field === "createdAt") return '"created_at"';
@@ -560,7 +561,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       whereParams = [params.id];
       if (params.where && Object.keys(params.where).length > 0) {
         const parsed = parseSqlWhere(
-          params.where,
+          this.coerceBooleanWhere(params.collection, params.where),
           (field: string) => {
             if (field === "id") return '"id"';
             if (field === "createdAt") return '"created_at"';
@@ -580,7 +581,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
     } else if (params.where && Object.keys(params.where).length > 0) {
       const parsed = parseSqlWhere(
-        params.where,
+        this.coerceBooleanWhere(params.collection, params.where),
         (field: string) => {
           if (field === "id") return '"id"';
           if (field === "createdAt") return '"created_at"';
@@ -671,6 +672,11 @@ export class PostgresAdapter implements DatabaseAdapter {
     } catch (err: any) {
       handlePgError(err);
     }
+  }
+
+  /** Applies {@link coerceBooleanWhere} using the collection's declared field types. */
+  private coerceBooleanWhere(collection: string, where: any): any {
+    return coerceBooleanWhere(where, this.collectionConfigs.get(collection)?.fields);
   }
 
   async sync(collections: any[]) {
@@ -798,7 +804,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     for (const [name, op] of Object.entries(args.aggregates)) {
       let filterClause = "";
       if (op.where && Object.keys(op.where).length > 0) {
-        const parsed = parseSqlWhere(op.where, toFieldExpr, "pg");
+        const parsed = parseSqlWhere(this.coerceBooleanWhere(args.collection, op.where), toFieldExpr, "pg");
         const offset = allParams.length;
         const reindexedSql = parsed.sql.replace(
           /\$(\d+)/g,
