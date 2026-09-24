@@ -5,8 +5,8 @@ import typography from "@tailwindcss/typography";
 const config: Config = {
   prefix: "dy-",
   darkMode: ["variant", [
-    "&:is([class~=dark] *, [class~=dy-dark] *, [data-theme=dark] *)",
-    "&:is([class~=dark], [class~=dy-dark], [data-theme=dark])",
+    "&:is([class~=dy-admin-ui][class~=dark] *, [class~=dy-admin-ui][class~=dy-dark] *, [class~=dy-admin-ui][data-theme=dark] *)",
+    "&:is([class~=dy-admin-ui][class~=dark], [class~=dy-admin-ui][class~=dy-dark], [class~=dy-admin-ui][data-theme=dark])",
   ]],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   corePlugins: {

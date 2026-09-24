@@ -183,7 +183,7 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
                   )}
                 </div>
                 <div className="dy-flex dy-items-baseline dy-justify-between dy-gap-2">
-                  <p className={cn("dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
+                  <p className={cn("dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
                     {metric.formatted}
                   </p>
                   {metric.unit && (
