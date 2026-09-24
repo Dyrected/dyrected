@@ -248,4 +248,69 @@ describe('DyrectedClient', () => {
     expect(err.message).toBe('Enter what the user paid.');
     expect(err.statusCode).toBe(400);
   });
+
+  it('supports role-scoped preferences in getPreference, setPreference, and deletePreference', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ key: 'nav', value: { collapsed: true } }),
+    });
+    const getRes = await client.getPreference('nav', { scope: 'role' });
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/preferences/nav?scope=role',
+      expect.objectContaining({ headers: expect.any(Object) }),
+    );
+    expect(getRes).toEqual({ key: 'nav', value: { collapsed: true } });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ key: 'nav', value: { collapsed: true } }),
+    });
+    const setRes = await client.setPreference('nav', { collapsed: true }, { scope: 'role' });
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/preferences/nav?scope=role',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ value: { collapsed: true } }),
+      }),
+    );
+    expect(setRes).toEqual({ key: 'nav', value: { collapsed: true } });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
+    const delRes = await client.deletePreference('nav', { scope: 'role' });
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/preferences/nav?scope=role',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    expect(delRes).toEqual({ success: true });
+  });
+
+  it('fetches navigation tree and badge counters via getNavigation and getNavigationBadges', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        groups: [{ id: 'core', name: 'Core', slug: 'core', order: 1, items: [] }],
+      }),
+    });
+    const navRes = await client.getNavigation();
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/admin/navigation',
+      expect.any(Object),
+    );
+    expect(navRes.groups).toHaveLength(1);
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ 'kyc-review': { count: 14, variant: 'warning' } }),
+    });
+    const badgeRes = await client.getNavigationBadges();
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/admin/navigation/badges',
+      expect.any(Object),
+    );
+    expect(badgeRes['kyc-review']).toEqual({ count: 14, variant: 'warning' });
+  });
 });
+

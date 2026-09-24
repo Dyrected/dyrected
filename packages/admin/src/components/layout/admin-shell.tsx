@@ -20,8 +20,11 @@ import {
   Share2,
   LayoutDashboard,
   Users,
+  Briefcase,
+  ExternalLink,
   icons,
 } from "lucide-react"
+import type { CompiledNavItem } from "@dyrected/sdk"
 import { useDyrected } from "../../providers/dyrected-context"
 import { isNewerVersion, useLatestRelease } from "../../hooks/use-latest-release"
 import { cn, getMediaUrl } from "../../lib/utils"
@@ -46,8 +49,8 @@ const DyrectedAILipTrigger = React.lazy(() =>
   import("../ai/DyrectedAILipTrigger").then((m) => ({ default: m.DyrectedAILipTrigger }))
 )
 import { WorkspaceSwitcher } from "./workspace-switcher"
-import logo from "@/assets/dyrected.svg"
-import logoDark from "@/assets/dyrected-dark.svg"
+import logo from "../../assets/dyrected.svg"
+import logoDark from "../../assets/dyrected-dark.svg"
 import type { AdminSchemas } from "../../types/admin-components"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -72,6 +75,7 @@ function NavItem({
   isAncestorActive = false,
   hasChildren = false,
   collapsed,
+  badge,
   onClick,
 }: {
   to: string
@@ -82,6 +86,7 @@ function NavItem({
   isAncestorActive?: boolean
   hasChildren?: boolean
   collapsed: boolean
+  badge?: React.ReactNode
   onClick?: () => void
 }) {
   // Derive a plain-text tooltip when caller doesn't provide one — handles string labels
@@ -103,18 +108,22 @@ function NavItem({
             : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
       )}
     >
-      <Icon
-        className={cn(
-          "dy-shrink-0 dy-transition-colors",
-          collapsed ? "dy-h-[17px] dy-w-[17px]" : "dy-h-[15px] dy-w-[15px]",
-          active
-            ? "dy-text-primary-foreground"
-            : isAncestorActive
-              ? "dy-text-foreground"
-              : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
-        )}
-      />
-      {!collapsed && <span className="dy-truncate">{label}</span>}
+      <div className="dy-relative dy-flex dy-items-center dy-justify-center dy-shrink-0">
+        <Icon
+          className={cn(
+            "dy-shrink-0 dy-transition-colors",
+            collapsed ? "dy-h-[17px] dy-w-[17px]" : "dy-h-[15px] dy-w-[15px]",
+            active
+              ? "dy-text-primary-foreground"
+              : isAncestorActive
+                ? "dy-text-foreground"
+                : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
+          )}
+        />
+        {collapsed && badge}
+      </div>
+      {!collapsed && <span className="dy-truncate dy-flex-1 dy-text-left">{label}</span>}
+      {!collapsed && badge}
       {!collapsed && (
         <>
           {hasChildren && isAncestorActive && (
@@ -197,16 +206,19 @@ function NavSubItem({
 
 function NavGroup({
   label,
+  icon,
   children,
   collapsed,
   defaultExpanded = true,
 }: {
   label: string
+  icon?: string
   children: React.ReactNode
   collapsed: boolean
   defaultExpanded?: boolean
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
+  const GroupIcon = icon && isAdminIconName(icon) ? icons[icon] : null
 
   if (collapsed) {
     return (
@@ -223,9 +235,12 @@ function NavGroup({
         onClick={() => setExpanded(!expanded)}
         className="dy-flex dy-w-full dy-items-center dy-justify-between dy-px-3 dy-mt-4 dy-mb-1 dy-group"
       >
-        <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/40 dy-group-hover:dy-text-muted-foreground/60 dy-transition-colors">
-          {label}
-        </span>
+        <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
+          {GroupIcon && <GroupIcon className="dy-h-3 dy-w-3 dy-text-muted-foreground/40 dy-shrink-0" />}
+          <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/40 dy-group-hover:dy-text-muted-foreground/60 dy-transition-colors dy-truncate">
+            {label}
+          </span>
+        </div>
         {expanded ? (
           <ChevronDown className="dy-h-3 dy-w-3 dy-text-muted-foreground/30 dy-group-hover:dy-text-muted-foreground/50" />
         ) : (
@@ -362,6 +377,113 @@ function CollapsedCollectionMenu({
               <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
                 {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
                 {view.label}
+              </Link>
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function CollapsedNavMenu({
+  item,
+  views,
+  icon: Icon,
+  label,
+  isExactActive,
+  isChildActive,
+  onNavigate,
+  location,
+}: {
+  item: CompiledNavItem
+  views: any[]
+  icon: React.ElementType
+  label: string
+  isExactActive: boolean
+  isChildActive: boolean
+  onNavigate?: () => void
+  location: ReturnType<typeof useLocation>
+}) {
+  const [open, setOpen] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
+
+  const handleEnter = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    setOpen(true)
+  }
+  const handleLeave = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = window.setTimeout(() => setOpen(false), 140) as unknown as number
+  }
+
+  const triggerButton = (
+    <button
+      type="button"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      onClick={() => setOpen((v) => !v)}
+      className={cn(
+        "dy-group dy-flex dy-w-full dy-items-center dy-justify-center dy-rounded-md dy-px-2 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
+        isExactActive
+          ? "dy-bg-primary dy-text-primary-foreground dy-shadow-xs"
+          : isChildActive
+            ? "dy-bg-accent/60 dy-text-foreground dy-font-semibold"
+            : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
+      )}
+    >
+      <Icon
+        className={cn(
+          "dy-h-[17px] dy-w-[17px] dy-shrink-0 dy-transition-colors",
+          isExactActive
+            ? "dy-text-primary-foreground"
+            : isChildActive
+              ? "dy-text-foreground"
+              : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
+        )}
+      />
+    </button>
+  )
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        {open ? (
+          triggerButton
+        ) : (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8} className="dy-text-xs dy-font-medium">
+              {label}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="right"
+        align="start"
+        sideOffset={10}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        className="dy-w-56 dy-p-1.5 dy-border-border/40 dy-bg-popover/95 dy-backdrop-blur-sm dy-shadow-xl dy-rounded-xl"
+      >
+        <DropdownMenuLabel className="dy-text-xs dy-font-semibold">{label}</DropdownMenuLabel>
+        <DropdownMenuSeparator className="dy-bg-border/40" />
+        {views.map((view: any) => {
+          const viewPath = item.type === "collection"
+            ? `/collections/${item.slug}/views/${view.slug}`
+            : `/${item.slug}/${view.slug}`
+          const active = location.pathname === viewPath
+          const ViewIcon = view.icon && isAdminIconName(view.icon) ? icons[view.icon] : null
+          return (
+            <DropdownMenuItem
+              key={viewPath}
+              asChild
+              className={cn("dy-rounded-md", active && "dy-bg-accent dy-text-accent-foreground")}
+            >
+              <Link to={viewPath} onClick={onNavigate} className="dy-flex dy-items-center dy-gap-2 dy-text-xs">
+                {ViewIcon ? <ViewIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" /> : <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-muted-foreground/40" />}
+                {view.label || view.slug}
               </Link>
             </DropdownMenuItem>
           )
@@ -522,7 +644,7 @@ function SidebarInner({
   onNavigate?: () => void
   updateInfo: UpdateInfo | null
 }) {
-  const { client, user } = useDyrected()
+  const { client, user, navigation, badges } = useDyrected()
   const [userToggledOpen, setUserToggledOpen] = useState<Set<string>>(() => new Set())
   const [userToggledClosed, setUserToggledClosed] = useState<Set<string>>(() => new Set())
 
@@ -700,6 +822,157 @@ function SidebarInner({
     )
   }
 
+  const renderCompiledNavItem = (item: CompiledNavItem) => {
+    const views = item.views ?? []
+    const hasMeaningfulViews = views.length > 1
+
+    let defaultPath = "/"
+    if (item.type === "dashboard") {
+      defaultPath = "/"
+    } else if (item.type === "link") {
+      defaultPath = item.href || "#"
+    } else if (item.type === "global") {
+      const glob = schemas?.globals?.find((g: any) => g.slug === item.slug)
+      defaultPath = (glob as any)?.detail === false ? `/globals/${item.slug}/edit` : `/globals/${item.slug}`
+    } else if (item.type === "collection") {
+      const defaultView = views[0]
+      defaultPath = defaultView && defaultView.slug !== "list"
+        ? `/collections/${item.slug}/views/${defaultView.slug}`
+        : `/collections/${item.slug}`
+    } else if (item.type === "workspace") {
+      const defaultView = views[0]
+      defaultPath = defaultView ? `/${item.slug}/${defaultView.slug}` : `/${item.slug}`
+    }
+
+    let isChildActive = false
+    let isExactActive = false
+
+    if (item.type === "dashboard") {
+      isExactActive = location.pathname === "/" || location.pathname === ""
+    } else if (item.type === "global") {
+      isExactActive = location.pathname === `/globals/${item.slug}` || location.pathname === `/globals/${item.slug}/edit`
+    } else if (item.type === "collection") {
+      isChildActive = location.pathname.startsWith(`/collections/${item.slug}/views/`)
+      isExactActive = !isChildActive && location.pathname.startsWith(`/collections/${item.slug}`)
+    } else if (item.type === "workspace") {
+      isChildActive = views.some((v) => location.pathname === `/${item.slug}/${v.slug}`)
+      isExactActive = !isChildActive && location.pathname.startsWith(`/${item.slug}`)
+    }
+
+    const isItemActive = isChildActive || isExactActive
+    const isExpanded = isItemActive
+      ? !userToggledClosed.has(item.slug)
+      : userToggledOpen.has(item.slug)
+
+    const col = item.type === "collection" ? schemas?.collections?.find((c: any) => c.slug === item.slug) : undefined
+    const FallbackIcon = item.type === "dashboard" ? LayoutDashboard :
+      item.type === "global" ? Settings :
+      item.type === "link" ? ExternalLink :
+      item.type === "collection" ? (col?.auth ? Users : col?.upload ? ImageIcon : Database) :
+      Briefcase
+
+    const Icon = resolveAdminIcon(item.icon, FallbackIcon)
+
+    const badgeInfo = badges?.[item.id] ?? badges?.[item.slug]
+    const badgeCount = badgeInfo?.count
+    const badgeText = badgeInfo?.text ?? (typeof item.badge === "string" ? item.badge : (badgeCount !== undefined ? String(badgeCount) : null))
+    const badgeVariant = badgeInfo?.variant ?? (typeof item.badge === "object" ? item.badge.variant : "default")
+
+    const badgeNode = badgeText ? (
+      collapsed ? (
+        <span
+          className={cn(
+            "dy-absolute -dy-top-1 -dy-right-1 dy-h-2 dy-w-2 dy-rounded-full",
+            badgeVariant === "warning" ? "dy-bg-amber-500" :
+            badgeVariant === "destructive" ? "dy-bg-destructive" :
+            badgeVariant === "info" ? "dy-bg-blue-500" : "dy-bg-primary"
+          )}
+        />
+      ) : (
+        <span
+          className={cn(
+            "dy-rounded-full dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-semibold dy-tabular-nums dy-leading-none dy-shrink-0",
+            badgeVariant === "warning" && "dy-bg-amber-500/15 dy-text-amber-600 dark:dy-text-amber-400",
+            badgeVariant === "destructive" && "dy-bg-destructive/15 dy-text-destructive",
+            badgeVariant === "info" && "dy-bg-blue-500/15 dy-text-blue-600 dark:dy-text-blue-400",
+            (!badgeVariant || badgeVariant === "default") && "dy-bg-muted dy-text-muted-foreground"
+          )}
+        >
+          {badgeText}
+        </span>
+      )
+    ) : null
+
+    if (collapsed && hasMeaningfulViews) {
+      return (
+        <div key={item.id || item.slug} className="dy-space-y-0.5">
+          <CollapsedNavMenu
+            item={item}
+            views={views}
+            icon={Icon}
+            label={item.label}
+            isExactActive={isExactActive}
+            isChildActive={isChildActive}
+            onNavigate={onNavigate}
+            location={location}
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div key={item.id || item.slug} className="dy-space-y-0.5">
+        <div className="dy-flex dy-items-center dy-gap-1">
+          <div className="dy-flex-1 dy-min-w-0">
+            <NavItem
+              to={defaultPath}
+              icon={Icon}
+              label={item.label}
+              tooltipLabel={item.label}
+              active={isExactActive && !hasMeaningfulViews}
+              isAncestorActive={isItemActive && hasMeaningfulViews}
+              hasChildren={false}
+              collapsed={collapsed}
+              badge={badgeNode}
+              onClick={onNavigate}
+            />
+          </div>
+          {!collapsed && hasMeaningfulViews && (
+            <button
+              type="button"
+              onClick={() => toggleCollection(item.slug, isItemActive)}
+              aria-label={isExpanded ? `Collapse ${item.label}` : `Expand ${item.label}`}
+              className="dy-flex dy-h-6 dy-w-6 dy-shrink-0 dy-items-center dy-justify-center dy-rounded dy-text-muted-foreground/50 hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+            >
+              {isExpanded ? <ChevronDown className="dy-h-3.5 dy-w-3.5" /> : <ChevronRight className="dy-h-3.5 dy-w-3.5" />}
+            </button>
+          )}
+        </div>
+        {!collapsed && hasMeaningfulViews && isExpanded && (
+          <div className="dy-relative dy-ml-4 dy-border-l dy-border-border/60 dy-pl-2 dy-space-y-0.5 dy-my-1">
+            {views.map((view) => {
+              const viewPath = item.type === "collection"
+                ? `/collections/${item.slug}/views/${view.slug}`
+                : `/${item.slug}/${view.slug}`
+              const isSubActive = location.pathname === viewPath
+              return (
+                <NavSubItem
+                  key={viewPath}
+                  to={viewPath}
+                  icon={view.icon}
+                  label={view.label || view.slug}
+                  active={isSubActive}
+                  onClick={onNavigate}
+                />
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const hasCompiledDashboard = navigation?.groups?.some((g) => g.items?.some((i) => i.type === "dashboard"))
   const branding = schemas?.admin?.branding;
   const meta = schemas?.admin?.meta;
 
@@ -780,75 +1053,118 @@ function SidebarInner({
 
       {/* Nav */}
       <nav className="dy-flex-1 dy-overflow-y-auto dy-py-2 dy-px-2 dy-space-y-4">
-        <div className="dy-space-y-0.5">
-          <NavItem
-            to="/"
-            icon={LayoutDashboard}
-            label="Dashboard"
-            active={location.pathname === "/" || location.pathname === ""}
-            collapsed={collapsed}
-            onClick={onNavigate}
-          />
-        </div>
-
-        {uploadCollections.length > 0 && (
-          <div>
-            {groupLabel("Media")}
-            {uploadCollections.map((col) => (
+        {isLoading && !navigation ? (
+          <div className="dy-space-y-1 dy-px-1">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={cn("dy-h-8 dy-rounded-md dy-bg-muted/60 dy-animate-pulse", collapsed ? "dy-mx-1" : "dy-mx-2")} />
+            ))}
+          </div>
+        ) : navigation?.groups && navigation.groups.length > 0 ? (
+          <>
+            {!hasCompiledDashboard && (
+              <div className="dy-space-y-0.5">
+                <NavItem
+                  to="/"
+                  icon={LayoutDashboard}
+                  label="Dashboard"
+                  active={location.pathname === "/" || location.pathname === ""}
+                  collapsed={collapsed}
+                  onClick={onNavigate}
+                />
+              </div>
+            )}
+            {navigation.groups.map((group) => {
+              if (!group.items || group.items.length === 0) return null
+              return (
+                <NavGroup
+                  key={group.id || group.slug || group.name}
+                  label={(group as any).label || group.name}
+                  icon={group.icon}
+                  collapsed={collapsed}
+                  defaultExpanded={group.defaultExpanded ?? true}
+                >
+                  {group.items.map((item) => renderCompiledNavItem(item))}
+                </NavGroup>
+              )
+            })}
+            {navigation.ungrouped && navigation.ungrouped.length > 0 && (
+              <div className="dy-space-y-0.5">
+                {navigation.ungrouped.map((item) => renderCompiledNavItem(item))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="dy-space-y-0.5">
               <NavItem
-                key={col.slug}
-                to={`/collections/${col.slug}`}
-                icon={resolveAdminIcon(col.admin?.icon, ImageIcon)}
-                label={col.labels?.plural ?? col.label ?? col.slug}
-                active={location.pathname.startsWith(`/collections/${col.slug}`)}
+                to="/"
+                icon={LayoutDashboard}
+                label="Dashboard"
+                active={location.pathname === "/" || location.pathname === ""}
                 collapsed={collapsed}
                 onClick={onNavigate}
               />
-            ))}
-          </div>
-        )}
+            </div>
 
-        {(isLoading || standardCollections.length > 0 || authCollections.length > 0) && (
-          <div>
-            {isLoading ? (
-              <div className="dy-space-y-1 dy-px-1">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className={cn("dy-h-8 dy-rounded-md dy-bg-muted/60 dy-animate-pulse", collapsed ? "dy-mx-1" : "dy-mx-2")} />
-                ))}
-              </div>
-            ) : (
-              <div className="dy-space-y-1">
-                {renderCollectionSection(standardCollections, "Collections")}
-                {renderCollectionSection(authCollections, "Auth")}
-              </div>
-            )}
-          </div>
-        )}
-
-
-        {globals.length > 0 && (
-          <div>
-            {groupLabel("Configuration")}
-            <div className="dy-space-y-0.5">
-              {globals.map((glob) => {
-                const hasGlobalDetail = (glob as any).detail !== false
-                return (
+            {uploadCollections.length > 0 && (
+              <div>
+                {groupLabel("Media")}
+                {uploadCollections.map((col) => (
                   <NavItem
-                    key={glob.slug}
-                    to={hasGlobalDetail ? `/globals/${glob.slug}` : `/globals/${glob.slug}/edit`}
-                    icon={resolveAdminIcon(glob.admin?.icon, Settings)}
-                    label={glob.label ?? glob.slug}
-                    active={
-                      location.pathname === `/globals/${glob.slug}` ||
-                      location.pathname === `/globals/${glob.slug}/edit`
-                    }
+                    key={col.slug}
+                    to={`/collections/${col.slug}`}
+                    icon={resolveAdminIcon(col.admin?.icon, ImageIcon)}
+                    label={col.labels?.plural ?? col.label ?? col.slug}
+                    active={location.pathname.startsWith(`/collections/${col.slug}`)}
                     collapsed={collapsed}
                     onClick={onNavigate}
                   />
-                )
-              })}
-            </div>
-          </div>
+                ))}
+              </div>
+            )}
+
+            {(isLoading || standardCollections.length > 0 || authCollections.length > 0) && (
+              <div>
+                {isLoading ? (
+                  <div className="dy-space-y-1 dy-px-1">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className={cn("dy-h-8 dy-rounded-md dy-bg-muted/60 dy-animate-pulse", collapsed ? "dy-mx-1" : "dy-mx-2")} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="dy-space-y-1">
+                    {renderCollectionSection(standardCollections, "Collections")}
+                    {renderCollectionSection(authCollections, "Auth")}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {globals.length > 0 && (
+              <div>
+                {groupLabel("Configuration")}
+                <div className="dy-space-y-0.5">
+                  {globals.map((glob) => {
+                    const hasGlobalDetail = (glob as any).detail !== false
+                    return (
+                      <NavItem
+                        key={glob.slug}
+                        to={hasGlobalDetail ? `/globals/${glob.slug}` : `/globals/${glob.slug}/edit`}
+                        icon={resolveAdminIcon(glob.admin?.icon, Settings)}
+                        label={glob.label ?? glob.slug}
+                        active={
+                          location.pathname === `/globals/${glob.slug}` ||
+                          location.pathname === `/globals/${glob.slug}/edit`
+                        }
+                        collapsed={collapsed}
+                        onClick={onNavigate}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </nav>
 

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { useIsFetching, useQueryClient } from "@tanstack/react-query"
 import { FileDown, FileUp, Loader2, Plus, RefreshCw } from "lucide-react"
 
@@ -38,6 +38,7 @@ import {
   SpreadsheetLayout,
   type SpreadsheetLayoutProps,
 } from "./spreadsheet/spreadsheet-layout"
+import { RecordPeekDrawer } from "./record-peek-drawer"
 
 export interface OperationalViewPageProps {
   slug: string
@@ -56,6 +57,18 @@ export interface OperationalViewPageProps {
 export function OperationalViewPage({ slug, schema, view, schemas }: OperationalViewPageProps) {
   const { client, components, user } = useDyrected()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const peekRecordId = searchParams.get("record")
+  const isPeekOpen = Boolean(peekRecordId)
+
+  const handleClosePeek = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete("record")
+      return next
+    })
+  }, [setSearchParams])
+
   const authoredLayout = view.layout ?? "table"
 
   // Only tabular views can switch between table and spreadsheet.
@@ -450,6 +463,15 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         schema={schema}
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
+      />
+
+      <RecordPeekDrawer
+        collectionSlug={slug}
+        recordId={peekRecordId}
+        schema={schema}
+        schemas={schemas}
+        isOpen={isPeekOpen}
+        onClose={handleClosePeek}
       />
     </div>
   )

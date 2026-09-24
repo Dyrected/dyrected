@@ -1,4 +1,4 @@
-import { defineConfig } from "@dyrected/core";
+import { defineConfig, defineNavItem } from "@dyrected/core";
 import { exampleSaasAccessPolicies } from "./dyrected/access-policies";
 import { postgresAdapter } from "@dyrected/db-postgres";
 // Collections
@@ -25,6 +25,54 @@ export default defineConfig({
   admin: {
     branding: exampleSaasTheme.adminBranding,
     meta: { titleSuffix: "| SnackTrack CMS" },
+    navigation: [
+      defineNavItem({
+        collection: "products",
+        group: { name: "Catalog", icon: "Boxes", defaultExpanded: true, order: 10 },
+        order: 1,
+      }),
+      defineNavItem({
+        collection: "pages",
+        group: { name: "Content", icon: "FileText", defaultExpanded: true, order: 20 },
+        order: 1,
+      }),
+      defineNavItem({
+        collection: "blog",
+        group: "Content",
+        order: 2,
+      }),
+      defineNavItem({
+        collection: "authors",
+        group: "Content",
+        order: 3,
+      }),
+      defineNavItem({
+        collection: "media",
+        group: "Content",
+        order: 4,
+      }),
+      defineNavItem({
+        global: "settings",
+        group: { name: "Settings", icon: "Settings", defaultExpanded: false, order: 30 },
+        order: 1,
+      }),
+      defineNavItem({
+        global: "navigation",
+        group: "Settings",
+        order: 2,
+      }),
+      defineNavItem({
+        global: "footer",
+        group: "Settings",
+        order: 3,
+      }),
+      defineNavItem({
+        collection: "admin",
+        label: "Team Members",
+        group: "Settings",
+        order: 4,
+      }),
+    ],
   },
   // db,
 });

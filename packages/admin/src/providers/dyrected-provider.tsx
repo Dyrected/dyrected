@@ -216,6 +216,51 @@ export function DyrectedProvider({
     }
   }, [schemasError]);
 
+  const {
+    data: navigation = null,
+    refetch: refetchNavigationQuery,
+  } = useQuery({
+    queryKey: ["admin-navigation", baseUrl, apiKey ?? null, siteId ?? null, authUserId],
+    queryFn: async () => {
+      if (!client) return null;
+      try {
+        return await client.getNavigation();
+      } catch (err) {
+        console.warn("Failed to fetch admin navigation:", err);
+        return null;
+      }
+    },
+    enabled: !!client,
+    staleTime: 30_000,
+  });
+
+  const {
+    data: badges = null,
+    refetch: refetchBadgesQuery,
+  } = useQuery({
+    queryKey: ["admin-navigation-badges", baseUrl, apiKey ?? null, siteId ?? null, authUserId],
+    queryFn: async () => {
+      if (!client) return null;
+      try {
+        return await client.getNavigationBadges();
+      } catch (err) {
+        console.warn("Failed to fetch navigation badges:", err);
+        return null;
+      }
+    },
+    enabled: !!client,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
+  const refetchNavigation = useCallback(async () => {
+    await refetchNavigationQuery();
+  }, [refetchNavigationQuery]);
+
+  const refetchBadges = useCallback(async () => {
+    await refetchBadgesQuery();
+  }, [refetchBadgesQuery]);
+
   // Apply the cloud-issued token to the SDK client.
   useEffect(() => {
     if (initialToken && client) {
@@ -237,6 +282,8 @@ export function DyrectedProvider({
       setAuthCollectionSlug(null);
       setUser(null);
       void queryClient.invalidateQueries({ queryKey: ["schemas"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-navigation"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] });
     },
     [client, queryClient],
   );
@@ -561,6 +608,10 @@ export function DyrectedProvider({
         isAuthenticated: !!baseUrl && !!apiKey,
         isResolvingStoredSession,
         schemas,
+        navigation,
+        badges,
+        refetchNavigation,
+        refetchBadges,
         user,
         initialToken,
         components,

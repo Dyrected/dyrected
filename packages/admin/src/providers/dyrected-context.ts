@@ -1,7 +1,9 @@
 import { createContext, useContext } from "react";
-import type { DyrectedClient } from "@dyrected/sdk";
+import type { DyrectedClient, CompiledNavTree } from "@dyrected/sdk";
 import type { AdminComponents, AdminSchemas } from "../types/admin-components";
 import type { AdminUser } from "./admin-auth";
+
+export type NavigationBadges = Record<string, { count?: number; variant?: string; text?: string }>;
 
 export interface DyrectedContextType {
   client: DyrectedClient | null;
@@ -17,6 +19,10 @@ export interface DyrectedContextType {
   isAuthenticated: boolean;
   isResolvingStoredSession: boolean;
   schemas: AdminSchemas | null;
+  navigation: CompiledNavTree | null;
+  badges: NavigationBadges | null;
+  refetchNavigation: () => Promise<void>;
+  refetchBadges: () => Promise<void>;
   user: AdminUser | null;
   setToken: (token: string, collectionSlug?: string | null) => void;
   initialToken?: string;

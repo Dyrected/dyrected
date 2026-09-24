@@ -35,6 +35,7 @@ import { QueryProvider } from "./providers/query-provider";
 import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
 import { OperationalViewRoute } from "./pages/collections/operational-view-route";
+import { WorkspaceRoute, WorkspaceRedirectRoute } from "./pages/workspaces/workspace-route";
 import { OperationalViewPage } from "./pages/collections/views/operational-view-page";
 import { mergeFilters } from "./pages/collections/views/resolve-view-filter";
 import { EditEntryPage } from "./pages/collections/edit-page";
@@ -328,6 +329,9 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
             <Route path="/globals/:slug" element={<GlobalDetailPage />} />
             <Route path="/globals/:slug/edit" element={<GlobalEditorPage />} />
             <Route path="/setup" element={<SetupPage />} />
+            {/* Direct Contextual Workspace Routes (without /ops prefix) */}
+            <Route path="/:workspaceSlug/:viewSlug" element={<WorkspaceRoute />} />
+            <Route path="/:workspaceSlug" element={<WorkspaceRedirectRoute />} />
             <Route path="*" element={<AdminNotFound />} />
           </Routes>
         </ErrorBoundary>

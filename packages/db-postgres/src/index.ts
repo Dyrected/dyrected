@@ -371,7 +371,26 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   private formatDoc(row: any, existingCols: string[]): { id: string; [key: string]: any } {
-    const doc: { id: string; [key: string]: any } = { id: row.id, ...(row.data || {}) };
+    let rowData = row.data;
+    if (Array.isArray(rowData)) {
+      rowData = rowData.reduce((acc: Record<string, any>, item: any) => {
+        if (typeof item === "object" && item !== null && !Array.isArray(item)) {
+          return { ...acc, ...item };
+        }
+        if (typeof item === "string") {
+          try {
+            const parsed = JSON.parse(item);
+            if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+              return { ...acc, ...parsed };
+            }
+          } catch {
+            // Ignore non-json strings
+          }
+        }
+        return acc;
+      }, {});
+    }
+    const doc: { id: string; [key: string]: any } = { id: row.id, ...(rowData || {}) };
     for (const col of existingCols) {
       if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (row[col] !== undefined && row[col] !== null) {
@@ -586,7 +605,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       } else {
         if (isPromoted) {
           const escapedCol = `"${key.replace(/"/g, '""')}"`;
-          setParams.push(val);
+          setParams.push(typeof val === "object" && val !== null ? this.sql.json(val as any) : val);
           const pIndex = setParams.length;
           setClauses.push(`${escapedCol} = $${pIndex}`);
         }
@@ -597,9 +616,11 @@ export class PostgresAdapter implements DatabaseAdapter {
     setClauses.push("updated_at = CURRENT_TIMESTAMP");
 
     if (Object.keys(jsonPatch).length > 0) {
-      setParams.push(JSON.stringify(jsonPatch));
+      setParams.push(this.sql.json(jsonPatch));
       const pIndex = setParams.length;
-      setClauses.push(`data = COALESCE(data, '{}'::jsonb) || $${pIndex}::jsonb`);
+      setClauses.push(
+        `data = (CASE WHEN jsonb_typeof(COALESCE(data, '{}'::jsonb)) = 'object' THEN COALESCE(data, '{}'::jsonb) ELSE '{}'::jsonb END) || $${pIndex}::jsonb`
+      );
     }
 
     // Remap WHERE parameter indices since setParams are first

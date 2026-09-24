@@ -13,6 +13,7 @@ import {
   defineTextField,
   defineTextareaField,
   defineView,
+  defineNavItem,
   defineAction,
   displaySection,
   displayField,
@@ -1255,12 +1256,234 @@ const inDays = (days: number, hour = 15) => {
   return date.toISOString();
 };
 
+const attendingGuestsView = defineView({
+  slug: "attending-guests",
+  label: "Attending Guests",
+  icon: "UserCheck",
+  layout: "table",
+  groupBy: "tableNumber",
+  filter: { attending: { equals: true } },
+  columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
+  sort: { field: "name", direction: "asc" },
+  actions: [
+    checkInAction,
+    undoCheckInAction,
+    assignTableAction,
+    recordPaymentAction,
+    markSelectedPaidAction,
+    sendReminderAction,
+  ],
+  metrics: [
+    {
+      label: "Attending Guests",
+      color: "purple",
+      unit: "Headcount",
+      aggregates: {
+        leads: { count: "*", where: { attending: { equals: true } } },
+        plusOnes: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
+      },
+      expression: "aggregates.leads + aggregates.plusOnes",
+      subMetrics: [
+        { label: "Leads", aggregate: { count: "*", where: { attending: { equals: true } } } },
+        {
+          label: "Plus-Ones",
+          aggregate: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
+        },
+      ],
+    },
+    {
+      label: "Door Check-In",
+      color: "emerald",
+      unit: "Checked In",
+      aggregate: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+      subMetrics: [
+        {
+          label: "Pending",
+          aggregates: {
+            totalAttending: { count: "*", where: { attending: { equals: true } } },
+            totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+          },
+          expression: "aggregates.totalAttending - aggregates.totalCheckedIn",
+        },
+        {
+          label: "Rate",
+          aggregates: {
+            totalAttending: { count: "*", where: { attending: { equals: true } } },
+            totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+          },
+          expression: "math.round((aggregates.totalCheckedIn / aggregates.totalAttending) * 100, 0)",
+          format: "percent",
+        },
+      ],
+    },
+    {
+      label: "Asoebi Orders",
+      color: "amber",
+      unit: "Requests",
+      aggregate: { count: "*", where: { asoebi: { equals: true } } },
+      subMetrics: [
+        { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
+        { label: "Unpaid", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+      ],
+    },
+    {
+      label: "Total Asoebi Revenue",
+      color: "rose",
+      format: "currency",
+      currency: "NGN",
+      aggregate: {
+        sum: "asoebiQuantity",
+        cast: "number",
+        where: { asoebiStatus: { in: ["paid", "collected"] } },
+      },
+      transform: "value * 25000",
+      subMetrics: [
+        {
+          label: "Collected",
+          format: "currency",
+          currency: "NGN",
+          aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "collected" } } },
+          transform: "value * 25000",
+        },
+        {
+          label: "Pending",
+          format: "currency",
+          currency: "NGN",
+          aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "paid" } } },
+          transform: "value * 25000",
+        },
+      ],
+    },
+  ],
+});
+
+const asoebiPipelineView = defineKanbanView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  icon: "Shirt",
+  layout: "kanban",
+  filter: {
+    AND: [{ asoebi: { equals: true } }, { asoebiSize: { in: ["M", "L", "XL", "XXL"] } }],
+  },
+  groupBy: "asoebiStatus",
+  columns: ["name", "asoebiSize", "asoebiQuantity"],
+  actions: [recordPaymentAction, markCollectedAction],
+  metrics: [
+    {
+      label: "Total Orders",
+      color: "purple",
+      unit: "Outfits",
+      aggregate: { count: "*", where: { asoebi: { equals: true } } },
+      subMetrics: [
+        { label: "Requested", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+        { label: "Ready", aggregate: { count: "*", where: { asoebiStatus: { equals: "ready" } } } },
+      ],
+    },
+    {
+      label: "Paid & Collected",
+      color: "emerald",
+      unit: "Completed",
+      aggregate: {
+        count: "*",
+        where: { asoebiStatus: { in: ["paid", "collected"] } },
+      },
+      subMetrics: [
+        { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { equals: "paid" } } } },
+        { label: "Collected", aggregate: { count: "*", where: { asoebiStatus: { equals: "collected" } } } },
+      ],
+    },
+    {
+      label: "Asoebi Revenue",
+      color: "rose",
+      format: "currency",
+      currency: "NGN",
+      aggregate: {
+        sum: "asoebiQuantity",
+        cast: "number",
+        where: { asoebiStatus: { in: ["paid", "collected"] } },
+      },
+      transform: "value * 25000",
+      subMetrics: [
+        {
+          label: "Total Units",
+          aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebi: { equals: true } } },
+        },
+        {
+          label: "Price / Unit",
+          format: "currency",
+          currency: "NGN",
+          aggregate: { count: "*" },
+          transform: "25000",
+        },
+      ],
+    },
+  ],
+});
+
+const tastingScheduleView = defineView({
+  slug: "tasting-schedule",
+  label: "Tasting Schedule",
+  icon: "Calendar",
+  layout: "calendar",
+  dateField: "appointmentDate",
+  columns: ["name", "guestCount", "asoebiSize"],
+  actions: [assignTableAction],
+});
+
+const guestDirectoryView = defineView({
+  slug: "guest-directory",
+  label: "Guest Directory",
+  icon: "LayoutGrid",
+  layout: "cards",
+  columns: ["name", "email", "attending", "asoebiSize", "tableNumber"],
+  actions: [checkInAction],
+  metrics: [
+    {
+      label: "All Responses",
+      color: "blue",
+      unit: "Submissions",
+      aggregate: { count: "*" },
+      subMetrics: [
+        { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
+        { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
+      ],
+    },
+    {
+      label: "Confirmed Guests",
+      color: "emerald",
+      unit: "Attending",
+      aggregate: { count: "*", where: { attending: { equals: true } } },
+      subMetrics: [
+        { label: "Checked In", aggregate: { count: "*", where: { checkedIn: { equals: true } } } },
+        { label: "With Plus-Ones", aggregate: { count: "*", where: { guestCount: { greater_than: 0 } } } },
+      ],
+    },
+    {
+      label: "Asoebi Supporters",
+      color: "amber",
+      unit: "Orders",
+      aggregate: { count: "*", where: { asoebi: { equals: true } } },
+      subMetrics: [
+        { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
+        { label: "Pending", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+      ],
+    },
+  ],
+  features: {
+    view: false,
+    delete: false,
+    edit: false,
+    duplicate: false,
+  },
+});
+
 const GuestResponses = defineCollection({
   slug: "guest-responses",
   labels: { singular: "Guest response", plural: "Guest Responses" },
   admin: {
     useAsTitle: "name",
     icon: "Users",
+    hidden: true,
   },
   fields: [
     defineTextField({ name: "name", label: "Full Name", required: true, promoted: true }),
@@ -1334,233 +1557,7 @@ const GuestResponses = defineCollection({
     defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
     defineTextareaField({ name: "wellWishes", label: "Well Wishes" }),
   ],
-  // defaultView: "attending-guests",
-  views: [
-    // 1. Table layout for door check-in
-    defineView({
-      slug: "attending-guests",
-      label: "Attending Guests",
-      icon: "UserCheck",
-      layout: "table",
-      groupBy: "tableNumber",
-      filter: { attending: { equals: true } },
-      columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
-      sort: { field: "name", direction: "asc" },
-      actions: [
-        checkInAction,
-        undoCheckInAction,
-        assignTableAction,
-        recordPaymentAction,
-        markSelectedPaidAction,
-        sendReminderAction,
-      ],
-      metrics: [
-        {
-          label: "Attending Guests",
-          color: "purple",
-          unit: "Headcount",
-          aggregates: {
-            leads: { count: "*", where: { attending: { equals: true } } },
-            plusOnes: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
-          },
-          expression: "aggregates.leads + aggregates.plusOnes",
-          subMetrics: [
-            { label: "Leads", aggregate: { count: "*", where: { attending: { equals: true } } } },
-            {
-              label: "Plus-Ones",
-              aggregate: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
-            },
-          ],
-        },
-        {
-          label: "Door Check-In",
-          color: "emerald",
-          unit: "Checked In",
-          aggregate: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
-          subMetrics: [
-            {
-              label: "Pending",
-              aggregates: {
-                totalAttending: { count: "*", where: { attending: { equals: true } } },
-                totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
-              },
-              expression: "aggregates.totalAttending - aggregates.totalCheckedIn",
-            },
-            {
-              label: "Rate",
-              aggregates: {
-                totalAttending: { count: "*", where: { attending: { equals: true } } },
-                totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
-              },
-              expression: "math.round((aggregates.totalCheckedIn / aggregates.totalAttending) * 100, 0)",
-              format: "percent",
-            },
-          ],
-        },
-        {
-          label: "Asoebi Orders",
-          color: "amber",
-          unit: "Requests",
-          aggregate: { count: "*", where: { asoebi: { equals: true } } },
-          subMetrics: [
-            { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
-            { label: "Unpaid", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
-          ],
-        },
-        {
-          label: "Total Asoebi Revenue",
-          color: "rose",
-          format: "currency",
-          currency: "NGN",
-          aggregate: {
-            sum: "asoebiQuantity",
-            cast: "number",
-            where: { asoebiStatus: { in: ["paid", "collected"] } },
-          },
-          transform: "value * 25000",
-          subMetrics: [
-            {
-              label: "Collected",
-              format: "currency",
-              currency: "NGN",
-              aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "collected" } } },
-              transform: "value * 25000",
-            },
-            {
-              label: "Pending",
-              format: "currency",
-              currency: "NGN",
-              aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "paid" } } },
-              transform: "value * 25000",
-            },
-          ],
-        },
-      ],
-    }),
-
-    // 2. Kanban board for outfit fulfillment
-    defineKanbanView({
-      slug: "asoebi-pipeline",
-      label: "Asoebi Fulfillment",
-      icon: "Shirt",
-      layout: "kanban",
-      filter: {
-        AND: [{ asoebi: { equals: true } }, { asoebiSize: { in: ["M", "L", "XL", "XXL"] } }],
-      },
-      groupBy: "asoebiStatus",
-      columns: ["name", "asoebiSize", "asoebiQuantity"],
-      actions: [recordPaymentAction, markCollectedAction],
-      metrics: [
-        {
-          label: "Total Orders",
-          color: "purple",
-          unit: "Outfits",
-          aggregate: { count: "*", where: { asoebi: { equals: true } } },
-          subMetrics: [
-            { label: "Requested", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
-            { label: "Ready", aggregate: { count: "*", where: { asoebiStatus: { equals: "ready" } } } },
-          ],
-        },
-        {
-          label: "Paid & Collected",
-          color: "emerald",
-          unit: "Completed",
-          aggregate: {
-            count: "*",
-            where: { asoebiStatus: { in: ["paid", "collected"] } },
-          },
-          subMetrics: [
-            { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { equals: "paid" } } } },
-            { label: "Collected", aggregate: { count: "*", where: { asoebiStatus: { equals: "collected" } } } },
-          ],
-        },
-        {
-          label: "Asoebi Revenue",
-          color: "rose",
-          format: "currency",
-          currency: "NGN",
-          aggregate: {
-            sum: "asoebiQuantity",
-            cast: "number",
-            where: { asoebiStatus: { in: ["paid", "collected"] } },
-          },
-          transform: "value * 25000",
-          subMetrics: [
-            {
-              label: "Total Units",
-              aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebi: { equals: true } } },
-            },
-            {
-              label: "Price / Unit",
-              format: "currency",
-              currency: "NGN",
-              aggregate: { count: "*" },
-              transform: "25000",
-            },
-          ],
-        },
-      ],
-    }),
-
-    // 3. Calendar layout for tasting appointments
-    defineView({
-      slug: "tasting-schedule",
-      label: "Tasting Schedule",
-      icon: "Calendar",
-      layout: "calendar",
-      dateField: "appointmentDate",
-      columns: ["name", "guestCount", "asoebiSize"],
-      actions: [assignTableAction],
-    }),
-
-    // 4. Cards gallery for the full guest directory
-    defineView({
-      slug: "guest-directory",
-      label: "Guest Directory",
-      icon: "LayoutGrid",
-      layout: "cards",
-      columns: ["name", "email", "attending", "asoebiSize", "tableNumber"],
-      actions: [checkInAction],
-      metrics: [
-        {
-          label: "All Responses",
-          color: "blue",
-          unit: "Submissions",
-          aggregate: { count: "*" },
-          subMetrics: [
-            { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
-            { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
-          ],
-        },
-        {
-          label: "Confirmed Guests",
-          color: "emerald",
-          unit: "Attending",
-          aggregate: { count: "*", where: { attending: { equals: true } } },
-          subMetrics: [
-            { label: "Checked In", aggregate: { count: "*", where: { checkedIn: { equals: true } } } },
-            { label: "With Plus-Ones", aggregate: { count: "*", where: { guestCount: { greater_than: 0 } } } },
-          ],
-        },
-        {
-          label: "Asoebi Supporters",
-          color: "amber",
-          unit: "Orders",
-          aggregate: { count: "*", where: { asoebi: { equals: true } } },
-          subMetrics: [
-            { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
-            { label: "Pending", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
-          ],
-        },
-      ],
-      features: {
-        view: false,
-        delete: false,
-        edit: false,
-        duplicate: false,
-      },
-    }),
-  ],
+  views: [attendingGuestsView, asoebiPipelineView, tastingScheduleView, guestDirectoryView],
   initialData: [
     {
       name: "Tunde Bakare",
@@ -1796,6 +1793,117 @@ export default defineConfig({
     meta: {
       titleSuffix: "- Future You Coaching",
     },
+    navigation: [
+      // 1. Multi-view Operational Workspace:
+      // Demonstrates custom group icon ("Briefcase"), subviews with accordion chevrons,
+      // and live badge counting attending guests.
+      defineNavItem({
+        slug: "guest-operations",
+        label: "Guest Operations",
+        icon: "Users",
+        group: { name: "Operations", icon: "Briefcase", defaultExpanded: true, order: 10 },
+        badge: {
+          aggregate: {
+            collection: "guest-responses",
+            where: { attending: { equals: true } },
+          },
+          variant: "default",
+        },
+        views: [
+          { ...attendingGuestsView, collection: "guest-responses" },
+          { ...asoebiPipelineView, collection: "guest-responses" },
+          { ...tastingScheduleView, collection: "guest-responses" },
+          { ...guestDirectoryView, collection: "guest-responses" },
+        ],
+        order: 1,
+      }),
+
+      // 2. Single-view Operational Workspace:
+      // Demonstrates Phase 2 Smart Single-View Accordion: because there is only 1 view,
+      // it renders cleanly as a direct clickable nav link WITHOUT an accordion chevron,
+      // and has a live warning badge for guests awaiting door check-in.
+      defineNavItem({
+        slug: "door-checkin",
+        label: "Door Check-In",
+        icon: "UserCheck",
+        group: "Operations",
+        badge: {
+          aggregate: {
+            collection: "guest-responses",
+            where: { attending: { equals: true }, checkedIn: { equals: false } },
+          },
+          variant: "warning",
+        },
+        views: [
+          {
+            ...attendingGuestsView,
+            collection: "guest-responses",
+            label: "Check-In Roster",
+          },
+        ],
+        order: 2,
+      }),
+
+      // 3. Collection view placement within Operations
+      // defineNavItem({
+      //   collection: "guest-responses",
+      //   label: "Guest Responses (Raw)",
+      //   group: "Operations",
+      //   order: 3,
+      // }),
+
+      // 4. Content Group: with FileText icon, sparse ordering, and badge counters
+      defineNavItem({
+        collection: "blog-articles",
+        group: { name: "Content", icon: "FileText", defaultExpanded: true, order: 20 },
+        order: 1,
+        badge: {
+          aggregate: {
+            collection: "blog-articles",
+          },
+          variant: "info",
+        },
+      }),
+      defineNavItem({
+        collection: "article-comments",
+        group: "Content",
+        order: 2,
+      }),
+      defineNavItem({
+        collection: "pages",
+        group: "Content",
+        order: 3,
+      }),
+      defineNavItem({
+        collection: "services",
+        group: "Content",
+        order: 4,
+      }),
+      defineNavItem({
+        collection: "media",
+        group: "Content",
+        order: 5,
+      }),
+
+      // 5. Settings Group: with Settings icon, collapsed by default
+      defineNavItem({
+        global: "site-settings",
+        group: { name: "Settings", icon: "Settings", defaultExpanded: false, order: 30 },
+        order: 1,
+      }),
+      defineNavItem({
+        global: "assessment-categories",
+        group: "Settings",
+        order: 2,
+      }),
+      defineNavItem({
+        collection: "__admins",
+        label: "Administrators",
+        icon: "Shield",
+        group: "Settings",
+        order: 3,
+      }),
+    ],
   },
   storage: new CloudinaryStorageAdapter({
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || "mock_name",

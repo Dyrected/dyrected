@@ -37,7 +37,18 @@ import type {
   RAGSearchResult,
   AIConfig,
   AIPIIConfig,
+  CompiledNavTree,
+  CompiledNavGroup,
+  CompiledNavItem,
+  NavBadgeConfig,
 } from "@dyrected/core";
+
+export type {
+  CompiledNavTree,
+  CompiledNavGroup,
+  CompiledNavItem,
+  NavBadgeConfig,
+};
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
 type UnknownRecord = Record<string, unknown>;
@@ -473,7 +484,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 
   async getPreference<T = unknown>(
     key: string,
-    options?: { scope?: "personal" | "global" },
+    options?: { scope?: "personal" | "role" | "global" },
   ): Promise<{ key: string; value: T | null }> {
     const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
     return this.request(
@@ -484,7 +495,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   async setPreference<T = unknown>(
     key: string,
     value: T,
-    options?: { scope?: "personal" | "global" },
+    options?: { scope?: "personal" | "role" | "global" },
   ): Promise<{ key: string; value: T }> {
     const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
     return this.request(
@@ -498,7 +509,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 
   async deletePreference(
     key: string,
-    options?: { scope?: "personal" | "global" },
+    options?: { scope?: "personal" | "role" | "global" },
   ): Promise<{ success: boolean }> {
     const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
     return this.request(
@@ -507,6 +518,20 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
         method: "DELETE",
       },
     );
+  }
+
+  /**
+   * Fetches the dynamic runtime navigation tree compiled for the current user.
+   */
+  async getNavigation(): Promise<CompiledNavTree> {
+    return this.request("/api/admin/navigation");
+  }
+
+  /**
+   * Fetches real-time badge counts and status for navigation items.
+   */
+  async getNavigationBadges(): Promise<Record<string, { count?: number; variant?: string; text?: string }>> {
+    return this.request("/api/admin/navigation/badges");
   }
 
   /**
