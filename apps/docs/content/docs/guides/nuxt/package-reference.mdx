@@ -89,12 +89,14 @@ Nuxt 4 points `~` at the `app/` folder, so an import like `~/server/dyrected/acc
 | `#dyrected` | `<root>/dyrected` |
 | `#dyrected/server` | `<root>/server/dyrected` |
 
+For example, if you keep access rules in `dyrected/access.ts` and a database helper in `server/dyrected/db.ts`, you import them like this from anywhere in the project:
+
 ```ts
 import { isFinance } from '#dyrected/access'
 import { getDyrectedDb } from '#dyrected/server/db'
 ```
 
-If you already define either alias in `nuxt.config.ts`, yours wins.
+The alias only points at the folder, so both files are yours to create. If you already define either alias in `nuxt.config.ts`, yours wins.
 
 ## Run background tasks
 

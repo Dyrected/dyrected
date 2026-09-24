@@ -201,6 +201,8 @@ hooks: {
 
 If the hook throws, the transaction rolls back, so neither the document nor the ledger row is saved and the request fails. That is the difference from `afterChange`, which runs after the commit and can never undo the write.
 
+It runs for creates and updates made through the API, the admin, and [operational view actions](/docs/model-content/operational-views/actions), including on collections with a workflow. It does not run for file uploads, and globals have no `beforeCommit` phase.
+
 Keep the work in here to database reads and writes, because the transaction stays open while the hook runs (see [Transactions](/docs/deployment-and-operations/infrastructure/database/transactions)). It needs a transactional database adapter, and `beforeCommit` is function-only, so it is not part of the Cloud-safe declarative subset.
 
 ### `beforeDelete`

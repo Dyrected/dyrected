@@ -461,7 +461,7 @@ function buildColumnMeta(field: any): ViewColumnMeta {
       options: normalizeOptions(field),
     }
   }
-  if (field.type === "number") {
+  if (field.type === "number" || field.type === "money") {
     return { ...base, variant: "number" }
   }
   if (field.type === "date" || field.type === "datetime") {

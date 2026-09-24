@@ -12,28 +12,46 @@ A task is a name, a schedule, and a function. The runner takes care of the part 
 
 ## Define a task
 
-```ts
-import { defineConfig, defineTask } from '@dyrected/core'
+A task is what you hand to `defineTask`, and you list it under `tasks` in your config. This one runs every fifteen minutes and expires payments that have sat in `pending` for over an hour, using only the `db` the runner gives it:
 
-export const ledgerDrift = defineTask({
-  name: 'wallet:ledger-drift',
+```ts
+import { defineCollection, defineConfig, defineSelectField, defineTask } from '@dyrected/core'
+import { SqliteAdapter } from '@dyrected/db-sqlite'
+
+const Payments = defineCollection({
+  slug: 'payments',
+  fields: [
+    defineSelectField({ name: 'status', label: 'Status', options: ['pending', 'paid', 'expired'] }),
+  ],
+})
+
+export const expireStalePayments = defineTask({
+  name: 'payments:expire-stale',
   cron: '*/15 * * * *',
   lockTimeout: 300,
   async run({ db, logger }) {
-    const drifts = await checkLedgerDrift(db)
-    if (drifts.length > 0) {
-      logger.error({ drifts }, 'Ledger drift detected')
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const stale = await db.find({
+      collection: 'payments',
+      where: { status: { equals: 'pending' }, createdAt: { less_than: cutoff } },
+      limit: 100,
+    })
+    for (const payment of stale.docs) {
+      await db.update({ collection: 'payments', id: payment.id, data: { status: 'expired' } })
     }
+    logger.info({ expired: stale.docs.length }, 'Expired stale payments')
   },
 })
 
 export default defineConfig({
-  collections: [],
+  collections: [Payments],
   globals: [],
-  db,
-  tasks: [ledgerDrift],
+  db: new SqliteAdapter({ filename: './dyrected.db' }),
+  tasks: [expireStalePayments],
 })
 ```
+
+The task gets `db` for reading and writing, `logger` for output that lands in your normal logs, and a `signal` you'll meet in the lock timeout section below.
 
 `defineTask` checks the name, the cron expression and the timeout right away, so a typo fails when the server starts, not at 3am. If you leave out `cron`, the task only runs when you call it yourself.
 
@@ -95,4 +113,4 @@ Choose a timeout comfortably longer than the task's normal runtime.
 - A missed slot isn't replayed. After downtime the task runs once for the current slot, not once per missed slot.
 - Runs are checked about every 30 seconds, so a task starts within that window of its scheduled minute. Pass `intervalMs` to `start()` to change it.
 - Make tasks safe to run twice. The lock prevents overlap, but a run that fails halfway can be picked up again on the next slot.
-- Do slow or external work here, not inside a [transaction](/docs/deployment-and-operations/infrastructure/database/transactions) held open around it.
+- If a task needs several writes to succeed or fail together, wrap them in a [transaction](/docs/deployment-and-operations/infrastructure/database/transactions), and keep slow external calls outside it.

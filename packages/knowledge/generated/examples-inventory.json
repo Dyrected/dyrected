@@ -5491,8 +5491,8 @@
     "id": "/model-content/fields/money#example-2",
     "page": "/model-content/fields/money",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/fields/multi-select#example-1",

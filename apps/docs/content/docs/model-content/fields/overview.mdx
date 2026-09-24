@@ -34,7 +34,7 @@ Most field types accept a common set of base options:
 - `label` — the human-readable name shown to editors. Defaults to a title-cased `name`.
 - `required` — whether the field must have a value. A missing value fails validation with a `400`.
 - `unique` — enforces a database uniqueness constraint. A duplicate write fails with a `409`.
-- `immutable` — the value can be set when the document is created but never changed afterwards. An update that tries to change it fails with a `400`; re-sending the same value is fine, so full-document saves from the admin keep working. Good for currencies, external references, and other values a ledger relies on.
+- `immutable` — the value can be set when the document is created but never changed afterwards. An update that tries to change it fails with a `400`; re-sending the same value is fine, so full-document saves from the admin keep working. Good for currencies, external references, and other values a ledger relies on. It applies to top-level fields on collections (including ones inside a `row`), not to fields nested inside `object`, `array` or `blocks`, and not to globals.
 - `defaultValue` — the value used when a new document omits the field. It is evaluated on the server.
 - `promoted` — pulls the field out of the JSON document into its own indexed column so you can filter and sort on it quickly. See [Database indexes](/docs/deployment-and-operations/infrastructure/database/indexes).
 - `access` — per-field `read` and `update` rules that hide or lock the field for some users. See [Field access control](/docs/model-content/content-rules/access-control/fields).
