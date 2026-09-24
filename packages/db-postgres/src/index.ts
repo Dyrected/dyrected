@@ -473,7 +473,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     };
   }
 
-  async findOne(params: { collection: string; id: string; lock?: "for-update" }) {
+  async findOne(params: { collection: string; id?: string; where?: Record<string, unknown>; lock?: "for-update" }) {
+    if (params.id === undefined && params.where) {
+      const found = await this.find({ collection: params.collection, where: params.where, limit: 1, lock: params.lock });
+      return (found.docs[0] as { id: string; [key: string]: any } | undefined) ?? null;
+    }
+    if (params.id === undefined) throw new Error("findOne requires either id or where");
     await this.ensureInitialized();
     await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);

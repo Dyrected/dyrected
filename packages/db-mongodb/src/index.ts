@@ -1,13 +1,15 @@
 import {
   DatabaseAdapter,
   PaginatedResult,
+  CollectionConfig,
+  DuplicateKeyError,
+  generateDocumentId,
   parseMongoWhere,
   parseSort,
 } from "@dyrected/core";
 import {
   MongoClient,
   Db,
-  ObjectId,
   type ClientSession,
   type SortDirection,
 } from "mongodb";
@@ -28,12 +30,33 @@ function normalizeMongoSort(
   ) as Record<string, SortDirection>;
 }
 
+function isNumericOp(val: unknown): val is { increment?: number; decrement?: number } {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    !Array.isArray(val) &&
+    ("increment" in val || "decrement" in val)
+  );
+}
+
+/** Translate a native MongoDB duplicate key error (code 11000) into a DuplicateKeyError. */
+function rethrowDuplicateKey(err: any): never {
+  if (err && err.code === 11000) {
+    const keyValue = err.keyValue as Record<string, unknown> | undefined;
+    const field = keyValue ? Object.keys(keyValue).join(", ") : undefined;
+    const value = keyValue && field ? (Object.keys(keyValue).length === 1 ? keyValue[field] : keyValue) : undefined;
+    throw new DuplicateKeyError(err.message, { field, value });
+  }
+  throw err;
+}
+
 export class MongoAdapter implements DatabaseAdapter {
   private client: MongoClient;
   private db!: Db;
   private session?: ClientSession;
   private initPromise: Promise<void> | null = null;
   private config: MongoAdapterConfig;
+  private collectionConfigs = new Map<string, CollectionConfig>();
 
   constructor(config: MongoAdapterConfig) {
     this.config = config;
@@ -73,7 +96,7 @@ export class MongoAdapter implements DatabaseAdapter {
     const page = args.page || 1;
     const skip = (page - 1) * limit;
 
-    const query = args.where ? parseMongoWhere(args.where) : {};
+    const query = args.where ? this.buildFilter(args.where) : {};
     const total = await col.countDocuments(query, { session: this.session });
 
     const sortObj = normalizeMongoSort(args.sort);
@@ -101,10 +124,21 @@ export class MongoAdapter implements DatabaseAdapter {
     };
   }
 
-  async findOne(params: { collection: string; id: string }) {
+  async findOne(params: {
+    collection: string;
+    id?: string;
+    where?: Record<string, unknown>;
+    lock?: "for-update";
+  }) {
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(params.collection));
-    const query = { _id: this.toObjectId(params.id) as any };
+    // `lock` is a no-op: MongoDB takes document-level write locks inside transactions,
+    // and a conflicting concurrent write aborts and retries the transaction.
+    if (params.id === undefined && !params.where) {
+      throw new Error("findOne requires either id or where");
+    }
+    const query: Record<string, any> = params.where ? this.buildFilter(params.where) : {};
+    if (params.id !== undefined) query._id = params.id;
     const doc = await col.findOne(query, { session: this.session });
     if (!doc) return null;
     const { _id, ...rest } = doc;
@@ -115,34 +149,67 @@ export class MongoAdapter implements DatabaseAdapter {
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(params.collection));
     const { id, ...data } = params.data;
-    const document = id ? { _id: this.toObjectId(id), ...data } : data;
-    const res = await col.insertOne(document, { session: this.session });
-    return { id: res.insertedId.toString(), ...data };
+    // IDs are always strings, generated the same way as the SQL adapters.
+    const generatedId =
+      (id as string | undefined) ?? generateDocumentId(this.collectionConfigs.get(params.collection) ?? params.collection);
+    const document = { _id: generatedId as any, ...data };
+    const res = await col
+      .insertOne(document, { session: this.session })
+      .catch(rethrowDuplicateKey);
+    return { id: generatedId, ...data };
   }
 
-  async update(params: { collection: string; id: string; data: any }) {
+  async update(params: {
+    collection: string;
+    id?: string;
+    where?: Record<string, unknown>;
+    data: any;
+  }) {
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(params.collection));
-    const { id, ...updateData } = params.data;
-    await col.updateOne(
-      { _id: this.toObjectId(params.id) as any },
-      { $set: updateData },
-      { session: this.session },
-    );
-    const updated = await col.findOne(
-      { _id: this.toObjectId(params.id) as any },
-      { session: this.session },
-    );
-    if (!updated) return { id: params.id, ...updateData };
+    if (params.id === undefined && !params.where) {
+      throw new Error("update requires either id or where clause");
+    }
+
+    const filter: Record<string, any> = params.where ? this.buildFilter(params.where) : {};
+    if (params.id !== undefined) filter._id = params.id;
+
+    const { id, createdAt, updatedAt, ...updateData } = params.data;
+    const $set: Record<string, any> = {};
+    const $inc: Record<string, number> = {};
+    for (const [key, val] of Object.entries(updateData)) {
+      if (isNumericOp(val)) {
+        $inc[key] = Number((val.increment ?? 0) - (val.decrement ?? 0));
+      } else {
+        $set[key] = val;
+      }
+    }
+
+    const update: Record<string, any> = {};
+    if (Object.keys($set).length > 0) update.$set = $set;
+    if (Object.keys($inc).length > 0) update.$inc = $inc;
+
+    // Single atomic findOneAndUpdate: the filter and the modification are applied together,
+    // so conditional updates (e.g. balance >= amount) cannot race.
+    const updated =
+      Object.keys(update).length > 0
+        ? await col
+            .findOneAndUpdate(filter, update, { session: this.session, returnDocument: "after" })
+            .catch(rethrowDuplicateKey)
+        : await col.findOne(filter, { session: this.session });
+
+    if (!updated) {
+      return { id: params.id, ...$set, affectedRows: 0 } as any;
+    }
     const { _id, ...rest } = updated;
-    return { id: _id.toString(), ...rest };
+    return { id: _id.toString(), ...rest, affectedRows: 1 };
   }
 
   async delete(params: { collection: string; id: string }) {
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(params.collection));
     await col.deleteOne(
-      { _id: this.toObjectId(params.id) as any },
+      { _id: params.id as any },
       { session: this.session },
     );
   }
@@ -170,6 +237,35 @@ export class MongoAdapter implements DatabaseAdapter {
     return params.data;
   }
 
+  async sync(collections: CollectionConfig[]): Promise<void> {
+    await this.ensureInitialized();
+    for (const config of collections) {
+      this.collectionConfigs.set(config.slug, config);
+      const col = this.db.collection(this.getCollectionName(config.slug));
+
+      for (const field of config.fields ?? []) {
+        if (!(field as any).unique) continue;
+        await col.createIndex(
+          { [field.name as string]: 1 },
+          { unique: true, sparse: true, name: `uniq_${config.slug}_${field.name}` },
+        );
+      }
+
+      for (const idx of config.indexes ?? []) {
+        if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
+        const isUnique = Boolean(idx.unique);
+        await col.createIndex(
+          Object.fromEntries(idx.fields.map((f: string) => [f, 1 as const])),
+          {
+            unique: isUnique,
+            sparse: idx.sparse,
+            name: idx.name || `${isUnique ? "uniq" : "idx"}_${config.slug}_${idx.fields.join("_")}`,
+          },
+        );
+      }
+    }
+  }
+
   async transaction<T>(
     callback: (db: DatabaseAdapter) => Promise<T>,
   ): Promise<T> {
@@ -188,12 +284,23 @@ export class MongoAdapter implements DatabaseAdapter {
     }
   }
 
-  private toObjectId(id: string) {
-    try {
-      return new ObjectId(id);
-    } catch {
-      return id; // Fallback for custom string IDs
-    }
+  /** Translate a where clause to a Mongo filter, mapping the public `id` field to `_id`. */
+  private buildFilter(where: Record<string, unknown>): Record<string, any> {
+    const filter = parseMongoWhere(where);
+    const mapId = (node: any): any => {
+      if (Array.isArray(node)) return node.map(mapId);
+      if (!node || typeof node !== "object") return node;
+      const out: Record<string, any> = {};
+      for (const [k, v] of Object.entries(node)) {
+        if (k === "id") {
+          out._id = v;
+        } else {
+          out[k] = mapId(v);
+        }
+      }
+      return out;
+    };
+    return mapId(filter);
   }
 
   async aggregate(args: {

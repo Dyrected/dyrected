@@ -92,6 +92,16 @@ runIntegrityAndConcurrencyAdapterContract(
   { skip: !process.env.TEST_MYSQL_URL },
 );
 
+runIntegrityAndConcurrencyAdapterContract(
+  "MongoDB",
+  () =>
+    new MongoAdapter({
+      url: process.env.TEST_MONGODB_URL!,
+      dbName: process.env.TEST_MONGODB_DB || "dyrected_contract",
+    }),
+  { skip: !process.env.TEST_MONGODB_URL },
+);
+
 runStorageAdapterContract("Local", async () => {
   const uploadDir = await mkdtemp(join(tmpdir(), "dyrected-storage-contract-"));
   tempPaths.push(uploadDir);

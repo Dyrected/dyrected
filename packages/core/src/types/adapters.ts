@@ -36,10 +36,14 @@ export interface DatabaseAdapter {
     lock?: "for-update";
   }): Promise<PaginatedResult>;
 
-  /** Find a single document by its ID. Returns `null` if not found. */
+  /**
+   * Find a single document by its ID or by a `where` filter (the first match
+   * is returned). Returns `null` if not found. Provide `id` or `where`.
+   */
   findOne(args: {
     collection: string;
-    id: string;
+    id?: string;
+    where?: Record<string, unknown>;
     /** Row-level locking strategy (e.g. SELECT ... FOR UPDATE in transactions). */
     lock?: "for-update";
   }): Promise<BaseDocument | null>;

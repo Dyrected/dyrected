@@ -649,7 +649,84 @@ export function runIntegrityAndConcurrencyAdapterContract(
       const changed = await db.findOne({ collection, id: doc.id });
       expect(changed?.tier).toBe("premium");
     });
+    it("guarantees exactly one winner among 50 concurrent inserts with the same unique value", async () => {
+      const db = await createAdapter();
+      const collection = `race-uniq-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await db.sync?.(
+        [{ slug: collection, fields: [{ name: "external_reference", type: "text", unique: true }] }],
+        [],
+      );
+
+      const results = await Promise.allSettled(
+        Array.from({ length: 50 }, () =>
+          db.create({ collection, data: { external_reference: "REF-1" } }),
+        ),
+      );
+
+      const fulfilled = results.filter((r) => r.status === "fulfilled");
+      const rejected = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(49);
+      for (const r of rejected) expect(r.reason).toBeInstanceOf(DuplicateKeyError);
+
+      const rows = await db.find({ collection, where: { external_reference: { equals: "REF-1" } }, limit: 100 });
+      expect(rows.total).toBe(1);
+    });
+
+    it("never overdraws under 20 concurrent conditional debits", async () => {
+      const db = await createAdapter();
+      const collection = `race-debit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await db.sync?.(
+        [{ slug: collection, fields: [{ name: "balance_minor", type: "number", promoted: true }] }],
+        [],
+      );
+      const account = await db.create({ collection, data: { balance_minor: 5000 } });
+
+      const debit = async () => {
+        const result = await db.update({
+          collection,
+          where: { id: { equals: account.id }, balance_minor: { greater_than_equal: 1000 } },
+          data: { balance_minor: { decrement: 1000 } },
+        });
+        if ((result as any).affectedRows === 0) throw new Error("Insufficient available balance");
+      };
+
+      const results = await Promise.allSettled(Array.from({ length: 20 }, debit));
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(5);
+      expect(results.filter((r) => r.status === "rejected")).toHaveLength(15);
+
+      const final = await db.findOne({ collection, id: account.id });
+      expect(Number(final?.balance_minor)).toBe(0);
+    });
+
+    it("finds a single document by where and accepts a lock inside a transaction", async () => {
+      const db = await createAdapter();
+      const collection = `lock-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await db.sync?.(
+        [
+          {
+            slug: collection,
+            fields: [
+              { name: "investor", type: "text", promoted: true },
+              { name: "currency", type: "text", promoted: true },
+            ],
+          },
+        ],
+        [],
+      );
+      const created = await db.create({ collection, data: { investor: "inv-1", currency: "NGN" } });
+
+      const found = await db.transaction!(async (tx) =>
+        tx.findOne({
+          collection,
+          where: { investor: { equals: "inv-1" }, currency: { equals: "NGN" } },
+          lock: "for-update",
+        }),
+      );
+      expect(found?.id).toBe(created.id);
+
+      const missing = await db.findOne({ collection, where: { investor: { equals: "nobody" } } });
+      expect(missing).toBeNull();
+    });
   });
 }
-
-

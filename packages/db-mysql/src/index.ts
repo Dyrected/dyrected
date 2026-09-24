@@ -395,6 +395,13 @@ FIX INSTRUCTIONS:
           console.log(`[dyrected/mysql] Promoting field "${field.name}" to column in ${tableName}`);
           const isUniqueOrIndexed = field.unique || indexedFields.has(field.name);
           let sqlType = isUniqueOrIndexed ? "VARCHAR(191)" : "TEXT";
+          if (!isUniqueOrIndexed) {
+            if ((field.type === "select" || field.type === "radio") && !field.hasMany) sqlType = "VARCHAR(100)";
+            else if (field.type === "relationship" && !field.hasMany) sqlType = "VARCHAR(191)";
+            else if (field.type === "email") sqlType = "VARCHAR(254)";
+          } else if (field.type === "email") {
+            sqlType = "VARCHAR(191)";
+          }
           if (field.type === "number") sqlType = "DECIMAL(19,4)";
           if (field.type === "boolean") sqlType = "TINYINT(1)";
           if (field.type === "date" || field.type === "datetime") sqlType = "DATETIME(3)";
@@ -610,7 +617,12 @@ FIX INSTRUCTIONS:
     };
   }
 
-  async findOne(params: { collection: string; id: string; lock?: "for-update" }) {
+  async findOne(params: { collection: string; id?: string; where?: Record<string, unknown>; lock?: "for-update" }) {
+    if (params.id === undefined && params.where) {
+      const found = await this.find({ collection: params.collection, where: params.where, limit: 1, lock: params.lock });
+      return found.docs[0] ?? null;
+    }
+    if (params.id === undefined) throw new Error("findOne requires either id or where");
     if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     const lock = (this.inTransaction || params.lock === "for-update") ? " FOR UPDATE" : "";

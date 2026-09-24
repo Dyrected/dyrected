@@ -258,7 +258,12 @@ export class SqliteAdapter implements DatabaseAdapter {
     };
   }
 
-  async findOne(params: { collection: string; id: string; lock?: 'for-update' }) {
+  async findOne(params: { collection: string; id?: string; where?: Record<string, unknown>; lock?: 'for-update' }) {
+    if (params.id === undefined && params.where) {
+      const found = await this.find({ collection: params.collection, where: params.where, limit: 1, lock: params.lock });
+      return found.docs[0] ?? null;
+    }
+    if (params.id === undefined) throw new Error("findOne requires either id or where");
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
