@@ -184,11 +184,11 @@ function CollectionRoute() {
 
   const schema = (schemas as any)?.collections.find((c: any) => c.slug === slug);
 
-  if (!schema || schema?.admin?.hidden) {
+  if (!schema) {
     return (
       <AdminNotFound
         title="Collection not found"
-        description={`We could not find a visible collection called "${slug}". It may have been renamed, hidden, or removed from this admin.`}
+        description={`We could not find a collection called "${slug}". It may have been renamed or removed from this admin.`}
       />
     );
   }

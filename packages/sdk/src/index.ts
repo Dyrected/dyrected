@@ -484,36 +484,45 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 
   async getPreference<T = unknown>(
     key: string,
-    options?: { scope?: "personal" | "role" | "global" },
+    options?: { scope?: "personal" | "role" | "global"; role?: string },
   ): Promise<{ key: string; value: T | null }> {
-    const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
+    const params = new URLSearchParams();
+    if (options?.scope) params.set("scope", options.scope);
+    if (options?.role) params.set("role", options.role);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
-      `/api/preferences/${encodeURIComponent(key)}${scopeParam}`,
+      `/api/preferences/${encodeURIComponent(key)}${qs}`,
     );
   }
 
   async setPreference<T = unknown>(
     key: string,
     value: T,
-    options?: { scope?: "personal" | "role" | "global" },
+    options?: { scope?: "personal" | "role" | "global"; role?: string },
   ): Promise<{ key: string; value: T }> {
-    const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
+    const params = new URLSearchParams();
+    if (options?.scope) params.set("scope", options.scope);
+    if (options?.role) params.set("role", options.role);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
-      `/api/preferences/${encodeURIComponent(key)}${scopeParam}`,
+      `/api/preferences/${encodeURIComponent(key)}${qs}`,
       {
         method: "PUT",
-        body: JSON.stringify({ value }),
+        body: JSON.stringify({ value, role: options?.role }),
       },
     );
   }
 
   async deletePreference(
     key: string,
-    options?: { scope?: "personal" | "role" | "global" },
+    options?: { scope?: "personal" | "role" | "global"; role?: string },
   ): Promise<{ success: boolean }> {
-    const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
+    const params = new URLSearchParams();
+    if (options?.scope) params.set("scope", options.scope);
+    if (options?.role) params.set("role", options.role);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
-      `/api/preferences/${encodeURIComponent(key)}${scopeParam}`,
+      `/api/preferences/${encodeURIComponent(key)}${qs}`,
       {
         method: "DELETE",
       },

@@ -101,11 +101,11 @@ export function WorkspaceRoute() {
 
   const schema = schemas.collections.find((c: any) => c.slug === targetCollectionSlug)
 
-  if (!schema || schema?.admin?.hidden) {
+  if (!schema) {
     return (
       <AdminNotFound
         title="Collection not found"
-        description={`The target collection "${targetCollectionSlug}" for this workspace was not found or is hidden.`}
+        description={`The target collection "${targetCollectionSlug}" for this workspace was not found.`}
       />
     )
   }

@@ -22,6 +22,7 @@ import {
   Users,
   Briefcase,
   ExternalLink,
+  SlidersHorizontal,
   icons,
 } from "lucide-react"
 import type { CompiledNavItem } from "@dyrected/sdk"
@@ -52,6 +53,10 @@ import { WorkspaceSwitcher } from "./workspace-switcher"
 import logo from "../../assets/dyrected.svg"
 import logoDark from "../../assets/dyrected-dark.svg"
 import type { AdminSchemas } from "../../types/admin-components"
+import { usePreference } from "../../hooks/use-preferences"
+import { DEFAULT_USER_NAV_PREFERENCES } from "../../types/preferences"
+import { reconcileNavigation } from "../../utils/navigation-reconciler"
+import { NavigationCustomizer } from "../navigation/navigation-customizer"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
   const value = user?.[key]
@@ -645,8 +650,14 @@ function SidebarInner({
   updateInfo: UpdateInfo | null
 }) {
   const { client, user, navigation, badges } = useDyrected()
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
   const [userToggledOpen, setUserToggledOpen] = useState<Set<string>>(() => new Set())
   const [userToggledClosed, setUserToggledClosed] = useState<Set<string>>(() => new Set())
+
+  const activeNavigation = React.useMemo(() => {
+    return reconcileNavigation(navigation, userNavPrefs, schemas as any)
+  }, [navigation, userNavPrefs, schemas])
 
   const toggleCollection = (slug: string, isCollectionActive: boolean) => {
     if (isCollectionActive) {
@@ -972,7 +983,7 @@ function SidebarInner({
     )
   }
 
-  const hasCompiledDashboard = navigation?.groups?.some((g) => g.items?.some((i) => i.type === "dashboard"))
+  const hasCompiledDashboard = activeNavigation?.groups?.some((g) => g.items?.some((i) => i.type === "dashboard"))
   const branding = schemas?.admin?.branding;
   const meta = schemas?.admin?.meta;
 
@@ -1031,20 +1042,33 @@ function SidebarInner({
             )}
           </div>
 
-          {/* Top Collapse Button */}
-          {onToggleCollapse && (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className={cn(
-                "dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors",
-                collapsed && "dy-hidden"
-              )}
-              aria-label="Collapse sidebar"
-            >
-              <PanelLeftClose className="dy-h-4 dy-w-4" />
-            </button>
-          )}
+          {/* Top Actions: Customize Navigation & Collapse */}
+          <div className="dy-flex dy-items-center dy-gap-0.5">
+            {!collapsed && (
+              <button
+                type="button"
+                onClick={() => setCustomizerOpen(true)}
+                className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors"
+                title="Customize Navigation"
+                aria-label="Customize Navigation"
+              >
+                <SlidersHorizontal className="dy-h-4 dy-w-4" />
+              </button>
+            )}
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className={cn(
+                  "dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors",
+                  collapsed && "dy-hidden"
+                )}
+                aria-label="Collapse sidebar"
+              >
+                <PanelLeftClose className="dy-h-4 dy-w-4" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1059,8 +1083,18 @@ function SidebarInner({
               <div key={i} className={cn("dy-h-8 dy-rounded-md dy-bg-muted/60 dy-animate-pulse", collapsed ? "dy-mx-1" : "dy-mx-2")} />
             ))}
           </div>
-        ) : navigation?.groups && navigation.groups.length > 0 ? (
+        ) : activeNavigation?.groups && activeNavigation.groups.length > 0 ? (
           <>
+            {activeNavigation.pinnedItems && activeNavigation.pinnedItems.length > 0 && (
+              <div className="dy-space-y-0.5 dy-mb-2">
+                {!collapsed && (
+                  <p className="dy-px-3 dy-mb-1.5 dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/50">
+                    Pinned
+                  </p>
+                )}
+                {activeNavigation.pinnedItems.map((item) => renderCompiledNavItem(item))}
+              </div>
+            )}
             {!hasCompiledDashboard && (
               <div className="dy-space-y-0.5">
                 <NavItem
@@ -1073,7 +1107,7 @@ function SidebarInner({
                 />
               </div>
             )}
-            {navigation.groups.map((group) => {
+            {activeNavigation.groups.map((group) => {
               if (!group.items || group.items.length === 0) return null
               return (
                 <NavGroup
@@ -1087,9 +1121,9 @@ function SidebarInner({
                 </NavGroup>
               )
             })}
-            {navigation.ungrouped && navigation.ungrouped.length > 0 && (
+            {activeNavigation.ungrouped && activeNavigation.ungrouped.length > 0 && (
               <div className="dy-space-y-0.5">
-                {navigation.ungrouped.map((item) => renderCompiledNavItem(item))}
+                {activeNavigation.ungrouped.map((item) => renderCompiledNavItem(item))}
               </div>
             )}
           </>
@@ -1232,6 +1266,14 @@ function SidebarInner({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                onSelect={() => setCustomizerOpen(true)}
+                className="dy-cursor-pointer dy-py-2"
+              >
+                <SlidersHorizontal className="dy-h-4 dy-w-4" />
+                Customize Navigation
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
                 onSelect={logout}
                 className="dy-cursor-pointer dy-py-2 dy-text-destructive focus:dy-bg-destructive/10 focus:dy-text-destructive"
               >
@@ -1265,9 +1307,22 @@ function SidebarInner({
             />
           </div>
 
-          <ThemeSelector collapsed={collapsed} iconOnly={!collapsed} />
+          <div className="dy-flex dy-items-center dy-gap-1">
+            <button
+              type="button"
+              onClick={() => setCustomizerOpen(true)}
+              className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+              title="Customize Navigation"
+              aria-label="Customize Navigation"
+            >
+              <SlidersHorizontal className="dy-h-3.5 dy-w-3.5" />
+            </button>
+            <ThemeSelector collapsed={collapsed} iconOnly={!collapsed} />
+          </div>
         </div>
       </div>
+
+      <NavigationCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} />
     </div >
   )
 }
