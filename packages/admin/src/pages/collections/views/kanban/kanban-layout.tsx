@@ -308,6 +308,7 @@ export function KanbanLayout({
         input: { [groupField]: coerceGroupValue(nextValue, groupField, schema) },
       })
       await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
       return true
     },
     [dyrected, slug, view.slug, view.moveAction, groupField, schema, queryClient],
@@ -320,6 +321,7 @@ export function KanbanLayout({
         [groupField!]: coerceGroupValue(nextValue, groupField, schema),
       })
       await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
     },
     [dyrected, slug, groupField, schema, queryClient],
   )

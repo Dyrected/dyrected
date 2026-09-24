@@ -176,6 +176,7 @@
   }
 
   .dy-admin-ui.dark,
+  .dy-admin-ui.dy-dark,
   .dy-admin-ui[data-theme="dark"] {
     --background: 240 10% 4%;          /* #09090B charcoal */
     --foreground: 78 38% 95%;          /* warm lime-white */

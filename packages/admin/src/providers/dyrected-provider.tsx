@@ -252,6 +252,8 @@ export function DyrectedProvider({
     enabled: !!client,
     staleTime: 15_000,
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   const refetchNavigation = useCallback(async () => {

@@ -59,6 +59,7 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
   const invalidate = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
     await queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] })
+    await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
   }, [queryClient, slug])
 
   const findDoc = useCallback(
@@ -93,7 +94,7 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
         findDoc(sourceId) ??
         (await client.findOne(slug, sourceId, { depth: 1 }))
       const copy: Record<string, unknown> = {}
-      for (const [key, value] of Object.entries(doc)) {
+      for (const [key, value] of Object.entries(doc ?? {})) {
         if (!DUPLICATE_OMIT_FIELDS.has(key)) copy[key] = value
       }
       return client.collection(slug).create(copy)

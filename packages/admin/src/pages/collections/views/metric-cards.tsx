@@ -34,73 +34,100 @@ function resolveMetricColor(color?: string): ColorTokens {
     case "purple":
     case "violet":
       return {
-        card: "dy-bg-purple-500/5 dark:dy-bg-purple-950/20 dy-border-purple-500/20 dark:dy-border-purple-500/30",
-        header: "dy-text-purple-600 dark:dy-text-purple-400",
-        value: "dy-text-purple-950 dark:dy-text-purple-100",
+        card: "dy-bg-purple-500/[0.04] dark:dy-bg-purple-500/[0.08] dy-border-purple-500/20 dark:dy-border-purple-500/30 dark:hover:dy-border-purple-500/45",
+        header: "dy-text-purple-700 dark:dy-text-purple-300",
+        value: "dy-text-foreground dark:dy-text-white",
         unit: "dy-text-purple-700/80 dark:dy-text-purple-300/80",
-        subRow: "dy-border-purple-500/15 dark:dy-border-purple-500/20",
+        subRow: "dy-border-purple-500/15 dark:dy-border-purple-500/25",
         subLabel: "dy-text-purple-700/80 dark:dy-text-purple-300/80",
-        subValue: "dy-text-purple-950 dark:dy-text-purple-100 dy-font-semibold",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
+      }
+    case "indigo":
+      return {
+        card: "dy-bg-indigo-500/[0.04] dark:dy-bg-indigo-500/[0.08] dy-border-indigo-500/20 dark:dy-border-indigo-500/30 dark:hover:dy-border-indigo-500/45",
+        header: "dy-text-indigo-700 dark:dy-text-indigo-300",
+        value: "dy-text-foreground dark:dy-text-white",
+        unit: "dy-text-indigo-700/80 dark:dy-text-indigo-300/80",
+        subRow: "dy-border-indigo-500/15 dark:dy-border-indigo-500/25",
+        subLabel: "dy-text-indigo-700/80 dark:dy-text-indigo-300/80",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
+      }
+    case "cyan":
+      return {
+        card: "dy-bg-cyan-500/[0.04] dark:dy-bg-cyan-500/[0.08] dy-border-cyan-500/20 dark:dy-border-cyan-500/30 dark:hover:dy-border-cyan-500/45",
+        header: "dy-text-cyan-700 dark:dy-text-cyan-300",
+        value: "dy-text-foreground dark:dy-text-white",
+        unit: "dy-text-cyan-700/80 dark:dy-text-cyan-300/80",
+        subRow: "dy-border-cyan-500/15 dark:dy-border-cyan-500/25",
+        subLabel: "dy-text-cyan-700/80 dark:dy-text-cyan-300/80",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
       }
     case "emerald":
     case "green":
       return {
-        card: "dy-bg-emerald-500/5 dark:dy-bg-emerald-950/20 dy-border-emerald-500/20 dark:dy-border-emerald-500/30",
-        header: "dy-text-emerald-600 dark:dy-text-emerald-400",
-        value: "dy-text-emerald-950 dark:dy-text-emerald-100",
+        card: "dy-bg-emerald-500/[0.04] dark:dy-bg-emerald-500/[0.08] dy-border-emerald-500/20 dark:dy-border-emerald-500/30 dark:hover:dy-border-emerald-500/45",
+        header: "dy-text-emerald-700 dark:dy-text-emerald-300",
+        value: "dy-text-foreground dark:dy-text-white",
         unit: "dy-text-emerald-700/80 dark:dy-text-emerald-300/80",
-        subRow: "dy-border-emerald-500/15 dark:dy-border-emerald-500/20",
+        subRow: "dy-border-emerald-500/15 dark:dy-border-emerald-500/25",
         subLabel: "dy-text-emerald-700/80 dark:dy-text-emerald-300/80",
-        subValue: "dy-text-emerald-950 dark:dy-text-emerald-100 dy-font-semibold",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
+      }
+    case "orange":
+      return {
+        card: "dy-bg-orange-500/[0.04] dark:dy-bg-orange-500/[0.08] dy-border-orange-500/20 dark:dy-border-orange-500/30 dark:hover:dy-border-orange-500/45",
+        header: "dy-text-orange-800 dark:dy-text-orange-300",
+        value: "dy-text-foreground dark:dy-text-white",
+        unit: "dy-text-orange-800/80 dark:dy-text-orange-300/80",
+        subRow: "dy-border-orange-500/15 dark:dy-border-orange-500/25",
+        subLabel: "dy-text-orange-800/80 dark:dy-text-orange-300/80",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
       }
     case "amber":
     case "yellow":
-    case "orange":
     case "brown":
       return {
-        card: "dy-bg-amber-500/5 dark:dy-bg-amber-950/20 dy-border-amber-500/20 dark:dy-border-amber-500/30",
-        header: "dy-text-amber-700 dark:dy-text-amber-400",
-        value: "dy-text-amber-950 dark:dy-text-amber-100",
-        unit: "dy-text-amber-700/80 dark:dy-text-amber-300/80",
-        subRow: "dy-border-amber-500/15 dark:dy-border-amber-500/20",
-        subLabel: "dy-text-amber-700/80 dark:dy-text-amber-300/80",
-        subValue: "dy-text-amber-950 dark:dy-text-amber-100 dy-font-semibold",
+        card: "dy-bg-amber-500/[0.04] dark:dy-bg-amber-500/[0.08] dy-border-amber-500/20 dark:dy-border-amber-500/30 dark:hover:dy-border-amber-500/45",
+        header: "dy-text-amber-800 dark:dy-text-amber-300",
+        value: "dy-text-foreground dark:dy-text-white",
+        unit: "dy-text-amber-800/80 dark:dy-text-amber-300/80",
+        subRow: "dy-border-amber-500/15 dark:dy-border-amber-500/25",
+        subLabel: "dy-text-amber-800/80 dark:dy-text-amber-300/80",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
       }
     case "rose":
     case "pink":
     case "red":
     case "crimson":
       return {
-        card: "dy-bg-rose-500/5 dark:dy-bg-rose-950/20 dy-border-rose-500/20 dark:dy-border-rose-500/30",
-        header: "dy-text-rose-600 dark:dy-text-rose-400",
-        value: "dy-text-rose-950 dark:dy-text-rose-100",
+        card: "dy-bg-rose-500/[0.04] dark:dy-bg-rose-500/[0.08] dy-border-rose-500/20 dark:dy-border-rose-500/30 dark:hover:dy-border-rose-500/45",
+        header: "dy-text-rose-700 dark:dy-text-rose-300",
+        value: "dy-text-foreground dark:dy-text-white",
         unit: "dy-text-rose-700/80 dark:dy-text-rose-300/80",
-        subRow: "dy-border-rose-500/15 dark:dy-border-rose-500/20",
+        subRow: "dy-border-rose-500/15 dark:dy-border-rose-500/25",
         subLabel: "dy-text-rose-700/80 dark:dy-text-rose-300/80",
-        subValue: "dy-text-rose-950 dark:dy-text-rose-100 dy-font-semibold",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
       }
     case "blue":
-    case "indigo":
-    case "cyan":
     case "sky":
       return {
-        card: "dy-bg-blue-500/5 dark:dy-bg-blue-950/20 dy-border-blue-500/20 dark:dy-border-blue-500/30",
-        header: "dy-text-blue-600 dark:dy-text-blue-400",
-        value: "dy-text-blue-950 dark:dy-text-blue-100",
+        card: "dy-bg-blue-500/[0.04] dark:dy-bg-blue-500/[0.08] dy-border-blue-500/20 dark:dy-border-blue-500/30 dark:hover:dy-border-blue-500/45",
+        header: "dy-text-blue-700 dark:dy-text-blue-300",
+        value: "dy-text-foreground dark:dy-text-white",
         unit: "dy-text-blue-700/80 dark:dy-text-blue-300/80",
-        subRow: "dy-border-blue-500/15 dark:dy-border-blue-500/20",
+        subRow: "dy-border-blue-500/15 dark:dy-border-blue-500/25",
         subLabel: "dy-text-blue-700/80 dark:dy-text-blue-300/80",
-        subValue: "dy-text-blue-950 dark:dy-text-blue-100 dy-font-semibold",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
       }
     default:
       return {
-        card: "dy-bg-card dy-border-border/50",
+        card: "dy-bg-card dy-border-border/60 dark:dy-border-border/60 dark:dy-bg-card/90 dark:hover:dy-border-border",
         header: "dy-text-muted-foreground",
-        value: "dy-text-foreground",
+        value: "dy-text-foreground dark:dy-text-white",
         unit: "dy-text-muted-foreground",
-        subRow: "dy-border-border/30",
+        subRow: "dy-border-border/40",
         subLabel: "dy-text-muted-foreground",
-        subValue: "dy-text-foreground dy-font-semibold",
+        subValue: "dy-text-foreground dark:dy-text-white dy-font-semibold",
       }
   }
 }

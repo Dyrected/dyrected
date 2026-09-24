@@ -67,7 +67,7 @@ describe("admin theme", () => {
 
   it("uses explicit light preference over system dark", () => {
     mockSystemDark(true)
-    window.localStorage.setItem("dyrected_pref_theme", JSON.stringify("light"))
+    window.localStorage.setItem("dyrected_pref_personal_theme", JSON.stringify("light"))
 
     const { container } = renderThemedRoot()
     const root = container.querySelector(".dy-admin-ui")
@@ -77,7 +77,7 @@ describe("admin theme", () => {
   })
 
   it("uses explicit dark preference over system light", () => {
-    window.localStorage.setItem("dyrected_pref_theme", JSON.stringify("dark"))
+    window.localStorage.setItem("dyrected_pref_personal_theme", JSON.stringify("dark"))
 
     const { container } = renderThemedRoot()
     const root = container.querySelector(".dy-admin-ui")

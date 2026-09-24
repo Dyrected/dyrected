@@ -405,6 +405,7 @@ export function SpreadsheetLayout({
   const invalidate = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
     await queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] })
+    await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
   }, [queryClient, slug])
 
   const saveMutation = useMutation({

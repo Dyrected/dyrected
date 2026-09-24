@@ -946,27 +946,29 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     }
 
     const badges: Record<string, { count: number | string; variant?: string }> = {};
-    const badgeTasks: Promise<void>[] = [];
+
+    interface AggregateRequest {
+      id: string;
+      where?: Record<string, unknown>;
+      onResult: (count: number | string) => void;
+    }
+
+    const requestsByCollection = new Map<string, AggregateRequest[]>();
+    let reqCounter = 0;
 
     for (const item of allItems) {
       if (item.badge) {
         const itemBadge = item.badge;
-        badgeTasks.push(
-          (async () => {
-            const badgeKey = item.slug || item.collection || item.global || item.id;
+        const badgeKey = item.slug || item.collection || item.global || item.id;
 
-            if (typeof itemBadge === "string") {
-              badges[badgeKey] = { count: itemBadge, variant: "default" };
-              return;
-            }
-
-            const badgeConfig = itemBadge;
-            const variant = badgeConfig.variant ?? "default";
-            if (badgeConfig.text) {
-              badges[badgeKey] = { count: badgeConfig.text, variant };
-              return;
-            }
-
+        if (typeof itemBadge === "string") {
+          badges[badgeKey] = { count: itemBadge, variant: "default" };
+        } else {
+          const badgeConfig = itemBadge;
+          const variant = badgeConfig.variant ?? "default";
+          if (badgeConfig.text) {
+            badges[badgeKey] = { count: badgeConfig.text, variant };
+          } else {
             let targetCol: string | undefined;
             let targetWhere: Record<string, unknown> | undefined;
 
@@ -981,96 +983,113 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
               }
             }
 
-            if (!targetCol) return;
-
-            try {
-              if (typeof db.aggregate === "function") {
-                const agg = await db.aggregate({
-                  collection: targetCol,
-                  aggregates: { count: { count: "*", where: targetWhere } },
-                });
-                badges[badgeKey] = { count: typeof agg?.count === "number" ? agg.count : 0, variant };
-              } else {
-                const res = await db.find({
-                  collection: targetCol,
-                  where: targetWhere,
-                  limit: 1,
-                });
-                const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
-                badges[badgeKey] = { count: total, variant };
-              }
-            } catch {
-              badges[badgeKey] = { count: 0, variant };
+            if (targetCol) {
+              const reqId = `agg_${reqCounter++}`;
+              const list = requestsByCollection.get(targetCol) || [];
+              list.push({
+                id: reqId,
+                where: targetWhere,
+                onResult: (count) => {
+                  badges[badgeKey] = { count, variant };
+                },
+              });
+              requestsByCollection.set(targetCol, list);
             }
-          })(),
-        );
+          }
+        }
       }
 
       if (item.views && item.views.length > 0) {
         for (const view of item.views) {
           if (!view.badge) continue;
           const viewBadge = view.badge;
-          badgeTasks.push(
-            (async () => {
-              const viewKey = `${item.slug}:${view.slug}`;
-              const altKey = `${item.slug}_${view.slug}`;
-              const plainKey = view.slug;
+          const viewKey = `${item.slug}:${view.slug}`;
+          const altKey = `${item.slug}_${view.slug}`;
+          const plainKey = view.slug;
 
-              const setBadgeResult = (res: { count: number | string; variant?: string }) => {
-                badges[viewKey] = res;
-                badges[altKey] = res;
-                if (!badges[plainKey]) {
-                  badges[plainKey] = res;
-                }
-                if (view.collection) {
-                  badges[`${view.collection}:${view.slug}`] = res;
-                  badges[`${view.collection}_${view.slug}`] = res;
-                }
-              };
+          const setBadgeResult = (res: { count: number | string; variant?: string }) => {
+            badges[viewKey] = res;
+            badges[altKey] = res;
+            if (!badges[plainKey]) {
+              badges[plainKey] = res;
+            }
+            if (view.collection) {
+              badges[`${view.collection}:${view.slug}`] = res;
+              badges[`${view.collection}_${view.slug}`] = res;
+            }
+          };
 
-              if (typeof viewBadge === "string") {
-                setBadgeResult({ count: viewBadge, variant: "default" });
-                return;
-              }
+          if (typeof viewBadge === "string") {
+            setBadgeResult({ count: viewBadge, variant: "default" });
+            continue;
+          }
 
-              const badgeConfig = viewBadge as any;
-              const variant = badgeConfig.variant ?? "default";
-              if (badgeConfig.text) {
-                setBadgeResult({ count: badgeConfig.text, variant });
-                return;
-              }
+          const badgeConfig = viewBadge as any;
+          const variant = badgeConfig.variant ?? "default";
+          if (badgeConfig.text) {
+            setBadgeResult({ count: badgeConfig.text, variant });
+            continue;
+          }
 
-              const targetCol = badgeConfig.aggregate?.collection || view.collection || item.collection || (item.type === "collection" ? item.slug : undefined);
-              const targetWhere = badgeConfig.aggregate?.where || (typeof view.filter === "object" ? view.filter : undefined);
+          const targetCol = badgeConfig.aggregate?.collection || view.collection || item.collection || (item.type === "collection" ? item.slug : undefined);
+          const targetWhere = badgeConfig.aggregate?.where || (typeof view.filter === "object" ? view.filter : undefined);
 
-              if (!targetCol) return;
+          if (!targetCol) continue;
 
-              try {
-                if (typeof db.aggregate === "function") {
-                  const agg = await db.aggregate({
-                    collection: targetCol,
-                    aggregates: { count: { count: "*", where: targetWhere } },
-                  });
-                  setBadgeResult({ count: typeof agg?.count === "number" ? agg.count : 0, variant });
-                } else {
-                  const res = await db.find({
-                    collection: targetCol,
-                    where: targetWhere,
-                    limit: 1,
-                  });
-                  const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
-                  setBadgeResult({ count: total, variant });
-                }
-              } catch {
-                setBadgeResult({ count: 0, variant });
-              }
-            })(),
-          );
+          const reqId = `agg_${reqCounter++}`;
+          const list = requestsByCollection.get(targetCol) || [];
+          list.push({
+            id: reqId,
+            where: targetWhere,
+            onResult: (count) => {
+              setBadgeResult({ count, variant });
+            },
+          });
+          requestsByCollection.set(targetCol, list);
         }
       }
     }
 
-    await Promise.allSettled(badgeTasks);
+    const collectionTasks = Array.from(requestsByCollection.entries()).map(async ([col, reqs]) => {
+      if (typeof db.aggregate === "function") {
+        try {
+          const aggregates: Record<string, { count: "*"; where?: Record<string, unknown> }> = {};
+          for (const req of reqs) {
+            aggregates[req.id] = { count: "*", where: req.where };
+          }
+          const agg = await db.aggregate({
+            collection: col,
+            aggregates,
+          });
+          for (const req of reqs) {
+            const val = agg?.[req.id];
+            req.onResult(typeof val === "number" ? val : 0);
+          }
+        } catch {
+          for (const req of reqs) {
+            req.onResult(0);
+          }
+        }
+      } else {
+        await Promise.allSettled(
+          reqs.map(async (req) => {
+            try {
+              const res = await db.find({
+                collection: col,
+                where: req.where,
+                limit: 1,
+              });
+              const total = (res as any)?.totalDocs ?? (res as any)?.total ?? 0;
+              req.onResult(total);
+            } catch {
+              req.onResult(0);
+            }
+          })
+        );
+      }
+    });
+
+    await Promise.allSettled(collectionTasks);
 
     return c.json({ badges });
   });

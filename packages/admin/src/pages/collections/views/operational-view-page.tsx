@@ -96,6 +96,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
       queryClient.invalidateQueries({ queryKey: ["table-group", slug] }),
       queryClient.invalidateQueries({ queryKey: ["table-group-distinct", slug] }),
       queryClient.invalidateQueries({ queryKey: ["table-group-relations"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] }),
     ])
   }, [queryClient, slug])
 

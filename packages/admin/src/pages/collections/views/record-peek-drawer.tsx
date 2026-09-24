@@ -68,6 +68,7 @@ export function RecordPeekDrawer({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey })
       await queryClient.invalidateQueries({ queryKey: ["operational-view", collectionSlug] })
+      await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
     },
   })
 
@@ -181,6 +182,7 @@ export function RecordPeekDrawer({
               onActionSuccess={async () => {
                 await refetch()
                 await queryClient.invalidateQueries({ queryKey: ["operational-view", collectionSlug] })
+                await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
               }}
             />
           ) : null}

@@ -143,6 +143,7 @@ export function useViewActions({ slug, viewSlug }: { slug: string; viewSlug: str
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] });
       await queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] });
     },
   });
 }

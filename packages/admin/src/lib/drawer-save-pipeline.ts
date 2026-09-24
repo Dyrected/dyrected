@@ -77,6 +77,7 @@ export async function invalidateParentAndJoinQueries({
       queryClient.invalidateQueries({ queryKey: ["collections", parentCollection] }),
       queryClient.invalidateQueries({ queryKey: ["collection", parentCollection] }),
       queryClient.invalidateQueries({ queryKey: ["operational-view", parentCollection] }),
+      queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] }),
     )
   }
 
@@ -286,6 +287,7 @@ export async function saveDrawerDocument(
     await queryClient.invalidateQueries({ queryKey: ["collections", targetCollection] })
     await queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
     await queryClient.invalidateQueries({ queryKey: ["operational-view", targetCollection] })
+    await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
 
     // Invalidate parent collection, document, and join queries
     await invalidateParentAndJoinQueries({
@@ -376,6 +378,7 @@ export async function updateDrawerField(
     await queryClient.invalidateQueries({ queryKey: ["collections", targetCollection] })
     await queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
     await queryClient.invalidateQueries({ queryKey: ["operational-view", targetCollection] })
+    await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
 
     await invalidateParentAndJoinQueries({
       queryClient,
@@ -446,6 +449,7 @@ export async function deleteDrawerDocument(
     await queryClient.invalidateQueries({ queryKey: ["collections", targetCollection] })
     await queryClient.invalidateQueries({ queryKey: ["collection", targetCollection] })
     await queryClient.invalidateQueries({ queryKey: ["operational-view", targetCollection] })
+    await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
 
     // Invalidate parent & relation queries
     await invalidateParentAndJoinQueries({

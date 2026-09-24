@@ -573,6 +573,7 @@ export function EditEntryPage() {
       await queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       if (variables.mode === "manual") {
         await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+        await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
       }
 
       if (variables.mode === "manual") {
@@ -696,6 +697,7 @@ export function EditEntryPage() {
       await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
       await queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       await queryClient.invalidateQueries({ queryKey: ["collections", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
       navigate(`/collections/${slug}`)
     } catch (err: unknown) {
       toast.error(`Failed to delete ${schema?.labels?.singular || schema?.slug || "entry"}`, {

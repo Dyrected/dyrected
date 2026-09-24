@@ -10,7 +10,7 @@ export function resolveAdminTheme(
 
 export function adminThemeClassName(resolvedTheme: ResolvedAdminTheme) {
   return resolvedTheme === "dark"
-    ? "dy-admin-ui dark"
+    ? "dy-admin-ui dark dy-dark"
     : "dy-admin-ui"
 }
 
