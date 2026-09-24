@@ -2,7 +2,7 @@ import type {
   DyrectedConfig,
   CollectionConfig,
   GlobalConfig,
-  DefineNavItemOptions,
+  DefineWorkspaceOptions,
   ViewConfig,
   NavGroup,
   CompiledNavItem,
@@ -30,7 +30,7 @@ export const RESERVED_NAVIGATION_SLUGS = new Set([
 /**
  * Validates that no navigation item uses a reserved system route slug.
  */
-export function assertValidNavigationSlugs(navigation: DefineNavItemOptions[]): void {
+export function assertValidNavigationSlugs(navigation: DefineWorkspaceOptions[]): void {
   for (const item of navigation) {
     if (item.slug) {
       const normalizedSlug = item.slug.toLowerCase().trim().replace(/^\//, "");
@@ -75,7 +75,7 @@ export function compileNavigation(
     | {
         collections?: readonly any[];
         globals?: readonly any[];
-        admin?: { navigation?: DefineNavItemOptions[] };
+        admin?: { navigation?: DefineWorkspaceOptions[] };
       },
 ): CompiledNavTree {
   const collections = ((config.collections || []) as unknown) as CollectionConfig[];
@@ -282,7 +282,7 @@ export function compileNavigation(
     const sorted = [...items].sort((a, b) => a.order - b.order);
 
     // 2. Relative anchoring pass: find explicit before/after options
-    const explicitMap = new Map<string, DefineNavItemOptions>();
+    const explicitMap = new Map<string, DefineWorkspaceOptions>();
     for (const opt of explicitNav) {
       if (opt.slug) explicitMap.set(opt.slug, opt);
       if (opt.collection) explicitMap.set(opt.collection, opt);

@@ -526,6 +526,39 @@
     "snippetStatus": "validated"
   },
   {
+    "id": "kyc-review-workspace",
+    "title": "Build a KYC review workspace",
+    "description": "Give compliance reviewers a dedicated sidebar workspace with a pending queue, a live badge, and approve or reject actions.",
+    "problem": "Compliance reviewers need a focused queue of investors awaiting identity verification, with a visible count of pending work and one-click decisions, instead of searching a full investors collection.",
+    "summary": "Define a standalone workspace with defineWorkspace that groups pending, approved, and rejected views over one collection, shows a live pending badge, and restricts access to reviewer roles.",
+    "category": "admin-experience",
+    "runtime": "shared",
+    "runtimeNotes": "Declarative workspace, views, and mutation actions. Role names in access must match the roles your auth collection assigns.",
+    "intents": [
+      "build a KYC review queue",
+      "add a compliance workspace to the admin sidebar",
+      "show a pending count badge in navigation",
+      "approve or reject records with one click"
+    ],
+    "concepts": [
+      "defineWorkspace",
+      "defineView",
+      "defineAction",
+      "badge.aggregate",
+      "group",
+      "access"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/workspaces-and-navigation",
+      "/docs/model-content/operational-views/actions",
+      "/docs/model-content/operational-views/layouts/table"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineEmailField,\n  defineSelectField,\n  defineDateTimeField,\n  defineView,\n  defineAction,\n  defineWorkspace,\n} from \"@dyrected/core\";\n\nexport const approveAction = defineAction({\n  name: \"approve\",\n  label: \"Approve\",\n  icon: \"ShieldCheck\",\n  type: \"row\",\n  confirm: \"Approve this investor's identity verification?\",\n  mutation: { kycStatus: \"approved\", reviewedAt: \"now()\" },\n});\n\nexport const rejectAction = defineAction({\n  name: \"reject\",\n  label: \"Reject\",\n  icon: \"ShieldX\",\n  type: \"row\",\n  confirm: \"Reject this investor's identity verification?\",\n  mutation: { kycStatus: \"rejected\", reviewedAt: \"now()\" },\n});\n\nexport const Investors = defineCollection({\n  slug: \"investors\",\n  fields: [\n    defineTextField({ name: \"name\", label: \"Full Name\", required: true }),\n    defineEmailField({ name: \"email\", label: \"Email\", required: true }),\n    defineSelectField({\n      name: \"kycStatus\",\n      label: \"KYC Status\",\n      options: [\"pending\", \"approved\", \"rejected\"],\n      defaultValue: \"pending\",\n    }),\n    defineDateTimeField({ name: \"reviewedAt\", label: \"Reviewed At\" }),\n  ],\n});\n\nexport const kycReviewWorkspace = defineWorkspace({\n  slug: \"kyc-review\",\n  label: \"KYC Review\",\n  icon: \"ShieldAlert\",\n  group: { name: \"Compliance\", icon: \"Scale\", defaultExpanded: true },\n  access: [\"admin\", \"compliance\"],\n  badge: {\n    aggregate: {\n      collection: \"investors\",\n      where: { kycStatus: { equals: \"pending\" } },\n    },\n    variant: \"warning\",\n  },\n  views: [\n    defineView({\n      collection: \"investors\",\n      slug: \"pending\",\n      label: \"Pending\",\n      icon: \"Clock\",\n      layout: \"table\",\n      filter: { kycStatus: { equals: \"pending\" } },\n      columns: [\"name\", \"email\", \"kycStatus\"],\n      sort: { field: \"name\", direction: \"asc\" },\n      actions: [approveAction, rejectAction],\n    }),\n    defineView({\n      collection: \"investors\",\n      slug: \"approved\",\n      label: \"Approved\",\n      icon: \"ShieldCheck\",\n      layout: \"table\",\n      filter: { kycStatus: { equals: \"approved\" } },\n      columns: [\"name\", \"email\", \"reviewedAt\"],\n    }),\n    defineView({\n      collection: \"investors\",\n      slug: \"rejected\",\n      label: \"Rejected\",\n      icon: \"ShieldX\",\n      layout: \"table\",\n      filter: { kycStatus: { equals: \"rejected\" } },\n      columns: [\"name\", \"email\", \"reviewedAt\"],\n    }),\n  ],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/kyc-review-workspace",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "navigation-global-links",
     "title": "Create a navigation global with nested links",
     "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
@@ -622,6 +655,39 @@
     "requires": [],
     "source": "import {\n  defineCollection,\n  defineTextField,\n  defineBooleanField,\n  defineNumberField,\n  defineDateTimeField,\n  defineView,\n  defineAction,\n} from \"@dyrected/core\";\n\nexport const checkInAction = defineAction({\n  name: \"checkIn\",\n  label: \"Check In\",\n  icon: \"UserCheck\",\n  type: \"row\",\n  confirm: \"Confirm guest check-in at the door?\",\n  mutation: { checkedIn: true, checkedInAt: \"now()\" },\n});\n\nexport const attendingGuestsView = defineView({\n  slug: \"attending-guests\",\n  label: \"Attending Guests\",\n  icon: \"UserCheck\",\n  layout: \"table\",\n  filter: { attending: { equals: true } },\n  columns: [\"name\", \"guestCount\", \"tableNumber\", \"checkedIn\"],\n  sort: { field: \"name\", direction: \"asc\" },\n  actions: [checkInAction],\n});\n\nexport const GuestResponses = defineCollection({\n  slug: \"guest-responses\",\n  fields: [\n    defineTextField({ name: \"name\", label: \"Full Name\", required: true }),\n    defineTextField({ name: \"email\", label: \"Email\" }),\n    defineBooleanField({ name: \"attending\", label: \"Attending\" }),\n    defineNumberField({ name: \"guestCount\", label: \"Plus-Ones\", defaultValue: 0 }),\n    defineNumberField({ name: \"tableNumber\", label: \"Table Number\" }),\n    defineBooleanField({ name: \"checkedIn\", label: \"Checked In\", defaultValue: false }),\n    defineDateTimeField({ name: \"checkedInAt\", label: \"Checked In At\" }),\n  ],\n  views: [attendingGuestsView],\n});",
     "docsPath": "/docs/examples-and-recipes/library/operational-table-view",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "order-fulfillment-workspace",
+    "title": "Build an order fulfillment workspace",
+    "description": "Combine a kanban pipeline, a payment queue, and revenue metrics into one sidebar workspace for the fulfillment team.",
+    "problem": "A fulfillment team needs to move orders from requested to paid to shipped, see which orders still need payment, and watch revenue, without jumping between collection pages.",
+    "summary": "Define a workspace with defineWorkspace that pairs a kanban pipeline with a filtered payment queue, metric cards, and a badge counting unpaid orders.",
+    "category": "admin-experience",
+    "runtime": "shared",
+    "runtimeNotes": "Declarative workspace, views, metrics, and mutation actions. No server handlers required.",
+    "intents": [
+      "build an order fulfillment dashboard",
+      "combine kanban and table views in one workspace",
+      "show unpaid orders count in the sidebar",
+      "add revenue metrics to an operations workspace"
+    ],
+    "concepts": [
+      "defineWorkspace",
+      "defineView",
+      "layout: kanban",
+      "metrics",
+      "badge.aggregate",
+      "defineAction"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/workspaces-and-navigation",
+      "/docs/model-content/operational-views/layouts/kanban",
+      "/docs/model-content/operational-views/metrics"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineNumberField,\n  defineSelectField,\n  defineDateTimeField,\n  defineView,\n  defineAction,\n  defineWorkspace,\n} from \"@dyrected/core\";\n\nexport const markPaidAction = defineAction({\n  name: \"markPaid\",\n  label: \"Mark Paid\",\n  icon: \"CircleDollarSign\",\n  type: \"row\",\n  mutation: { status: \"paid\", paidAt: \"now()\" },\n});\n\nexport const markShippedAction = defineAction({\n  name: \"markShipped\",\n  label: \"Mark Shipped\",\n  icon: \"Truck\",\n  type: \"row\",\n  mutation: { status: \"shipped\", shippedAt: \"now()\" },\n});\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"customerName\", label: \"Customer Name\", required: true }),\n    defineSelectField({\n      name: \"status\",\n      label: \"Status\",\n      options: [\"requested\", \"paid\", \"shipped\"],\n      defaultValue: \"requested\",\n    }),\n    defineNumberField({ name: \"total\", label: \"Order Total\", defaultValue: 0 }),\n    defineDateTimeField({ name: \"paidAt\", label: \"Paid At\" }),\n    defineDateTimeField({ name: \"shippedAt\", label: \"Shipped At\" }),\n  ],\n});\n\nexport const orderFulfillmentWorkspace = defineWorkspace({\n  slug: \"order-fulfillment\",\n  label: \"Fulfillment\",\n  icon: \"PackageCheck\",\n  group: { name: \"Operations\", icon: \"Briefcase\", defaultExpanded: true },\n  badge: {\n    aggregate: {\n      collection: \"orders\",\n      where: { status: { equals: \"requested\" } },\n    },\n    variant: \"warning\",\n  },\n  views: [\n    defineView({\n      collection: \"orders\",\n      slug: \"pipeline\",\n      label: \"Pipeline\",\n      icon: \"Kanban\",\n      layout: \"kanban\",\n      groupBy: \"status\",\n      columns: [\"customerName\", \"total\"],\n      actions: [markPaidAction, markShippedAction],\n      metrics: [\n        {\n          label: \"Open Orders\",\n          color: \"amber\",\n          aggregate: { count: \"*\", where: { status: { in: [\"requested\", \"paid\"] } } },\n        },\n        {\n          label: \"Revenue Collected\",\n          color: \"emerald\",\n          format: \"currency\",\n          currency: \"USD\",\n          aggregate: {\n            sum: \"total\",\n            cast: \"number\",\n            where: { status: { in: [\"paid\", \"shipped\"] } },\n          },\n        },\n      ],\n    }),\n    defineView({\n      collection: \"orders\",\n      slug: \"awaiting-payment\",\n      label: \"Awaiting Payment\",\n      icon: \"Hourglass\",\n      layout: \"table\",\n      filter: { status: { equals: \"requested\" } },\n      columns: [\"customerName\", \"total\", \"status\"],\n      sort: { field: \"customerName\", direction: \"asc\" },\n      actions: [markPaidAction],\n    }),\n  ],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/order-fulfillment-workspace",
     "snippetStatus": "validated"
   },
   {
@@ -923,6 +989,39 @@
     "requires": [],
     "source": "import { defineEmailField, defineGlobal, defineTextField, defineUrlField } from \"@dyrected/core\";\n\nexport const SiteSettings = defineGlobal({\n  slug: \"site-settings\",\n  label: \"Site settings\",\n  initialData: {\n    siteName: \"Acme Studio\",\n    supportEmail: \"hello@example.com\",\n  },\n  fields: [\n    defineTextField({ name: \"siteName\", label: \"Site name\", required: true }),\n    defineTextField({ name: \"tagline\", label: \"Tagline\", defaultValue: \"\" }),\n    defineEmailField({\n      name: \"supportEmail\",\n      label: \"Support email\",\n      required: true,\n    }),\n    defineUrlField({\n      name: \"primaryCta\",\n      label: \"Primary call to action\",\n    }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/site-settings-global",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "support-desk-workspace",
+    "title": "Build a support desk workspace",
+    "description": "Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.",
+    "problem": "Support agents need a shared queue of open tickets, a fast way to spot urgent ones, and their own assigned tickets, without every agent seeing the same unfiltered list.",
+    "summary": "Define a workspace with defineWorkspace containing open, urgent, and resolved views, a badge counting open tickets, and a resolve action.",
+    "category": "admin-experience",
+    "runtime": "shared",
+    "runtimeNotes": "Declarative workspace and mutation actions. The urgent badge uses a static aggregate filter; per-agent filtering is not covered here.",
+    "intents": [
+      "build a support ticket queue",
+      "add an urgent tickets view",
+      "resolve tickets with one click",
+      "show open ticket count in navigation"
+    ],
+    "concepts": [
+      "defineWorkspace",
+      "defineView",
+      "defineAction",
+      "badge.aggregate",
+      "sort",
+      "filter"
+    ],
+    "canonicalDocs": [
+      "/docs/model-content/operational-views/workspaces-and-navigation",
+      "/docs/model-content/operational-views/actions",
+      "/docs/model-content/operational-views/define-view"
+    ],
+    "requires": [],
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineTextareaField,\n  defineSelectField,\n  defineDateTimeField,\n  defineView,\n  defineAction,\n  defineWorkspace,\n} from \"@dyrected/core\";\n\nexport const resolveAction = defineAction({\n  name: \"resolve\",\n  label: \"Resolve\",\n  icon: \"CheckCircle2\",\n  type: \"row\",\n  mutation: { status: \"resolved\", resolvedAt: \"now()\" },\n});\n\nexport const Tickets = defineCollection({\n  slug: \"tickets\",\n  fields: [\n    defineTextField({ name: \"subject\", label: \"Subject\", required: true }),\n    defineTextareaField({ name: \"message\", label: \"Message\" }),\n    defineSelectField({\n      name: \"priority\",\n      label: \"Priority\",\n      options: [\"low\", \"normal\", \"urgent\"],\n      defaultValue: \"normal\",\n    }),\n    defineSelectField({\n      name: \"status\",\n      label: \"Status\",\n      options: [\"open\", \"resolved\"],\n      defaultValue: \"open\",\n    }),\n    defineDateTimeField({ name: \"resolvedAt\", label: \"Resolved At\" }),\n  ],\n});\n\nexport const supportDeskWorkspace = defineWorkspace({\n  slug: \"support-desk\",\n  label: \"Support Desk\",\n  icon: \"LifeBuoy\",\n  group: { name: \"Support\", icon: \"Headset\", defaultExpanded: true },\n  badge: {\n    aggregate: {\n      collection: \"tickets\",\n      where: { status: { equals: \"open\" } },\n    },\n    variant: \"info\",\n  },\n  views: [\n    defineView({\n      collection: \"tickets\",\n      slug: \"open\",\n      label: \"Open\",\n      icon: \"Inbox\",\n      layout: \"table\",\n      filter: { status: { equals: \"open\" } },\n      columns: [\"subject\", \"priority\", \"status\"],\n      sort: { field: \"priority\", direction: \"desc\" },\n      actions: [resolveAction],\n    }),\n    defineView({\n      collection: \"tickets\",\n      slug: \"urgent\",\n      label: \"Urgent\",\n      icon: \"Siren\",\n      layout: \"table\",\n      filter: { status: { equals: \"open\" }, priority: { equals: \"urgent\" } },\n      columns: [\"subject\", \"priority\"],\n      badge: {\n        aggregate: {\n          collection: \"tickets\",\n          where: { status: { equals: \"open\" }, priority: { equals: \"urgent\" } },\n        },\n        variant: \"destructive\",\n      },\n      actions: [resolveAction],\n    }),\n    defineView({\n      collection: \"tickets\",\n      slug: \"resolved\",\n      label: \"Resolved\",\n      icon: \"Archive\",\n      layout: \"table\",\n      filter: { status: { equals: \"resolved\" } },\n      columns: [\"subject\", \"resolvedAt\"],\n    }),\n  ],\n});",
+    "docsPath": "/docs/examples-and-recipes/library/support-desk-workspace",
     "snippetStatus": "validated"
   },
   {

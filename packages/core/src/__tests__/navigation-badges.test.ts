@@ -3,7 +3,7 @@ import { createDyrectedApp } from "../app.js";
 import {
   defineConfig,
   defineCollection,
-  defineNavItem,
+  defineWorkspace,
   defineView,
 } from "../index.js";
 import { InMemoryAdapter } from "./mocks.js";
@@ -40,7 +40,7 @@ describe("Navigation & Badges Endpoints", () => {
     ],
     admin: {
       navigation: [
-        defineNavItem({
+        defineWorkspace({
           slug: "support-queue",
           label: "Support Queue",
           collection: "tickets",
@@ -58,7 +58,7 @@ describe("Navigation & Badges Endpoints", () => {
             }),
           ],
         }),
-        defineNavItem({
+        defineWorkspace({
           slug: "disputes-desk",
           label: "Disputes Desk",
           collection: "disputes",
@@ -70,7 +70,7 @@ describe("Navigation & Badges Endpoints", () => {
             variant: "destructive",
           },
         }),
-        defineNavItem({
+        defineWorkspace({
           slug: "system-status",
           label: "Status",
           group: "Operations",

@@ -76,6 +76,9 @@ const recipeDocsPathMap = {
   "custom-ai-tools": "/docs/examples-and-recipes/library/custom-ai-tools",
   "computed-fields-and-totals": "/docs/examples-and-recipes/library/computed-fields-and-totals",
   "declarative-reactive-hooks": "/docs/examples-and-recipes/library/declarative-reactive-hooks",
+  "kyc-review-workspace": "/docs/examples-and-recipes/library/kyc-review-workspace",
+  "order-fulfillment-workspace": "/docs/examples-and-recipes/library/order-fulfillment-workspace",
+  "support-desk-workspace": "/docs/examples-and-recipes/library/support-desk-workspace",
 };
 
 function fail(message) {

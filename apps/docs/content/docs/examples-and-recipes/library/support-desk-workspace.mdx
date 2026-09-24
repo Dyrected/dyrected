@@ -1,0 +1,127 @@
+---
+title: Build a support desk workspace
+description: Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.
+runtime: shared
+runtimeGroup: recipe-support-desk-workspace
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+{/* GENERATED:RECIPE:START */}
+Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.
+
+## Use this when
+
+- build a support ticket queue
+- add an urgent tickets view
+- resolve tickets with one click
+- show open ticket count in navigation
+
+## Dyrected concepts
+
+`defineWorkspace`, `defineView`, `defineAction`, `badge.aggregate`, `sort`, `filter`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineTextareaField,
+  defineSelectField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+  defineWorkspace,
+} from "@dyrected/core";
+
+export const resolveAction = defineAction({
+  name: "resolve",
+  label: "Resolve",
+  icon: "CheckCircle2",
+  type: "row",
+  mutation: { status: "resolved", resolvedAt: "now()" },
+});
+
+export const Tickets = defineCollection({
+  slug: "tickets",
+  fields: [
+    defineTextField({ name: "subject", label: "Subject", required: true }),
+    defineTextareaField({ name: "message", label: "Message" }),
+    defineSelectField({
+      name: "priority",
+      label: "Priority",
+      options: ["low", "normal", "urgent"],
+      defaultValue: "normal",
+    }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["open", "resolved"],
+      defaultValue: "open",
+    }),
+    defineDateTimeField({ name: "resolvedAt", label: "Resolved At" }),
+  ],
+});
+
+export const supportDeskWorkspace = defineWorkspace({
+  slug: "support-desk",
+  label: "Support Desk",
+  icon: "LifeBuoy",
+  group: { name: "Support", icon: "Headset", defaultExpanded: true },
+  badge: {
+    aggregate: {
+      collection: "tickets",
+      where: { status: { equals: "open" } },
+    },
+    variant: "info",
+  },
+  views: [
+    defineView({
+      collection: "tickets",
+      slug: "open",
+      label: "Open",
+      icon: "Inbox",
+      layout: "table",
+      filter: { status: { equals: "open" } },
+      columns: ["subject", "priority", "status"],
+      sort: { field: "priority", direction: "desc" },
+      actions: [resolveAction],
+    }),
+    defineView({
+      collection: "tickets",
+      slug: "urgent",
+      label: "Urgent",
+      icon: "Siren",
+      layout: "table",
+      filter: { status: { equals: "open" }, priority: { equals: "urgent" } },
+      columns: ["subject", "priority"],
+      badge: {
+        aggregate: {
+          collection: "tickets",
+          where: { status: { equals: "open" }, priority: { equals: "urgent" } },
+        },
+        variant: "destructive",
+      },
+      actions: [resolveAction],
+    }),
+    defineView({
+      collection: "tickets",
+      slug: "resolved",
+      label: "Resolved",
+      icon: "Archive",
+      layout: "table",
+      filter: { status: { equals: "resolved" } },
+      columns: ["subject", "resolvedAt"],
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

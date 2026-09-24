@@ -1,0 +1,23 @@
+{
+  "id": "kyc-review-workspace",
+  "title": "Build a KYC review workspace",
+  "description": "Give compliance reviewers a dedicated sidebar workspace with a pending queue, a live badge, and approve or reject actions.",
+  "problem": "Compliance reviewers need a focused queue of investors awaiting identity verification, with a visible count of pending work and one-click decisions, instead of searching a full investors collection.",
+  "summary": "Define a standalone workspace with defineWorkspace that groups pending, approved, and rejected views over one collection, shows a live pending badge, and restricts access to reviewer roles.",
+  "category": "admin-experience",
+  "runtime": "shared",
+  "runtimeNotes": "Declarative workspace, views, and mutation actions. Role names in access must match the roles your auth collection assigns.",
+  "intents": [
+    "build a KYC review queue",
+    "add a compliance workspace to the admin sidebar",
+    "show a pending count badge in navigation",
+    "approve or reject records with one click"
+  ],
+  "concepts": ["defineWorkspace", "defineView", "defineAction", "badge.aggregate", "group", "access"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/workspaces-and-navigation",
+    "/docs/model-content/operational-views/actions",
+    "/docs/model-content/operational-views/layouts/table"
+  ],
+  "requires": []
+}

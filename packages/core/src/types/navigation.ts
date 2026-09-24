@@ -19,11 +19,6 @@ export interface NavGroup {
 }
 
 /**
- * Backwards-compatible alias for {@link NavGroup}.
- */
-export type NavGroupMetadata = NavGroup;
-
-/**
  * Configuration for real-time count badges on navigation items.
  */
 export interface NavBadgeConfig {
@@ -41,9 +36,9 @@ export interface NavBadgeConfig {
 }
 
 /**
- * Options for defining a navigation item with `defineNavItem`.
+ * Options for defining an operational workspace, or customizing placement of collections/globals, with `defineWorkspace`.
  */
-export interface DefineNavItemOptions {
+export interface DefineWorkspaceOptions {
   /** If provided, injects views into an existing collection submenu. If omitted, item stands alone. */
   addToCollection?: string;
 
@@ -94,11 +89,6 @@ export interface DefineNavItemOptions {
 }
 
 /**
- * Configuration options for defining an operational workspace or customizing placement of collections/globals.
- */
-export type DefineWorkspaceOptions = DefineNavItemOptions;
-
-/**
  * Helper to define an operational workspace or customize placement of collections/globals.
  *
  * @example
@@ -116,14 +106,6 @@ export type DefineWorkspaceOptions = DefineNavItemOptions;
  */
 export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspaceOptions {
   return options;
-}
-
-/**
- * Helper to define an operational navigation item or customize placement of collections/globals.
- * @deprecated Use `defineWorkspace` instead.
- */
-export function defineNavItem(options: DefineNavItemOptions): DefineNavItemOptions {
-  return defineWorkspace(options);
 }
 
 /**
@@ -181,7 +163,7 @@ export interface UserNavigationPreferences {
   groupOrder?: string[]; // Custom ordering of group slugs / names
   itemOrder?: Record<string, string[]>; // groupSlug -> array of nav item slugs/IDs
   groups?: NavGroup[]; // User-created groups
-  items?: DefineNavItemOptions[]; // User-created nav items / operational workspaces
+  items?: DefineWorkspaceOptions[]; // User-created nav items / operational workspaces
 }
 
 export const CURRENT_NAV_PREFERENCES_VERSION = 1;

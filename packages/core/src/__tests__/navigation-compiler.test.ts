@@ -3,7 +3,7 @@ import {
   defineConfig,
   defineCollection,
   defineGlobal,
-  defineNavItem,
+  defineWorkspace,
   defineView,
   compileNavigation,
   pruneNavigationForUser,
@@ -17,7 +17,7 @@ describe("Navigation Compiler Pipeline", () => {
   it("should assert reserved navigation slugs and throw descriptive error", () => {
     expect(() => {
       assertValidNavigationSlugs([
-        defineNavItem({
+        defineWorkspace({
           slug: "collections",
           label: "Invalid Collections Workspace",
         }),
@@ -26,7 +26,7 @@ describe("Navigation Compiler Pipeline", () => {
 
     expect(() => {
       assertValidNavigationSlugs([
-        defineNavItem({
+        defineWorkspace({
           slug: "api",
           label: "Invalid API Workspace",
         }),
@@ -35,7 +35,7 @@ describe("Navigation Compiler Pipeline", () => {
 
     expect(() => {
       assertValidNavigationSlugs([
-        defineNavItem({
+        defineWorkspace({
           slug: "custom-ops",
           label: "Valid Workspace",
         }),
@@ -88,7 +88,7 @@ describe("Navigation Compiler Pipeline", () => {
       ],
       admin: {
         navigation: [
-          defineNavItem({
+          defineWorkspace({
             slug: "kyc-ops",
             label: "KYC Queue",
             icon: "ShieldAlert",
@@ -141,17 +141,17 @@ describe("Navigation Compiler Pipeline", () => {
       ],
       admin: {
         navigation: [
-          defineNavItem({
+          defineWorkspace({
             collection: "gamma",
             group: "Workspace",
             order: 10,
           }),
-          defineNavItem({
+          defineWorkspace({
             collection: "alpha",
             group: "Workspace",
             after: "gamma", // should be placed right after gamma
           }),
-          defineNavItem({
+          defineWorkspace({
             collection: "beta",
             group: "Workspace",
             before: "gamma", // should be placed right before gamma
@@ -175,19 +175,19 @@ describe("Navigation Compiler Pipeline", () => {
       globals: [],
       admin: {
         navigation: [
-          defineNavItem({
+          defineWorkspace({
             slug: "item-middle",
             label: "Middle",
             group: "Ops",
             order: 100,
           }),
-          defineNavItem({
+          defineWorkspace({
             slug: "item-last",
             label: "Last",
             group: "Ops",
             position: "last",
           }),
-          defineNavItem({
+          defineWorkspace({
             slug: "item-first",
             label: "First",
             group: "Ops",
@@ -220,7 +220,7 @@ describe("Navigation Compiler Pipeline", () => {
       ],
       admin: {
         navigation: [
-          defineNavItem({
+          defineWorkspace({
             addToCollection: "orders",
             views: [
               defineView({
@@ -250,18 +250,18 @@ describe("Navigation Compiler Pipeline", () => {
       globals: [],
       admin: {
         navigation: [
-          defineNavItem({
+          defineWorkspace({
             slug: "public-ops",
             label: "Public Ops",
             group: "Common",
           }),
-          defineNavItem({
+          defineWorkspace({
             slug: "admin-ops",
             label: "Admin Ops",
             group: "Common",
             access: ["admin"],
           }),
-          defineNavItem({
+          defineWorkspace({
             slug: "auditor-ops",
             label: "Auditor Ops",
             group: "Auditing",

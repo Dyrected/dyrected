@@ -8856,9 +8856,11 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Create a document download library](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/document-download-library) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/editorial-publishing-workflow) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
 - [Build a Kanban pipeline board](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kanban-pipeline-view) — Problem: Fulfillment teams need to see orders progress across stages (Requested → Paid → Collected) and drag cards between columns to update status. Summary: Configure a Kanban operational view using defineView with layout: 'kanban', groupBy: 'statusField', and quick status actions.
+- [Build a KYC review workspace](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kyc-review-workspace) — Problem: Compliance reviewers need a focused queue of investors awaiting identity verification, with a visible count of pending work and one-click decisions, instead of searching a full investors collection. Summary: Define a standalone workspace with defineWorkspace that groups pending, approved, and rejected views over one collection, shows a live pending badge, and restricts access to reviewer roles.
 - [Create a navigation global with nested links](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links) — Problem: Editors need to manage shared site navigation without hardcoding links into the frontend. Summary: Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.
 - [Add KPI metric cards above a view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-metrics) — Problem: Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning. Summary: Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.
 - [Configure an operational table view](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view) — Problem: Front-of-house staff need a fast list of confirmed attendees with a single-click check-in button, without wading through full collection fields. Summary: Define a dedicated table view using defineView, filtering confirmed records and attaching a declarative checkIn row action.
+- [Build an order fulfillment workspace](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/order-fulfillment-workspace) — Problem: A fulfillment team needs to move orders from requested to paid to shipped, see which orders still need payment, and watch revenue, without jumping between collection pages. Summary: Define a workspace with defineWorkspace that pairs a kanban pipeline with a filtered payment queue, metric cards, and a badge counting unpaid orders.
 - [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Records should belong to one user, but administrators still need a way to review or fix any entry. Summary: Scope writes to the owner by default and return `true` for admin users when they need broader access.
 - [Limit documents to their owner](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Signed-in users should only see or manage the records they own. Summary: Scope reads and writes to the current user in access control, then stamp ownership when records are created.
 - [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/page-builder-blocks) — Problem: Editors need to build or rearrange page sections without turning every page into one giant content object. Summary: Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.
@@ -8869,6 +8871,7 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/safe-field-rename) — Problem: You need to change a field name on a live schema without breaking the documents that already exist. Summary: Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.
 - [Group SEO fields into an Admin tab](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/seo-tab-fields) — Problem: SEO fields are useful, but they clutter the main content form when they sit beside every primary field. Summary: Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.
 - [Create a site settings global](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/site-settings-global) — Problem: You need one shared place for site name, support details, and other site-wide settings. Summary: Use a global for singleton content that should be edited once and reused across the site or app.
+- [Build a support desk workspace](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/support-desk-workspace) — Problem: Support agents need a shared queue of open tickets, a fast way to spot urgent ones, and their own assigned tickets, without every agent seeing the same unfiltered list. Summary: Define a workspace with defineWorkspace containing open, urgent, and resolved views, a badge counting open tickets, and a resolve action.
 - [Scope content to the current workspace](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) — Problem: Users should only see or manage records that belong to their current workspace or organization. Summary: Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.
 - [Create a media upload collection](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/upload-collection) — Problem: Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents. Summary: Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.
 
@@ -9860,6 +9863,127 @@ export const Orders = defineCollection({
 
 ---
 
+## Build a KYC review workspace
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kyc-review-workspace
+
+Give compliance reviewers a dedicated sidebar workspace with a pending queue, a live badge, and approve or reject actions.
+
+## Use this when
+
+- build a KYC review queue
+- add a compliance workspace to the admin sidebar
+- show a pending count badge in navigation
+- approve or reject records with one click
+
+## Dyrected concepts
+
+`defineWorkspace`, `defineView`, `defineAction`, `badge.aggregate`, `group`, `access`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineEmailField,
+  defineSelectField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+  defineWorkspace,
+} from "@dyrected/core";
+
+export const approveAction = defineAction({
+  name: "approve",
+  label: "Approve",
+  icon: "ShieldCheck",
+  type: "row",
+  confirm: "Approve this investor's identity verification?",
+  mutation: { kycStatus: "approved", reviewedAt: "now()" },
+});
+
+export const rejectAction = defineAction({
+  name: "reject",
+  label: "Reject",
+  icon: "ShieldX",
+  type: "row",
+  confirm: "Reject this investor's identity verification?",
+  mutation: { kycStatus: "rejected", reviewedAt: "now()" },
+});
+
+export const Investors = defineCollection({
+  slug: "investors",
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+    defineEmailField({ name: "email", label: "Email", required: true }),
+    defineSelectField({
+      name: "kycStatus",
+      label: "KYC Status",
+      options: ["pending", "approved", "rejected"],
+      defaultValue: "pending",
+    }),
+    defineDateTimeField({ name: "reviewedAt", label: "Reviewed At" }),
+  ],
+});
+
+export const kycReviewWorkspace = defineWorkspace({
+  slug: "kyc-review",
+  label: "KYC Review",
+  icon: "ShieldAlert",
+  group: { name: "Compliance", icon: "Scale", defaultExpanded: true },
+  access: ["admin", "compliance"],
+  badge: {
+    aggregate: {
+      collection: "investors",
+      where: { kycStatus: { equals: "pending" } },
+    },
+    variant: "warning",
+  },
+  views: [
+    defineView({
+      collection: "investors",
+      slug: "pending",
+      label: "Pending",
+      icon: "Clock",
+      layout: "table",
+      filter: { kycStatus: { equals: "pending" } },
+      columns: ["name", "email", "kycStatus"],
+      sort: { field: "name", direction: "asc" },
+      actions: [approveAction, rejectAction],
+    }),
+    defineView({
+      collection: "investors",
+      slug: "approved",
+      label: "Approved",
+      icon: "ShieldCheck",
+      layout: "table",
+      filter: { kycStatus: { equals: "approved" } },
+      columns: ["name", "email", "reviewedAt"],
+    }),
+    defineView({
+      collection: "investors",
+      slug: "rejected",
+      label: "Rejected",
+      icon: "ShieldX",
+      layout: "table",
+      filter: { kycStatus: { equals: "rejected" } },
+      columns: ["name", "email", "reviewedAt"],
+    }),
+  ],
+});
+```
+
+---
+
 ## Create a navigation global with nested links
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/navigation-global-links
@@ -10083,6 +10207,135 @@ export const GuestResponses = defineCollection({
     defineDateTimeField({ name: "checkedInAt", label: "Checked In At" }),
   ],
   views: [attendingGuestsView],
+});
+```
+
+---
+
+## Build an order fulfillment workspace
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/order-fulfillment-workspace
+
+Combine a kanban pipeline, a payment queue, and revenue metrics into one sidebar workspace for the fulfillment team.
+
+## Use this when
+
+- build an order fulfillment dashboard
+- combine kanban and table views in one workspace
+- show unpaid orders count in the sidebar
+- add revenue metrics to an operations workspace
+
+## Dyrected concepts
+
+`defineWorkspace`, `defineView`, `layout: kanban`, `metrics`, `badge.aggregate`, `defineAction`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineNumberField,
+  defineSelectField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+  defineWorkspace,
+} from "@dyrected/core";
+
+export const markPaidAction = defineAction({
+  name: "markPaid",
+  label: "Mark Paid",
+  icon: "CircleDollarSign",
+  type: "row",
+  mutation: { status: "paid", paidAt: "now()" },
+});
+
+export const markShippedAction = defineAction({
+  name: "markShipped",
+  label: "Mark Shipped",
+  icon: "Truck",
+  type: "row",
+  mutation: { status: "shipped", shippedAt: "now()" },
+});
+
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [
+    defineTextField({ name: "customerName", label: "Customer Name", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["requested", "paid", "shipped"],
+      defaultValue: "requested",
+    }),
+    defineNumberField({ name: "total", label: "Order Total", defaultValue: 0 }),
+    defineDateTimeField({ name: "paidAt", label: "Paid At" }),
+    defineDateTimeField({ name: "shippedAt", label: "Shipped At" }),
+  ],
+});
+
+export const orderFulfillmentWorkspace = defineWorkspace({
+  slug: "order-fulfillment",
+  label: "Fulfillment",
+  icon: "PackageCheck",
+  group: { name: "Operations", icon: "Briefcase", defaultExpanded: true },
+  badge: {
+    aggregate: {
+      collection: "orders",
+      where: { status: { equals: "requested" } },
+    },
+    variant: "warning",
+  },
+  views: [
+    defineView({
+      collection: "orders",
+      slug: "pipeline",
+      label: "Pipeline",
+      icon: "Kanban",
+      layout: "kanban",
+      groupBy: "status",
+      columns: ["customerName", "total"],
+      actions: [markPaidAction, markShippedAction],
+      metrics: [
+        {
+          label: "Open Orders",
+          color: "amber",
+          aggregate: { count: "*", where: { status: { in: ["requested", "paid"] } } },
+        },
+        {
+          label: "Revenue Collected",
+          color: "emerald",
+          format: "currency",
+          currency: "USD",
+          aggregate: {
+            sum: "total",
+            cast: "number",
+            where: { status: { in: ["paid", "shipped"] } },
+          },
+        },
+      ],
+    }),
+    defineView({
+      collection: "orders",
+      slug: "awaiting-payment",
+      label: "Awaiting Payment",
+      icon: "Hourglass",
+      layout: "table",
+      filter: { status: { equals: "requested" } },
+      columns: ["customerName", "total", "status"],
+      sort: { field: "customerName", direction: "asc" },
+      actions: [markPaidAction],
+    }),
+  ],
 });
 ```
 
@@ -10454,6 +10707,130 @@ export const SiteSettings = defineGlobal({
     defineUrlField({
       name: "primaryCta",
       label: "Primary call to action",
+    }),
+  ],
+});
+```
+
+---
+
+## Build a support desk workspace
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/support-desk-workspace
+
+Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.
+
+## Use this when
+
+- build a support ticket queue
+- add an urgent tickets view
+- resolve tickets with one click
+- show open ticket count in navigation
+
+## Dyrected concepts
+
+`defineWorkspace`, `defineView`, `defineAction`, `badge.aggregate`, `sort`, `filter`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+  defineCollection,
+  defineTextField,
+  defineTextareaField,
+  defineSelectField,
+  defineDateTimeField,
+  defineView,
+  defineAction,
+  defineWorkspace,
+} from "@dyrected/core";
+
+export const resolveAction = defineAction({
+  name: "resolve",
+  label: "Resolve",
+  icon: "CheckCircle2",
+  type: "row",
+  mutation: { status: "resolved", resolvedAt: "now()" },
+});
+
+export const Tickets = defineCollection({
+  slug: "tickets",
+  fields: [
+    defineTextField({ name: "subject", label: "Subject", required: true }),
+    defineTextareaField({ name: "message", label: "Message" }),
+    defineSelectField({
+      name: "priority",
+      label: "Priority",
+      options: ["low", "normal", "urgent"],
+      defaultValue: "normal",
+    }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["open", "resolved"],
+      defaultValue: "open",
+    }),
+    defineDateTimeField({ name: "resolvedAt", label: "Resolved At" }),
+  ],
+});
+
+export const supportDeskWorkspace = defineWorkspace({
+  slug: "support-desk",
+  label: "Support Desk",
+  icon: "LifeBuoy",
+  group: { name: "Support", icon: "Headset", defaultExpanded: true },
+  badge: {
+    aggregate: {
+      collection: "tickets",
+      where: { status: { equals: "open" } },
+    },
+    variant: "info",
+  },
+  views: [
+    defineView({
+      collection: "tickets",
+      slug: "open",
+      label: "Open",
+      icon: "Inbox",
+      layout: "table",
+      filter: { status: { equals: "open" } },
+      columns: ["subject", "priority", "status"],
+      sort: { field: "priority", direction: "desc" },
+      actions: [resolveAction],
+    }),
+    defineView({
+      collection: "tickets",
+      slug: "urgent",
+      label: "Urgent",
+      icon: "Siren",
+      layout: "table",
+      filter: { status: { equals: "open" }, priority: { equals: "urgent" } },
+      columns: ["subject", "priority"],
+      badge: {
+        aggregate: {
+          collection: "tickets",
+          where: { status: { equals: "open" }, priority: { equals: "urgent" } },
+        },
+        variant: "destructive",
+      },
+      actions: [resolveAction],
+    }),
+    defineView({
+      collection: "tickets",
+      slug: "resolved",
+      label: "Resolved",
+      icon: "Archive",
+      layout: "table",
+      filter: { status: { equals: "resolved" } },
+      columns: ["subject", "resolvedAt"],
     }),
   ],
 });
@@ -18415,7 +18792,7 @@ export interface AdminConfig {
    * Custom navigation layout for the admin sidebar.
    * If omitted, all collections and globals appear in default sections.
    */
-  navigation?: DefineNavItemOptions[];
+  navigation?: DefineWorkspaceOptions[];
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {
@@ -26021,6 +26398,175 @@ Use this checklist as a guide before finalizing your view configurations:
 2. **Implement `table` first**: Provide a `filter`, 3 `columns`, and a `row` action. Verify the filter and sidebar appearance.
 3. **Add specialized views**: Add `kanban` with `groupBy` or `calendar` with `dateField` for distinct team roles.
 4. **Add metrics**: Add metric cards to give high-level visibility to administrators.
+
+---
+
+## Workspaces and navigation
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/operational-views/workspaces-and-navigation
+
+A workspace is a sidebar entry that bundles the views one team needs to do one job. In this guide you'll build a KYC review workspace for a compliance team: a pending queue with approve and reject buttons, a live count badge, and access limited to reviewers.
+
+By the end you'll see a **Compliance** group in the admin sidebar with a **KYC Review** item, and the badge will show how many investors are still waiting.
+
+## Before you start
+
+You need a collection to review and a status field to filter on. This guide uses an `investors` collection with a `kycStatus` select field (`pending`, `approved`, `rejected`). If you haven't built views before, read [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view) first. It takes a few minutes.
+
+## 1. Define the actions and views
+
+Each row in the pending queue needs an Approve and a Reject button. Actions with a `mutation` update the record for you, so you don't need a server handler:
+
+```ts
+
+
+export const approveAction = defineAction({
+  name: "approve",
+  label: "Approve",
+  icon: "ShieldCheck",
+  type: "row",
+  confirm: "Approve this investor's identity verification?",
+  mutation: { kycStatus: "approved", reviewedAt: "now()" },
+});
+
+export const rejectAction = defineAction({
+  name: "reject",
+  label: "Reject",
+  icon: "ShieldX",
+  type: "row",
+  confirm: "Reject this investor's identity verification?",
+  mutation: { kycStatus: "rejected", reviewedAt: "now()" },
+});
+
+export const pendingView = defineView({
+  collection: "investors",
+  slug: "pending",
+  label: "Pending",
+  icon: "Clock",
+  layout: "table",
+  filter: { kycStatus: { equals: "pending" } },
+  columns: ["name", "email", "kycStatus"],
+  actions: [approveAction, rejectAction],
+});
+```
+
+Notice the `collection: "investors"` line. Views declared inside a collection get their collection for free, but a workspace can hold views from any collection, so each view names its own.
+
+## 2. Wrap the views in a workspace
+
+`defineWorkspace` is where the sidebar entry comes from. Add it to `admin.navigation` in your config:
+
+```ts
+
+
+export default defineConfig({
+  // collections, adapter, and the rest of your config
+  admin: {
+    navigation: [
+      defineWorkspace({
+        slug: "kyc-review",
+        label: "KYC Review",
+        icon: "ShieldAlert",
+        group: { name: "Compliance", icon: "Scale", defaultExpanded: true },
+        views: [pendingView],
+      }),
+    ],
+  },
+});
+```
+
+Open the admin and you should see **Compliance → KYC Review**. The workspace lives at `/kyc-review`, and the first view in `views` is the one that opens by default.
+
+A workspace with one view renders as a plain link. Add a second view and it becomes an expandable item with each view underneath. Try adding an `approved` view next to `pending` to see the difference.
+
+> The `slug` becomes a top-level URL, so a few names are off limits: `collections`, `globals`, `setup`, `api`, `login`, `logout`, `settings`, `admin`, `preferences`, and `auth`. Dyrected throws a clear error at startup if you use one, so you'll find out right away.
+
+## 3. Add a live badge
+
+A badge tells reviewers there is work waiting without opening the queue. Give the workspace an `aggregate` badge that counts pending investors:
+
+```ts
+defineWorkspace({
+  slug: "kyc-review",
+  label: "KYC Review",
+  icon: "ShieldAlert",
+  group: { name: "Compliance", icon: "Scale", defaultExpanded: true },
+  badge: {
+    aggregate: {
+      collection: "investors",
+      where: { kycStatus: { equals: "pending" } },
+    },
+    variant: "warning",
+  },
+  views: [pendingView],
+});
+```
+
+The count comes from a database aggregate, so it stays cheap on large collections. Approving or rejecting a record refreshes it. `variant` picks the colour: `default`, `warning`, `destructive`, `info`, or `success`.
+
+Views can carry their own `badge` too, which is handy for an "Urgent" view inside a larger queue.
+
+## 4. Limit who sees it
+
+Add `access` with the role names your auth collection assigns:
+
+```ts
+defineWorkspace({
+  slug: "kyc-review",
+  label: "KYC Review",
+  access: ["admin", "compliance"],
+  views: [pendingView],
+});
+```
+
+People without a matching role won't see the workspace in their sidebar. Dyrected prunes the navigation on the server, so hidden items aren't sent to the browser at all. Keep your collection's own access rules in place as well, because navigation controls what people see, not what the API allows.
+
+## Place existing collections and globals
+
+`defineWorkspace` also moves collections and globals you already have, without creating a new workspace. Point at the collection and give it a group and order:
+
+```ts
+defineWorkspace({ collection: "blog-articles", group: "Content", order: 1 }),
+defineWorkspace({ collection: "pages", group: "Content", order: 2 }),
+```
+
+Anything you don't mention still shows up in the default sections, so you never lose a collection by forgetting it.
+
+To attach extra views to a collection's submenu instead of creating a new workspace, use `addToCollection`:
+
+```ts
+defineWorkspace({ addToCollection: "investors", views: [pendingView] }),
+```
+
+## Control the order
+
+Items sort by `order` (lower first, default `100`). When you need precision, use one of these instead:
+
+| Option | What it does |
+| --- | --- |
+| `order` | Numeric weight within the group. Groups accept `order` too. |
+| `position: "first"` or `"last"` | Pins the item to the start or end of its group. |
+| `before` / `after` | Places the item next to another collection or workspace slug. |
+
+## Keep the admin UI and your code in sync
+
+Admins can rearrange the sidebar from the admin UI, and those changes are stored as preferences. Both routes produce the same shape, so you can move changes between them with the CLI:
+
+```bash
+# Turn UI-configured navigation into defineWorkspace code
+npx dyrected nav pull --scope global
+
+# Publish the navigation defined in dyrected.config.ts to the server
+npx dyrected nav push
+```
+
+Add `--dry-run` to `nav pull` to print the generated TypeScript without touching your files. Use `--scope role --role <name>` to pull a single role's layout.
+
+## Where to go next
+
+- Copy a finished setup: [KYC review](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kyc-review-workspace), [order fulfillment](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/order-fulfillment-workspace), or [support desk](https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/support-desk-workspace).
+- Add KPI cards above a view with [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics).
+- Learn how views become URLs in [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences).
 
 ---
 

@@ -339,6 +339,26 @@
       ]
     },
     {
+      "id": "kyc-review-workspace",
+      "title": "Build a KYC review workspace",
+      "description": "Give compliance reviewers a dedicated sidebar workspace with a pending queue, a live badge, and approve or reject actions.",
+      "problem": "Compliance reviewers need a focused queue of investors awaiting identity verification, with a visible count of pending work and one-click decisions, instead of searching a full investors collection.",
+      "summary": "Define a standalone workspace with defineWorkspace that groups pending, approved, and rejected views over one collection, shows a live pending badge, and restricts access to reviewer roles.",
+      "docsPath": "/docs/examples-and-recipes/library/kyc-review-workspace",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/workspaces-and-navigation",
+        "/docs/model-content/operational-views/actions",
+        "/docs/model-content/operational-views/layouts/table"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build a KYC review queue",
+        "add a compliance workspace to the admin sidebar",
+        "show a pending count badge in navigation",
+        "approve or reject records with one click"
+      ]
+    },
+    {
       "id": "navigation-global-links",
       "title": "Create a navigation global with nested links",
       "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
@@ -398,6 +418,26 @@
         "add a check-in button to table rows",
         "customize visible columns on an operational table",
         "define an operational view for staff"
+      ]
+    },
+    {
+      "id": "order-fulfillment-workspace",
+      "title": "Build an order fulfillment workspace",
+      "description": "Combine a kanban pipeline, a payment queue, and revenue metrics into one sidebar workspace for the fulfillment team.",
+      "problem": "A fulfillment team needs to move orders from requested to paid to shipped, see which orders still need payment, and watch revenue, without jumping between collection pages.",
+      "summary": "Define a workspace with defineWorkspace that pairs a kanban pipeline with a filtered payment queue, metric cards, and a badge counting unpaid orders.",
+      "docsPath": "/docs/examples-and-recipes/library/order-fulfillment-workspace",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/workspaces-and-navigation",
+        "/docs/model-content/operational-views/layouts/kanban",
+        "/docs/model-content/operational-views/metrics"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build an order fulfillment dashboard",
+        "combine kanban and table views in one workspace",
+        "show unpaid orders count in the sidebar",
+        "add revenue metrics to an operations workspace"
       ]
     },
     {
@@ -598,6 +638,26 @@
         "store one shared settings document",
         "make a singleton config record",
         "manage site-wide content in one place"
+      ]
+    },
+    {
+      "id": "support-desk-workspace",
+      "title": "Build a support desk workspace",
+      "description": "Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.",
+      "problem": "Support agents need a shared queue of open tickets, a fast way to spot urgent ones, and their own assigned tickets, without every agent seeing the same unfiltered list.",
+      "summary": "Define a workspace with defineWorkspace containing open, urgent, and resolved views, a badge counting open tickets, and a resolve action.",
+      "docsPath": "/docs/examples-and-recipes/library/support-desk-workspace",
+      "canonicalDocs": [
+        "/docs/model-content/operational-views/workspaces-and-navigation",
+        "/docs/model-content/operational-views/actions",
+        "/docs/model-content/operational-views/define-view"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build a support ticket queue",
+        "add an urgent tickets view",
+        "resolve tickets with one click",
+        "show open ticket count in navigation"
       ]
     },
     {

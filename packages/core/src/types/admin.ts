@@ -1,5 +1,5 @@
 import type { icons as lucideIcons } from "lucide-react";
-import type { DefineNavItemOptions } from "./navigation.js";
+import type { DefineWorkspaceOptions } from "./navigation.js";
 
 /** A valid icon component name from the Lucide icon set bundled with Dyrected Admin. */
 export type AdminIconName = keyof typeof lucideIcons;
@@ -50,7 +50,7 @@ export interface AdminConfig {
    * Custom navigation layout for the admin sidebar.
    * If omitted, all collections and globals appear in default sections.
    */
-  navigation?: DefineNavItemOptions[];
+  navigation?: DefineWorkspaceOptions[];
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {

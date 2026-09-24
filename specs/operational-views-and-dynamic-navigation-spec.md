@@ -77,7 +77,7 @@ defineWorkspace({ ... })
 
 > [!NOTE]
 > **API Unification & Multi-Tenancy Disambiguation:**
-> `defineWorkspace` is the canonical primitive for operational workspaces, custom navigation items, and collection-level views. `defineNavItem` is maintained as a 100% backwards-compatible alias.
+> `defineWorkspace` is the canonical primitive for operational workspaces, custom navigation items, and collection-level views. `defineWorkspace` has been removed.
 >
 > To avoid naming collision with multi-tenancy (which previously used `WorkspaceSwitcher`), multi-tenancy will be renamed to `Tenant` / `TenantSwitcher` in an upcoming PR, reserving the term "Workspace" strictly for operational hubs.
 
@@ -97,14 +97,14 @@ When defining views on an operational workspace item, **the first view in the `v
 
 ### 3.2 Covering All Existing Scenarios with `defineWorkspace`
 
-`defineWorkspace` (and its alias `defineNavItem`) elegantly satisfies every admin navigation requirement across the framework:
+`defineWorkspace` elegantly satisfies every admin navigation requirement across the framework:
 
 #### Scenario 1: Standalone Operational Workspace (Multi-Collection)
 
 Omit `addToCollection`. The item renders as a top-level operational workspace in the sidebar:
 
 ```ts
-export const kycReviewWorkspace = defineNavItem({
+export const kycReviewWorkspace = defineWorkspace({
   slug: "kyc-review",
   label: "KYC Review",
   icon: "ShieldAlert",
@@ -135,7 +135,7 @@ export const kycReviewWorkspace = defineNavItem({
 Specify `addToCollection: "investors"`. Instead of creating a new menu item, this **injects views directly into the `investors` collection's submenu**:
 
 ```ts
-defineNavItem({
+defineWorkspace({
   addToCollection: "investors",
   group: "Operations", // Optionally moves Investors into this group too
   views: [
@@ -159,7 +159,7 @@ Insert an item immediately before or after any existing collection or nav item w
 
 ```ts
 // Inserts Fraud Review right after the "orders" collection in the sidebar
-defineNavItem({
+defineWorkspace({
   slug: "fraud-review",
   label: "Fraud Review",
   after: "orders", // 👈 Spliced immediately after the orders collection
@@ -167,7 +167,7 @@ defineNavItem({
 });
 
 // Moves existing Media collection into Content, positioned right before Articles
-defineNavItem({
+defineWorkspace({
   collection: "media",
   group: "Content",
   before: "articles", // 👈 Positioned immediately before articles
@@ -179,7 +179,7 @@ defineNavItem({
 Items within the same group are sorted in ascending order (default `order: 100`):
 
 ```ts
-defineNavItem({
+defineWorkspace({
   slug: "urgent-queue",
   label: "Urgent Actions",
   group: "Operations",
@@ -200,7 +200,7 @@ defineNavItem({
 Place or re-group any global:
 
 ```ts
-defineNavItem({
+defineWorkspace({
   global: "site_settings",
   group: "Settings",
 });
@@ -211,7 +211,7 @@ defineNavItem({
 Customize or position the dashboard:
 
 ```ts
-defineNavItem({
+defineWorkspace({
   dashboard: true,
   label: "Executive Summary",
   icon: "LayoutDashboard",
@@ -223,7 +223,7 @@ defineNavItem({
 Add direct links to external tools (e.g. Stripe, Metabase) or custom pages:
 
 ```ts
-defineNavItem({
+defineWorkspace({
   label: "Stripe Dashboard",
   href: "https://dashboard.stripe.com",
   icon: "ExternalLink",
@@ -241,7 +241,7 @@ defineNavItem({
 If a group requires an explicit icon or a custom default collapsed state:
 
 ```ts
-defineNavItem({
+defineWorkspace({
   slug: "disputes",
   label: "Disputes Desk",
   group: {
@@ -258,7 +258,7 @@ defineNavItem({
 Hide sensitive operational views from unauthorized team members:
 
 ```ts
-defineNavItem({
+defineWorkspace({
   slug: "audit-logs",
   label: "Security Audit",
   access: ["super_admin", "compliance_lead"],
@@ -293,7 +293,7 @@ export interface NavGroup {
 /** Backwards-compatible type alias */
 export type NavGroupMetadata = NavGroup;
 
-export interface DefineNavItemOptions {
+export interface DefineWorkspaceOptions {
   /** If provided, injects views into an existing collection submenu. If omitted, stands alone. */
   addToCollection?: string;
 
@@ -344,7 +344,7 @@ export interface DefineNavItemOptions {
 }
 
 /** Configuration options for defining an operational workspace or customizing placement of collections/globals. */
-export type DefineWorkspaceOptions = DefineNavItemOptions;
+export type DefineWorkspaceOptions = DefineWorkspaceOptions;
 
 /** Helper to define an operational workspace or customize placement of collections/globals. */
 export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspaceOptions {
@@ -352,7 +352,7 @@ export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspac
 }
 
 /** @deprecated Use `defineWorkspace` instead. */
-export function defineNavItem(options: DefineNavItemOptions): DefineNavItemOptions {
+export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspaceOptions {
   return defineWorkspace(options);
 }
 ```
@@ -404,7 +404,7 @@ Incoming Request
 
 ```ts
 // ❌ Throws compile/runtime configuration error
-defineNavItem({
+defineWorkspace({
   slug: "collections", // or "globals", "api", "setup", "settings", "login"
   label: "All Collections",
   views: [ /* ... */ ],
@@ -439,7 +439,7 @@ Operational items in the sidebar can display real-time numeric badges (e.g. `[14
 ### 5.1 Badge Configuration
 
 ```ts
-defineNavItem({
+defineWorkspace({
   slug: "kyc-review",
   label: "KYC Review",
   badge: {
@@ -493,7 +493,7 @@ A gear icon (`Customize Navigation`) in the sidebar footer opens a dedicated reo
 
 To give operations leads and power users full workflow autonomy without code changes, the navigation customizer allows creating and organizing resources across all **three tiers**.
 
-**100% Code-UI Schema Parity:** There is zero difference between what can be defined in code schema (`defineNavItem`, `defineView`, `NavGroup`) and what can be configured in the UI. Both produce identical data structures. This allows `@dyrected/cli` schema sync to seamlessly serialize UI configurations back into TypeScript config files, and vice versa.
+**100% Code-UI Schema Parity:** There is zero difference between what can be defined in code schema (`defineWorkspace`, `defineView`, `NavGroup`) and what can be configured in the UI. Both produce identical data structures. This allows `@dyrected/cli` schema sync to seamlessly serialize UI configurations back into TypeScript config files, and vice versa.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -618,7 +618,7 @@ The frontend owns **type safety, UI responsiveness, migrations, and corruption r
    When the navigation preference schema evolves across software releases, the client handles the upgrade transparently in memory without requiring database-level schema migrations:
 
    ```ts
-   import type { DefineNavItemOptions, DefineViewOptions, NavGroup } from "@dyrected/core";
+   import type { DefineWorkspaceOptions, DefineViewOptions, NavGroup } from "@dyrected/core";
 
    export interface UserNavigationPreferences {
      _version: number;
@@ -627,7 +627,7 @@ The frontend owns **type safety, UI responsiveness, migrations, and corruption r
      groupOrder: string[]; // Custom ordering of group slugs
      itemOrder: Record<string, string[]>; // groupSlug -> array of nav item slugs
      groups: NavGroup[]; // Tier 1: Groups (exact same interface as code)
-     items: DefineNavItemOptions[]; // Tier 2: Nav Items (exact same interface as defineNavItem, views use DefineViewOptions)
+     items: DefineWorkspaceOptions[]; // Tier 2: Nav Items (exact same interface as defineWorkspace, views use DefineViewOptions)
    }
    ```
 
@@ -737,7 +737,7 @@ When building customizable navigation, operational views, and user preferences i
 
 | Package | Responsibility |
 | :--- | :--- |
-| `@dyrected/core` | • Export `defineWorkspace` (and deprecated alias `defineNavItem`)<br>• Normalize and validate `admin.navigation`<br>• Enforce reserved slug validation (`/collections`, `/globals`, `/setup`, `/api`, etc.)<br>• Serve `/api/admin/navigation` and `/api/admin/navigation/badges`<br>• Implement 3-tier cascading resolution waterfall on `GET /api/preferences/:key`<br>• Support `scope=role` in addition to `personal` and `global`<br>• Enforce RBAC write access (only admins can mutate role/global preferences)<br>• Perform server-side RBAC pruning on navigation trees |
+| `@dyrected/core` | • Export `defineWorkspace`<br>• Normalize and validate `admin.navigation`<br>• Enforce reserved slug validation (`/collections`, `/globals`, `/setup`, `/api`, etc.)<br>• Serve `/api/admin/navigation` and `/api/admin/navigation/badges`<br>• Implement 3-tier cascading resolution waterfall on `GET /api/preferences/:key`<br>• Support `scope=role` in addition to `personal` and `global`<br>• Enforce RBAC write access (only admins can mutate role/global preferences)<br>• Perform server-side RBAC pruning on navigation trees |
 | `@dyrected/admin` | • Render dynamic, polymorphic sidebar in `admin-shell.tsx`<br>• Register `/:workspaceSlug/:viewSlug` routes directly at root in React Router without `/ops`<br>• Implement "Customize Navigation" drawer with `@dnd-kit/sortable` and step buttons<br>• Upgrade `usePreference` hook with typed registry, 400ms debounce, and client migrations<br>• Persist sparse layout deltas via `usePreference("admin:navigation")` |
 | `@dyrected/sdk` | • Expose `scope: "role"` in `client.getPreference` and `client.setPreference`<br>• Export `DyrectedPreferences` registry interface for end-to-end type safety |
 
@@ -767,7 +767,7 @@ All preference state updates and route transitions must adhere to Dyrected's Rea
 
 ### Phase 1: Core Schema, Compiler & Preferences Engine (`@dyrected/core`, Database Adapters)
 
-- **Unified Navigation Types:** Export canonical `defineWorkspace`, `DefineWorkspaceOptions`, `NavGroup`, and deprecation aliases `defineNavItem` / `DefineNavItemOptions` / `NavGroupMetadata`.
+- **Unified Navigation Types:** Export canonical `defineWorkspace`, `DefineWorkspaceOptions`, `NavGroup`.
 - **Navigation Compiler Pipeline:**
   - Auto-discovery of collections, globals, and media resources.
   - Deterministic 5-step compiler with sparse relative splicing (`after`, `before`) and numeric sorting (`order`, `position`).
@@ -798,7 +798,7 @@ All preference state updates and route transitions must adhere to Dyrected's Rea
 
 ### Phase 4: CLI Schema Synchronization (`@dyrected/cli`)
 
-- **Bi-directional Code-UI Sync:** Implement `dyrected nav pull` (or `dyrected schema sync --nav`) to serialize UI-configured navigation (`UserNavigationPreferences.items` and `groups`) straight into TypeScript code (`dyrected.config.ts`) using the shared `defineNavItem` schemas.
+- **Bi-directional Code-UI Sync:** Implement `dyrected nav pull` (or `dyrected schema sync --nav`) to serialize UI-configured navigation (`UserNavigationPreferences.items` and `groups`) straight into TypeScript code (`dyrected.config.ts`) using the shared `defineWorkspace` schemas.
 
 ### Phase 5: Documentation & Recipes (`apps/docs`, `@dyrected/knowledge`)
 

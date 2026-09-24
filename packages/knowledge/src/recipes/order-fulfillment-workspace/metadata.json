@@ -1,0 +1,23 @@
+{
+  "id": "order-fulfillment-workspace",
+  "title": "Build an order fulfillment workspace",
+  "description": "Combine a kanban pipeline, a payment queue, and revenue metrics into one sidebar workspace for the fulfillment team.",
+  "problem": "A fulfillment team needs to move orders from requested to paid to shipped, see which orders still need payment, and watch revenue, without jumping between collection pages.",
+  "summary": "Define a workspace with defineWorkspace that pairs a kanban pipeline with a filtered payment queue, metric cards, and a badge counting unpaid orders.",
+  "category": "admin-experience",
+  "runtime": "shared",
+  "runtimeNotes": "Declarative workspace, views, metrics, and mutation actions. No server handlers required.",
+  "intents": [
+    "build an order fulfillment dashboard",
+    "combine kanban and table views in one workspace",
+    "show unpaid orders count in the sidebar",
+    "add revenue metrics to an operations workspace"
+  ],
+  "concepts": ["defineWorkspace", "defineView", "layout: kanban", "metrics", "badge.aggregate", "defineAction"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/workspaces-and-navigation",
+    "/docs/model-content/operational-views/layouts/kanban",
+    "/docs/model-content/operational-views/metrics"
+  ],
+  "requires": []
+}

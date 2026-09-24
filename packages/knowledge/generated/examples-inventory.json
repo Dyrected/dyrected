@@ -3241,6 +3241,13 @@
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
   },
   {
+    "id": "/examples-and-recipes/library/kyc-review-workspace#example-1",
+    "page": "/examples-and-recipes/library/kyc-review-workspace",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/examples-and-recipes/library/navigation-global-links#example-1",
     "page": "/examples-and-recipes/library/navigation-global-links",
     "language": "ts",
@@ -3257,6 +3264,13 @@
   {
     "id": "/examples-and-recipes/library/operational-table-view#example-1",
     "page": "/examples-and-recipes/library/operational-table-view",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/order-fulfillment-workspace#example-1",
+    "page": "/examples-and-recipes/library/order-fulfillment-workspace",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
@@ -3327,6 +3341,13 @@
   {
     "id": "/examples-and-recipes/library/site-settings-global#example-1",
     "page": "/examples-and-recipes/library/site-settings-global",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/support-desk-workspace#example-1",
+    "page": "/examples-and-recipes/library/support-desk-workspace",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"
@@ -6410,6 +6431,55 @@
     "language": "mermaid",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-1",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-2",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-3",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-4",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-5",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-6",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/operational-views/workspaces-and-navigation#example-7",
+    "page": "/model-content/operational-views/workspaces-and-navigation",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
   },
   {
     "id": "/reference/cli#example-1",

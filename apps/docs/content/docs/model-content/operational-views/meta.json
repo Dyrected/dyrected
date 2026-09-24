@@ -12,6 +12,7 @@
     "layouts/spreadsheet",
     "actions",
     "metrics",
+    "workspaces-and-navigation",
     "routing-and-preferences"
   ]
 }

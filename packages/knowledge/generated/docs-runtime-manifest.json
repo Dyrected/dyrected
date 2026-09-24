@@ -1995,6 +1995,21 @@
     "status": "classified"
   },
   {
+    "id": "examples-and-recipes--library--kyc-review-workspace",
+    "relativePath": "examples-and-recipes/library/kyc-review-workspace",
+    "title": "Build a KYC review workspace",
+    "description": "Give compliance reviewers a dedicated sidebar workspace with a pending queue, a live badge, and approve or reject actions.",
+    "runtime": "shared",
+    "runtimeGroup": "recipe-kyc-review-workspace",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/kyc-review-workspace.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/kyc-review-workspace",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/kyc-review-workspace",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/kyc-review-workspace",
+    "status": "classified"
+  },
+  {
     "id": "examples-and-recipes--library--navigation-global-links",
     "relativePath": "examples-and-recipes/library/navigation-global-links",
     "title": "Create a navigation global with nested links",
@@ -2037,6 +2052,21 @@
     "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/operational-table-view",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/operational-table-view",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/operational-table-view",
+    "status": "classified"
+  },
+  {
+    "id": "examples-and-recipes--library--order-fulfillment-workspace",
+    "relativePath": "examples-and-recipes/library/order-fulfillment-workspace",
+    "title": "Build an order fulfillment workspace",
+    "description": "Combine a kanban pipeline, a payment queue, and revenue metrics into one sidebar workspace for the fulfillment team.",
+    "runtime": "shared",
+    "runtimeGroup": "recipe-order-fulfillment-workspace",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/order-fulfillment-workspace.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/order-fulfillment-workspace",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/order-fulfillment-workspace",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/order-fulfillment-workspace",
     "status": "classified"
   },
   {
@@ -2187,6 +2217,21 @@
     "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/site-settings-global",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/site-settings-global",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/site-settings-global",
+    "status": "classified"
+  },
+  {
+    "id": "examples-and-recipes--library--support-desk-workspace",
+    "relativePath": "examples-and-recipes/library/support-desk-workspace",
+    "title": "Build a support desk workspace",
+    "description": "Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.",
+    "runtime": "shared",
+    "runtimeGroup": "recipe-support-desk-workspace",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/support-desk-workspace.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/support-desk-workspace",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/support-desk-workspace",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/support-desk-workspace",
     "status": "classified"
   },
   {
@@ -3597,6 +3642,21 @@
     "urlCurrent": "https://docs.dyrected.com/docs/model-content/operational-views/ux-guidelines",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/operational-views/ux-guidelines",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/ux-guidelines",
+    "status": "classified"
+  },
+  {
+    "id": "model-content--operational-views--workspaces-and-navigation",
+    "relativePath": "model-content/operational-views/workspaces-and-navigation",
+    "title": "Workspaces and navigation",
+    "description": "Build a sidebar workspace with defineWorkspace, group it, add a live badge, and keep it in sync with the admin UI.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "model-content/operational-views",
+    "sourceFile": "apps/docs/content/docs/model-content/operational-views/workspaces-and-navigation.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/model-content/operational-views/workspaces-and-navigation",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/operational-views/workspaces-and-navigation",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/workspaces-and-navigation",
     "status": "classified"
   },
   {

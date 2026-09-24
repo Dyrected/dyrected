@@ -41,7 +41,7 @@ import {
   X,
 } from "lucide-react"
 
-import type { CompiledNavGroup, CompiledNavItem, DefineNavItemOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
+import type { CompiledNavGroup, CompiledNavItem, DefineWorkspaceOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
 import { ViewMetricsBuilder } from "./view-metrics-builder"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
@@ -272,7 +272,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     )
     const slug = generateUniqueSlug(itemLabel, existingSlugs)
 
-    const newItem: DefineNavItemOptions = {
+    const newItem: DefineWorkspaceOptions = {
       slug,
       label: itemLabel.trim(),
       icon: itemIcon,
@@ -333,7 +333,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
       // If the target item is codebase-defined, add a personal item override with the new view
       const baseItem = allItems.find((i) => i.slug === activeItemForNewView)
       if (baseItem) {
-        const itemOverride: DefineNavItemOptions = {
+        const itemOverride: DefineWorkspaceOptions = {
           slug: baseItem.slug,
           label: baseItem.label,
           icon: baseItem.icon,

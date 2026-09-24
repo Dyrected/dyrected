@@ -1,0 +1,23 @@
+{
+  "id": "support-desk-workspace",
+  "title": "Build a support desk workspace",
+  "description": "Set up a support inbox with an open-tickets queue, an urgent view, and one-click resolution.",
+  "problem": "Support agents need a shared queue of open tickets, a fast way to spot urgent ones, and their own assigned tickets, without every agent seeing the same unfiltered list.",
+  "summary": "Define a workspace with defineWorkspace containing open, urgent, and resolved views, a badge counting open tickets, and a resolve action.",
+  "category": "admin-experience",
+  "runtime": "shared",
+  "runtimeNotes": "Declarative workspace and mutation actions. The urgent badge uses a static aggregate filter; per-agent filtering is not covered here.",
+  "intents": [
+    "build a support ticket queue",
+    "add an urgent tickets view",
+    "resolve tickets with one click",
+    "show open ticket count in navigation"
+  ],
+  "concepts": ["defineWorkspace", "defineView", "defineAction", "badge.aggregate", "sort", "filter"],
+  "canonicalDocs": [
+    "/docs/model-content/operational-views/workspaces-and-navigation",
+    "/docs/model-content/operational-views/actions",
+    "/docs/model-content/operational-views/define-view"
+  ],
+  "requires": []
+}
