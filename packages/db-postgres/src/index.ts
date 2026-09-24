@@ -4,6 +4,7 @@ import {
   parseSort,
   parseSqlWhere,
   DuplicateKeyError,
+  resolveIndexName,
   generateDocumentId,
 } from "@dyrected/core";
 import postgres from "postgres";
@@ -351,7 +352,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     // 1. Single-field unique constraints
     for (const field of fields) {
       if (field.unique) {
-        const idxName = `uniq_${tableNameOnly}_${field.name}`;
+        const idxName = resolveIndexName("uniq", tableNameOnly, [field.name]);
         await this.sql.unsafe(
           `CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON ${targetTable} ("${field.name.replace(/"/g, '""')}")`
         );
@@ -363,7 +364,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       for (const idx of indexes) {
         if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
         const isUnique = Boolean(idx.unique);
-        const idxName = idx.name || `${isUnique ? "uniq" : "idx"}_${tableNameOnly}_${idx.fields.join("_")}`;
+        const idxName = idx.name || resolveIndexName(isUnique ? "uniq" : "idx", tableNameOnly, idx.fields);
         const uniqueKeyword = isUnique ? "UNIQUE " : "";
         const colList = idx.fields.map((f: string) => `"${f.replace(/"/g, '""')}"`).join(", ");
         await this.sql.unsafe(
@@ -572,7 +573,9 @@ export class PostgresAdapter implements DatabaseAdapter {
           "pg",
           "ILIKE",
         );
-        whereSql += ` AND (${parsed.sql})`;
+        // `$1` is already the id, so shift the parsed placeholders past it.
+        const shifted = parsed.sql.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + whereParams.length}`);
+        whereSql += ` AND (${shifted})`;
         whereParams.push(...parsed.params);
       }
     } else if (params.where && Object.keys(params.where).length > 0) {
@@ -599,6 +602,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     const setClauses: string[] = [];
     const setParams: any[] = [];
     const jsonPatch: Record<string, any> = {};
+    // Postgres rejects two assignments to `data` in one UPDATE, so numeric operators and the
+    // JSON merge are composed into a single expression, applied in order.
+    let dataExpr = `(CASE WHEN jsonb_typeof(COALESCE(data, '{}'::jsonb)) = 'object' THEN COALESCE(data, '{}'::jsonb) ELSE '{}'::jsonb END)`;
+    let dataTouched = false;
 
     for (const [key, val] of Object.entries(params.data)) {
       if (["id", "createdAt", "updatedAt"].includes(key)) continue;
@@ -612,10 +619,11 @@ export class PostgresAdapter implements DatabaseAdapter {
         if (isPromoted) {
           const escapedCol = `"${key.replace(/"/g, '""')}"`;
           setClauses.push(`${escapedCol} = COALESCE(${escapedCol}, 0) + $${pIndex}`);
-          setClauses.push(`data = jsonb_set(COALESCE(data, '{}'::jsonb), '{${key}}', to_jsonb(COALESCE(${escapedCol}, 0) + $${pIndex}))`);
+          dataExpr = `jsonb_set(${dataExpr}, '{${key}}', to_jsonb(COALESCE(${escapedCol}, 0) + $${pIndex}))`;
         } else {
-          setClauses.push(`data = jsonb_set(COALESCE(data, '{}'::jsonb), '{${key}}', to_jsonb(COALESCE((data->>'${key}')::numeric, 0) + $${pIndex}))`);
+          dataExpr = `jsonb_set(${dataExpr}, '{${key}}', to_jsonb(COALESCE((data->>'${key}')::numeric, 0) + $${pIndex}))`;
         }
+        dataTouched = true;
       } else {
         if (isPromoted) {
           const escapedCol = `"${key.replace(/"/g, '""')}"`;
@@ -631,11 +639,10 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     if (Object.keys(jsonPatch).length > 0) {
       setParams.push(this.sql.json(jsonPatch));
-      const pIndex = setParams.length;
-      setClauses.push(
-        `data = (CASE WHEN jsonb_typeof(COALESCE(data, '{}'::jsonb)) = 'object' THEN COALESCE(data, '{}'::jsonb) ELSE '{}'::jsonb END) || $${pIndex}::jsonb`
-      );
+      dataExpr = `${dataExpr} || $${setParams.length}::jsonb`;
+      dataTouched = true;
     }
+    if (dataTouched) setClauses.push(`data = ${dataExpr}`);
 
     // Remap WHERE parameter indices since setParams are first
     const paramOffset = setParams.length;

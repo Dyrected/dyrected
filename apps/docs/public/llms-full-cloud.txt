@@ -22539,6 +22539,65 @@ export type JsonFormat =
 
 ---
 
+## Money
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/fields/money
+
+Use the money field when a number is an amount of money and it has to add up exactly: balances, prices, ledger entries, refunds. It stores the amount as a whole number of minor units (kobo for naira, cents for dollars), so `0.1 + 0.2` style rounding errors can't creep into your books.
+
+Here is the simplest version, a balance in naira:
+
+```ts
+
+
+export const Wallets = defineCollection({
+  slug: 'wallets',
+  fields: [defineMoneyField({ name: 'balance', label: 'Balance', currency: 'NGN' })],
+})
+```
+
+An editor types `52,500.00` in the admin. Dyrected stores `5250000`, and your API responses, hooks and frontend code all see `5250000`. You'll know it's working when the list view shows `₦52,500.00` while a request to the API returns the integer.
+
+## Why integers
+
+JavaScript numbers are floating point, so `52.5 * 1000` comes out as `52500.00000000001`. Add up enough of those and a ledger stops reconciling. Integers add exactly, and Dyrected's atomic `increment` and `decrement` operators (see [Transactions](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)) keep them exact even when many requests write at once.
+
+## What gets checked on write
+
+When a document is created or updated through the API, every money field must be a safe integer. An integer string such as `"5250000"` is converted to a number. Anything else, like `52.5` or `"abc"`, is rejected with a `400` that names the field.
+
+This check covers top-level money fields on collections (including ones inside a `row`). It doesn't cover money fields nested inside `object`, `array` or `blocks` fields, or on globals, so validate those in a [hook](https://docs.dyrected.com/docs/cloud/model-content/content-rules/hooks) if you use them there.
+
+## Choosing the currency
+
+Set a fixed `currency` when every value uses the same one. When each document has its own, point `currencyField` at a sibling field that holds the ISO 4217 code:
+
+```ts
+
+
+export const Payments = defineCollection({
+  slug: 'payments',
+  fields: [
+    defineSelectField({ name: 'currency', label: 'Currency', options: ['NGN', 'USD'] }),
+    defineMoneyField({ name: 'amount', label: 'Amount', currencyField: 'currency' }),
+  ],
+})
+```
+
+The admin reads the currency from the document, so a USD payment shows as dollars and an NGN payment as naira. Currencies with a different number of decimal places need `decimals`, which defaults to `2`. Use `0` for yen, for example.
+
+## Showing raw minor units
+
+If you'd rather see and edit the raw integer in the admin, set `admin.displayMinorAsMajor: false`. This only changes what the admin shows. Storage and the API are untouched.
+
+## Storage, sorting and filtering
+
+In SQL databases a promoted money column is a `BIGINT` (an `INTEGER` in SQLite). Add `promoted: true` if you filter or sort on it often, as you would for a [number field](https://docs.dyrected.com/docs/cloud/model-content/fields/number). Atomic `increment` and `decrement` work whether or not the field is promoted.
+
+The list view's number filter compares the stored minor units, so a filter value of `1000` means `10.00`.
+
+---
+
 ## Multi Select
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/fields/multi-select
@@ -22943,7 +23002,7 @@ Each field type has its own page with a focused example and its generated contra
 
 - Text-like content: [Text](https://docs.dyrected.com/docs/cloud/model-content/fields/text), [Textarea](https://docs.dyrected.com/docs/cloud/model-content/fields/textarea), [Email](https://docs.dyrected.com/docs/cloud/model-content/fields/email), [URL](https://docs.dyrected.com/docs/cloud/model-content/fields/url), [Icon](https://docs.dyrected.com/docs/cloud/model-content/fields/icon), [Rich Text](https://docs.dyrected.com/docs/cloud/model-content/fields/rich-text)
 - Choices and toggles: [Select](https://docs.dyrected.com/docs/cloud/model-content/fields/select), [Multi Select](https://docs.dyrected.com/docs/cloud/model-content/fields/multi-select), [Radio](https://docs.dyrected.com/docs/cloud/model-content/fields/radio), [Boolean](https://docs.dyrected.com/docs/cloud/model-content/fields/boolean)
-- Numbers and dates: [Number](https://docs.dyrected.com/docs/cloud/model-content/fields/number), [Money](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), [Date](https://docs.dyrected.com/docs/cloud/model-content/fields/date), [Datetime](https://docs.dyrected.com/docs/cloud/model-content/fields/datetime), [Time](https://docs.dyrected.com/docs/cloud/model-content/fields/time)
+- Numbers and dates: [Number](https://docs.dyrected.com/docs/cloud/model-content/fields/number), [Money](https://docs.dyrected.com/docs/cloud/model-content/fields/money), [Date](https://docs.dyrected.com/docs/cloud/model-content/fields/date), [Datetime](https://docs.dyrected.com/docs/cloud/model-content/fields/datetime), [Time](https://docs.dyrected.com/docs/cloud/model-content/fields/time)
 - Structure and nesting: [Object](https://docs.dyrected.com/docs/cloud/model-content/fields/object), [Array](https://docs.dyrected.com/docs/cloud/model-content/fields/array), [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks), [Row](https://docs.dyrected.com/docs/cloud/model-content/fields/row)
 - Relationships and files: [Relationship](https://docs.dyrected.com/docs/cloud/model-content/fields/relationship), [Image](https://docs.dyrected.com/docs/cloud/model-content/fields/image), [Join](https://docs.dyrected.com/docs/cloud/model-content/fields/join)
 - Data and layout: [JSON](https://docs.dyrected.com/docs/cloud/model-content/fields/json)

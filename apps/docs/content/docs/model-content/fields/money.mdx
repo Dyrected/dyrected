@@ -1,8 +1,6 @@
 ---
 title: Money
 description: A monetary field stored as exact integer minor units, so amounts never drift.
-runtime: self-hosted
-runtimeNotes: The money field ships in the self-hosted @dyrected/core package.
 ---
 
 Use the money field when a number is an amount of money and it has to add up exactly: balances, prices, ledger entries, refunds. It stores the amount as a whole number of minor units (kobo for naira, cents for dollars), so `0.1 + 0.2` style rounding errors can't creep into your books.

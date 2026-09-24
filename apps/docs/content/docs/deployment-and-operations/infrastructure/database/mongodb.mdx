@@ -56,7 +56,7 @@ Since there are no promoted columns, query performance comes from MongoDB's own 
 
 The `unique: true` field option is enforced by a real unique index. A duplicate write fails with a `DuplicateKeyError` (HTTP 409), the same as on the SQL adapters. See [Enforcing uniqueness](/docs/deployment-and-operations/infrastructure/database/indexes#enforcing-uniqueness).
 
-`increment`, `decrement` and conditional `where` updates run as a single atomic `findOneAndUpdate`, so they are safe under concurrent writes. `lock: 'for-update'` has no effect on MongoDB: inside a transaction, MongoDB already locks the documents a write touches and retries on conflict.
+`increment`, `decrement` and conditional `where` updates run as a single atomic `findOneAndUpdate`, so they are safe under concurrent writes. `lock: 'for-update'` has no effect on MongoDB: inside a transaction, MongoDB already locks the documents a write touches, and the driver retries the transaction if two writers conflict.
 
 ## Transactions
 

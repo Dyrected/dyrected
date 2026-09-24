@@ -1,4 +1,4 @@
-import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId } from "@dyrected/core";
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, resolveIndexName } from "@dyrected/core";
 import mysql from "mysql2/promise";
 
 function parseMysqlDuplicateKey(message: string): { field?: string; value?: string } {
@@ -456,7 +456,7 @@ FIX INSTRUCTIONS:
       // 1. Single-field unique constraints
       for (const field of fields) {
         if (field.unique) {
-          const idxName = `uniq_${tableName}_${field.name}`;
+          const idxName = resolveIndexName("uniq", tableName, [field.name]);
           if (!existingIndexNames.has(idxName) && !existingIndexNames.has(field.name) && !this.failedIndexes.has(idxName)) {
             try {
               const [colInfoRows] = await this.query(`SHOW COLUMNS FROM \`${tableName}\` WHERE Field = ?`, [field.name]);
@@ -491,7 +491,7 @@ FIX INSTRUCTIONS:
         for (const idx of indexes) {
           if (!Array.isArray(idx.fields) || idx.fields.length === 0) continue;
           const isUnique = Boolean(idx.unique);
-          const idxName = idx.name || `${isUnique ? "uniq" : "idx"}_${tableName}_${idx.fields.join("_")}`;
+          const idxName = idx.name || resolveIndexName(isUnique ? "uniq" : "idx", tableName, idx.fields);
           if (!existingIndexNames.has(idxName) && !this.failedIndexes.has(idxName)) {
             for (const fName of idx.fields) {
               try {

@@ -243,7 +243,7 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
     return ready;
   }
 
-  async function ensureLockRow(name: string): Promise<Record<string, any>> {
+  async function ensureLockRow(name: string, now: Date): Promise<Record<string, any>> {
     await ensureReady();
     const existing = await db!.findOne({ collection: TASK_LOCKS_COLLECTION, id: name });
     if (existing) return existing;
@@ -255,7 +255,7 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
           name,
           lockedUntil: 0,
           lockedBy: null,
-          lastScheduledFor: floorToMinute(new Date()).toISOString(),
+          lastScheduledFor: floorToMinute(now).toISOString(),
           lastStartedAt: null,
           lastFinishedAt: null,
           lastStatus: null,
@@ -355,7 +355,7 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
     async runTask(name) {
       const task = tasks.get(name);
       if (!task) throw new Error(`Unknown task "${name}".`);
-      const row = await ensureLockRow(name);
+      const row = await ensureLockRow(name, new Date());
       return track(execute(task, row, undefined));
     },
 
@@ -363,7 +363,7 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
       const results: TaskRunResult[] = [];
       for (const task of tasks.values()) {
         if (!task.schedule) continue;
-        const row = await ensureLockRow(task.name);
+        const row = await ensureLockRow(task.name, now);
         const reference = new Date(String(row.lastScheduledFor));
         const due = Number.isNaN(reference.getTime())
           ? true

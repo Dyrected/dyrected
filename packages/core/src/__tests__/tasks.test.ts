@@ -142,22 +142,22 @@ describe("task runner", () => {
     const config = build(defineTask({ name: "cron", cron: "*/15 * * * *", run }));
     const first = createTaskRunner(config);
 
+    // Fixed times keep this independent of the wall clock.
+    const now = at("2026-03-10T10:07:00Z");
     // First sighting registers the task; nothing is due until a slot passes.
-    const now = new Date();
     expect((await first.runDue(now))[0]).toMatchObject({ status: "skipped", reason: "not-due" });
 
-    const later = new Date(now.getTime() + 16 * 60_000);
+    const later = at("2026-03-10T10:23:00Z"); // the 10:15 slot has passed
     const results = (
       await Promise.all(Array.from({ length: 5 }, () => createTaskRunner(config).runDue(later)))
     ).flat();
     expect(results.filter((r) => r.status === "completed")).toHaveLength(1);
     expect(run).toHaveBeenCalledOnce();
 
-    // The slot is handled; a call a minute later is not due.
-    expect((await first.runDue(new Date(later.getTime() + 60_000)))[0].reason).toBe("not-due");
-    // The following slot runs again.
-    const next = new Date(later.getTime() + 16 * 60_000);
-    expect((await first.runDue(next))[0].status).toBe("completed");
+    // The slot is handled; a minute later the next slot (10:30) has not arrived.
+    expect((await first.runDue(at("2026-03-10T10:24:00Z")))[0].reason).toBe("not-due");
+    // Once 10:30 passes, it runs again.
+    expect((await first.runDue(at("2026-03-10T10:31:00Z")))[0].status).toBe("completed");
     expect(run).toHaveBeenCalledTimes(2);
   });
 

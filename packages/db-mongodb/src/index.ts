@@ -258,7 +258,8 @@ export class MongoAdapter implements DatabaseAdapter {
           Object.fromEntries(idx.fields.map((f: string) => [f, 1 as const])),
           {
             unique: isUnique,
-            sparse: idx.sparse,
+            // The driver sends an explicit `sparse: undefined` as null, which the server rejects.
+            ...(idx.sparse !== undefined ? { sparse: idx.sparse } : {}),
             name: idx.name || `${isUnique ? "uniq" : "idx"}_${config.slug}_${idx.fields.join("_")}`,
           },
         );
