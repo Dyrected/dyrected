@@ -1,5 +1,12 @@
 # @dyrected/docs
 
+## 0.1.21
+
+### Patch Changes
+
+- Updated dependencies [604a872]
+  - @dyrected/knowledge@0.5.0
+
 ## 0.1.20
 
 ### Patch Changes

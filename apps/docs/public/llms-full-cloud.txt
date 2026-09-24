@@ -27542,6 +27542,22 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.17.0
+
+- Operational views and dynamic navigation
+
+  - **Workspaces:** add `defineWorkspace` and `DefineWorkspaceOptions` for standalone operational workspaces, collection placement, groups, ordering (`order`, `position`, `before`, `after`), `addToCollection`, and role-based `access`. Reserved route slugs are validated at config load.
+  - **Navigation APIs:** serve `/api/admin/navigation` (compiled tree, pruned per user role) and `/api/admin/navigation/badges` (batched aggregates, invalidated on mutations).
+  - **Badges:** support static text badges, aggregate count badges with variants, and per-view badges. Metrics gain `countDistinct` and string-based aggregates, with improved Postgres casting.
+  - **Admin:** add an inline navigation customizer with auto-generated slugs, a Lucide icon picker, and permanent view deletion. Pinned items now sit under the dashboard, and preference events no longer dispatch during render.
+  - **Database adapters:** add collection database indexes and the aggregate improvements above to the SQLite, MySQL, and Postgres adapters.
+  - **CLI:** add `dyrected nav pull` and `dyrected nav push` to sync UI-configured navigation with `dyrected.config.ts`, and keep navigation in sync during `sync:schema`.
+  - **SDK:** resolve relative base URLs server-side.
+  - **Knowledge:** add KYC review, order fulfillment, and support desk workspace recipes.
+  - **Docs:** add the "Workspaces and navigation" guide and remove legacy `list-view-v1` content.
+
+---
+
 ## v2.16.0
 
 - Align drawer saves with edit-page mutation pipeline and parent query invalidation:
@@ -27558,12 +27574,6 @@ Release notes and version history across all Dyrected packages.
 
   - add duplicate key error handling, auto-migration for index creation, and expanded column lengths.
   - add production concurrency and fintech readiness specification with database adapter and documentation updates.
-
-- View Header Action Execution:
-
-  - Allow `type: 'header'` actions to execute without requiring document IDs in `@dyrected/admin` and `@dyrected/core`.
-  - Pass `{ doc: null, docs: [], user, input, collection }` to header action handlers, returning handler results or defaulting to `{ success: true }`.
-  - Prevent dropped clicks in the admin view toolbar when `ids.length === 0`. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
@@ -28391,12 +28401,6 @@ Release notes and version history across all Dyrected packages.
   - Migrate documentation examples, the `dyrected init` scaffold, and the `@dyrected/knowledge` recipes and prompt templates to use the new `define*Field` helpers.
   - Rename the `JWT_SECRET` environment variable to `DYRECTED_JWT_SECRET` — update your `.env` accordingly.
   - Filter unpublished documents out of public read responses. (`@dyrected/admin`, `dyrected`, `@dyrected/core`, `@dyrected/nuxt`)
-
----
-
-## v2.5.56
-
-- Render single-field arrays as a flat, reorderable list instead of accordion cards, with the label shown once and per-row actions (duplicate, move, delete) in an overflow menu. Add a `hideLabel` admin option to suppress a field's label where it would be redundant. Hide the admin's own mobile header when embedded so the host dashboard renders a single top bar, driven via a `dyrected:toggle-menu` window event. Fix the mobile nav drawer closing immediately after opening (the close-on-navigation effect depended on the open state and re-triggered itself); it now closes only when the route changes. Refresh the dashboard update-check cache on a TTL so the banner reflects newly published versions instead of freezing on the first value seen. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
