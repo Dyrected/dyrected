@@ -15,6 +15,16 @@ function parseMysqlDuplicateKey(message: string): { field?: string; value?: stri
   return { field, value };
 }
 
+/**
+ * Expression used to compare an unpromoted JSON field in a WHERE clause. JSON booleans unquote to
+ * the strings 'true'/'false', which never equal the 1/0 the where translator binds, so they are
+ * normalized to 1/0; every other value keeps its unquoted form.
+ */
+function jsonWhereExpr(field: string): string {
+  const path = `JSON_EXTRACT(data, '$.${field}')`;
+  return `IF(JSON_TYPE(${path}) = 'BOOLEAN', IF(${path} = TRUE, 1, 0), JSON_UNQUOTE(${path}))`;
+}
+
 function isNumericOp(val: any): val is { increment?: number; decrement?: number } {
   return (
     val !== null &&
@@ -567,7 +577,7 @@ FIX INSTRUCTIONS:
           if (existingCols.includes(field) && !["id", "data"].includes(field)) {
             return `\`${field}\``;
           }
-          return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+          return jsonWhereExpr(field);
         },
         "?",
       );
@@ -705,7 +715,7 @@ FIX INSTRUCTIONS:
             if (existingCols.includes(field) && !["id", "data"].includes(field)) {
               return `\`${field}\``;
             }
-            return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+            return jsonWhereExpr(field);
           },
           "?",
         );
@@ -722,7 +732,7 @@ FIX INSTRUCTIONS:
           if (existingCols.includes(field) && !["id", "data"].includes(field)) {
             return `\`${field}\``;
           }
-          return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+          return jsonWhereExpr(field);
         },
         "?",
       );
@@ -877,7 +887,7 @@ FIX INSTRUCTIONS:
       if (existingCols.includes(field) && !["id", "data"].includes(field)) {
         return `\`${field}\``;
       }
-      return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+      return jsonWhereExpr(field);
     };
 
     /**
@@ -892,6 +902,24 @@ FIX INSTRUCTIONS:
       // number / integer / float — safe NULL on invalid input
       const sqlType = cast === "integer" ? "SIGNED" : "DECIMAL(20,6)";
       return `IF(${base} REGEXP '^-?[0-9]+(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$', CAST(${base} AS ${sqlType}), NULL)`;
+    };
+
+    const toDistinctValues = (raw: unknown): unknown[] => {
+      const parsed = Array.isArray(raw) ? raw : typeof raw === "string" ? JSON.parse(raw) : (raw ?? []);
+      if (!Array.isArray(parsed)) return [];
+      return Array.from(new Set(parsed.filter((v: unknown) => v !== null && v !== undefined)));
+    };
+
+    // Group keys of numeric columns come back as DECIMAL strings ("1.0000"); normalize to "1".
+    const groupFieldType = args.groupBy
+      ? (this.collectionConfigs.get(args.collection)?.fields ?? []).find((f: any) => f.name === args.groupBy)?.type
+      : undefined;
+    const groupKeyOf = (raw: unknown): string => {
+      if (raw === null || raw === undefined) return "__unassigned__";
+      if ((groupFieldType === "number" || groupFieldType === "money") && !Number.isNaN(Number(raw))) {
+        return String(Number(raw));
+      }
+      return String(raw);
     };
 
     const selectParts: string[] = [];
@@ -913,11 +941,12 @@ FIX INSTRUCTIONS:
           ? `COUNT(DISTINCT IF(${whereSql}, ${fieldExpr}, NULL))`
           : `COUNT(DISTINCT ${fieldExpr})`;
       } else if ("distinct" in op && typeof op.distinct === "string") {
+        // MySQL has no DISTINCT for JSON_ARRAYAGG, so the values are collected and de-duplicated below.
         isDistinctMap[name] = true;
         const fieldExpr = toFieldExpr(op.distinct);
         aggExpr = whereSql
-          ? `COALESCE(JSON_ARRAYAGG(DISTINCT IF(${whereSql}, ${fieldExpr}, NULL)), JSON_ARRAY())`
-          : `COALESCE(JSON_ARRAYAGG(DISTINCT ${fieldExpr}), JSON_ARRAY())`;
+          ? `COALESCE(JSON_ARRAYAGG(IF(${whereSql}, ${fieldExpr}, NULL)), JSON_ARRAY())`
+          : `COALESCE(JSON_ARRAYAGG(${fieldExpr}), JSON_ARRAY())`;
       } else if ("count" in op) {
         aggExpr = whereSql ? `COUNT(IF(${whereSql}, 1, NULL))` : `COUNT(*)`;
       } else if (op.sum) {
@@ -948,13 +977,12 @@ FIX INSTRUCTIONS:
 
       const groups: Record<string, Record<string, any>> = {};
       for (const row of (rows ?? [])) {
-        const key = row.__group_key === null || row.__group_key === undefined ? "__unassigned__" : String(row.__group_key);
+        const key = groupKeyOf(row.__group_key);
         const groupResult: Record<string, any> = {};
         for (const name of Object.keys(args.aggregates)) {
           const raw = row[name];
           if (isDistinctMap[name]) {
-            const parsed = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
-            groupResult[name] = Array.isArray(parsed) ? parsed.filter((v: any) => v !== null && v !== undefined) : [];
+            groupResult[name] = toDistinctValues(raw);
           } else {
             groupResult[name] = raw === null || raw === undefined ? null : Number(raw);
           }
@@ -973,8 +1001,7 @@ FIX INSTRUCTIONS:
       const raw = row[name];
       const op = args.aggregates[name];
       if (isDistinctMap[name]) {
-        const parsed = Array.isArray(raw) ? raw : (typeof raw === "string" ? JSON.parse(raw) : (raw ?? []));
-        result[name] = Array.isArray(parsed) ? parsed.filter((v: any) => v !== null && v !== undefined) : [];
+        result[name] = toDistinctValues(raw);
       } else if (raw instanceof Date) {
         result[name] = raw.toISOString();
       } else if (op?.cast === "date") {

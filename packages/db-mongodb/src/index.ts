@@ -367,63 +367,46 @@ export class MongoAdapter implements DatabaseAdapter {
 
     if (args.groupBy) {
       const groupField = args.groupBy;
-      const groupAccumulators: Record<string, any> = {};
-      const distinctKeys = new Set<string>();
-      const countDistinctKeys = new Set<string>();
+      const keyOf = (id: unknown) => (id === null || id === undefined ? "__unassigned__" : String(id));
 
+      // Each aggregate can carry its own `where`, so it gets its own pipeline; the results are
+      // merged by group key. A separate unfiltered pass supplies the full set of groups, so a
+      // group with no matching rows for some aggregate still appears (as 0, [] or null).
+      const universe = await col
+        .aggregate([{ $group: { _id: `$${groupField}` } }], { session: this.session })
+        .toArray();
+
+      const perAggregate = new Map<string, Map<string, any>>();
       for (const [name, op] of Object.entries(args.aggregates)) {
-        if ("countDistinct" in op && typeof op.countDistinct === "string") {
-          countDistinctKeys.add(name);
-          groupAccumulators[`${name}_set`] = { $addToSet: `$${op.countDistinct}` };
-        } else if ("distinct" in op && typeof op.distinct === "string") {
-          distinctKeys.add(name);
-          groupAccumulators[name] = { $addToSet: `$${op.distinct}` };
-        } else if ("count" in op) {
-          groupAccumulators[name] = { $sum: 1 };
-        } else if (op.sum) {
-          const val = wrapCast(op.sum, op.cast);
-          groupAccumulators[name] = { $sum: val };
-          groupAccumulators[`${name}_hasValid`] = {
-            $sum: { $cond: [{ $isNumber: val }, 1, 0] },
-          };
-        } else if (op.avg) {
-          groupAccumulators[name] = { $avg: wrapCast(op.avg, op.cast) };
-        } else if (op.min) {
-          groupAccumulators[name] = { $min: wrapCast(op.min, op.cast) };
-        } else if (op.max) {
-          groupAccumulators[name] = { $max: wrapCast(op.max, op.cast) };
-        } else {
-          groupAccumulators[name] = { $sum: 1 };
-        }
+        const match =
+          op.where && Object.keys(op.where).length > 0 ? [{ $match: this.buildFilter(op.where) }] : [];
+        const docs = await col
+          .aggregate(
+            [...match, { $group: { _id: `$${groupField}`, ...buildGroupAccumulator(op) } }],
+            { session: this.session },
+          )
+          .toArray();
+        perAggregate.set(name, new Map(docs.map((d) => [keyOf(d._id), d])));
       }
 
-      const pipeline: any[] = [
-        {
-          $group: {
-            _id: `$${groupField}`,
-            ...groupAccumulators,
-          },
-        },
-      ];
-
-      const rawGroups = await col.aggregate(pipeline, { session: this.session }).toArray();
       const groups: Record<string, Record<string, any>> = {};
-
-      for (const g of rawGroups) {
-        const key = g._id === null || g._id === undefined ? "__unassigned__" : String(g._id);
+      for (const g of universe) {
+        const key = keyOf(g._id);
         const groupResult: Record<string, any> = {};
-        for (const name of Object.keys(args.aggregates)) {
-          const op = args.aggregates[name];
-          if (countDistinctKeys.has(name)) {
-            const rawSet = (g[`${name}_set`] ?? []) as any[];
+        for (const [name, op] of Object.entries(args.aggregates)) {
+          const doc = perAggregate.get(name)?.get(key);
+          if ("countDistinct" in op) {
+            const rawSet = (doc?.result ?? []) as any[];
             groupResult[name] = rawSet.filter((v) => v !== null && v !== undefined).length;
-          } else if (distinctKeys.has(name)) {
-            const rawSet = (g[name] ?? []) as any[];
+          } else if ("distinct" in op) {
+            const rawSet = (doc?.result ?? []) as any[];
             groupResult[name] = rawSet.filter((v) => v !== null && v !== undefined);
-          } else if (op.sum && g[`${name}_hasValid`] === 0) {
+          } else if (!doc) {
+            groupResult[name] = "count" in op ? 0 : null;
+          } else if (op.sum && doc.hasValid === 0) {
             groupResult[name] = null;
           } else {
-            groupResult[name] = g[name] ?? ("count" in op ? 0 : null);
+            groupResult[name] = doc.result ?? ("count" in op ? 0 : null);
           }
         }
         groups[key] = groupResult;
