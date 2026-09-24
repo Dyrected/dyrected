@@ -11,12 +11,14 @@ import { CATEGORIES, getIconCategory, availableIconNames, getIcon } from "./icon
 
 
 interface IconPickerProps {
-  schema: FieldSchema
+  schema?: Partial<FieldSchema>
   field: { value: string; onChange: (v: string) => void }
   disabled?: boolean
+  className?: string
+  placeholder?: string
 }
 
-export function IconPicker({ schema, field, disabled }: IconPickerProps) {
+export function IconPicker({ schema, field, disabled, className, placeholder }: IconPickerProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState("all")
@@ -38,23 +40,26 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
   }, [search, selectedCategory])
 
   return (
-    <div className="dy-flex dy-items-center dy-gap-3">
+    <div className="dy-flex dy-items-center dy-gap-3 dy-w-full">
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             type="button"
             variant="outline"
             disabled={disabled}
-            className="dy-flex-1 dy-justify-start dy-gap-3 dy-h-12 dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-font-normal hover:dy-shadow-md dy-transition-all"
+            className={cn(
+              "dy-flex-1 dy-justify-start dy-gap-3 dy-h-12 dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-font-normal hover:dy-shadow-md dy-transition-all",
+              className
+            )}
           >
             {SelectedIcon ? (
               <>
-                {React.createElement(SelectedIcon, { className: "dy-h-5 dy-w-5 dy-text-primary dy-shrink-0" })}
-                <span className="dy-text-sm dy-text-foreground/80">{selectedIconName}</span>
+                {React.createElement(SelectedIcon, { className: "dy-h-4 dy-w-4 dy-text-primary dy-shrink-0" })}
+                <span className="dy-text-xs dy-text-foreground/80 dy-truncate">{selectedIconName}</span>
               </>
             ) : (
-              <span className="dy-text-muted-foreground dy-text-sm">
-                {schema.admin?.placeholder || "Select an icon..."}
+              <span className="dy-text-muted-foreground dy-text-xs">
+                {placeholder || schema?.admin?.placeholder || "Select an icon..."}
               </span>
             )}
           </Button>
