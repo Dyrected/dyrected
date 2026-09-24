@@ -1,4 +1,4 @@
-import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, resolveIndexName, coerceBooleanWhere } from "@dyrected/core";
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, resolveIndexName, coerceBooleanWhere, normalizeGroupKey } from "@dyrected/core";
 import mysql from "mysql2/promise";
 
 function parseMysqlDuplicateKey(message: string): { field?: string; value?: string } {
@@ -18,11 +18,34 @@ function parseMysqlDuplicateKey(message: string): { field?: string; value?: stri
 /**
  * Expression used to compare an unpromoted JSON field in a WHERE clause. JSON booleans unquote to
  * the strings 'true'/'false', which never equal the 1/0 the where translator binds, so they are
- * normalized to 1/0; every other value keeps its unquoted form.
+ * normalized to 1/0, JSON null becomes SQL NULL (as on Postgres, where `->>` yields NULL), and
+ * every other value keeps its unquoted form.
  */
 function jsonWhereExpr(field: string): string {
   const path = `JSON_EXTRACT(data, '$.${field}')`;
-  return `IF(JSON_TYPE(${path}) = 'BOOLEAN', IF(${path} = TRUE, 1, 0), JSON_UNQUOTE(${path}))`;
+  return `IF(JSON_TYPE(${path}) = 'NULL', NULL, IF(JSON_TYPE(${path}) = 'BOOLEAN', IF(${path} = TRUE, 1, 0), JSON_UNQUOTE(${path})))`;
+}
+
+const DATE_TYPES = new Set(["date", "datetime"]);
+const ISO_WITH_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
+const MYSQL_DATETIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/;
+
+/**
+ * ISO timestamps ("2026-01-01T00:00:00.000Z") are what the API and Admin send, but a DATETIME
+ * column rejects them. Bind them in MySQL's own format (UTC); date-only values pass through.
+ */
+function toDatetimeColumn(value: unknown): unknown {
+  if (typeof value !== "string" || !ISO_WITH_TIME.test(value)) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().replace("T", " ").replace("Z", "");
+}
+
+/** The reverse: a DATETIME read back as a Date or "YYYY-MM-DD HH:mm:ss.SSS" becomes an ISO string. */
+function fromDatetimeColumn(value: unknown): unknown {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? value : value.toISOString();
+  if (typeof value === "string" && MYSQL_DATETIME.test(value)) return `${value.replace(" ", "T")}Z`;
+  return value;
 }
 
 function isNumericOp(val: any): val is { increment?: number; decrement?: number } {
@@ -601,12 +624,13 @@ FIX INSTRUCTIONS:
       [...whereParams, limit, offset],
     );
 
+    const dateCols = this.dateColumns(args.collection);
     const docs = rows.map((r: any) => {
       const parsedData = JSON.parse(typeof r.data === "string" ? r.data : JSON.stringify(r.data));
       const promotedOverlay: Record<string, any> = {};
       for (const col of existingCols) {
         if (!["id", "data", "created_at", "updated_at"].includes(col) && r[col] !== undefined && r[col] !== null) {
-          promotedOverlay[col] = r[col];
+          promotedOverlay[col] = dateCols.has(col) ? fromDatetimeColumn(r[col]) : r[col];
         }
       }
       return {
@@ -645,10 +669,11 @@ FIX INSTRUCTIONS:
 
     const parsedData = JSON.parse(typeof row.data === "string" ? row.data : JSON.stringify(row.data));
     const existingCols = await this.getTableColumns(tableName);
+    const dateCols = this.dateColumns(params.collection);
     const promotedOverlay: Record<string, any> = {};
     for (const col of existingCols) {
       if (!["id", "data", "created_at", "updated_at"].includes(col) && row[col] !== undefined && row[col] !== null) {
-        promotedOverlay[col] = row[col];
+        promotedOverlay[col] = dateCols.has(col) ? fromDatetimeColumn(row[col]) : row[col];
       }
     }
     return {
@@ -677,11 +702,12 @@ FIX INSTRUCTIONS:
     delete data.updatedAt;
 
     // Extract promoted fields
+    const dateCols = this.dateColumns(params.collection);
     const promotedValues: Record<string, any> = {};
     for (const col of existingCols) {
       if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (data[col] !== undefined) {
-        promotedValues[col] = data[col];
+        promotedValues[col] = dateCols.has(col) ? toDatetimeColumn(data[col]) : data[col];
       }
     }
 
@@ -690,7 +716,7 @@ FIX INSTRUCTIONS:
     const values = [id, JSON.stringify(data), now, now, ...Object.values(promotedValues)];
 
     await this.query(`INSERT INTO \`${tableName}\` (${colNames.join(", ")}) VALUES (${placeholders})`, values);
-    return { id, ...data, ...promotedValues, createdAt: now, updatedAt: now };
+    return { id, ...data, ...promotedValues, ...this.isoDates(dateCols, promotedValues), createdAt: now, updatedAt: now };
   }
 
   async update(params: { collection: string; id?: string; where?: any; data: any }): Promise<any> {
@@ -747,6 +773,7 @@ FIX INSTRUCTIONS:
     const jsonPaths: string[] = [];
     const jsonParams: any[] = [];
 
+    const dateColsForUpdate = this.dateColumns(params.collection);
     for (const [key, val] of Object.entries(params.data)) {
       if (["id", "createdAt", "updatedAt"].includes(key)) continue;
 
@@ -767,7 +794,7 @@ FIX INSTRUCTIONS:
         if (isPromoted) {
           const escapedCol = escapeMysqlIdentifier(key);
           setClauses.push(`${escapedCol} = ?`);
-          setParams.push(val);
+          setParams.push(dateColsForUpdate.has(key) ? toDatetimeColumn(val) : val);
           jsonPaths.push(`'$.${key}', ${escapedCol}`);
         } else if (val === null) {
           jsonPaths.push(`'$.${key}', CAST('null' AS JSON)`);
@@ -807,6 +834,21 @@ FIX INSTRUCTIONS:
     }
 
     return { id: targetId, ...params.data, affectedRows: res?.affectedRows ?? 0, updatedAt: now };
+  }
+
+  /** Re-expresses bound date values as ISO strings for the document returned from a write. */
+  private isoDates(dateCols: Set<string>, values: Record<string, any>): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const col of dateCols) if (col in values) out[col] = fromDatetimeColumn(values[col]);
+    return out;
+  }
+
+  private dateColumns(collection: string): Set<string> {
+    return new Set<string>(
+      (this.collectionConfigs.get(collection)?.fields ?? [])
+        .filter((f: any) => DATE_TYPES.has(f.type) && f.name)
+        .map((f: any) => f.name),
+    );
   }
 
   /** Applies {@link coerceBooleanWhere} using the collection's declared field types. */
@@ -915,17 +957,10 @@ FIX INSTRUCTIONS:
       return Array.from(new Set(parsed.filter((v: unknown) => v !== null && v !== undefined)));
     };
 
-    // Group keys of numeric columns come back as DECIMAL strings ("1.0000"); normalize to "1".
     const groupFieldType = args.groupBy
       ? (this.collectionConfigs.get(args.collection)?.fields ?? []).find((f: any) => f.name === args.groupBy)?.type
       : undefined;
-    const groupKeyOf = (raw: unknown): string => {
-      if (raw === null || raw === undefined) return "__unassigned__";
-      if ((groupFieldType === "number" || groupFieldType === "money") && !Number.isNaN(Number(raw))) {
-        return String(Number(raw));
-      }
-      return String(raw);
-    };
+    const groupKeyOf = (raw: unknown): string => normalizeGroupKey(raw, groupFieldType);
 
     const selectParts: string[] = [];
     const allParams: any[] = [];
@@ -959,7 +994,8 @@ FIX INSTRUCTIONS:
         aggExpr = whereSql ? `SUM(IF(${whereSql}, ${val}, NULL))` : `SUM(${val})`;
       } else if (op.avg) {
         const val = toCastExpr(op.avg, op.cast);
-        aggExpr = whereSql ? `AVG(IF(${whereSql}, ${val}, NULL))` : `AVG(${val})`;
+        // AVG over DECIMAL keeps only ~10 digits; DOUBLE matches the precision of the other adapters.
+        aggExpr = whereSql ? `CAST(AVG(IF(${whereSql}, ${val}, NULL)) AS DOUBLE)` : `CAST(AVG(${val}) AS DOUBLE)`;
       } else if (op.min) {
         const val = toCastExpr(op.min, op.cast);
         aggExpr = whereSql ? `MIN(IF(${whereSql}, ${val}, NULL))` : `MIN(${val})`;

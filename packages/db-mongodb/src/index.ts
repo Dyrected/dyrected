@@ -4,6 +4,7 @@ import {
   CollectionConfig,
   DuplicateKeyError,
   generateDocumentId,
+  normalizeGroupKey,
   coerceBooleanWhere,
   parseMongoWhere,
   parseSort,
@@ -370,7 +371,10 @@ export class MongoAdapter implements DatabaseAdapter {
 
     if (args.groupBy) {
       const groupField = args.groupBy;
-      const keyOf = (id: unknown) => (id === null || id === undefined ? "__unassigned__" : String(id));
+      const groupFieldType = (this.collectionConfigs.get(args.collection)?.fields ?? []).find(
+        (f) => f.name === groupField,
+      )?.type;
+      const keyOf = (id: unknown) => normalizeGroupKey(id, groupFieldType);
 
       // Each aggregate can carry its own `where`, so it gets its own pipeline; the results are
       // merged by group key. A separate unfiltered pass supplies the full set of groups, so a

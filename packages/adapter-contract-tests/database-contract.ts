@@ -821,5 +821,50 @@ export function runIntegrityAndConcurrencyAdapterContract(
         expect(await names({ OR: [{ active: "true" }, { n: "zzz" }] })).toEqual(["a"]);
       });
     }
+
+    for (const promoted of [false, true]) {
+      it(`groups ${promoted ? "promoted" : "unpromoted"} columns with identical keys on every adapter`, async () => {
+        const db = await createAdapter();
+        const collection = `grpkeys-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        await db.sync?.(
+          [
+            {
+              slug: collection,
+              fields: [
+                { name: "status", type: "text", promoted },
+                { name: "qty", type: "number", promoted },
+                { name: "flag", type: "boolean", promoted },
+                { name: "day", type: "datetime", promoted },
+                { name: "amount", type: "number" },
+              ],
+            },
+          ],
+          [],
+        );
+        const jan = "2026-01-01T00:00:00.000Z";
+        const feb = "2026-02-01T00:00:00.000Z";
+        await db.create({ collection, data: { status: "paid", qty: 1, flag: true, day: jan, amount: 100 } });
+        await db.create({ collection, data: { status: "paid", qty: 1, flag: true, day: jan, amount: 200 } });
+        await db.create({ collection, data: { status: "paid", qty: 10, flag: false, day: feb, amount: 5 } });
+        await db.create({ collection, data: { status: null, qty: null, flag: null, day: null, amount: 10 } });
+
+        const groupsBy = async (groupBy: string) =>
+          (await db.aggregate!({ collection, groupBy, aggregates: { n: { count: "*" }, avg: { avg: "amount" } } })).groups;
+
+        expect(Object.keys(await groupsBy("status")).sort()).toEqual(["__unassigned__", "paid"]);
+        expect(Object.keys(await groupsBy("qty")).sort()).toEqual(["1", "10", "__unassigned__"]);
+        expect(Object.keys(await groupsBy("flag")).sort()).toEqual(["__unassigned__", "false", "true"]);
+        expect(Object.keys(await groupsBy("day")).sort()).toEqual([feb, jan, "__unassigned__"].sort());
+
+        const paid = (await groupsBy("status")).paid;
+        expect(paid.n).toBe(3);
+        expect(paid.avg).toBeCloseTo(101.6666666666, 8);
+        expect((await groupsBy("flag")).true).toMatchObject({ n: 2 });
+
+        // A promoted date column keeps the ISO string it was given, on write and on read.
+        const stored = await db.find({ collection, where: { status: { equals: "paid" } }, limit: 10 });
+        expect(stored.docs.map((d) => d.day).filter(Boolean).sort()).toEqual([feb, jan, jan].sort());
+      });
+    }
   });
 }

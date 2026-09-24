@@ -6,6 +6,7 @@ import {
   DuplicateKeyError,
   resolveIndexName,
   coerceBooleanWhere,
+  normalizeGroupKey,
   generateDocumentId,
 } from "@dyrected/core";
 import postgres from "postgres";
@@ -396,7 +397,8 @@ export class PostgresAdapter implements DatabaseAdapter {
       }, {});
     }
     const doc: { id: string; [key: string]: any } = { id: row.id, ...(rowData || {}) };
-    // BIGINT comes back from the driver as a string; money fields are exposed as integers.
+    // BIGINT comes back from the driver as a string (money is exposed as an integer), and
+    // TIMESTAMPTZ as a Date (exposed as an ISO string, like the other adapters).
     const moneyFields = new Set<string>(
       ((collection && this.collectionConfigs.get(collection)?.fields) ?? [])
         .filter((f: any) => f.type === "money")
@@ -405,7 +407,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     for (const col of existingCols) {
       if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (row[col] !== undefined && row[col] !== null) {
-        doc[col] = moneyFields.has(col) ? Number(row[col]) : row[col];
+        doc[col] = moneyFields.has(col) ? Number(row[col]) : row[col] instanceof Date ? row[col].toISOString() : row[col];
       }
     }
     return doc;
@@ -848,7 +850,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
       const groups: Record<string, Record<string, any>> = {};
       for (const row of rows) {
-        const key = row.__group_key === null || row.__group_key === undefined ? "__unassigned__" : String(row.__group_key);
+        const key = normalizeGroupKey(row.__group_key, (this.collectionConfigs.get(args.collection)?.fields ?? []).find((f: any) => f.name === args.groupBy)?.type);
         const groupResult: Record<string, any> = {};
         for (const name of Object.keys(args.aggregates)) {
           const raw = row[name];

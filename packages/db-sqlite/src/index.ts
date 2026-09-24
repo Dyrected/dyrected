@@ -1,4 +1,4 @@
-import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, coerceBooleanWhere } from '@dyrected/core';
+import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere, DuplicateKeyError, generateDocumentId, coerceBooleanWhere, normalizeGroupKey } from '@dyrected/core';
 import Database from 'better-sqlite3';
 
 function handleSqliteError(err: any): never {
@@ -587,7 +587,7 @@ export class SqliteAdapter implements DatabaseAdapter {
 
       const groups: Record<string, Record<string, any>> = {};
       for (const row of rows) {
-        const key = row.__group_key === null || row.__group_key === undefined ? '__unassigned__' : String(row.__group_key);
+        const key = normalizeGroupKey(row.__group_key, (this.collectionConfigs.get(args.collection)?.fields ?? []).find((f: any) => f.name === args.groupBy)?.type);
         const groupResult: Record<string, any> = {};
         for (const name of Object.keys(args.aggregates)) {
           const raw = row[name];
