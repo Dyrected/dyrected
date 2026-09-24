@@ -41,7 +41,41 @@ export interface WorkflowTransition {
   requireComment?: boolean;
   /** Remove the public snapshot after this transition commits. */
   unpublish?: boolean;
+  /**
+   * Runs inside the transition's database transaction, after the workflow state
+   * is written and before it commits. Writes made through `tx` commit or roll
+   * back together with the state change; throw to abort the transition and
+   * leave the document in its original state.
+   */
+  onTransition?: WorkflowOnTransitionHook;
 }
+
+export interface WorkflowOnTransitionContext<
+  TDoc extends object = Record<string, unknown>,
+> {
+  /** The transition being performed. */
+  transition: WorkflowTransition;
+  /** State the document is moving out of. */
+  from: string;
+  /** State the document is moving into. */
+  to: string;
+  /** The document as locked inside the transaction, before the transition is applied. */
+  doc: TDoc;
+  /** Extra payload supplied by the caller alongside the transition request. */
+  input?: Record<string, unknown>;
+  /** Comment supplied with the transition. */
+  comment?: string;
+  /** The user performing the transition, when the request is authenticated. */
+  user?: AuthenticatedUser;
+  /** Request context for the transition. */
+  req: HookRequestContext;
+  /** Writable, transaction-scoped database adapter. */
+  tx: DatabaseAdapter;
+}
+
+export type WorkflowOnTransitionHook<
+  TDoc extends object = Record<string, unknown>,
+> = (args: WorkflowOnTransitionContext<TDoc>) => void | Promise<void>;
 
 export interface WorkflowRole {
   /** Existing user role value, for example `editor` or `publisher`. */
@@ -105,6 +139,8 @@ export interface WorkflowTransitionContext<
   user?: AuthenticatedUser;
   /** Comment supplied with the transition; required when `requireComment` is set. */
   comment?: string;
+  /** Extra payload supplied by the caller alongside the transition request. */
+  input?: Record<string, unknown>;
   /** Request context for the transition. */
   req: HookRequestContext;
   /** Transaction-scoped database adapter for reads and writes inside the hook. */

@@ -147,6 +147,7 @@ export class SqliteAdapter implements DatabaseAdapter {
           // Simplified type mapping
           let sqlType = 'TEXT';
           if (field.type === 'number') sqlType = 'NUMERIC';
+          if (field.type === 'money') sqlType = 'INTEGER';
           if (field.type === 'boolean') sqlType = 'INTEGER';
           
           this.sqlite.exec(`ALTER TABLE ${escapeSqliteIdentifier(tableName)} ADD COLUMN ${escapeSqliteIdentifier(field.name)} ${sqlType}`);

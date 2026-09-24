@@ -5901,6 +5901,28 @@ A `WorkflowConfig` is four fields:
 - **`roles`** — how your app's `user.roles` values map to capabilities. Capability names like `entry.edit` or `entry.approve` are **just strings you invent and grant** — the workflow only cares that a transition's `requiredCapabilities` are covered by the acting user's roles.
 - **`initialState`** — the state new documents start in.
 
+## Running logic inside a transition
+
+Sometimes a transition has to do real work: reserve funds when a refund is approved, or release them when it is rejected. Give the transition an `onTransition` handler. It runs inside the transition's database transaction, so anything you write through `tx` commits together with the state change, and a throw rolls all of it back and leaves the document where it was.
+
+```ts
+{
+  name: "approve",
+  label: "Approve",
+  from: "under_review",
+  to: "approved",
+  requiredCapabilities: ["refund.review"],
+  async onTransition({ doc, input, tx }) {
+    await tx.create({
+      collection: "reservations",
+      data: { refund: doc.id, amountMinor: input?.amountMinor },
+    });
+  },
+}
+```
+
+The handler receives the locked `doc`, the acting `user`, the `comment`, the `req`, and `input`, an optional object the caller sends with the transition request (`{ "input": { ... } }` in the request body). Keep the work to database reads and writes; anything slow or external belongs in an `afterTransition` hook, which runs after the commit.
+
 The five recipes below are complete and copy-paste ready — each a real-world pattern that swaps in a different state machine. The surrounding collection and the way you drive it (see [Performing a transition](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/overview)) never change.
 
 ## Multi-stage approval
@@ -6898,6 +6920,8 @@ export async function createWorkflowDocument(args: {
   collection: CollectionConfig;
   data: Record<string, unknown>;
   user?: AuthenticatedUser;
+  /** Runs inside the write transaction, after the document is created. */
+  beforeCommit?: (tx: DatabaseAdapter, doc: BaseDocument) => Promise<void>;
 }): Promise<{ doc: BaseDocument; event: LifecycleEvent }>
 ```
 
@@ -7078,6 +7102,8 @@ export async function saveWorkflowDraft(args: {
   originalDoc: BaseDocument;
   data: Record<string, unknown>;
   user?: AuthenticatedUser;
+  /** Runs inside the write transaction, after the draft is saved. */
+  beforeCommit?: (tx: DatabaseAdapter, doc: BaseDocument) => Promise<void>;
 }): Promise<{ doc: BaseDocument; event: LifecycleEvent }>
 ```
 
@@ -7103,6 +7129,7 @@ export async function transitionWorkflow(args: {
   transitionName: string;
   expectedRevision?: number;
   comment?: string;
+  input?: Record<string, unknown>;
   user?: AuthenticatedUser;
   req: HookRequestContext;
 }): Promise<BaseDocument>
@@ -7197,6 +7224,59 @@ export interface WorkflowMetadata {
 | <code>availableTransitions</code> (optional) | Transitions currently allowed for the requesting user. Response-only. |
 
 
+## WorkflowOnTransitionContext
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowOnTransitionContext<
+  TDoc extends object = Record<string, unknown>,
+> {
+  /** The transition being performed. */
+  transition: WorkflowTransition;
+  /** State the document is moving out of. */
+  from: string;
+  /** State the document is moving into. */
+  to: string;
+  /** The document as locked inside the transaction, before the transition is applied. */
+  doc: TDoc;
+  /** Extra payload supplied by the caller alongside the transition request. */
+  input?: Record<string, unknown>;
+  /** Comment supplied with the transition. */
+  comment?: string;
+  /** The user performing the transition, when the request is authenticated. */
+  user?: AuthenticatedUser;
+  /** Request context for the transition. */
+  req: HookRequestContext;
+  /** Writable, transaction-scoped database adapter. */
+  tx: DatabaseAdapter;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>transition</code> (required) | The transition being performed. |
+| <code>from</code> (required) | State the document is moving out of. |
+| <code>to</code> (required) | State the document is moving into. |
+| <code>doc</code> (required) | The document as locked inside the transaction, before the transition is applied. |
+| <code>input</code> (optional) | Extra payload supplied by the caller alongside the transition request. |
+| <code>comment</code> (optional) | Comment supplied with the transition. |
+| <code>user</code> (optional) | The user performing the transition, when the request is authenticated. |
+| <code>req</code> (required) | Request context for the transition. |
+| <code>tx</code> (required) | Writable, transaction-scoped database adapter. |
+
+
+## WorkflowOnTransitionHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type WorkflowOnTransitionHook<
+  TDoc extends object = Record<string, unknown>,
+> = (args: WorkflowOnTransitionContext<TDoc>) => void | Promise<void>;
+```
+
+
 ## WorkflowRole
 
 Exported interface from @dyrected/core.
@@ -7265,6 +7345,13 @@ export interface WorkflowTransition {
   requireComment?: boolean;
   /** Remove the public snapshot after this transition commits. */
   unpublish?: boolean;
+  /**
+   * Runs inside the transition's database transaction, after the workflow state
+   * is written and before it commits. Writes made through `tx` commit or roll
+   * back together with the state change; throw to abort the transition and
+   * leave the document in its original state.
+   */
+  onTransition?: WorkflowOnTransitionHook;
 }
 ```
 
@@ -7277,6 +7364,7 @@ export interface WorkflowTransition {
 | <code>requiredCapabilities</code> (optional) | Every listed capability is required. |
 | <code>requireComment</code> (optional) | Require a non-empty comment when performing the transition. |
 | <code>unpublish</code> (optional) | Remove the public snapshot after this transition commits. |
+| <code>onTransition</code> (optional) | Runs inside the transition's database transaction, after the workflow state is written and before it commits. Writes made through &#96;tx&#96; commit or roll back together with the state change; throw to abort the transition and leave the document in its original state. |
 
 
 ## WorkflowTransitionContext
@@ -7299,6 +7387,8 @@ export interface WorkflowTransitionContext<
   user?: AuthenticatedUser;
   /** Comment supplied with the transition; required when `requireComment` is set. */
   comment?: string;
+  /** Extra payload supplied by the caller alongside the transition request. */
+  input?: Record<string, unknown>;
   /** Request context for the transition. */
   req: HookRequestContext;
   /** Transaction-scoped database adapter for reads and writes inside the hook. */
@@ -7314,6 +7404,7 @@ export interface WorkflowTransitionContext<
 | <code>doc</code> (required) | The document as it stands before the transition commits. |
 | <code>user</code> (optional) | The user performing the transition, when the request is authenticated. |
 | <code>comment</code> (optional) | Comment supplied with the transition; required when &#96;requireComment&#96; is set. |
+| <code>input</code> (optional) | Extra payload supplied by the caller alongside the transition request. |
 | <code>req</code> (required) | Request context for the transition. |
 | <code>db</code> (required) | Transaction-scoped database adapter for reads and writes inside the hook. |
 
@@ -17755,6 +17846,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     afterChange?: CollectionAfterChangeHook<TDoc>[];
 
+    /**
+     * Runs inside the database transaction that persists a create or update,
+     * before it commits. `tx` is writable, so secondary writes commit or roll
+     * back atomically with the document. Throw to abort the whole operation.
+     * Requires a transactional database adapter.
+     */
+    beforeCommit?: CollectionBeforeCommitHook<TDoc>[];
+
     /** Runs before a document is deleted. Throw to cancel the deletion. */
     beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];
 
@@ -22416,6 +22515,47 @@ export type JsonFormat =
 
 ---
 
+## Money
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/fields/money
+
+The money field stores an amount as a whole number of minor units: kobo for naira, cents for dollars. Use it for balances, prices, ledger entries, and anything else where `0.1 + 0.2` not equalling `0.3` would be a real problem.
+
+```ts
+defineMoneyField({ name: 'balance', label: 'Balance', currency: 'NGN' })
+```
+
+An editor types `52,500.00` in the admin, and Dyrected stores and returns `5250000`. Your API responses, hooks, and frontend code always see the integer.
+
+## Why integers
+
+JavaScript numbers are floating point, so `52.5 * 1000` comes out as `52500.00000000001`. Add up enough of those and your ledger stops reconciling. Integers add exactly, and Dyrected's [atomic operators](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) (`increment`, `decrement`) keep them exact under concurrent writes.
+
+Values must be safe integers. On write, an integer string such as `"5250000"` is converted to a number, and anything else (`52.5`, `"abc"`) is rejected with a `400` and a message naming the field.
+
+## Choosing the currency
+
+Set a fixed `currency` when every value uses the same one, or point `currencyField` at a sibling field when each document has its own:
+
+```ts
+defineSelectField({ name: 'currency', label: 'Currency', options: ['NGN', 'USD'] }),
+defineMoneyField({ name: 'amount', label: 'Amount', currencyField: 'currency' }),
+```
+
+Both are ISO 4217 codes. If a currency uses a different number of decimals, set `decimals` (it defaults to `2`, so use `0` for yen).
+
+## Showing raw minor units
+
+The admin shows major units by default. Set `admin.displayMinorAsMajor: false` to show and edit the raw integer instead. This only changes the admin; storage and the API are unaffected.
+
+## Storage
+
+In SQL adapters a promoted money column is a `BIGINT` (an `INTEGER` in SQLite). Mark it `promoted: true` if you filter, sort, or update it atomically.
+
+Filters in the admin's list view compare the stored minor units, so a filter value of `1000` means `10.00`.
+
+---
+
 ## Multi Select
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/fields/multi-select
@@ -22806,6 +22946,7 @@ Most field types accept a common set of base options:
 - `label` — the human-readable name shown to editors. Defaults to a title-cased `name`.
 - `required` — whether the field must have a value. A missing value fails validation with a `400`.
 - `unique` — enforces a database uniqueness constraint. A duplicate write fails with a `409`.
+- `immutable` — the value can be set when the document is created but never changed afterwards. An update that tries to change it fails with a `400`; re-sending the same value is fine, so full-document saves from the admin keep working. Good for currencies, external references, and other values a ledger relies on.
 - `defaultValue` — the value used when a new document omits the field. It is evaluated on the server.
 - `promoted` — pulls the field out of the JSON document into its own indexed column so you can filter and sort on it quickly. See [Database indexes](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 - `access` — per-field `read` and `update` rules that hide or lock the field for some users. See [Field access control](https://docs.dyrected.com/docs/cloud/model-content/content-rules/access-control/fields).
@@ -22819,7 +22960,7 @@ Each field type has its own page with a focused example and its generated contra
 
 - Text-like content: [Text](https://docs.dyrected.com/docs/cloud/model-content/fields/text), [Textarea](https://docs.dyrected.com/docs/cloud/model-content/fields/textarea), [Email](https://docs.dyrected.com/docs/cloud/model-content/fields/email), [URL](https://docs.dyrected.com/docs/cloud/model-content/fields/url), [Icon](https://docs.dyrected.com/docs/cloud/model-content/fields/icon), [Rich Text](https://docs.dyrected.com/docs/cloud/model-content/fields/rich-text)
 - Choices and toggles: [Select](https://docs.dyrected.com/docs/cloud/model-content/fields/select), [Multi Select](https://docs.dyrected.com/docs/cloud/model-content/fields/multi-select), [Radio](https://docs.dyrected.com/docs/cloud/model-content/fields/radio), [Boolean](https://docs.dyrected.com/docs/cloud/model-content/fields/boolean)
-- Numbers and dates: [Number](https://docs.dyrected.com/docs/cloud/model-content/fields/number), [Date](https://docs.dyrected.com/docs/cloud/model-content/fields/date), [Datetime](https://docs.dyrected.com/docs/cloud/model-content/fields/datetime), [Time](https://docs.dyrected.com/docs/cloud/model-content/fields/time)
+- Numbers and dates: [Number](https://docs.dyrected.com/docs/cloud/model-content/fields/number), [Money](https://docs.dyrected.com/docs/cloud/model-content/fields/money), [Date](https://docs.dyrected.com/docs/cloud/model-content/fields/date), [Datetime](https://docs.dyrected.com/docs/cloud/model-content/fields/datetime), [Time](https://docs.dyrected.com/docs/cloud/model-content/fields/time)
 - Structure and nesting: [Object](https://docs.dyrected.com/docs/cloud/model-content/fields/object), [Array](https://docs.dyrected.com/docs/cloud/model-content/fields/array), [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks), [Row](https://docs.dyrected.com/docs/cloud/model-content/fields/row)
 - Relationships and files: [Relationship](https://docs.dyrected.com/docs/cloud/model-content/fields/relationship), [Image](https://docs.dyrected.com/docs/cloud/model-content/fields/image), [Join](https://docs.dyrected.com/docs/cloud/model-content/fields/join)
 - Data and layout: [JSON](https://docs.dyrected.com/docs/cloud/model-content/fields/json)
@@ -22999,6 +23140,7 @@ export type Field =
   | SelectField
   | RadioField
   | NumberField
+  | MoneyField
   | BooleanField
   | MultiSelectField
   | RelationshipField
@@ -23027,6 +23169,12 @@ export interface FieldBase {
   required?: boolean;
   /** Whether values for this field must be unique across the collection. */
   unique?: boolean;
+  /**
+   * Whether the value can only be set when the document is created. Any update
+   * that tries to change it is rejected with a validation error. Re-sending the
+   * unchanged value is allowed.
+   */
+  immutable?: boolean;
   /** Default value: literal value or function computed from context. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
@@ -23090,6 +23238,7 @@ export interface FieldBase {
 | <code>label</code> (optional) | Human-readable label shown in the Admin UI. |
 | <code>required</code> (optional) | Whether the field must have a value when saving. |
 | <code>unique</code> (optional) | Whether values for this field must be unique across the collection. |
+| <code>immutable</code> (optional) | Whether the value can only be set when the document is created. Any update that tries to change it is rejected with a validation error. Re-sending the unchanged value is allowed. |
 | <code>defaultValue</code> (optional) | Default value: literal value or function computed from context. |
 | <code>options</code> (optional) | Static or dynamic option source for supported selection fields. |
 | <code>relationTo</code> (optional) | Target collection slug for &#96;relationship&#96; fields. |
@@ -23117,6 +23266,7 @@ export type FieldType =
   | "textarea"
   | "richText"
   | "number"
+  | "money"
   | "boolean"
   | "date"
   | "datetime"

@@ -162,6 +162,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Image](https://docs.dyrected.com/docs/cloud/model-content/fields/image): A reference to a document in an upload-enabled collection, such as an image or file.
 - [Join](https://docs.dyrected.com/docs/cloud/model-content/fields/join): A virtual reverse relationship that surfaces documents pointing back at this one.
 - [JSON](https://docs.dyrected.com/docs/cloud/model-content/fields/json): A field for arbitrary JSON values.
+- [Money](https://docs.dyrected.com/docs/cloud/model-content/fields/money): A monetary field stored as exact integer minor units, so amounts never drift.
 - [Multi Select](https://docs.dyrected.com/docs/cloud/model-content/fields/multi-select): A field for choosing several values from a fixed or dynamic set of options.
 - [Number](https://docs.dyrected.com/docs/cloud/model-content/fields/number): A numeric field for integers and decimals.
 - [Object](https://docs.dyrected.com/docs/cloud/model-content/fields/object): A nested object that groups related fields under a single key.

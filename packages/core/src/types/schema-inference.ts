@@ -14,7 +14,7 @@ type FieldValueType<F extends Field> = F["type"] extends
   | "select"
   | "radio"
   ? string
-  : F["type"] extends "number"
+  : F["type"] extends "number" | "money"
     ? number
     : F["type"] extends "boolean"
       ? boolean

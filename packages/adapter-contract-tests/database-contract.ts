@@ -728,5 +728,25 @@ export function runIntegrityAndConcurrencyAdapterContract(
       const missing = await db.findOne({ collection, where: { investor: { equals: "nobody" } } });
       expect(missing).toBeNull();
     });
+
+    it("stores money fields as exact integers through atomic increments", async () => {
+      const db = await createAdapter();
+      const collection = `money-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await db.sync?.(
+        [{ slug: collection, fields: [{ name: "balance", type: "money", promoted: true }] }],
+        [],
+      );
+      const account = await db.create({ collection, data: { balance: 100 } });
+
+      await Promise.all(
+        Array.from({ length: 200 }, () =>
+          db.update({ collection, id: account.id, data: { balance: { increment: 37 } } }),
+        ),
+      );
+
+      const stored = await db.findOne({ collection, id: account.id });
+      expect(stored?.balance).toBe(100 + 200 * 37);
+      expect(Number.isInteger(stored?.balance)).toBe(true);
+    });
   });
 }

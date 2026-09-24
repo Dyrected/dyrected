@@ -14,6 +14,28 @@ A `WorkflowConfig` is four fields:
 - **`roles`** — how your app's `user.roles` values map to capabilities. Capability names like `entry.edit` or `entry.approve` are **just strings you invent and grant** — the workflow only cares that a transition's `requiredCapabilities` are covered by the acting user's roles.
 - **`initialState`** — the state new documents start in.
 
+## Running logic inside a transition
+
+Sometimes a transition has to do real work: reserve funds when a refund is approved, or release them when it is rejected. Give the transition an `onTransition` handler. It runs inside the transition's database transaction, so anything you write through `tx` commits together with the state change, and a throw rolls all of it back and leaves the document where it was.
+
+```ts
+{
+  name: "approve",
+  label: "Approve",
+  from: "under_review",
+  to: "approved",
+  requiredCapabilities: ["refund.review"],
+  async onTransition({ doc, input, tx }) {
+    await tx.create({
+      collection: "reservations",
+      data: { refund: doc.id, amountMinor: input?.amountMinor },
+    });
+  },
+}
+```
+
+The handler receives the locked `doc`, the acting `user`, the `comment`, the `req`, and `input`, an optional object the caller sends with the transition request (`{ "input": { ... } }` in the request body). Keep the work to database reads and writes; anything slow or external belongs in an `afterTransition` hook, which runs after the commit.
+
 The five recipes below are complete and copy-paste ready — each a real-world pattern that swaps in a different state machine. The surrounding collection and the way you drive it (see [Performing a transition](/docs/editor-experience/publishing/overview)) never change.
 
 ## Multi-stage approval

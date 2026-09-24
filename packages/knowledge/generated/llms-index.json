@@ -865,6 +865,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:CollectionBeforeCommitHook",
+      "name": "CollectionBeforeCommitHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:CollectionBeforeDeleteHook",
       "name": "CollectionBeforeDeleteHook",
       "category": "hooks",
@@ -1867,6 +1873,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:WorkflowOnTransitionContext",
+      "name": "WorkflowOnTransitionContext",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowOnTransitionHook",
+      "name": "WorkflowOnTransitionHook",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:WorkflowRole",
       "name": "WorkflowRole",
       "category": "workflows",
@@ -2381,6 +2399,7 @@
     "textarea",
     "richText",
     "number",
+    "money",
     "boolean",
     "date",
     "datetime",

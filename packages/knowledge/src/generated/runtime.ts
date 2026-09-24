@@ -3228,6 +3228,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "model-content--fields--money",
+    "relativePath": "model-content/fields/money",
+    "title": "Money",
+    "description": "A monetary field stored as exact integer minor units, so amounts never drift.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "model-content/fields",
+    "sourceFile": "apps/docs/content/docs/model-content/fields/money.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/model-content/fields/money",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/fields/money",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/fields/money",
+    "status": "classified"
+  },
+  {
     "id": "model-content--fields--multi-select",
     "relativePath": "model-content/fields/multi-select",
     "title": "Multi Select",

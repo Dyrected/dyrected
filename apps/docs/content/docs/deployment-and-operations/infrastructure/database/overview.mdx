@@ -77,10 +77,14 @@ export interface DatabaseAdapter {
     lock?: "for-update";
   }): Promise<PaginatedResult>;
 
-  /** Find a single document by its ID. Returns `null` if not found. */
+  /**
+   * Find a single document by its ID or by a `where` filter (the first match
+   * is returned). Returns `null` if not found. Provide `id` or `where`.
+   */
   findOne(args: {
     collection: string;
-    id: string;
+    id?: string;
+    where?: Record<string, unknown>;
     /** Row-level locking strategy (e.g. SELECT ... FOR UPDATE in transactions). */
     lock?: "for-update";
   }): Promise<BaseDocument | null>;
@@ -144,7 +148,7 @@ export interface DatabaseAdapter {
 | Option | Description |
 | --- | --- |
 | <code>find</code> (optional) | Find a paginated list of documents in a collection. |
-| <code>findOne</code> (optional) | Find a single document by its ID. Returns &#96;null&#96; if not found. |
+| <code>findOne</code> (optional) | Find a single document by its ID or by a &#96;where&#96; filter (the first match is returned). Returns &#96;null&#96; if not found. Provide &#96;id&#96; or &#96;where&#96;. |
 | <code>create</code> (required) | Insert a new document and return it with its generated &#96;id&#96;. |
 | <code>update</code> (optional) | Update a document by ID or conditional filter and return the updated document. |
 | <code>delete</code> (required) | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |

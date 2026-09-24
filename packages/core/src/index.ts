@@ -588,6 +588,8 @@ export const defineTextareaField = createFieldDefiner("textarea");
 export const defineRichTextField = createFieldDefiner("richText");
 /** Define a `number` field. */
 export const defineNumberField = createFieldDefiner("number");
+/** Define a `money` field stored as integer minor units. */
+export const defineMoneyField = createFieldDefiner("money");
 /** Define a `boolean` field. */
 export const defineBooleanField = createFieldDefiner("boolean");
 /** Define a `date` field. */

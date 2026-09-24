@@ -17,12 +17,15 @@ import {
   isCodeText,
   type BadgeSpec,
 } from "../../lib/format"
+import { formatMoney } from "../../lib/money"
 
 interface RenderCellProps {
   value: any
   field: any
   client: any
   schemas: any
+  /** The full row, used by fields that depend on siblings (for example a money `currencyField`). */
+  row?: Record<string, unknown>
 }
 
 const PILL_BASE =
@@ -32,7 +35,7 @@ function TonePill({ spec }: { spec: BadgeSpec }) {
   return <span className={cn(PILL_BASE, displayToneClass(spec.tone))}>{spec.label}</span>
 }
 
-export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
+export function RenderCell({ value, field, client, schemas, row }: RenderCellProps) {
   if (value === null || value === undefined) return <span className="dy-text-muted-foreground">-</span>
 
   // Handle Boolean (with optional admin.format for custom labels/tones)
@@ -60,6 +63,15 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
           <span className="dy-text-[10px] dy-text-muted-foreground">+{value.length - 3} more</span>
         )}
       </div>
+    )
+  }
+
+  // Handle Money: stored as integer minor units, shown as a major-unit amount
+  if (field.type === "money") {
+    return (
+      <span className="dy-text-sm dy-font-medium dy-tabular-nums">
+        {formatMoney(value, field, row)}
+      </span>
     )
   }
 

@@ -299,6 +299,7 @@ export function mapFieldType(field: any): string {
     case "url":
       return "UrlField";
     case "number":
+    case "money":
       return "number";
     case "boolean":
       return "boolean";

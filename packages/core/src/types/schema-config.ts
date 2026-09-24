@@ -2,6 +2,7 @@ import type { AdminIconName, CollectionListComponentSlots } from "./admin.js";
 import type { AccessRule } from "./access.js";
 import type {
   CollectionAfterChangeHook,
+  CollectionBeforeCommitHook,
   CollectionAfterDeleteHook,
   CollectionAfterReadHookEntry,
   CollectionBeforeChangeHookEntry,
@@ -365,6 +366,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.
      */
     afterChange?: CollectionAfterChangeHook<TDoc>[];
+
+    /**
+     * Runs inside the database transaction that persists a create or update,
+     * before it commits. `tx` is writable, so secondary writes commit or roll
+     * back atomically with the document. Throw to abort the whole operation.
+     * Requires a transactional database adapter.
+     */
+    beforeCommit?: CollectionBeforeCommitHook<TDoc>[];
 
     /** Runs before a document is deleted. Throw to cancel the deletion. */
     beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];

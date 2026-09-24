@@ -13,6 +13,8 @@ Dyrected uses transactions internally so you often get this for free, and it exp
 
 Because of this, workflows require a transaction-capable database adapter. Every adapter Dyrected ships qualifies; a custom adapter that doesn't implement `transaction` will be rejected when a workflow operation runs.
 
+Collection [`beforeCommit` hooks](/docs/deployment-and-operations/server-runtime/hooks/collections) work the same way for ordinary creates and updates: the document and anything the hook writes through `tx` commit together, and a throwing hook rolls both back.
+
 ## Running a transaction yourself
 
 The full database adapter is available in the write-side hooks — `afterChange`, `afterDelete`, and their global and workflow-transition equivalents — and it exposes a `transaction` method. Grouping writes is always explicit in Dyrected: there's no request-level transaction and no SDK transaction to reach for, so you call `db.transaction` at the point you need it. Pass it a callback; every operation you run on the adapter it hands back (`tx` below) is part of one atomic unit. Return normally to commit, or throw to roll everything back.
@@ -73,6 +75,16 @@ await db.transaction(async (tx) => {
       balance: { decrement: amount },
     },
   })
+})
+```
+
+`findOne` also accepts a `where` filter instead of an `id`, and returns the first match:
+
+```ts
+const wallet = await tx.findOne({
+  collection: 'wallets',
+  where: { investor: { equals: investorId }, currency: { equals: 'NGN' } },
+  lock: 'for-update',
 })
 ```
 

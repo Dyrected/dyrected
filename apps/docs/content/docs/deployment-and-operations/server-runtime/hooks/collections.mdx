@@ -25,6 +25,7 @@ export const Posts = defineCollection({
     afterRead: [],
     beforeChange: [],
     afterChange: [],
+    beforeCommit: [],
     beforeDelete: [],
     afterDelete: [],
   },
@@ -177,6 +178,30 @@ hooks: {
 If an `afterChange` hook fails, Dyrected logs the error and keeps the write. That makes it the safe place for webhooks, cache busting, emails, and follow-up writes.
 
 `afterChange` is still function-only. It is not part of the Cloud-safe declarative subset because it exists for side effects after persistence.
+
+### `beforeCommit`
+
+`beforeCommit` runs inside the database transaction that saves a create or update, after the document is written and before the transaction commits. It receives the saved `doc`, the `previousDoc` on updates, the operation, and `tx`, a writable adapter tied to that transaction.
+
+Use it when a second write has to stand or fall with the first, such as a ledger row for a payment:
+
+```ts
+hooks: {
+  beforeCommit: [
+    async ({ doc, operation, tx }) => {
+      if (operation !== 'create') return
+      await tx.create({
+        collection: 'ledger',
+        data: { paymentId: doc.id, amountMinor: doc.amountMinor },
+      })
+    },
+  ],
+}
+```
+
+If the hook throws, the transaction rolls back, so neither the document nor the ledger row is saved and the request fails. That is the difference from `afterChange`, which runs after the commit and can never undo the write.
+
+Keep the work in here to database reads and writes, because the transaction stays open while the hook runs (see [Transactions](/docs/deployment-and-operations/infrastructure/database/transactions)). It needs a transactional database adapter, and `beforeCommit` is function-only, so it is not part of the Cloud-safe declarative subset.
 
 ### `beforeDelete`
 

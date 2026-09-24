@@ -9,6 +9,7 @@ export type FieldType =
   | "textarea"
   | "richText"
   | "number"
+  | "money"
   | "boolean"
   | "date"
   | "datetime"
@@ -115,6 +116,12 @@ export interface FieldBase {
   required?: boolean;
   /** Whether values for this field must be unique across the collection. */
   unique?: boolean;
+  /**
+   * Whether the value can only be set when the document is created. Any update
+   * that tries to change it is rejected with a validation error. Re-sending the
+   * unchanged value is allowed.
+   */
+  immutable?: boolean;
   /** Default value: literal value or function computed from context. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
@@ -633,6 +640,13 @@ export type NumberFieldAdmin = NumberLimitFieldAdmin & {
   /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
   format?: NumberFormat;
 };
+export type MoneyFieldAdmin = {
+  /**
+   * Show the stored minor units as a major-unit amount (for example `5250000`
+   * as `52,500.00`) in the Admin. Defaults to `true`. Does not affect storage or the API.
+   */
+  displayMinorAsMajor?: boolean;
+};
 export type DateFieldAdmin = {
   /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
   format?: DateFormat;
@@ -735,6 +749,23 @@ export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
 /** A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation. */
 export type NumberField = TypedField<"number", number, NumberFieldAdmin> &
   NumberLimitFieldConfig;
+/** Currency settings for a `money` field. */
+export interface MoneyFieldConfig {
+  /** Fixed ISO 4217 currency code for every value, for example `"NGN"`. */
+  currency?: string;
+  /** Name of a sibling field holding the ISO 4217 currency code for each document. Overrides `currency`. */
+  currencyField?: string;
+  /** Digits after the decimal point in the major unit. Defaults to `2` (kobo, cents). */
+  decimals?: number;
+}
+/**
+ * A monetary amount stored as an integer count of minor units (kobo, cents),
+ * so arithmetic never suffers floating-point drift. The API reads and writes
+ * the integer; only the Admin formats it as a major-unit amount. Values must be
+ * safe integers, and integer strings are accepted and converted.
+ */
+export type MoneyField = TypedField<"money", number, MoneyFieldAdmin> &
+  MoneyFieldConfig;
 /** A `true`/`false` value, shown to editors as a checkbox or switch. */
 export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
 /**
@@ -829,6 +860,7 @@ export type Field =
   | SelectField
   | RadioField
   | NumberField
+  | MoneyField
   | BooleanField
   | MultiSelectField
   | RelationshipField

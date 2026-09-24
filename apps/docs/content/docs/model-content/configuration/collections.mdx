@@ -441,6 +441,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     afterChange?: CollectionAfterChangeHook<TDoc>[];
 
+    /**
+     * Runs inside the database transaction that persists a create or update,
+     * before it commits. `tx` is writable, so secondary writes commit or roll
+     * back atomically with the document. Throw to abort the whole operation.
+     * Requires a transactional database adapter.
+     */
+    beforeCommit?: CollectionBeforeCommitHook<TDoc>[];
+
     /** Runs before a document is deleted. Throw to cancel the deletion. */
     beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];
 

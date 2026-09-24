@@ -1,0 +1,39 @@
+---
+title: Money
+description: A monetary field stored as exact integer minor units, so amounts never drift.
+---
+
+The money field stores an amount as a whole number of minor units: kobo for naira, cents for dollars. Use it for balances, prices, ledger entries, and anything else where `0.1 + 0.2` not equalling `0.3` would be a real problem.
+
+```ts
+defineMoneyField({ name: 'balance', label: 'Balance', currency: 'NGN' })
+```
+
+An editor types `52,500.00` in the admin, and Dyrected stores and returns `5250000`. Your API responses, hooks, and frontend code always see the integer.
+
+## Why integers
+
+JavaScript numbers are floating point, so `52.5 * 1000` comes out as `52500.00000000001`. Add up enough of those and your ledger stops reconciling. Integers add exactly, and Dyrected's [atomic operators](/docs/deployment-and-operations/infrastructure/database/transactions) (`increment`, `decrement`) keep them exact under concurrent writes.
+
+Values must be safe integers. On write, an integer string such as `"5250000"` is converted to a number, and anything else (`52.5`, `"abc"`) is rejected with a `400` and a message naming the field.
+
+## Choosing the currency
+
+Set a fixed `currency` when every value uses the same one, or point `currencyField` at a sibling field when each document has its own:
+
+```ts
+defineSelectField({ name: 'currency', label: 'Currency', options: ['NGN', 'USD'] }),
+defineMoneyField({ name: 'amount', label: 'Amount', currencyField: 'currency' }),
+```
+
+Both are ISO 4217 codes. If a currency uses a different number of decimals, set `decimals` (it defaults to `2`, so use `0` for yen).
+
+## Showing raw minor units
+
+The admin shows major units by default. Set `admin.displayMinorAsMajor: false` to show and edit the raw integer instead. This only changes the admin; storage and the API are unaffected.
+
+## Storage
+
+In SQL adapters a promoted money column is a `BIGINT` (an `INTEGER` in SQLite). Mark it `promoted: true` if you filter, sort, or update it atomically.
+
+Filters in the admin's list view compare the stored minor units, so a filter value of `1000` means `10.00`.

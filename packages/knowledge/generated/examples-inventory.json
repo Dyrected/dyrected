@@ -1148,6 +1148,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment-and-operations/infrastructure/database/transactions#example-4",
+    "page": "/deployment-and-operations/infrastructure/database/transactions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deployment-and-operations/infrastructure/email#example-1",
     "page": "/deployment-and-operations/infrastructure/email",
     "language": "ts",
@@ -1436,6 +1443,13 @@
   },
   {
     "id": "/deployment-and-operations/server-runtime/hooks/collections#example-10",
+    "page": "/deployment-and-operations/server-runtime/hooks/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/hooks/collections#example-11",
     "page": "/deployment-and-operations/server-runtime/hooks/collections",
     "language": "ts",
     "classification": "illustrative",
@@ -1772,6 +1786,13 @@
   },
   {
     "id": "/deployment-and-operations/server-runtime/hooks/overview#example-33",
+    "page": "/deployment-and-operations/server-runtime/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/hooks/overview#example-34",
     "page": "/deployment-and-operations/server-runtime/hooks/overview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -2607,8 +2628,8 @@
     "id": "/editor-experience/publishing/custom-workflows#example-1",
     "page": "/editor-experience/publishing/custom-workflows",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/editor-experience/publishing/custom-workflows#example-2",
@@ -2633,6 +2654,13 @@
   },
   {
     "id": "/editor-experience/publishing/custom-workflows#example-5",
+    "page": "/editor-experience/publishing/custom-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/publishing/custom-workflows#example-6",
     "page": "/editor-experience/publishing/custom-workflows",
     "language": "ts",
     "classification": "syntax-checked",
@@ -3011,6 +3039,20 @@
   },
   {
     "id": "/editor-experience/publishing/overview#example-33",
+    "page": "/editor-experience/publishing/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/publishing/overview#example-34",
+    "page": "/editor-experience/publishing/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/publishing/overview#example-35",
     "page": "/editor-experience/publishing/overview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -5395,6 +5437,20 @@
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/fields/money#example-1",
+    "page": "/model-content/fields/money",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/fields/money#example-2",
+    "page": "/model-content/fields/money",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/fields/multi-select#example-1",

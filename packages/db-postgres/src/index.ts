@@ -306,6 +306,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       if (field.promoted || field.unique || indexedFields.has(field.name)) {
         let sqlType = "TEXT";
         if (field.type === "number") sqlType = "NUMERIC";
+        if (field.type === "money") sqlType = "BIGINT";
         if (field.type === "boolean") sqlType = "BOOLEAN";
         if (field.type === "date" || field.type === "datetime") sqlType = "TIMESTAMPTZ";
         if (field.type === "json") sqlType = "JSONB";
@@ -326,6 +327,8 @@ export class PostgresAdapter implements DatabaseAdapter {
         let castExpr = `(data->>'${escapedFieldStr}')`;
         if (field.type === "number") {
           castExpr = `CASE WHEN (data->>'${escapedFieldStr}') ~ '^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN (data->>'${escapedFieldStr}')::NUMERIC ELSE NULL END`;
+        } else if (field.type === "money") {
+          castExpr = `CASE WHEN (data->>'${escapedFieldStr}') ~ '^-?[0-9]+$' THEN (data->>'${escapedFieldStr}')::BIGINT ELSE NULL END`;
         } else if (field.type === "boolean") {
           castExpr = `(data->>'${escapedFieldStr}')::BOOLEAN`;
         } else if (field.type === "date" || field.type === "datetime") {
@@ -370,7 +373,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
   }
 
-  private formatDoc(row: any, existingCols: string[]): { id: string; [key: string]: any } {
+  private formatDoc(row: any, existingCols: string[], collection?: string): { id: string; [key: string]: any } {
     let rowData = row.data;
     if (Array.isArray(rowData)) {
       rowData = rowData.reduce((acc: Record<string, any>, item: any) => {
@@ -391,10 +394,16 @@ export class PostgresAdapter implements DatabaseAdapter {
       }, {});
     }
     const doc: { id: string; [key: string]: any } = { id: row.id, ...(rowData || {}) };
+    // BIGINT comes back from the driver as a string; money fields are exposed as integers.
+    const moneyFields = new Set<string>(
+      ((collection && this.collectionConfigs.get(collection)?.fields) ?? [])
+        .filter((f: any) => f.type === "money")
+        .map((f: any) => f.name),
+    );
     for (const col of existingCols) {
       if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (row[col] !== undefined && row[col] !== null) {
-        doc[col] = row[col];
+        doc[col] = moneyFields.has(col) ? Number(row[col]) : row[col];
       }
     }
     return doc;
@@ -463,7 +472,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     const totalPages = Math.ceil(total / limit);
     return {
-      docs: rows.map((r) => this.formatDoc(r, existingCols)),
+      docs: rows.map((r) => this.formatDoc(r, existingCols, args.collection)),
       total,
       limit,
       page,
@@ -491,7 +500,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       : await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
     const row = rows[0];
     if (!row) return null;
-    return this.formatDoc(row, existingCols);
+    return this.formatDoc(row, existingCols, params.collection);
   }
 
   async create(params: { collection: string; data: any }) {

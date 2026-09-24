@@ -403,6 +403,7 @@ FIX INSTRUCTIONS:
             sqlType = "VARCHAR(191)";
           }
           if (field.type === "number") sqlType = "DECIMAL(19,4)";
+          if (field.type === "money") sqlType = "BIGINT";
           if (field.type === "boolean") sqlType = "TINYINT(1)";
           if (field.type === "date" || field.type === "datetime") sqlType = "DATETIME(3)";
           if (field.type === "textarea" || field.type === "richText" || field.type === "json") sqlType = "LONGTEXT";
@@ -425,6 +426,8 @@ FIX INSTRUCTIONS:
           let castExpr = `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}'))`;
           if (field.type === "number") {
             castExpr = `IF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) REGEXP '^-?[0-9]+(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$', CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) AS DECIMAL(19,4)), NULL)`;
+          } else if (field.type === "money") {
+            castExpr = `IF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) REGEXP '^-?[0-9]+$', CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) AS SIGNED), NULL)`;
           } else if (field.type === "boolean") {
             castExpr = `IF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field.name}')) IN ('true', '1'), 1, 0)`;
           } else if (field.type === "date" || field.type === "datetime") {

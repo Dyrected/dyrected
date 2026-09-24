@@ -4,6 +4,7 @@ import type {
   DateTimeField,
   Field as FieldSchema,
   IconField,
+  MoneyField as MoneyFieldSchema,
   NumberField,
   TextField as TextFieldSchema,
   TextareaField as TextareaFieldSchema,
@@ -13,6 +14,7 @@ import type {
 } from "@dyrected/core"
 import * as React from "react"
 import { TextField } from "./fields/text-field"
+import { MoneyField } from "./fields/money-field"
 import { TextAreaField } from "./fields/text-area-field"
 import { SwitchField } from "./fields/switch-field"
 import { CheckboxField } from "./fields/checkbox-field"
@@ -126,6 +128,15 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
   const relSchema = schema as RelationFieldSchema
 
   switch (schema.type as string) {
+    case "money":
+      return (
+        <MoneyField
+          schema={schema as MoneyFieldSchema}
+          field={fieldWithId}
+          siblingData={context?.siblingData as Record<string, unknown> | undefined}
+          disabled={disabled}
+        />
+      )
     case "textarea":
       return <TextAreaField schema={schema as TextAreaSchema} field={fieldWithId} disabled={disabled} />
     case "boolean":

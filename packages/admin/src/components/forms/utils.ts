@@ -114,6 +114,8 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
       }
     } else if (field.type === "number") {
       validator = z.coerce.number()
+    } else if (field.type === "money") {
+      validator = z.coerce.number().int(`${label} must be a whole number of minor units`)
     } else if (field.type === "boolean") {
       validator = z.boolean()
     } else if (field.type === "json") {

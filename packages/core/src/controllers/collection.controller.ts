@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { ActionConfig, CollectionConfig } from "../types/index.js";
+import type { ActionConfig, AuthenticatedUser, BaseDocument, CollectionConfig, DatabaseAdapter } from "../types/index.js";
 import type { DyrectedContext } from "../app.js";
 import type { HookRequestContext } from "../types/request.js";
 import { PopulationService } from "../services/population.service.js";
@@ -13,6 +13,7 @@ import {
   executeFieldAfterRead,
 } from "../utils/hooks.js";
 import { createReadonlyDb } from "../utils/readonly-db.js";
+import { assertImmutableFieldsUnchanged, normalizeMoneyFields } from "../utils/field-integrity.js";
 import {
   validateUpload,
   generateUniqueUploadFilename,
@@ -592,6 +593,7 @@ export class CollectionController {
     };
 
     data = DefaultsService.apply(this.collection.fields, data);
+    data = normalizeMoneyFields(this.collection.fields, data);
 
     if (this.collection.workflow) {
       data = initializeWorkflowDocument(data, this.collection.workflow);
@@ -647,6 +649,7 @@ export class CollectionController {
       data = { ...data, id: generateDocumentId(this.collection) };
     }
 
+    const beforeCommit = this.buildBeforeCommit(c, "create", user);
     const doc = this.collection.workflow
       ? (
           await createWorkflowDocument({
@@ -654,9 +657,12 @@ export class CollectionController {
             collection: this.collection,
             data,
             user,
+            beforeCommit,
           })
         ).doc
-      : await db!.create({ collection: this.collection.slug, data });
+      : await this.persistInTransaction(db!, beforeCommit, (writer) =>
+          writer.create({ collection: this.collection.slug, data }),
+        );
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
@@ -942,6 +948,47 @@ export class CollectionController {
   }
 
   /**
+   * Builds the callback that runs the collection's `beforeCommit` hooks inside
+   * the write transaction, or `undefined` when the collection has none.
+   */
+  private buildBeforeCommit(
+    c: Context<DyrectedContext>,
+    operation: "create" | "update",
+    user: AuthenticatedUser | undefined,
+    previousDoc?: BaseDocument,
+  ): ((tx: DatabaseAdapter, doc: BaseDocument) => Promise<void>) | undefined {
+    const hooks = this.collection.hooks?.beforeCommit;
+    if (!hooks?.length) return undefined;
+    return async (tx, doc) => {
+      for (const hook of hooks) {
+        await hook({ doc, previousDoc, req: this.toHookRequestContext(c), user, operation, tx });
+      }
+    };
+  }
+
+  /**
+   * Runs a single write. When `beforeCommit` hooks exist the write and the
+   * hooks share one transaction, so a throwing hook rolls the write back.
+   */
+  private async persistInTransaction(
+    db: DatabaseAdapter,
+    beforeCommit: ((tx: DatabaseAdapter, doc: BaseDocument) => Promise<void>) | undefined,
+    write: (writer: DatabaseAdapter) => Promise<BaseDocument>,
+  ): Promise<BaseDocument> {
+    if (!beforeCommit) return write(db);
+    if (!db.transaction) {
+      throw new Error(
+        `Collection "${this.collection.slug}" defines beforeCommit hooks but the configured database adapter does not support transactions.`,
+      );
+    }
+    return db.transaction(async (tx) => {
+      const doc = await write(tx);
+      await beforeCommit(tx, doc);
+      return doc;
+    });
+  }
+
+  /**
    * Core update pipeline shared by PATCH requests and operational actions:
    * auth-field stripping, timestamps, access enforcement, field write access,
    * beforeChange hooks, persistence (or workflow draft), audit logging,
@@ -993,6 +1040,8 @@ export class CollectionController {
       );
     }
 
+    data = normalizeMoneyFields(this.collection.fields, data);
+
     let before: any = null;
     if (this.collection.audit) {
       before = originalDoc;
@@ -1030,6 +1079,10 @@ export class CollectionController {
       path: `collection:${this.collection.slug}.hooks.beforeChange`,
     });
 
+    // Checked on the final payload so hooks cannot bypass immutability either.
+    assertImmutableFieldsUnchanged(this.collection.fields, data, originalDoc);
+
+    const beforeCommit = this.buildBeforeCommit(c, "update", user, originalDoc);
     const doc = this.collection.workflow
       ? (
           await saveWorkflowDraft({
@@ -1039,9 +1092,12 @@ export class CollectionController {
             originalDoc,
             data,
             user,
+            beforeCommit,
           })
         ).doc
-      : await db!.update({ collection: this.collection.slug, id, data });
+      : await this.persistInTransaction(db!, beforeCommit, (writer) =>
+          writer.update({ collection: this.collection.slug, id, data }),
+        );
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
@@ -1312,6 +1368,7 @@ export class CollectionController {
     const body = (await c.req.json().catch(() => ({}))) as {
       expectedRevision?: number;
       comment?: string;
+      input?: Record<string, unknown>;
     };
     try {
       const doc = await transitionWorkflow({
@@ -1321,6 +1378,7 @@ export class CollectionController {
         transitionName: transitionName as string,
         expectedRevision: body.expectedRevision,
         comment: body.comment,
+        input: body.input,
         user: c.get("user"),
         req: { query: c.req.query(), headers: c.req.header(), raw: c.req.raw },
       });

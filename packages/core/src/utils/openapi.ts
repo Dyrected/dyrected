@@ -1245,6 +1245,9 @@ function fieldToSchema(field: Field): any {
     case "number":
       schema = { type: "number" };
       break;
+    case "money":
+      schema = { type: "integer", description: "Amount in minor units (for example kobo or cents)." };
+      break;
     case "boolean":
       schema = { type: "boolean" };
       break;

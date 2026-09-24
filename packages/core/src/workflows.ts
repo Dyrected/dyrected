@@ -336,8 +336,10 @@ export async function saveWorkflowDraft(args: {
   originalDoc: BaseDocument;
   data: Record<string, unknown>;
   user?: AuthenticatedUser;
+  /** Runs inside the write transaction, after the draft is saved. */
+  beforeCommit?: (tx: DatabaseAdapter, doc: BaseDocument) => Promise<void>;
 }): Promise<{ doc: BaseDocument; event: LifecycleEvent }> {
-  const { config, collection, id, originalDoc, data, user } = args;
+  const { config, collection, id, originalDoc, data, user, beforeCommit } = args;
   const db = config.db!;
   const workflow = collection.workflow!;
   if (!db.transaction) throw new Error(`The configured database adapter does not support workflow transactions.`);
@@ -378,6 +380,7 @@ export async function saveWorkflowDraft(args: {
 
     const updated = await tx.update({ collection: collection.slug, id, data: updateData });
     await persistEvent(tx, event);
+    await beforeCommit?.(tx, updated);
     return updated;
   });
 
@@ -390,8 +393,10 @@ export async function createWorkflowDocument(args: {
   collection: CollectionConfig;
   data: Record<string, unknown>;
   user?: AuthenticatedUser;
+  /** Runs inside the write transaction, after the document is created. */
+  beforeCommit?: (tx: DatabaseAdapter, doc: BaseDocument) => Promise<void>;
 }): Promise<{ doc: BaseDocument; event: LifecycleEvent }> {
-  const { config, collection, data, user } = args;
+  const { config, collection, data, user, beforeCommit } = args;
   const db = config.db!;
   if (!db.transaction) throw new Error(`The configured database adapter does not support workflow transactions.`);
   let event!: LifecycleEvent;
@@ -405,6 +410,7 @@ export async function createWorkflowDocument(args: {
       payload: { revision: 1, previousRevision: null },
     });
     await persistEvent(tx, event);
+    await beforeCommit?.(tx, created);
     return created;
   });
   void dispatchLifecycleEvent(config, event);
@@ -418,10 +424,11 @@ export async function transitionWorkflow(args: {
   transitionName: string;
   expectedRevision?: number;
   comment?: string;
+  input?: Record<string, unknown>;
   user?: AuthenticatedUser;
   req: HookRequestContext;
 }): Promise<BaseDocument> {
-  const { config, collection, id, transitionName, expectedRevision, comment, user, req } = args;
+  const { config, collection, id, transitionName, expectedRevision, comment, input, user, req } = args;
   const db = config.db!;
   const workflow = collection.workflow!;
   if (!db.transaction) throw new Error(`The configured database adapter does not support workflow transactions.`);
@@ -448,7 +455,7 @@ export async function transitionWorkflow(args: {
     throw Object.assign(new Error(`A comment is required for "${transition.label}".`), { statusCode: 400 });
   }
 
-  const hookContext = { transition, from: meta.state, to: transition.to, doc: original, user, comment, req, db };
+  const hookContext = { transition, from: meta.state, to: transition.to, doc: original, user, comment, input, req, db };
   for (const hook of workflow.hooks?.beforeTransition ?? []) await hook(hookContext);
 
   const events: LifecycleEvent[] = [
@@ -510,6 +517,19 @@ export async function transitionWorkflow(args: {
     if (targetState.published) data.__published = working;
     if (transition.unpublish) data.__published = null;
     const next = await tx.update({ collection: collection.slug, id, data });
+    if (transition.onTransition) {
+      await transition.onTransition({
+        transition,
+        from: lockedMeta.state,
+        to: transition.to,
+        doc: locked,
+        input,
+        comment,
+        user,
+        req,
+        tx,
+      });
+    }
     await tx.create({
       collection: WORKFLOW_HISTORY_COLLECTION,
       data: {

@@ -106,7 +106,7 @@ export function buildViewColumns({
               : {}),
       cell: ({ row }: any) => {
         const rendered = (
-          <RenderCell value={row.original[name]} field={field} client={client} schemas={schemas} />
+          <RenderCell value={row.original[name]} field={field} client={client} schemas={schemas} row={row.original} />
         )
         if (!isPrimary || !primaryLink) return rendered
         return renderPrimaryCell(row.original, rendered, primaryLink)

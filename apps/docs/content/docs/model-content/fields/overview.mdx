@@ -34,6 +34,7 @@ Most field types accept a common set of base options:
 - `label` — the human-readable name shown to editors. Defaults to a title-cased `name`.
 - `required` — whether the field must have a value. A missing value fails validation with a `400`.
 - `unique` — enforces a database uniqueness constraint. A duplicate write fails with a `409`.
+- `immutable` — the value can be set when the document is created but never changed afterwards. An update that tries to change it fails with a `400`; re-sending the same value is fine, so full-document saves from the admin keep working. Good for currencies, external references, and other values a ledger relies on.
 - `defaultValue` — the value used when a new document omits the field. It is evaluated on the server.
 - `promoted` — pulls the field out of the JSON document into its own indexed column so you can filter and sort on it quickly. See [Database indexes](/docs/deployment-and-operations/infrastructure/database/indexes).
 - `access` — per-field `read` and `update` rules that hide or lock the field for some users. See [Field access control](/docs/model-content/content-rules/access-control/fields).
@@ -47,7 +48,7 @@ Each field type has its own page with a focused example and its generated contra
 
 - Text-like content: [Text](/docs/model-content/fields/text), [Textarea](/docs/model-content/fields/textarea), [Email](/docs/model-content/fields/email), [URL](/docs/model-content/fields/url), [Icon](/docs/model-content/fields/icon), [Rich Text](/docs/model-content/fields/rich-text)
 - Choices and toggles: [Select](/docs/model-content/fields/select), [Multi Select](/docs/model-content/fields/multi-select), [Radio](/docs/model-content/fields/radio), [Boolean](/docs/model-content/fields/boolean)
-- Numbers and dates: [Number](/docs/model-content/fields/number), [Date](/docs/model-content/fields/date), [Datetime](/docs/model-content/fields/datetime), [Time](/docs/model-content/fields/time)
+- Numbers and dates: [Number](/docs/model-content/fields/number), [Money](/docs/model-content/fields/money), [Date](/docs/model-content/fields/date), [Datetime](/docs/model-content/fields/datetime), [Time](/docs/model-content/fields/time)
 - Structure and nesting: [Object](/docs/model-content/fields/object), [Array](/docs/model-content/fields/array), [Blocks](/docs/model-content/fields/blocks), [Row](/docs/model-content/fields/row)
 - Relationships and files: [Relationship](/docs/model-content/fields/relationship), [Image](/docs/model-content/fields/image), [Join](/docs/model-content/fields/join)
 - Data and layout: [JSON](/docs/model-content/fields/json)
@@ -227,6 +228,7 @@ export type Field =
   | SelectField
   | RadioField
   | NumberField
+  | MoneyField
   | BooleanField
   | MultiSelectField
   | RelationshipField
@@ -255,6 +257,12 @@ export interface FieldBase {
   required?: boolean;
   /** Whether values for this field must be unique across the collection. */
   unique?: boolean;
+  /**
+   * Whether the value can only be set when the document is created. Any update
+   * that tries to change it is rejected with a validation error. Re-sending the
+   * unchanged value is allowed.
+   */
+  immutable?: boolean;
   /** Default value: literal value or function computed from context. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
@@ -318,6 +326,7 @@ export interface FieldBase {
 | <code>label</code> (optional) | Human-readable label shown in the Admin UI. |
 | <code>required</code> (optional) | Whether the field must have a value when saving. |
 | <code>unique</code> (optional) | Whether values for this field must be unique across the collection. |
+| <code>immutable</code> (optional) | Whether the value can only be set when the document is created. Any update that tries to change it is rejected with a validation error. Re-sending the unchanged value is allowed. |
 | <code>defaultValue</code> (optional) | Default value: literal value or function computed from context. |
 | <code>options</code> (optional) | Static or dynamic option source for supported selection fields. |
 | <code>relationTo</code> (optional) | Target collection slug for &#96;relationship&#96; fields. |
@@ -345,6 +354,7 @@ export type FieldType =
   | "textarea"
   | "richText"
   | "number"
+  | "money"
   | "boolean"
   | "date"
   | "datetime"

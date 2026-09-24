@@ -74,6 +74,29 @@ export type CollectionAfterChangeHook<TDoc extends object = Record<string, unkno
 }) => void | Promise<void>;
 
 /**
+ * Runs **inside** the database transaction that persists a create or update,
+ * after the document is written and before the transaction commits.
+ *
+ * `tx` is a writable, transaction-scoped adapter: anything written through it
+ * commits or rolls back together with the document. Throw to abort the whole
+ * operation, including the primary write. Use it for invariants that must hold
+ * atomically, such as writing a ledger row alongside a payment.
+ *
+ * Requires a database adapter that supports transactions.
+ */
+export type CollectionBeforeCommitHook<TDoc extends object = Record<string, unknown>> = (args: {
+  /** The document as persisted by this operation. */
+  doc: TDoc;
+  /** The document before the update. Absent on create. */
+  previousDoc?: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  operation: "create" | "update";
+  /** Writable, transaction-scoped database adapter. */
+  tx: DatabaseAdapter;
+}) => void | Promise<void>;
+
+/**
  * Runs **before** a document is deleted from the database.
  */
 export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
