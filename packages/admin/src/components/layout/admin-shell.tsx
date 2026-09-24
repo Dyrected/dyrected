@@ -1112,18 +1112,8 @@ function SidebarInner({
           </div>
         ) : activeNavigation?.groups && activeNavigation.groups.length > 0 ? (
           <>
-            {activeNavigation.pinnedItems && activeNavigation.pinnedItems.length > 0 && (
-              <div className="dy-space-y-0.5 dy-mb-2">
-                {!collapsed && (
-                  <p className="dy-px-3 dy-mb-1.5 dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/50">
-                    Pinned
-                  </p>
-                )}
-                {activeNavigation.pinnedItems.map((item) => renderCompiledNavItem(item))}
-              </div>
-            )}
             {!hasCompiledDashboard && (
-              <div className="dy-space-y-0.5">
+              <div className="dy-space-y-0.5 dy-mb-2">
                 <NavItem
                   to="/"
                   icon={LayoutDashboard}
@@ -1132,6 +1122,16 @@ function SidebarInner({
                   collapsed={collapsed}
                   onClick={onNavigate}
                 />
+              </div>
+            )}
+            {activeNavigation.pinnedItems && activeNavigation.pinnedItems.length > 0 && (
+              <div className="dy-space-y-0.5 dy-mb-2">
+                {!collapsed && (
+                  <p className="dy-px-3 dy-mb-1.5 dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/50">
+                    Pinned
+                  </p>
+                )}
+                {activeNavigation.pinnedItems.map((item) => renderCompiledNavItem(item))}
               </div>
             )}
             {activeNavigation.groups.map((group) => {

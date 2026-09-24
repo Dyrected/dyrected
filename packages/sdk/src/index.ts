@@ -406,7 +406,13 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   private onAuthError?: (error: DyrectedError) => void;
 
   constructor(config: DyrectedClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, "");
+    let base = config.baseUrl.replace(/\/$/, "");
+    if (typeof window === "undefined" && base.startsWith("/")) {
+      const port = (typeof process !== "undefined" && process.env?.PORT) || "3000";
+      const host = (typeof process !== "undefined" && (process.env?.HOST || process.env?.HOSTNAME)) || "127.0.0.1";
+      base = `http://${host}:${port}${base}`;
+    }
+    this.baseUrl = base;
     this.fetch = (config.fetch || fetch).bind(globalThis);
     this.defaultDepth = config.defaultDepth ?? 1;
     this.onAuthError = config.onAuthError;
