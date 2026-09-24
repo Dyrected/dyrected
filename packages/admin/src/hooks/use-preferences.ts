@@ -182,7 +182,7 @@ export function usePreference<T>(
 
   // Remote fetching with cancellation flag and write version guarding
   React.useEffect(() => {
-    if (!client || !user) return
+    if (typeof client?.getPreference !== "function" || !user) return
 
     let cancelled = false
     const currentWriteVersion = localWriteVersionRef.current

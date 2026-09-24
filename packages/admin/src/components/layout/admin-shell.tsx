@@ -638,6 +638,9 @@ function SidebarInner({
   onToggleCollapse,
   onNavigate,
   updateInfo,
+  isCustomizing: isCustomizingProp,
+  onCustomizingChange,
+  className,
 }: {
   schemas: AdminSchemas | null | undefined
   isLoading: boolean
@@ -648,10 +651,21 @@ function SidebarInner({
   onToggleCollapse?: () => void
   onNavigate?: () => void
   updateInfo: UpdateInfo | null
+  isCustomizing?: boolean
+  onCustomizingChange?: (customizing: boolean) => void
+  className?: string
 }) {
   const { client, user, navigation, badges } = useDyrected()
   const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
-  const [customizerOpen, setCustomizerOpen] = useState(false)
+  const [internalCustomizing, setInternalCustomizing] = useState(false)
+  const isCustomizing = isCustomizingProp !== undefined ? isCustomizingProp : internalCustomizing
+  const setIsCustomizing = (val: boolean) => {
+    if (onCustomizingChange) {
+      onCustomizingChange(val)
+    } else {
+      setInternalCustomizing(val)
+    }
+  }
   const [userToggledOpen, setUserToggledOpen] = useState<Set<string>>(() => new Set())
   const [userToggledClosed, setUserToggledClosed] = useState<Set<string>>(() => new Set())
 
@@ -884,10 +898,27 @@ function SidebarInner({
 
     const Icon = resolveAdminIcon(item.icon, FallbackIcon)
 
-    const badgeInfo = badges?.[item.id] ?? badges?.[item.slug]
+    const badgeMap = (badges as any)?.badges ?? badges
+    const badgeInfo =
+      badgeMap?.[item.slug] ??
+      badgeMap?.[item.id] ??
+      (item.collection ? badgeMap?.[item.collection] : undefined) ??
+      (item.global ? badgeMap?.[item.global] : undefined)
     const badgeCount = badgeInfo?.count
-    const badgeText = badgeInfo?.text ?? (typeof item.badge === "string" ? item.badge : (badgeCount !== undefined ? String(badgeCount) : null))
-    const badgeVariant = badgeInfo?.variant ?? (typeof item.badge === "object" ? item.badge.variant : "default")
+    const badgeText =
+      badgeInfo?.text ??
+      (typeof item.badge === "string"
+        ? item.badge
+        : typeof item.badge === "object" && item.badge && "text" in item.badge
+          ? (item.badge as any).text
+          : badgeCount !== undefined && badgeCount !== null
+            ? String(badgeCount)
+            : null)
+    const badgeVariant =
+      badgeInfo?.variant ??
+      (typeof item.badge === "object" && item.badge && "variant" in item.badge
+        ? (item.badge as any).variant
+        : "default")
 
     const badgeNode = badgeText ? (
       collapsed ? (
@@ -987,8 +1018,17 @@ function SidebarInner({
   const branding = schemas?.admin?.branding;
   const meta = schemas?.admin?.meta;
 
+  if (isCustomizing) {
+    return (
+      <NavigationCustomizer
+        onClose={() => setIsCustomizing(false)}
+        className={className}
+      />
+    )
+  }
+
   return (
-    <div className="dy-flex dy-h-full dy-min-h-0 dy-flex-col">
+    <div className={cn("dy-flex dy-h-full dy-min-h-0 dy-flex-col", className)}>
       {/* Logo and Collapse Toggle */}
       {!isEmbedded && (
         <div
@@ -1042,33 +1082,20 @@ function SidebarInner({
             )}
           </div>
 
-          {/* Top Actions: Customize Navigation & Collapse */}
-          <div className="dy-flex dy-items-center dy-gap-0.5">
-            {!collapsed && (
-              <button
-                type="button"
-                onClick={() => setCustomizerOpen(true)}
-                className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors"
-                title="Customize Navigation"
-                aria-label="Customize Navigation"
-              >
-                <SlidersHorizontal className="dy-h-4 dy-w-4" />
-              </button>
-            )}
-            {onToggleCollapse && (
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                className={cn(
-                  "dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors",
-                  collapsed && "dy-hidden"
-                )}
-                aria-label="Collapse sidebar"
-              >
-                <PanelLeftClose className="dy-h-4 dy-w-4" />
-              </button>
-            )}
-          </div>
+          {/* Top Actions: Collapse */}
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className={cn(
+                "dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground/50 hover:dy-bg-accent/60 hover:dy-text-foreground dy-transition-colors",
+                collapsed && "dy-hidden"
+              )}
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="dy-h-4 dy-w-4" />
+            </button>
+          )}
         </div>
       )}
 
@@ -1266,7 +1293,10 @@ function SidebarInner({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={() => setCustomizerOpen(true)}
+                onSelect={() => {
+                  if (collapsed && onToggleCollapse) onToggleCollapse()
+                  setIsCustomizing(true)
+                }}
                 className="dy-cursor-pointer dy-py-2"
               >
                 <SlidersHorizontal className="dy-h-4 dy-w-4" />
@@ -1310,7 +1340,10 @@ function SidebarInner({
           <div className="dy-flex dy-items-center dy-gap-1">
             <button
               type="button"
-              onClick={() => setCustomizerOpen(true)}
+              onClick={() => {
+                if (collapsed && onToggleCollapse) onToggleCollapse()
+                setIsCustomizing(true)
+              }}
               className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
               title="Customize Navigation"
               aria-label="Customize Navigation"
@@ -1321,9 +1354,7 @@ function SidebarInner({
           </div>
         </div>
       </div>
-
-      <NavigationCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} />
-    </div >
+    </div>
   )
 }
 
@@ -1374,6 +1405,8 @@ export function AdminShell({
   const sidebarControl = React.useMemo(() => ({ collapsed, setCollapsed }), [collapsed])
   // Mobile: open/close overlay
   const [mobileOpen, setMobileOpen] = useState(false)
+  // Navigation Customizer state (inline sidebar takeover)
+  const [isCustomizing, setIsCustomizing] = useState(false)
 
   // Resizable desktop sidebar width (mirrors the AI panel resize behaviour).
   // Source of truth is the server-backed global preference so the width
@@ -1508,7 +1541,7 @@ export function AdminShell({
             {/* Desktop Sidebar with Expand Lip Trigger */}
             <div className="dy-relative dy-hidden md:dy-flex dy-h-full dy-shrink-0">
               <aside
-                style={{ width: collapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth }}
+                style={{ width: collapsed ? COLLAPSED_SIDEBAR_WIDTH : (isCustomizing ? Math.max(sidebarWidth, 280) : sidebarWidth) }}
                 className={cn(
                   "dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-overflow-hidden",
                   isResizingSidebar ? "dy-transition-none" : "dy-transition-all dy-duration-300"
@@ -1523,6 +1556,11 @@ export function AdminShell({
                   collapsed={collapsed}
                   onToggleCollapse={() => setCollapsed((v) => !v)}
                   updateInfo={updateInfo}
+                  isCustomizing={isCustomizing}
+                  onCustomizingChange={(c) => {
+                    if (c && collapsed) setCollapsed(false)
+                    setIsCustomizing(c)
+                  }}
                 />
               </aside>
 
@@ -1591,6 +1629,8 @@ export function AdminShell({
                     collapsed={false}
                     onNavigate={() => setMobileOpen(false)}
                     updateInfo={updateInfo}
+                    isCustomizing={isCustomizing}
+                    onCustomizingChange={setIsCustomizing}
                   />
                 </div>
               </SheetContent>

@@ -1,19 +1,33 @@
+import * as React from "react"
 import { useParams, Navigate } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-context"
+import { usePreference } from "../../hooks/use-preferences"
+import { reconcileNavigation } from "../../utils/navigation-reconciler"
+import { DEFAULT_USER_NAV_PREFERENCES } from "../../types/preferences"
 import { AdminNotFound, AdminNotFoundSkeleton } from "../../components/layout/admin-not-found"
 import { OperationalViewPage } from "../collections/views/operational-view-page"
 import type { CompiledNavItem } from "@dyrected/sdk"
 
 /**
- * Finds a navigation item across all compiled groups matching the given workspace slug.
+ * Finds a navigation item across all compiled groups, ungrouped items, and pinned items matching the given workspace slug.
  */
 function findWorkspaceItem(navigation: any, slug: string): CompiledNavItem | undefined {
-  if (!navigation?.groups) return undefined
-  for (const group of navigation.groups) {
-    if (group.items) {
-      const match = group.items.find((item: CompiledNavItem) => item.slug === slug)
-      if (match) return match
+  if (!navigation) return undefined
+  if (navigation.groups) {
+    for (const group of navigation.groups) {
+      if (group.items) {
+        const match = group.items.find((item: CompiledNavItem) => item.slug === slug || item.id === slug)
+        if (match) return match
+      }
     }
+  }
+  if (navigation.ungrouped) {
+    const match = navigation.ungrouped.find((item: CompiledNavItem) => item.slug === slug || item.id === slug)
+    if (match) return match
+  }
+  if (navigation.pinnedItems) {
+    const match = navigation.pinnedItems.find((item: CompiledNavItem) => item.slug === slug || item.id === slug)
+    if (match) return match
   }
   return undefined
 }
@@ -24,13 +38,18 @@ function findWorkspaceItem(navigation: any, slug: string): CompiledNavItem | und
  */
 export function WorkspaceRedirectRoute() {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>()
-  const { navigation, schemas } = useDyrected()
+  const { navigation: baseTree, schemas } = useDyrected()
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
 
-  if (!navigation || !schemas) {
+  const activeNavigation = React.useMemo(() => {
+    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, { includeHidden: true })
+  }, [baseTree, userNavPrefs, schemas])
+
+  if (!baseTree || !schemas) {
     return <AdminNotFoundSkeleton />
   }
 
-  const item = findWorkspaceItem(navigation, workspaceSlug!)
+  const item = findWorkspaceItem(activeNavigation, workspaceSlug!)
 
   if (!item) {
     return (
@@ -61,13 +80,18 @@ export function WorkspaceRedirectRoute() {
  */
 export function WorkspaceRoute() {
   const { workspaceSlug, viewSlug } = useParams<{ workspaceSlug: string; viewSlug: string }>()
-  const { navigation, schemas } = useDyrected()
+  const { navigation: baseTree, schemas } = useDyrected()
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
 
-  if (!navigation || !schemas) {
+  const activeNavigation = React.useMemo(() => {
+    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, { includeHidden: true })
+  }, [baseTree, userNavPrefs, schemas])
+
+  if (!baseTree || !schemas) {
     return <AdminNotFoundSkeleton />
   }
 
-  const item = findWorkspaceItem(navigation, workspaceSlug!)
+  const item = findWorkspaceItem(activeNavigation, workspaceSlug!)
 
   if (!item) {
     return (

@@ -133,4 +133,44 @@ describe("WorkspaceRoute & WorkspaceRedirectRoute", () => {
     expect(screen.getByText("Collection: invoices")).toBeTruthy()
     expect(screen.getByText("View: Pending Approvals")).toBeTruthy()
   })
+
+  it("resolves custom operational workspace created via user navigation preferences", () => {
+    window.localStorage.setItem(
+      "dyrected_pref_personal_admin:navigation",
+      JSON.stringify({
+        items: [
+          {
+            slug: "guests",
+            label: "Guests",
+            collection: "invoices",
+            views: [
+              {
+                slug: "guest-directory",
+                label: "Guest Directory",
+                layout: "table",
+                collection: "invoices",
+              },
+            ],
+          },
+        ],
+      })
+    )
+
+    useDyrectedMock.mockReturnValue({
+      navigation: mockNavigation,
+      schemas: mockSchemas,
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/guests/guest-directory"]}>
+        <Routes>
+          <Route path="/:workspaceSlug/:viewSlug" element={<WorkspaceRoute />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getAllByTestId("operational-view-page").length).toBeGreaterThan(0)
+    expect(screen.getByText("View: Guest Directory")).toBeTruthy()
+  })
 })
+

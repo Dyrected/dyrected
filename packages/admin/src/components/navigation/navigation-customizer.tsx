@@ -35,14 +35,15 @@ import {
   RotateCcw,
   Search,
   Share2,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react"
 
 import type { CompiledNavGroup, CompiledNavItem, DefineNavItemOptions, NavGroup, ViewConfig, ViewLayout } from "@dyrected/core"
+import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
@@ -56,11 +57,11 @@ import {
 } from "../../types/preferences"
 
 interface NavigationCustomizerProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
+  className?: string
 }
 
-export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomizerProps) {
+export function NavigationCustomizer({ onClose, className }: NavigationCustomizerProps) {
   const { navigation: baseTree, schemas, client, user } = useDyrected()
   const [prefs, setPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
 
@@ -412,50 +413,69 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
   }, [tree.groups, searchQuery])
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="dy-w-full sm:dy-max-w-xl dy-flex dy-flex-col dy-p-0 dy-h-full !dy-gap-0">
-        <SheetHeader className="dy-px-6 dy-pt-6 dy-pb-4 dy-border-b">
-          <div className="dy-flex dy-items-center dy-justify-between">
-            <SheetTitle className="dy-text-xl dy-font-semibold">Customize Navigation</SheetTitle>
+    <div className={cn("dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-bg-card dy-text-card-foreground", className)}>
+      {/* Header */}
+      <div className="dy-flex dy-h-14 dy-items-center dy-justify-between dy-border-b dy-border-border dy-px-3 dy-shrink-0">
+        <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+          <div className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-md dy-bg-primary/10 dy-text-primary dy-shrink-0">
+            <SlidersHorizontal className="dy-h-4 dy-w-4" />
           </div>
-          <SheetDescription className="dy-text-xs dy-text-muted-foreground">
-            Personalize sidebar groups, operational workspaces, and views. Changes save automatically.
-          </SheetDescription>
-
-          {/* Quick Creation Row */}
-          <div className="dy-flex dy-items-center dy-gap-2 dy-pt-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="dy-h-8 dy-text-xs dy-gap-1.5"
-              onClick={() => setNewGroupOpen(true)}
-            >
-              <FolderPlus className="dy-h-3.5 dy-w-3.5" />
-              New Group
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="dy-h-8 dy-text-xs dy-gap-1.5"
-              onClick={() => setNewItemOpen(true)}
-            >
-              <Plus className="dy-h-3.5 dy-w-3.5" />
-              New Nav Item
-            </Button>
-            <div className="dy-relative dy-flex-1">
-              <Search className="dy-absolute dy-left-2.5 dy-top-2.5 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-              <Input
-                placeholder="Search items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="dy-h-8 dy-pl-8 dy-text-xs"
-              />
-            </div>
+          <div className="dy-flex dy-flex-col dy-min-w-0">
+            <span className="dy-text-xs dy-font-semibold dy-text-foreground dy-truncate">
+              Customize Nav
+            </span>
+            <span className="dy-text-[10px] dy-text-muted-foreground dy-truncate">
+              Reorder, hide or pin
+            </span>
           </div>
-        </SheetHeader>
+        </div>
 
-        {/* Tree Content */}
-        <div className="dy-flex-1 dy-overflow-y-auto dy-p-6 dy-space-y-6">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="dy-h-7 dy-px-2.5 dy-text-xs dy-gap-1 dy-shrink-0"
+          onClick={onClose}
+        >
+          <Check className="dy-h-3.5 dy-w-3.5" />
+          <span>Done</span>
+        </Button>
+      </div>
+
+      {/* Quick Creation & Search */}
+      <div className="dy-p-2 dy-border-b dy-border-border/40 dy-space-y-1.5 dy-shrink-0 dy-bg-muted/15">
+        <div className="dy-flex dy-items-center dy-gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="dy-h-7 dy-flex-1 dy-text-[11px] dy-gap-1 dy-px-2"
+            onClick={() => setNewGroupOpen(true)}
+          >
+            <FolderPlus className="dy-h-3.5 dy-w-3.5" />
+            <span>Group</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="dy-h-7 dy-flex-1 dy-text-[11px] dy-gap-1 dy-px-2"
+            onClick={() => setNewItemOpen(true)}
+          >
+            <Plus className="dy-h-3.5 dy-w-3.5" />
+            <span>Nav Item</span>
+          </Button>
+        </div>
+        <div className="dy-relative">
+          <Search className="dy-absolute dy-left-2 dy-top-2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/60" />
+          <Input
+            placeholder="Search items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="dy-h-7 dy-pl-7 dy-text-xs dy-bg-background"
+          />
+        </div>
+      </div>
+
+      {/* Tree Content */}
+      <div className="dy-flex-1 dy-overflow-y-auto dy-p-2 dy-space-y-3">
           {publishStatus && (
             <div className="dy-p-2.5 dy-rounded-md dy-bg-emerald-500/10 dy-border dy-border-emerald-500/30 dy-text-xs dy-text-emerald-600 dark:dy-text-emerald-400 dy-flex dy-items-center dy-gap-2">
               <Check className="dy-h-4 dy-w-4" />
@@ -828,36 +848,40 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
         </div>
 
         {/* Footer */}
-        <div className="dy-p-4 dy-border-t dy-bg-background/80 dy-backdrop-blur dy-flex dy-items-center dy-justify-between dy-gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="dy-text-xs dy-gap-1.5 dy-text-muted-foreground hover:dy-text-destructive"
-            onClick={handleResetToDefaults}
-          >
-            <RotateCcw className="dy-h-3.5 dy-w-3.5" />
-            Reset to System Defaults
-          </Button>
+        <div className="dy-border-t dy-border-border dy-p-2 dy-bg-card dy-shrink-0 dy-space-y-1.5">
+          <div className="dy-flex dy-items-center dy-justify-between dy-gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="dy-h-7 dy-text-[11px] dy-px-2 dy-text-muted-foreground hover:dy-text-destructive"
+              onClick={handleResetToDefaults}
+            >
+              <RotateCcw className="dy-h-3 dy-w-3 dy-mr-1" />
+              Reset
+            </Button>
 
-          <div className="dy-flex dy-items-center dy-gap-2">
             {isUserAdmin && (
               <Button
                 variant="outline"
                 size="sm"
-                className="dy-text-xs dy-gap-1.5"
+                className="dy-h-7 dy-text-[11px] dy-px-2"
                 onClick={() => setPublishRoleOpen(true)}
               >
-                <Share2 className="dy-h-3.5 dy-w-3.5" />
-                Publish for Role...
+                <Share2 className="dy-h-3 dy-w-3 dy-mr-1" />
+                Role Default
               </Button>
             )}
-
-            <Button size="sm" className="dy-text-xs" onClick={() => onOpenChange(false)}>
-              Done
-            </Button>
           </div>
+
+          <Button
+            size="sm"
+            className="dy-w-full dy-h-7 dy-text-xs dy-gap-1.5"
+            onClick={onClose}
+          >
+            <Check className="dy-h-3.5 dy-w-3.5" />
+            <span>Done Customizing</span>
+          </Button>
         </div>
-      </SheetContent>
 
       {/* --- Modal 1: New Group --- */}
       <Dialog open={newGroupOpen} onOpenChange={setNewGroupOpen}>
@@ -1099,6 +1123,6 @@ export function NavigationCustomizer({ open, onOpenChange }: NavigationCustomize
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Sheet>
+    </div>
   )
 }

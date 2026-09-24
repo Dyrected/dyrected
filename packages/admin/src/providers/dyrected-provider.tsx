@@ -242,7 +242,8 @@ export function DyrectedProvider({
     queryFn: async () => {
       if (!client) return null;
       try {
-        return await client.getNavigationBadges();
+        const res = await client.getNavigationBadges();
+        return (res as any)?.badges ?? res;
       } catch (err) {
         console.warn("Failed to fetch navigation badges:", err);
         return null;

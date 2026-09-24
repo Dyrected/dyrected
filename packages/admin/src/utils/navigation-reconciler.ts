@@ -113,21 +113,64 @@ export function reconcileNavigation(
 
     const itemId = itemOpt.slug ? `workspace_${itemOpt.slug}` : (itemOpt.collection ? `collection_${itemOpt.collection}` : `custom_${Math.random()}`)
 
+    // Remove any existing instance of this item from other groups to avoid duplicates
+    for (const otherGroup of groupsList) {
+      if (otherGroup !== group) {
+        otherGroup.items = otherGroup.items.filter((i) => i.slug !== itemOpt.slug && i.id !== itemId)
+      }
+    }
+
     // Check if item already exists in this group
     const existingIndex = group.items.findIndex((i) => i.id === itemId || i.slug === itemOpt.slug)
+    const existingItem = existingIndex >= 0 ? group.items[existingIndex] : undefined
+
+    const col = schemas?.collections?.find((c) => c.slug === itemOpt.collection)
+    const colViews = (col as any)?.views || []
+
+    const baseViews = existingItem?.views || []
+    const userViews = itemOpt.views || []
+    const userViewSlugs = new Set(userViews.map((v) => v.slug))
+
+    let mergedViews = [
+      ...baseViews.filter((v) => !userViewSlugs.has(v.slug)),
+      ...userViews,
+    ]
+
+    // If still no views but collection is specified, fallback to collection schema views or a default view
+    if (mergedViews.length === 0 && itemOpt.collection) {
+      if (colViews.length > 0) {
+        mergedViews = [...colViews]
+      } else {
+        mergedViews = [
+          {
+            slug: "default",
+            label: (col as any)?.label || (col as any)?.labels?.plural || itemOpt.label || "All Records",
+            layout: "table",
+            collection: itemOpt.collection,
+          } as any,
+        ]
+      }
+    }
+
+    // Ensure every view has a target collection
+    mergedViews = mergedViews.map((v) => ({
+      ...v,
+      collection: v.collection || itemOpt.collection || existingItem?.collection,
+    }))
+
     const compiledItem: CompiledNavItem = {
       id: itemId,
       type: itemOpt.slug ? "workspace" : (itemOpt.collection ? "collection" : (itemOpt.global ? "global" : "workspace")),
       slug: itemOpt.slug || itemOpt.collection || itemOpt.global || "item",
       label: itemOpt.label || itemOpt.slug || "Item",
-      icon: (itemOpt.icon as string) || "Briefcase",
+      icon: (itemOpt.icon as string) || (existingItem?.icon as string) || (col as any)?.admin?.icon || "Briefcase",
       group: group.name,
-      order: itemOpt.order ?? 100,
-      views: itemOpt.views || [],
-      collection: itemOpt.collection,
-      global: itemOpt.global,
-      badge: itemOpt.badge,
-      access: itemOpt.access,
+      order: itemOpt.order ?? existingItem?.order ?? 100,
+      views: mergedViews,
+      collection: itemOpt.collection || existingItem?.collection,
+      global: itemOpt.global || existingItem?.global,
+      badge: itemOpt.badge || existingItem?.badge,
+      access: itemOpt.access || existingItem?.access,
     }
 
     if (existingIndex >= 0) {
