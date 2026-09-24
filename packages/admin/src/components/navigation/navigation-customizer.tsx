@@ -44,7 +44,6 @@ import type { CompiledNavGroup, CompiledNavItem, DefineNavItemOptions, NavGroup,
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { Label } from "../ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Switch } from "../ui/switch"
@@ -503,7 +502,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             }}
           >
             <Plus className="dy-h-3.5 dy-w-3.5" />
-            <span>Nav Item</span>
+            <span>Workspace</span>
           </Button>
         </div>
         <div className="dy-relative">
@@ -528,45 +527,44 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
 
         {/* --- Inline Form 1: New Group --- */}
         {newGroupOpen && (
-          <div className="dy-p-2.5 dy-rounded-lg dy-border dy-border-primary/40 dy-bg-background dy-shadow-sm dy-space-y-2.5 dy-mb-2">
+          <div className="dy-p-2 dy-rounded-lg dy-border dy-border-border dy-bg-muted/30 dy-space-y-1.5 dy-mb-2">
             <div className="dy-flex dy-items-center dy-justify-between">
-              <span className="dy-text-xs dy-font-semibold dy-text-foreground">New Group</span>
+              <span className="dy-text-[11px] dy-font-semibold dy-text-foreground">New Group</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="dy-h-5 dy-w-5 dy-text-muted-foreground hover:dy-text-foreground"
+                className="dy-h-4 dy-w-4 dy-text-muted-foreground hover:dy-text-foreground"
                 onClick={() => setNewGroupOpen(false)}
               >
-                <X className="dy-h-3.5 dy-w-3.5" />
+                <X className="dy-h-3 dy-w-3" />
               </Button>
             </div>
 
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Group Name</Label>
-              <Input
-                placeholder="e.g. Operations"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                className="dy-h-7 dy-text-xs dy-bg-background"
-                autoFocus
-              />
+            <Input
+              size="sm"
+              placeholder="Group name (e.g. Operations)..."
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+              autoFocus
+            />
+
+            <div className="dy-flex dy-items-center dy-gap-2">
+              <div className="dy-flex-1">
+                <IconPicker
+                  field={{ value: groupIcon, onChange: setGroupIcon }}
+                  hidePreview
+                  placeholder="Select icon..."
+                  className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+                />
+              </div>
+              <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0">
+                <span className="dy-text-[10px] dy-text-muted-foreground">Open</span>
+                <Switch checked={groupExpanded} onCheckedChange={setGroupExpanded} />
+              </div>
             </div>
 
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Icon</Label>
-              <IconPicker
-                field={{ value: groupIcon, onChange: setGroupIcon }}
-                className="dy-h-7 dy-text-xs dy-bg-background"
-                placeholder="Select icon..."
-              />
-            </div>
-
-            <div className="dy-flex dy-items-center dy-justify-between dy-pt-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Expanded by default</Label>
-              <Switch checked={groupExpanded} onCheckedChange={setGroupExpanded} />
-            </div>
-
-            <div className="dy-flex dy-items-center dy-justify-end dy-gap-1.5 dy-pt-1">
+            <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
               <Button
                 variant="ghost"
                 size="sm"
@@ -590,53 +588,47 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
           </div>
         )}
 
-        {/* --- Inline Form 2: New Nav Item (Operational Workspace) --- */}
+        {/* --- Inline Form 2: New Workspace --- */}
         {newItemOpen && (
-          <div className="dy-p-2.5 dy-rounded-lg dy-border dy-border-primary/40 dy-bg-background dy-shadow-sm dy-space-y-2.5 dy-mb-2">
+          <div className="dy-p-2 dy-rounded-lg dy-border dy-border-border dy-bg-muted/30 dy-space-y-1.5 dy-mb-2">
             <div className="dy-flex dy-items-center dy-justify-between">
-              <span className="dy-text-xs dy-font-semibold dy-text-foreground">New Workspace / Item</span>
+              <span className="dy-text-[11px] dy-font-semibold dy-text-foreground">New Workspace</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="dy-h-5 dy-w-5 dy-text-muted-foreground hover:dy-text-foreground"
+                className="dy-h-4 dy-w-4 dy-text-muted-foreground hover:dy-text-foreground"
                 onClick={() => setNewItemOpen(false)}
               >
-                <X className="dy-h-3.5 dy-w-3.5" />
+                <X className="dy-h-3 dy-w-3" />
               </Button>
             </div>
 
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Title / Label</Label>
-              <Input
-                placeholder="e.g. Guest Directory"
-                value={itemLabel}
-                onChange={(e) => setItemLabel(e.target.value)}
-                className="dy-h-7 dy-text-xs dy-bg-background"
-                autoFocus
-              />
-            </div>
+            <Input
+              size="sm"
+              placeholder="Workspace title (e.g. VIP Concierge)..."
+              value={itemLabel}
+              onChange={(e) => setItemLabel(e.target.value)}
+              className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+              autoFocus
+            />
 
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Parent Group</Label>
-              <Select value={itemParentGroup} onValueChange={setItemParentGroup}>
-                <SelectTrigger className="dy-h-7 dy-text-xs">
-                  <SelectValue placeholder="Select group (or standalone)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tree.groups.map((g) => (
-                    <SelectItem key={g.id || g.name} value={g.name} className="dy-text-xs">
-                      {g.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={itemParentGroup} onValueChange={setItemParentGroup}>
+              <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                <SelectValue placeholder="Parent group (or standalone)..." />
+              </SelectTrigger>
+              <SelectContent>
+                {tree.groups.map((g) => (
+                  <SelectItem key={g.id || g.name} value={g.name} className="dy-text-xs">
+                    {g.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Target Collection (Optional)</Label>
+            <div className="dy-grid dy-grid-cols-2 dy-gap-1.5">
               <Select value={itemCollection} onValueChange={setItemCollection}>
-                <SelectTrigger className="dy-h-7 dy-text-xs">
-                  <SelectValue placeholder="Select target collection (optional)" />
+                <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                  <SelectValue placeholder="Collection (optional)..." />
                 </SelectTrigger>
                 <SelectContent>
                   {(schemas?.collections || []).map((col) => (
@@ -646,18 +638,16 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                   ))}
                 </SelectContent>
               </Select>
-            </div>
 
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Icon</Label>
               <IconPicker
                 field={{ value: itemIcon, onChange: setItemIcon }}
-                className="dy-h-7 dy-text-xs dy-bg-background"
-                placeholder="Select icon..."
+                hidePreview
+                placeholder="Icon..."
+                className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
               />
             </div>
 
-            <div className="dy-flex dy-items-center dy-justify-end dy-gap-1.5 dy-pt-1">
+            <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
               <Button
                 variant="ghost"
                 size="sm"
@@ -675,7 +665,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                 onClick={handleCreateItem}
                 disabled={!itemLabel.trim()}
               >
-                Add Item
+                Add Workspace
               </Button>
             </div>
           </div>
@@ -916,7 +906,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="dy-w-48">
                                               <div className="dy-px-2 dy-py-1.5 dy-text-[11px] dy-font-semibold dy-text-muted-foreground">
-                                                Move subview to...
+                                                Move view to...
                                               </div>
                                               <DropdownMenuSeparator />
                                               {tree.groups
@@ -957,11 +947,11 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                 </div>
                               )}
 
-                              {/* Inline Add Subview Form or Button */}
+                              {/* Inline Add View Form or Button */}
                               {activeItemForNewView === item.slug ? (
-                                <div className="dy-ml-5 dy-mt-1.5 dy-p-2 dy-rounded-md dy-border dy-border-primary/40 dy-bg-background dy-shadow-sm dy-space-y-2">
+                                <div className="dy-ml-5 dy-mt-1 dy-p-2 dy-rounded-lg dy-border dy-border-border dy-bg-muted/30 dy-space-y-1.5">
                                   <div className="dy-flex dy-items-center dy-justify-between">
-                                    <span className="dy-text-[11px] dy-font-semibold dy-text-foreground">New Subview</span>
+                                    <span className="dy-text-[11px] dy-font-semibold dy-text-foreground">New View</span>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -972,63 +962,55 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                     </Button>
                                   </div>
 
-                                  <div className="dy-space-y-1">
-                                    <Label className="dy-text-[10px] dy-text-muted-foreground">Title / Label</Label>
-                                    <Input
-                                      placeholder="e.g. VIP Concierge"
-                                      value={viewLabel}
-                                      onChange={(e) => setViewLabel(e.target.value)}
-                                      className="dy-h-6 dy-text-xs dy-bg-background"
-                                      autoFocus
-                                    />
-                                  </div>
+                                  <Input
+                                    size="sm"
+                                    placeholder="View title (e.g. VIP Concierge)..."
+                                    value={viewLabel}
+                                    onChange={(e) => setViewLabel(e.target.value)}
+                                    className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+                                    autoFocus
+                                  />
 
-                                  <div className="dy-space-y-1">
-                                    <Label className="dy-text-[10px] dy-text-muted-foreground">Target Collection</Label>
-                                    <Select value={viewCollection} onValueChange={setViewCollection}>
-                                      <SelectTrigger className="dy-h-6 dy-text-xs">
-                                        <SelectValue placeholder="Select collection" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {(schemas?.collections || []).map((col) => (
-                                          <SelectItem key={col.slug} value={col.slug} className="dy-text-xs">
-                                            {col.labels?.plural || col.slug}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
+                                  <Select value={viewCollection} onValueChange={setViewCollection}>
+                                    <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                                      <SelectValue placeholder="Target collection..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {(schemas?.collections || []).map((col) => (
+                                        <SelectItem key={col.slug} value={col.slug} className="dy-text-xs">
+                                          {col.labels?.plural || col.slug}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
 
-                                  <div className="dy-space-y-1">
-                                    <Label className="dy-text-[10px] dy-text-muted-foreground">Layout Engine</Label>
+                                  <div className="dy-grid dy-grid-cols-2 dy-gap-1.5">
                                     <Select value={viewLayout} onValueChange={(val) => setViewLayout(val as ViewLayout)}>
-                                      <SelectTrigger className="dy-h-6 dy-text-xs">
-                                        <SelectValue />
+                                      <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                                        <SelectValue placeholder="Layout..." />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="table" className="dy-text-xs">Table (Columns, Search, Filters)</SelectItem>
-                                        <SelectItem value="kanban" className="dy-text-xs">Kanban Board (Status Columns)</SelectItem>
-                                        <SelectItem value="cards" className="dy-text-xs">Cards Gallery (Visual Grid)</SelectItem>
-                                        <SelectItem value="calendar" className="dy-text-xs">Calendar (Date Planner)</SelectItem>
-                                        <SelectItem value="gantt" className="dy-text-xs">Gantt Timeline</SelectItem>
+                                        <SelectItem value="table" className="dy-text-xs">Table</SelectItem>
+                                        <SelectItem value="kanban" className="dy-text-xs">Kanban</SelectItem>
+                                        <SelectItem value="cards" className="dy-text-xs">Cards</SelectItem>
+                                        <SelectItem value="calendar" className="dy-text-xs">Calendar</SelectItem>
+                                        <SelectItem value="gantt" className="dy-text-xs">Gantt</SelectItem>
                                       </SelectContent>
                                     </Select>
-                                  </div>
 
-                                  <div className="dy-space-y-1">
-                                    <Label className="dy-text-[10px] dy-text-muted-foreground">Icon</Label>
                                     <IconPicker
                                       field={{ value: viewIcon, onChange: setViewIcon }}
-                                      className="dy-h-6 dy-text-xs dy-bg-background"
-                                      placeholder="Select icon..."
+                                      hidePreview
+                                      placeholder="Icon..."
+                                      className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
                                     />
                                   </div>
 
-                                  <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-1">
+                                  <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="dy-h-5 dy-px-1.5 dy-text-[10px]"
+                                      className="dy-h-6 dy-px-2 dy-text-xs"
                                       onClick={() => {
                                         setViewLabel("")
                                         setActiveItemForNewView(null)
@@ -1038,7 +1020,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                     </Button>
                                     <Button
                                       size="sm"
-                                      className="dy-h-5 dy-px-2 dy-text-[10px]"
+                                      className="dy-h-6 dy-px-2.5 dy-text-xs"
                                       onClick={handleCreateSubview}
                                       disabled={!viewLabel.trim()}
                                     >
@@ -1140,36 +1122,33 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
       <div className="dy-border-t dy-border-border dy-p-2 dy-bg-card dy-shrink-0 dy-space-y-1.5">
         {/* --- Inline Form 4: Publish as Default for Role --- */}
         {publishRoleOpen && (
-          <div className="dy-p-2.5 dy-rounded-lg dy-border dy-border-primary/40 dy-bg-background dy-shadow-sm dy-space-y-2 dy-mb-2">
+          <div className="dy-p-2 dy-rounded-lg dy-border dy-border-border dy-bg-muted/30 dy-space-y-1.5 dy-mb-2">
             <div className="dy-flex dy-items-center dy-justify-between">
-              <span className="dy-text-xs dy-font-semibold dy-text-foreground">Publish as Role Default</span>
+              <span className="dy-text-[11px] dy-font-semibold dy-text-foreground">Publish as Role Default</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="dy-h-5 dy-w-5 dy-text-muted-foreground hover:dy-text-foreground"
+                className="dy-h-4 dy-w-4 dy-text-muted-foreground hover:dy-text-foreground"
                 onClick={() => setPublishRoleOpen(false)}
               >
-                <X className="dy-h-3.5 dy-w-3.5" />
+                <X className="dy-h-3 dy-w-3" />
               </Button>
             </div>
-            <p className="dy-text-[11px] dy-text-muted-foreground">
-              Saves this navigation layout as default template for all users with this role.
+            <p className="dy-text-[10px] dy-text-muted-foreground">
+              Save layout as default for all users with this role.
             </p>
-            <div className="dy-space-y-1">
-              <Label className="dy-text-[11px] dy-text-muted-foreground">Role</Label>
-              <Select value={selectedRoleToPublish} onValueChange={setSelectedRoleToPublish}>
-                <SelectTrigger className="dy-h-7 dy-text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin" className="dy-text-xs">Administrator (admin)</SelectItem>
-                  <SelectItem value="editor" className="dy-text-xs">Editor (editor)</SelectItem>
-                  <SelectItem value="operator" className="dy-text-xs">Operator (operator)</SelectItem>
-                  <SelectItem value="compliance" className="dy-text-xs">Compliance Reviewer (compliance)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="dy-flex dy-items-center dy-justify-end dy-gap-1.5 dy-pt-1">
+            <Select value={selectedRoleToPublish} onValueChange={setSelectedRoleToPublish}>
+              <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                <SelectValue placeholder="Select role..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin" className="dy-text-xs">Administrator (admin)</SelectItem>
+                <SelectItem value="editor" className="dy-text-xs">Editor (editor)</SelectItem>
+                <SelectItem value="operator" className="dy-text-xs">Operator (operator)</SelectItem>
+                <SelectItem value="compliance" className="dy-text-xs">Compliance (compliance)</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
               <Button
                 variant="ghost"
                 size="sm"

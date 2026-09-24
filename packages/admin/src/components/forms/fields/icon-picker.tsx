@@ -16,9 +16,10 @@ interface IconPickerProps {
   disabled?: boolean
   className?: string
   placeholder?: string
+  hidePreview?: boolean
 }
 
-export function IconPicker({ schema, field, disabled, className, placeholder }: IconPickerProps) {
+export function IconPicker({ schema, field, disabled, className, placeholder, hidePreview }: IconPickerProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState("all")
@@ -40,7 +41,7 @@ export function IconPicker({ schema, field, disabled, className, placeholder }: 
   }, [search, selectedCategory])
 
   return (
-    <div className="dy-flex dy-items-center dy-gap-3 dy-w-full">
+    <div className={cn("dy-flex dy-items-center dy-w-full", hidePreview ? "dy-gap-0" : "dy-gap-3")}>
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -48,13 +49,15 @@ export function IconPicker({ schema, field, disabled, className, placeholder }: 
             variant="outline"
             disabled={disabled}
             className={cn(
-              "dy-flex-1 dy-justify-start dy-gap-3 dy-h-12 dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-font-normal hover:dy-shadow-md dy-transition-all",
+              hidePreview
+                ? "dy-flex-1 dy-justify-start dy-gap-1.5 dy-h-7 dy-rounded-md dy-border-border/50 dy-bg-background dy-px-2 dy-text-xs dy-font-normal hover:dy-bg-accent/40 dy-transition-colors"
+                : "dy-flex-1 dy-justify-start dy-gap-3 dy-h-12 dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-font-normal hover:dy-shadow-md dy-transition-all",
               className
             )}
           >
             {SelectedIcon ? (
               <>
-                {React.createElement(SelectedIcon, { className: "dy-h-4 dy-w-4 dy-text-primary dy-shrink-0" })}
+                {React.createElement(SelectedIcon, { className: "dy-h-3.5 dy-w-3.5 dy-text-primary dy-shrink-0" })}
                 <span className="dy-text-xs dy-text-foreground/80 dy-truncate">{selectedIconName}</span>
               </>
             ) : (
@@ -155,7 +158,7 @@ export function IconPicker({ schema, field, disabled, className, placeholder }: 
         </PopoverContent>
       </Popover>
 
-      {SelectedIcon && (
+      {!hidePreview && SelectedIcon && (
         <div className="dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-12 dy-rounded-lg dy-border dy-border-border/40 dy-bg-background/50 dy-shrink-0">
           {React.createElement(SelectedIcon, { className: "dy-h-6 dy-w-6 dy-text-foreground/70" })}
         </div>
