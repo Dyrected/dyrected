@@ -3,9 +3,9 @@ title: Routing and preferences
 description: How views wire into the sidebar, URLs, and per-editor localStorage — and how to keep old links working.
 ---
 
-Every `defineView` becomes a URL, a sidebar item, and a set of localStorage keys that remember each editor's column and toolbar choices. Legacy `list-view-v1` links still land because `CollectionRoute` shims their query params.
+Every `defineView` becomes a URL, a sidebar item, and a set of localStorage keys that remember each editor's column and toolbar choices.
 
-By the end you'll know the route shape, what the sidebar actually renders, how to name keys so preferences stick, and how the URL compat shim maps `?where` and `?search`.
+By the end you'll know the route shape, what the sidebar actually renders, and how preferences stick per view.
 
 ## URL Routing
 
@@ -47,12 +47,6 @@ Dyrected automatically remembers each editor's individual preferences across vis
 - **Filters & Sorting**: Remembers interactive toolbar filter pills and header sort selections.
 
 Because preferences are namespaced by collection and view slug, switching between different views on the same collection never overwrites your column preferences.
-
-## Backward Compatibility & URL Shims
-
-Legacy shared URLs containing `?where=<json>` or `?search=<term>` parameters are automatically parsed and merged into the view's query:
-- `?where` JSON filters are deep-merged with the view's base filter.
-- `?search` terms are automatically applied to the collection's searchable fields.
 
 ## Custom Component Slots
 
