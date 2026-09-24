@@ -90,6 +90,6 @@ describe("sanitizeSchemaForCloudSync", () => {
         ],
         globals: [],
       }),
-    ).toThrow(/collections\[0\]\.hooks\.beforeRead\[0\]/);
+    ).toThrow(/collections\["posts"\]\.hooks\.beforeRead\[0\]/);
   });
 });

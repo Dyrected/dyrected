@@ -393,3 +393,5 @@ export function pruneNavigationForUser(
     ungrouped: tree.ungrouped.filter(isAllowed),
   };
 }
+
+export * from "./navigation-reconciler.js";

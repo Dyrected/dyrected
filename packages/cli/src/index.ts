@@ -5,6 +5,7 @@ import { registerGenerateTypes } from "./commands/generate-types.js";
 import { registerGenerateAiRules } from "./commands/generate-ai-rules.js";
 import { registerSyncSchema } from "./commands/sync-schema.js";
 import { registerUpgrade } from "./commands/upgrade.js";
+import { registerNav } from "./commands/nav.js";
 
 const program = new Command();
 program
@@ -20,6 +21,8 @@ Commands:
   generate:types    Generate TypeScript types from your schema
   generate:ai-rules Generate canonical instructions for AI coding tools
   sync:schema       Push your local schema to Dyrected Cloud
+  nav pull          Pull UI navigation preferences into dyrected.config.ts
+  nav push          Push code navigation to remote/server preferences
 
 Run \`npx dyrected <command> --help\` for detailed usage and examples.
 `,
@@ -30,5 +33,6 @@ registerUpgrade(program);
 registerGenerateTypes(program);
 registerGenerateAiRules(program);
 registerSyncSchema(program);
+registerNav(program);
 
 program.parse();
