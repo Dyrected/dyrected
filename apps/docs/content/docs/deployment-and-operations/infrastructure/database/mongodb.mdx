@@ -41,20 +41,22 @@ mongodbAdapter({
 
 ## How your data is stored
 
-Each collection maps to a MongoDB collection named `collection_<slug>`, and your documents are stored natively as BSON. Dyrected maps Mongo's `_id` to the `id` field your app and API work with. Globals are stored in a `dyrected_globals` collection.
+Each collection maps to a MongoDB collection named `collection_<slug>`, and your documents are stored natively as BSON. Dyrected maps Mongo's `_id` to the `id` field your app and API work with. New documents get the same string IDs as the SQL adapters (a prefixed NanoID by default, or whatever `idType` and `idPrefix` you configure), not MongoDB `ObjectId`s. Globals are stored in a `dyrected_globals` collection.
 
 Because MongoDB is schema-flexible, there are no tables to create and no columns to add. Two ideas that matter on the relational adapters don't apply here:
 
 - **Field promotion is a no-op.** `promoted: true` exists for SQL adapters that store documents in a JSON column; MongoDB already stores every field natively, so there's nothing to promote.
-- **There's no startup schema sync.** Adding a collection or field needs no migration step because MongoDB doesn't enforce a table shape.
+- **There are no columns to sync.** Adding a collection or field needs no migration step because MongoDB doesn't enforce a table shape. Startup sync only creates the indexes you declare (see below).
 
 That flexibility doesn't remove the need to keep your content contract compatible. Renamed fields, new defaults, and changed shapes still have to line up with the documents already in your database. See [Migrations](/docs/deployment-and-operations/infrastructure/database/migrations) for the field-level tools that handle this.
 
 ## Query performance and indexes
 
-Since there are no promoted columns, query performance comes from MongoDB's own indexes. Dyrected does not create secondary indexes for you. If a query gets slow on a large collection, add the index you need directly in MongoDB (for example with `createIndex` or MongoDB Compass) against the `collection_<slug>` collection. See [Indexes](/docs/deployment-and-operations/infrastructure/database/indexes) for how this compares to field promotion on the SQL adapters.
+Since there are no promoted columns, query performance comes from MongoDB's own indexes. On startup Dyrected creates the indexes you declare: a unique index for each `unique: true` field, and one for each entry in a collection's `indexes` array, including compound ones. For anything else that gets slow on a large collection, add the index directly in MongoDB (for example with `createIndex` or MongoDB Compass) against the `collection_<slug>` collection. See [Indexes](/docs/deployment-and-operations/infrastructure/database/indexes) for how this compares to field promotion on the SQL adapters.
 
-The `unique: true` field option is not enforced on MongoDB either — same as on every other adapter, it's a declaration rather than a database constraint, so enforce uniqueness in your own logic if you rely on it. See [Enforcing uniqueness](/docs/deployment-and-operations/infrastructure/database/indexes#enforcing-uniqueness).
+The `unique: true` field option is enforced by a real unique index. A duplicate write fails with a `DuplicateKeyError` (HTTP 409), the same as on the SQL adapters. See [Enforcing uniqueness](/docs/deployment-and-operations/infrastructure/database/indexes#enforcing-uniqueness).
+
+`increment`, `decrement` and conditional `where` updates run as a single atomic `findOneAndUpdate`, so they are safe under concurrent writes. `lock: 'for-update'` has no effect on MongoDB: inside a transaction, MongoDB already locks the documents a write touches and retries on conflict.
 
 ## Transactions
 

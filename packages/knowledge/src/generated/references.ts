@@ -4889,7 +4889,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "Options accepted by `client.transition()`.",
-    "signature": "export interface TransitionOptions {\n  /**\n   * The revision number currently shown to the user. When provided, the server\n   * rejects the transition if the document has changed since it was loaded,\n   * preventing lost-update races.\n   */\n  expectedRevision?: number;\n  /** Required for transitions that have `requireComment: true` (e.g. `reject`). */\n  comment?: string;\n}",
+    "signature": "export interface TransitionOptions {\n  /**\n   * The revision number currently shown to the user. When provided, the server\n   * rejects the transition if the document has changed since it was loaded,\n   * preventing lost-update races.\n   */\n  expectedRevision?: number;\n  /** Required for transitions that have `requireComment: true` (e.g. `reject`). */\n  comment?: string;\n  /**\n   * Extra data passed to the transition's server-side `onTransition` handler,\n   * for example an amount the handler needs to act on.\n   */\n  input?: Record<string, unknown>;\n}",
     "members": [
       {
         "name": "expectedRevision",
@@ -4900,6 +4900,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "comment",
         "signature": "comment?: string",
         "description": "Required for transitions that have `requireComment: true` (e.g. `reject`)."
+      },
+      {
+        "name": "input",
+        "signature": "input?: Record<string, unknown>",
+        "description": "Extra data passed to the transition's server-side `onTransition` handler,\nfor example an amount the handler needs to act on."
       }
     ]
   },

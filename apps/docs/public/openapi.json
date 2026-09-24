@@ -49,6 +49,11 @@
           },
           "comment": {
             "type": "string"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Extra data passed to the transition's onTransition handler."
           }
         }
       },

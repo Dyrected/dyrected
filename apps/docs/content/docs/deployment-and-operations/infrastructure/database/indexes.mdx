@@ -69,7 +69,7 @@ export const Accounts = defineCollection({
 
 When you declare an index:
 1. Every field listed in `fields` is **automatically promoted** to a physical column during startup schema sync.
-2. In SQL adapters (Postgres, MySQL, SQLite), string columns with indexes or unique constraints are automatically typed as `VARCHAR(191)` (rather than unbounded text) to support standard B-Tree indexing.
+2. In MySQL, string columns with indexes or unique constraints are automatically typed as `VARCHAR(191)` (rather than unbounded text) to support standard B-Tree indexing. Promoted `select`, `radio` and `email` fields, and single-value `relationship` fields, also get bounded `VARCHAR` columns, and `money` fields get `BIGINT`.
 3. If `unique: true` is specified, the database creates a true compound unique constraint.
 
 ## Enforcing uniqueness
@@ -86,7 +86,7 @@ defineTextField({
 ```
 
 When `unique: true` is set:
-- Dyrected's database adapters create a **physical database unique constraint or unique index** (`uq_<collection>_<field>`).
+- Dyrected's database adapters create a **physical database unique constraint or unique index** (named `uniq_<collection>_<field>`).
 - If an insert or update attempts to write a duplicate value, the database blocks it and throws a normalized `DuplicateKeyError` (HTTP 409 Conflict) containing the conflicting `{ field, value }`.
 - The admin panel displays a "Unique" badge next to the field to inform editors.
 

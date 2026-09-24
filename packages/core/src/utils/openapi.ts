@@ -50,6 +50,11 @@ export function generateOpenApi(config: DyrectedConfig) {
           properties: {
             expectedRevision: { type: "integer", minimum: 1 },
             comment: { type: "string" },
+            input: {
+              type: "object",
+              additionalProperties: true,
+              description: "Extra data passed to the transition's onTransition handler.",
+            },
           },
         },
         WorkflowHistoryEntry: {

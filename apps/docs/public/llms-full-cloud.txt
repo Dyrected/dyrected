@@ -2077,6 +2077,11 @@ export interface TransitionOptions {
   expectedRevision?: number;
   /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
   comment?: string;
+  /**
+   * Extra data passed to the transition's server-side `onTransition` handler,
+   * for example an amount the handler needs to act on.
+   */
+  input?: Record<string, unknown>;
 }
 ```
 
@@ -2084,6 +2089,7 @@ export interface TransitionOptions {
 | --- | --- |
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
 | <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
+| <code>input</code> (optional) | Extra data passed to the transition's server-side &#96;onTransition&#96; handler, for example an amount the handler needs to act on. |
 
 
 ## UploadOptions
@@ -18810,6 +18816,7 @@ The root config brings together a few major areas:
 - `logger` for the root Pino logger
 - `observability` for request logging, redaction, sampling, tracing, metrics, and transports
 - `email`, `redis`, `events`, and `cors` for runtime services
+- `tasks` for recurring [background tasks](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
 

@@ -18,6 +18,7 @@ The root config brings together a few major areas:
 - `logger` for the root Pino logger
 - `observability` for request logging, redaction, sampling, tracing, metrics, and transports
 - `email`, `redis`, `events`, and `cors` for runtime services
+- `tasks` for recurring [background tasks](/docs/deployment-and-operations/server-runtime/tasks)
 
 In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
 

@@ -210,6 +210,11 @@ export interface TransitionOptions {
   expectedRevision?: number;
   /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
   comment?: string;
+  /**
+   * Extra data passed to the transition's server-side `onTransition` handler,
+   * for example an amount the handler needs to act on.
+   */
+  input?: Record<string, unknown>;
 }
 
 /** A single workflow history entry returned by `client.workflowHistory()`. */
@@ -906,7 +911,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
        *
        * @param id - Document ID to transition.
        * @param transitionName - The transition key (e.g. `'submit'`, `'publish'`, `'reject'`).
-       * @param opts - Optional `expectedRevision` (optimistic concurrency) and `comment`.
+       * @param opts - Optional `expectedRevision` (optimistic concurrency), `comment`, and `input` for the transition's `onTransition` handler.
        * @returns The updated document with refreshed `_workflow` metadata.
        *
        * @example

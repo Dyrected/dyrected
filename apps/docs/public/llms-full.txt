@@ -2079,6 +2079,11 @@ export interface TransitionOptions {
   expectedRevision?: number;
   /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
   comment?: string;
+  /**
+   * Extra data passed to the transition's server-side `onTransition` handler,
+   * for example an amount the handler needs to act on.
+   */
+  input?: Record<string, unknown>;
 }
 ```
 
@@ -2086,6 +2091,7 @@ export interface TransitionOptions {
 | --- | --- |
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
 | <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
+| <code>input</code> (optional) | Extra data passed to the transition's server-side &#96;onTransition&#96; handler, for example an amount the handler needs to act on. |
 
 
 ## UploadOptions
@@ -18812,6 +18818,7 @@ The root config brings together a few major areas:
 - `logger` for the root Pino logger
 - `observability` for request logging, redaction, sampling, tracing, metrics, and transports
 - `email`, `redis`, `events`, and `cors` for runtime services
+- `tasks` for recurring [background tasks](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
 
@@ -31637,6 +31644,11 @@ export interface TransitionOptions {
   expectedRevision?: number;
   /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
   comment?: string;
+  /**
+   * Extra data passed to the transition's server-side `onTransition` handler,
+   * for example an amount the handler needs to act on.
+   */
+  input?: Record<string, unknown>;
 }
 ```
 
@@ -31644,6 +31656,7 @@ export interface TransitionOptions {
 | --- | --- |
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
 | <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
+| <code>input</code> (optional) | Extra data passed to the transition's server-side &#96;onTransition&#96; handler, for example an amount the handler needs to act on. |
 
 
 ## UploadOptions
@@ -33186,7 +33199,7 @@ export const Accounts = defineCollection({
 
 When you declare an index:
 1. Every field listed in `fields` is **automatically promoted** to a physical column during startup schema sync.
-2. In SQL adapters (Postgres, MySQL, SQLite), string columns with indexes or unique constraints are automatically typed as `VARCHAR(191)` (rather than unbounded text) to support standard B-Tree indexing.
+2. In MySQL, string columns with indexes or unique constraints are automatically typed as `VARCHAR(191)` (rather than unbounded text) to support standard B-Tree indexing. Promoted `select`, `radio` and `email` fields, and single-value `relationship` fields, also get bounded `VARCHAR` columns, and `money` fields get `BIGINT`.
 3. If `unique: true` is specified, the database creates a true compound unique constraint.
 
 ## Enforcing uniqueness
@@ -33203,7 +33216,7 @@ defineTextField({
 ```
 
 When `unique: true` is set:
-- Dyrected's database adapters create a **physical database unique constraint or unique index** (`uq_<collection>_<field>`).
+- Dyrected's database adapters create a **physical database unique constraint or unique index** (named `uniq_<collection>_<field>`).
 - If an insert or update attempts to write a duplicate value, the database blocks it and throws a normalized `DuplicateKeyError` (HTTP 409 Conflict) containing the conflicting `{ field, value }`.
 - The admin panel displays a "Unique" badge next to the field to inform editors.
 
@@ -33388,20 +33401,22 @@ mongodbAdapter({
 
 ## How your data is stored
 
-Each collection maps to a MongoDB collection named `collection_<slug>`, and your documents are stored natively as BSON. Dyrected maps Mongo's `_id` to the `id` field your app and API work with. Globals are stored in a `dyrected_globals` collection.
+Each collection maps to a MongoDB collection named `collection_<slug>`, and your documents are stored natively as BSON. Dyrected maps Mongo's `_id` to the `id` field your app and API work with. New documents get the same string IDs as the SQL adapters (a prefixed NanoID by default, or whatever `idType` and `idPrefix` you configure), not MongoDB `ObjectId`s. Globals are stored in a `dyrected_globals` collection.
 
 Because MongoDB is schema-flexible, there are no tables to create and no columns to add. Two ideas that matter on the relational adapters don't apply here:
 
 - **Field promotion is a no-op.** `promoted: true` exists for SQL adapters that store documents in a JSON column; MongoDB already stores every field natively, so there's nothing to promote.
-- **There's no startup schema sync.** Adding a collection or field needs no migration step because MongoDB doesn't enforce a table shape.
+- **There are no columns to sync.** Adding a collection or field needs no migration step because MongoDB doesn't enforce a table shape. Startup sync only creates the indexes you declare (see below).
 
 That flexibility doesn't remove the need to keep your content contract compatible. Renamed fields, new defaults, and changed shapes still have to line up with the documents already in your database. See [Migrations](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/migrations) for the field-level tools that handle this.
 
 ## Query performance and indexes
 
-Since there are no promoted columns, query performance comes from MongoDB's own indexes. Dyrected does not create secondary indexes for you. If a query gets slow on a large collection, add the index you need directly in MongoDB (for example with `createIndex` or MongoDB Compass) against the `collection_<slug>` collection. See [Indexes](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/indexes) for how this compares to field promotion on the SQL adapters.
+Since there are no promoted columns, query performance comes from MongoDB's own indexes. On startup Dyrected creates the indexes you declare: a unique index for each `unique: true` field, and one for each entry in a collection's `indexes` array, including compound ones. For anything else that gets slow on a large collection, add the index directly in MongoDB (for example with `createIndex` or MongoDB Compass) against the `collection_<slug>` collection. See [Indexes](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/indexes) for how this compares to field promotion on the SQL adapters.
 
-The `unique: true` field option is not enforced on MongoDB either — same as on every other adapter, it's a declaration rather than a database constraint, so enforce uniqueness in your own logic if you rely on it. See [Enforcing uniqueness](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/indexes#enforcing-uniqueness).
+The `unique: true` field option is enforced by a real unique index. A duplicate write fails with a `DuplicateKeyError` (HTTP 409), the same as on the SQL adapters. See [Enforcing uniqueness](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/database/indexes#enforcing-uniqueness).
+
+`increment`, `decrement` and conditional `where` updates run as a single atomic `findOneAndUpdate`, so they are safe under concurrent writes. `lock: 'for-update'` has no effect on MongoDB: inside a transaction, MongoDB already locks the documents a write touches and retries on conflict.
 
 ## Transactions
 
@@ -36937,6 +36952,7 @@ Collection hooks wrap the full lifecycle of a document in a collection:
 - `afterRead`
 - `beforeChange`
 - `afterChange`
+- `beforeCommit`
 - `beforeDelete`
 - `afterDelete`
 
@@ -50172,6 +50188,7 @@ The root config brings together a few major areas:
 - `logger` for the root Pino logger
 - `observability` for request logging, redaction, sampling, tracing, metrics, and transports
 - `email`, `redis`, `events`, and `cors` for runtime services
+- `tasks` for recurring [background tasks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/tasks)
 
 In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
 
