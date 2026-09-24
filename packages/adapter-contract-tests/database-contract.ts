@@ -761,13 +761,15 @@ export function runIntegrityAndConcurrencyAdapterContract(
     it("runs a scheduled task on exactly one of several concurrent runners", async () => {
       const db = await createAdapter();
       let runs = 0;
+      // Lock rows persist in shared live databases between runs, so every run gets its own task.
+      const taskName = `contract:task:${Date.now()}:${Math.random().toString(36).slice(2)}`;
       const config = defineConfig({
         collections: [],
         globals: [],
         db,
         tasks: [
           defineTask({
-            name: "contract:task",
+            name: taskName,
             cron: "*/5 * * * *",
             run: async () => {
               runs++;
@@ -786,7 +788,7 @@ export function runIntegrityAndConcurrencyAdapterContract(
 
       expect(results.filter((r) => r.status === "completed")).toHaveLength(1);
       expect(runs).toBe(1);
-      const row = await db.findOne({ collection: "__task_locks", id: "contract:task" });
+      const row = await db.findOne({ collection: "__task_locks", id: taskName });
       expect(Number(row?.lockedUntil)).toBe(0);
       expect(row?.lastStatus).toBe("completed");
     });
