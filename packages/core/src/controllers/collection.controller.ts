@@ -32,6 +32,7 @@ import {
 } from "../utils/access-control.js";
 import { resolveActionMutation } from "../utils/action-mutation.js";
 import { generateDocumentId } from "../utils/id.js";
+import { TRASH_COLLECTION, getTrashEntryId, resolveDocumentTitle, resolveTrashConfig } from "../trash.js";
 import {
   WORKFLOW_HISTORY_COLLECTION,
   createWorkflowDocument,
@@ -122,7 +123,7 @@ export class CollectionController {
 
   private async evaluateAccess(
     c: Context<DyrectedContext>,
-    action: "read" | "create" | "update" | "delete",
+    action: "read" | "create" | "update" | "delete" | "restore",
     options: {
       id?: string;
       doc?: Record<string, unknown> | null;
@@ -130,11 +131,15 @@ export class CollectionController {
     } = {},
   ) {
     const config = c.get("config");
+    const rule =
+      action === "restore"
+        ? (this.collection.access as any)?.restore ?? this.collection.access?.delete
+        : this.collection.access?.[action];
     return resolveCollectionAccess(
       config,
       this.collection.slug,
-      action,
-      this.collection.access?.[action],
+      action as any,
+      rule,
       {
         id: options.id,
         user: c.get("user"),
@@ -1598,6 +1603,126 @@ export class CollectionController {
     const doc = await db!.findOne({ collection: this.collection.slug, id });
     if (!doc) return c.json({ message: "Not Found" }, 404);
 
+    const isPermanent = c.req.query("permanent") === "true" || c.req.query("permanent") === "1";
+    const resolvedTrash = resolveTrashConfig(this.collection, config);
+
+    if (resolvedTrash.enabled && !isPermanent) {
+      const deleteAccess = await this.evaluateAccess(c, "delete", { id, doc });
+      if (!deleteAccess.allowed) {
+        return c.json(
+          {
+            error: true,
+            message: `Access denied: delete on ${this.collection.slug}`,
+          },
+          403,
+        );
+      }
+
+      // Run beforeDelete collection hook with mode: "trash"
+      await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+        id,
+        doc,
+        user,
+        req: c.req,
+        db: readonlyDb,
+        mode: "trash",
+      });
+
+      // Run beforeTrash collection hook
+      await runCollectionHooks(this.collection.hooks?.beforeTrash, {
+        id,
+        doc,
+        user,
+        req: c.req,
+        db: readonlyDb,
+      });
+
+      const deletedAt = Date.now();
+      const purgeAt =
+        resolvedTrash.retentionDays !== null && resolvedTrash.retentionDays !== undefined
+          ? deletedAt + resolvedTrash.retentionDays * 86_400_000
+          : null;
+      const title = resolveDocumentTitle(this.collection, doc);
+      const trashId = getTrashEntryId(this.collection.slug, id);
+      const deletedBy = user?.sub ?? (user as any)?.id ?? null;
+
+      const trashData = {
+        id: trashId,
+        collection: this.collection.slug,
+        docId: id,
+        deletedAt,
+        purgeAt,
+        deletedBy,
+        title,
+        snapshot: doc,
+        createdAt: doc.createdAt ?? new Date(deletedAt).toISOString(),
+      };
+
+      if (db.transaction) {
+        await db.transaction(async (tx) => {
+          await tx.create({ collection: TRASH_COLLECTION, data: trashData });
+          await tx.delete({ collection: this.collection.slug, id });
+        });
+      } else {
+        await db.create({ collection: TRASH_COLLECTION, data: trashData });
+        await db.delete({ collection: this.collection.slug, id });
+      }
+
+      if (this.collection.audit && db) {
+        AuditService.log(
+          db,
+          {
+            operation: "trash",
+            collection: this.collection.slug,
+            documentId: id,
+            user: user
+              ? { id: user.sub, collection: user.collection, email: user.email }
+              : undefined,
+            before: doc,
+            after: null,
+          },
+          config,
+        );
+      }
+
+      // Run afterTrash collection hook
+      await runCollectionHooks(
+        this.collection.hooks?.afterTrash,
+        {
+          id,
+          doc,
+          user,
+          req: c.req,
+          db,
+        },
+        { isolated: true },
+      );
+
+      // Remove vector chunks for deleted document in background
+      if (db) {
+        const siteId = resolveAuthorizedSiteId(c);
+        RAGService.deleteDocumentChunks({
+          db,
+          collection: this.collection.slug,
+          documentId: id,
+          projectId: siteId,
+        }).catch((err) => console.error(`[dyrected/rag] Auto-delete chunks failed:`, err?.message || err));
+      }
+
+      return c.json({ message: "Trashed", trashed: true, trashId, purgeAt });
+    }
+
+    // Permanent deletion path
+    if (resolvedTrash.enabled && resolvedTrash.allowPermanentDelete === false) {
+      return c.json(
+        {
+          error: true,
+          message: `Permanent deletion is not allowed for collection "${this.collection.slug}"`,
+        },
+        403,
+      );
+    }
+
     const deleteAccess = await this.evaluateAccess(c, "delete", { id, doc });
     if (!deleteAccess.allowed) {
       return c.json(
@@ -1614,28 +1739,48 @@ export class CollectionController {
       before = doc;
     }
 
-    // Run beforeDelete collection hook
+    // Run beforeDelete collection hook with mode: "permanent"
     await runCollectionHooks(this.collection.hooks?.beforeDelete, {
       id,
       doc,
       user,
       req: c.req,
       db: readonlyDb,
+      mode: "permanent",
     });
+
+    if (this.collection.upload && config.storage && doc.filename) {
+      try {
+        await config.storage.delete({ filename: doc.filename as string });
+        if (doc.sizes && typeof doc.sizes === "object") {
+          for (const size of Object.values(doc.sizes) as any[]) {
+            if (size?.filename) {
+              await config.storage.delete({ filename: size.filename });
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error(`[dyrected/media] Failed to delete file on hard delete:`, err?.message || err);
+      }
+    }
 
     await db!.delete({ collection: this.collection.slug, id });
 
     if (this.collection.audit && db) {
-      AuditService.log(db, {
-        operation: "delete",
-        collection: this.collection.slug,
-        documentId: id,
-        user: user
-          ? { id: user.sub, collection: user.collection, email: user.email }
-          : undefined,
-        before,
-        after: null,
-      }, config);
+      AuditService.log(
+        db,
+        {
+          operation: "delete",
+          collection: this.collection.slug,
+          documentId: id,
+          user: user
+            ? { id: user.sub, collection: user.collection, email: user.email }
+            : undefined,
+          before,
+          after: null,
+        },
+        config,
+      );
     }
 
     // Run afterDelete collection hook (full db access)
@@ -1647,6 +1792,7 @@ export class CollectionController {
         user,
         req: c.req,
         db,
+        mode: "permanent",
       },
       { isolated: true },
     );
@@ -1662,7 +1808,7 @@ export class CollectionController {
       }).catch((err) => console.error(`[dyrected/rag] Auto-delete chunks failed:`, err?.message || err));
     }
 
-    return c.json({ message: "Deleted" });
+    return c.json({ message: "Deleted", permanent: isPermanent });
   }
 
   async deleteMany(c: Context<DyrectedContext>) {
@@ -1676,10 +1822,11 @@ export class CollectionController {
     const readonlyDb = createReadonlyDb(db);
     const user = c.get("user");
 
-    // ids may arrive as a query-string array (?ids[]=a&ids[]=b), JSON body ({ ids: [...] } or [...]), or form body
     let ids: string[] = [];
+    let bodyObj: any = null;
     try {
       const body = await c.req.json().catch(() => null);
+      bodyObj = body;
       if (body?.ids && Array.isArray(body.ids)) {
         ids = body.ids;
       } else if (Array.isArray(body)) {
@@ -1718,7 +1865,24 @@ export class CollectionController {
 
     if (!ids.length) return c.json({ message: "No IDs provided" }, 400);
 
+    const isPermanent =
+      c.req.query("permanent") === "true" ||
+      c.req.query("permanent") === "1" ||
+      bodyObj?.permanent === true;
+    const resolvedTrash = resolveTrashConfig(this.collection, config);
+
+    if (isPermanent && resolvedTrash.enabled && resolvedTrash.allowPermanentDelete === false) {
+      return c.json(
+        {
+          error: true,
+          message: `Permanent deletion is not allowed for collection "${this.collection.slug}"`,
+        },
+        403,
+      );
+    }
+
     const deleted: string[] = [];
+    const trashed: string[] = [];
     const failed: { id: string; error: string }[] = [];
 
     for (const id of ids) {
@@ -1738,56 +1902,158 @@ export class CollectionController {
           continue;
         }
 
-        let before: any = null;
-        if (this.collection.audit) {
-          before = doc;
-        }
-
-        // Run beforeDelete hooks
-        await runCollectionHooks(this.collection.hooks?.beforeDelete, {
-          id,
-          doc,
-          user,
-          req: c.req,
-          db: readonlyDb,
-        });
-
-        await db.delete({ collection: this.collection.slug, id });
-        deleted.push(id);
-
-        if (this.collection.audit) {
-          AuditService.log(db, {
-            operation: "delete",
-            collection: this.collection.slug,
-            documentId: id,
-            user: user
-              ? { id: user.sub, collection: user.collection, email: user.email }
-              : undefined,
-            before,
-            after: null,
-          }, config);
-        }
-
-        // Run afterDelete hooks (full db access)
-        await runCollectionHooks(
-          this.collection.hooks?.afterDelete,
-          {
+        if (resolvedTrash.enabled && !isPermanent) {
+          await runCollectionHooks(this.collection.hooks?.beforeDelete, {
             id,
             doc,
             user,
             req: c.req,
-            db,
-          },
-          { isolated: true },
-        );
+            db: readonlyDb,
+            mode: "trash",
+          });
+          await runCollectionHooks(this.collection.hooks?.beforeTrash, {
+            id,
+            doc,
+            user,
+            req: c.req,
+            db: readonlyDb,
+          });
+
+          const deletedAt = Date.now();
+          const purgeAt =
+            resolvedTrash.retentionDays !== null && resolvedTrash.retentionDays !== undefined
+              ? deletedAt + resolvedTrash.retentionDays * 86_400_000
+              : null;
+          const title = resolveDocumentTitle(this.collection, doc);
+          const trashId = getTrashEntryId(this.collection.slug, id);
+          const deletedBy = user?.sub ?? (user as any)?.id ?? null;
+
+          const trashData = {
+            id: trashId,
+            collection: this.collection.slug,
+            docId: id,
+            deletedAt,
+            purgeAt,
+            deletedBy,
+            title,
+            snapshot: doc,
+            createdAt: doc.createdAt ?? new Date(deletedAt).toISOString(),
+          };
+
+          if (db.transaction) {
+            await db.transaction(async (tx) => {
+              await tx.create({ collection: TRASH_COLLECTION, data: trashData });
+              await tx.delete({ collection: this.collection.slug, id });
+            });
+          } else {
+            await db.create({ collection: TRASH_COLLECTION, data: trashData });
+            await db.delete({ collection: this.collection.slug, id });
+          }
+
+          trashed.push(id);
+
+          if (this.collection.audit) {
+            AuditService.log(
+              db,
+              {
+                operation: "trash",
+                collection: this.collection.slug,
+                documentId: id,
+                user: user
+                  ? { id: user.sub, collection: user.collection, email: user.email }
+                  : undefined,
+                before: doc,
+                after: null,
+              },
+              config,
+            );
+          }
+
+          await runCollectionHooks(
+            this.collection.hooks?.afterTrash,
+            {
+              id,
+              doc,
+              user,
+              req: c.req,
+              db,
+            },
+            { isolated: true },
+          );
+        } else {
+          let before: any = null;
+          if (this.collection.audit) {
+            before = doc;
+          }
+
+          // Run beforeDelete hooks (mode: "permanent")
+          await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+            id,
+            doc,
+            user,
+            req: c.req,
+            db: readonlyDb,
+            mode: "permanent",
+          });
+
+          if (this.collection.upload && config.storage && doc.filename) {
+            try {
+              await config.storage.delete({ filename: doc.filename as string });
+              if (doc.sizes && typeof doc.sizes === "object") {
+                for (const size of Object.values(doc.sizes) as any[]) {
+                  if (size?.filename) {
+                    await config.storage.delete({ filename: size.filename });
+                  }
+                }
+              }
+            } catch (err: any) {
+              console.error(`[dyrected/media] Failed to delete file on hard delete:`, err?.message || err);
+            }
+          }
+
+          await db.delete({ collection: this.collection.slug, id });
+          deleted.push(id);
+
+          if (this.collection.audit) {
+            AuditService.log(
+              db,
+              {
+                operation: "delete",
+                collection: this.collection.slug,
+                documentId: id,
+                user: user
+                  ? { id: user.sub, collection: user.collection, email: user.email }
+                  : undefined,
+                before,
+                after: null,
+              },
+              config,
+            );
+          }
+
+          // Run afterDelete hooks (full db access)
+          await runCollectionHooks(
+            this.collection.hooks?.afterDelete,
+            {
+              id,
+              doc,
+              user,
+              req: c.req,
+              db,
+              mode: "permanent",
+            },
+            { isolated: true },
+          );
+        }
       } catch (err: any) {
         failed.push({ id, error: err?.message ?? "Unknown error" });
       }
     }
 
-    if (db && deleted.length > 0) {
+    const allAffected = [...deleted, ...trashed];
+    if (db && allAffected.length > 0) {
       const siteId = resolveAuthorizedSiteId(c);
-      for (const delId of deleted) {
+      for (const delId of allAffected) {
         RAGService.deleteDocumentChunks({
           db,
           collection: this.collection.slug,
@@ -1798,9 +2064,791 @@ export class CollectionController {
     }
 
     return c.json({
-      message: `Deleted ${deleted.length} document(s)`,
-      deleted,
+      message: `Deleted ${deleted.length} document(s), trashed ${trashed.length} document(s)`,
+      deleted: isPermanent ? deleted : allAffected,
+      trashed,
       ...(failed.length ? { failed } : {}),
+    });
+  }
+
+  async listTrash(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const access = await this.evaluateAccess(c, "delete", {});
+    if (!access.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: delete on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const limit = Math.min(Number(c.req.query("limit")) || 50, 100);
+    const page = Math.max(Number(c.req.query("page")) || 1, 1);
+    const sort = c.req.query("sort") || "-deletedAt";
+    const search = c.req.query("search");
+
+    const where: Record<string, unknown> = { collection: this.collection.slug };
+    if (search && search.trim()) {
+      where.title = { contains: search.trim() };
+    }
+
+    const result = await db.find({
+      collection: TRASH_COLLECTION,
+      where,
+      limit,
+      page,
+      sort,
+    });
+
+    const user = c.get("user");
+    const hookReq = this.toHookRequestContext(c);
+    const accessibleDocs = [];
+
+    for (const entry of result.docs) {
+      const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+      const access = await this.evaluateAccess(c, "delete", {
+        id: entry.docId as string,
+        doc: snapshot,
+      });
+
+      if (!access.allowed) continue;
+
+      const serialized = await applyFieldReadAccess(
+        {
+          config,
+          fields: this.collection.fields,
+          user,
+          req: hookReq,
+          doc: snapshot,
+        },
+        snapshot,
+      );
+
+      accessibleDocs.push({
+        ...entry,
+        snapshot: this.sanitizeDoc(serialized),
+      });
+    }
+
+    return c.json({
+      docs: accessibleDocs,
+      total: result.total,
+      limit,
+      page,
+      totalPages: result.totalPages,
+      hasNextPage: result.hasNextPage,
+      hasPrevPage: result.hasPrevPage,
+    });
+  }
+
+  async getTrashEntry(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const param = c.req.param("trashId") || c.req.param("id");
+    if (!param) return c.json({ message: "Missing trash ID" }, 400);
+
+    const trashId = param.includes(":") ? param : getTrashEntryId(this.collection.slug, param);
+    const entry =
+      (await db.findOne({ collection: TRASH_COLLECTION, id: trashId })) ||
+      (await db.findOne({ collection: TRASH_COLLECTION, id: param }));
+
+    if (!entry || entry.collection !== this.collection.slug) {
+      return c.json({ message: "Not Found" }, 404);
+    }
+
+    const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+    const access = await this.evaluateAccess(c, "delete", {
+      id: entry.docId as string,
+      doc: snapshot,
+    });
+
+    if (!access.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: delete on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    const user = c.get("user");
+    const hookReq = this.toHookRequestContext(c);
+    const serialized = await applyFieldReadAccess(
+      {
+        config,
+        fields: this.collection.fields,
+        user,
+        req: hookReq,
+        doc: snapshot,
+      },
+      snapshot,
+    );
+
+    return c.json({
+      ...entry,
+      snapshot: this.sanitizeDoc(serialized),
+    });
+  }
+
+  async restore(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const readonlyDb = createReadonlyDb(db);
+    const param = c.req.param("trashId") || c.req.param("id");
+    if (!param) return c.json({ message: "Missing trash ID" }, 400);
+
+    const trashId = param.includes(":") ? param : getTrashEntryId(this.collection.slug, param);
+    const entry =
+      (await db.findOne({ collection: TRASH_COLLECTION, id: trashId })) ||
+      (await db.findOne({ collection: TRASH_COLLECTION, id: param }));
+
+    if (!entry || entry.collection !== this.collection.slug) {
+      return c.json({ message: "Not Found" }, 404);
+    }
+
+    const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+    const restoreAccess = await this.evaluateAccess(c, "restore", {
+      id: entry.docId as string,
+      doc: snapshot,
+    });
+
+    if (!restoreAccess.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: restore on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    let body: any = {};
+    try {
+      body = await c.req.json().catch(() => ({}));
+    } catch {
+      // empty body
+    }
+
+    const overrides = body?.overrides && typeof body.overrides === "object" ? { ...body.overrides } : {};
+    const user = c.get("user");
+
+    if (Object.keys(overrides).length > 0) {
+      const allowedOverrides = await applyFieldWriteAccess(
+        {
+          config,
+          fields: this.collection.fields,
+          user,
+          req: this.toHookRequestContext(c),
+          doc: snapshot,
+        },
+        overrides,
+      );
+      Object.assign(overrides, allowedOverrides);
+    }
+
+    const now = new Date().toISOString();
+    const docToRestore: Record<string, any> = {
+      ...snapshot,
+      ...overrides,
+      id: entry.docId,
+      createdAt: snapshot.createdAt ?? entry.createdAt ?? now,
+      updatedAt: now,
+    };
+
+    // Conflict detection (Spec §7)
+    const conflicts: Array<{ field: string; value: any; existingDocId?: string }> = [];
+
+    // 1. Same id already exists
+    const existingById = await db.findOne({ collection: this.collection.slug, id: entry.docId as string });
+    if (existingById) {
+      conflicts.push({ field: "id", value: entry.docId, existingDocId: existingById.id });
+    }
+
+    // 2. Unique fields conflict
+    const uniqueFields = this.collection.fields.filter((f) => (f as any).unique && f.name);
+    for (const f of uniqueFields) {
+      const fieldName = f.name!;
+      const val = docToRestore[fieldName];
+      if (val !== undefined && val !== null) {
+        const conflictDoc = await db.findOne({
+          collection: this.collection.slug,
+          where: { [fieldName]: { equals: val } },
+        });
+        if (conflictDoc && conflictDoc.id !== entry.docId) {
+          conflicts.push({ field: fieldName, value: val, existingDocId: conflictDoc.id });
+        }
+      }
+    }
+
+    if (conflicts.length > 0) {
+      return c.json(
+        {
+          code: "restore-conflict",
+          message: "Restore conflict",
+          conflicts,
+        },
+        409,
+      );
+    }
+
+    const hookReq = this.toHookRequestContext(c);
+    // Run beforeRestore hook (can veto by throwing)
+    await runCollectionHooks(this.collection.hooks?.beforeRestore, {
+      id: entry.docId as string,
+      doc: docToRestore,
+      snapshot: docToRestore,
+      user,
+      req: hookReq,
+      db: readonlyDb,
+    });
+
+    if (db.transaction) {
+      await db.transaction(async (tx) => {
+        await tx.create({ collection: this.collection.slug, data: docToRestore });
+        await tx.delete({ collection: TRASH_COLLECTION, id: entry.id });
+      });
+    } else {
+      await db.create({ collection: this.collection.slug, data: docToRestore });
+      await db.delete({ collection: TRASH_COLLECTION, id: entry.id });
+    }
+
+    if (this.collection.audit && db) {
+      AuditService.log(
+        db,
+        {
+          operation: "restore",
+          collection: this.collection.slug,
+          documentId: entry.docId as string,
+          user: user
+            ? { id: user.sub, collection: user.collection, email: user.email }
+            : undefined,
+          before: null,
+          after: docToRestore,
+        },
+        config,
+      );
+    }
+
+    // Run afterRestore hook
+    await runCollectionHooks(
+      this.collection.hooks?.afterRestore,
+      {
+        id: entry.docId as string,
+        doc: docToRestore,
+        user,
+        req: c.req,
+        db,
+      },
+      { isolated: true },
+    );
+
+    // Re-index RAG in background
+    if (db) {
+      const siteId = resolveAuthorizedSiteId(c);
+      RAGService.indexDocument({
+        db,
+        config,
+        collection: this.collection.slug,
+        doc: docToRestore,
+        projectId: siteId,
+      }).catch((err) => console.error(`[dyrected/rag] Auto-index chunks failed on restore:`, err?.message || err));
+    }
+
+    return c.json(this.sanitizeDoc(docToRestore));
+  }
+
+  async restoreMany(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const body = await c.req.json().catch(() => ({}));
+    const ids: string[] = Array.isArray(body?.ids) ? body.ids : [];
+    if (!ids.length) return c.json({ message: "No IDs provided" }, 400);
+
+    const restored: string[] = [];
+    const failed: Array<{ id: string; error: string; conflicts?: any }> = [];
+
+    for (const id of ids) {
+      try {
+        const trashId = id.includes(":") ? id : getTrashEntryId(this.collection.slug, id);
+        const entry =
+          (await db.findOne({ collection: TRASH_COLLECTION, id: trashId })) ||
+          (await db.findOne({ collection: TRASH_COLLECTION, id }));
+
+        if (!entry || entry.collection !== this.collection.slug) {
+          failed.push({ id, error: "Not Found" });
+          continue;
+        }
+
+        const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+        const restoreAccess = await this.evaluateAccess(c, "restore", {
+          id: entry.docId as string,
+          doc: snapshot,
+        });
+
+        if (!restoreAccess.allowed) {
+          failed.push({ id, error: "Access denied" });
+          continue;
+        }
+
+        const now = new Date().toISOString();
+        const docToRestore: Record<string, any> = {
+          ...snapshot,
+          id: entry.docId,
+          createdAt: snapshot.createdAt ?? entry.createdAt ?? now,
+          updatedAt: now,
+        };
+
+        const existingById = await db.findOne({ collection: this.collection.slug, id: entry.docId as string });
+        if (existingById) {
+          failed.push({ id, error: "Restore conflict", conflicts: [{ field: "id", value: entry.docId, existingDocId: existingById.id }] });
+          continue;
+        }
+
+        const uniqueFields = this.collection.fields.filter((f) => (f as any).unique && f.name);
+        let hasConflict = false;
+        const conflicts: Array<{ field: string; value: any; existingDocId?: string }> = [];
+        for (const f of uniqueFields) {
+          const fieldName = f.name!;
+          const val = docToRestore[fieldName];
+          if (val !== undefined && val !== null) {
+            const conflictDoc = await db.findOne({
+              collection: this.collection.slug,
+              where: { [fieldName]: { equals: val } },
+            });
+            if (conflictDoc && conflictDoc.id !== entry.docId) {
+              conflicts.push({ field: fieldName, value: val, existingDocId: conflictDoc.id });
+              hasConflict = true;
+            }
+          }
+        }
+        if (hasConflict) {
+          failed.push({ id, error: "Restore conflict", conflicts });
+          continue;
+        }
+
+        const readonlyDb = createReadonlyDb(db);
+        await runCollectionHooks(this.collection.hooks?.beforeRestore, {
+          id: entry.docId as string,
+          doc: docToRestore,
+          snapshot: docToRestore,
+          user: c.get("user"),
+          req: c.req,
+          db: readonlyDb,
+        });
+
+        if (db.transaction) {
+          await db.transaction(async (tx) => {
+            await tx.create({ collection: this.collection.slug, data: docToRestore });
+            await tx.delete({ collection: TRASH_COLLECTION, id: entry.id });
+          });
+        } else {
+          await db.create({ collection: this.collection.slug, data: docToRestore });
+          await db.delete({ collection: TRASH_COLLECTION, id: entry.id });
+        }
+
+        if (this.collection.audit && db) {
+          const user = c.get("user");
+          AuditService.log(
+            db,
+            {
+              operation: "restore",
+              collection: this.collection.slug,
+              documentId: entry.docId as string,
+              user: user
+                ? { id: user.sub, collection: user.collection, email: user.email }
+                : undefined,
+              before: null,
+              after: docToRestore,
+            },
+            config,
+          );
+        }
+
+        await runCollectionHooks(
+          this.collection.hooks?.afterRestore,
+          {
+            id: entry.docId as string,
+            doc: docToRestore,
+            snapshot: docToRestore,
+            user: c.get("user"),
+            req: c.req,
+            db,
+          },
+          { isolated: true },
+        );
+
+        restored.push(entry.docId as string);
+      } catch (err: any) {
+        failed.push({ id, error: err?.message || "Unknown error" });
+      }
+    }
+
+    return c.json({ restored, failed });
+  }
+
+  async keep(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const param = c.req.param("trashId") || c.req.param("id");
+    if (!param) return c.json({ message: "Missing trash ID" }, 400);
+
+    const trashId = param.includes(":") ? param : getTrashEntryId(this.collection.slug, param);
+    const entry =
+      (await db.findOne({ collection: TRASH_COLLECTION, id: trashId })) ||
+      (await db.findOne({ collection: TRASH_COLLECTION, id: param }));
+
+    if (!entry || entry.collection !== this.collection.slug) {
+      return c.json({ message: "Not Found" }, 404);
+    }
+
+    const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+    const access = await this.evaluateAccess(c, "delete", {
+      id: entry.docId as string,
+      doc: snapshot,
+    });
+
+    if (!access.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: keep on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    let numericPurgeAt: number | null = null;
+    if (body.purgeAt === null) {
+      numericPurgeAt = null;
+    } else if (typeof body.purgeAt === "number") {
+      numericPurgeAt = body.purgeAt;
+    } else if (typeof body.purgeAt === "string" && body.purgeAt.trim().length > 0) {
+      numericPurgeAt = new Date(body.purgeAt).getTime();
+    }
+
+    await db.update({
+      collection: TRASH_COLLECTION,
+      id: entry.id,
+      data: { purgeAt: numericPurgeAt },
+    });
+
+    return c.json({ message: "Updated", purgeAt: numericPurgeAt });
+  }
+
+  async purgeTrashEntry(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const resolvedTrash = resolveTrashConfig(this.collection, config);
+    if (resolvedTrash.enabled && resolvedTrash.allowPermanentDelete === false) {
+      return c.json(
+        {
+          error: true,
+          message: `Permanent deletion is not allowed for collection "${this.collection.slug}"`,
+        },
+        403,
+      );
+    }
+
+    const param = c.req.param("trashId") || c.req.param("id");
+    if (!param) return c.json({ message: "Missing trash ID" }, 400);
+
+    const trashId = param.includes(":") ? param : getTrashEntryId(this.collection.slug, param);
+    const entry =
+      (await db.findOne({ collection: TRASH_COLLECTION, id: trashId })) ||
+      (await db.findOne({ collection: TRASH_COLLECTION, id: param }));
+
+    if (!entry || entry.collection !== this.collection.slug) {
+      return c.json({ message: "Not Found" }, 404);
+    }
+
+    const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+    const access = await this.evaluateAccess(c, "delete", {
+      id: entry.docId as string,
+      doc: snapshot,
+    });
+
+    if (!access.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: delete on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    if (this.collection.upload && config.storage && snapshot?.filename) {
+      try {
+        await config.storage.delete({ filename: snapshot.filename as string });
+        if (snapshot.sizes && typeof snapshot.sizes === "object") {
+          for (const size of Object.values(snapshot.sizes) as any[]) {
+            if (size?.filename) {
+              await config.storage.delete({ filename: size.filename });
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error(`[dyrected/media] Failed to delete file on purge:`, err?.message || err);
+      }
+    }
+
+    await db.delete({ collection: TRASH_COLLECTION, id: entry.id });
+
+    if (this.collection.audit && db) {
+      const user = c.get("user");
+      AuditService.log(
+        db,
+        {
+          operation: "purge",
+          collection: this.collection.slug,
+          documentId: entry.docId as string,
+          user: user
+            ? { id: user.sub, collection: user.collection, email: user.email }
+            : undefined,
+          before: snapshot,
+          after: null,
+        },
+        config,
+      );
+    }
+
+    await runCollectionHooks(
+      this.collection.hooks?.afterDelete,
+      {
+        id: entry.docId as string,
+        doc: snapshot,
+        user: c.get("user"),
+        req: c.req,
+        db,
+        mode: "permanent",
+      },
+      { isolated: true },
+    );
+
+    return c.json({ message: "Purged" });
+  }
+
+  async emptyTrash(c: Context<DyrectedContext>) {
+    const tenantCheck = this.checkTenantAccess(c);
+    if (!tenantCheck.ok) return tenantCheck.response;
+
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const confirm = c.req.query("confirm");
+    if (confirm !== this.collection.slug) {
+      return c.json(
+        {
+          error: true,
+          message: `Confirmation required: query param confirm must equal "${this.collection.slug}"`,
+        },
+        400,
+      );
+    }
+
+    const resolvedTrash = resolveTrashConfig(this.collection, config);
+    if (resolvedTrash.enabled && resolvedTrash.allowPermanentDelete === false) {
+      return c.json(
+        {
+          error: true,
+          message: `Permanent deletion is not allowed for collection "${this.collection.slug}"`,
+        },
+        403,
+      );
+    }
+
+    const access = await this.evaluateAccess(c, "delete", {});
+    if (!access.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: delete on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    const all = await db.find({
+      collection: TRASH_COLLECTION,
+      where: { collection: this.collection.slug },
+      limit: 10000,
+    });
+
+    const user = c.get("user");
+    for (const entry of all.docs) {
+      const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+      if (this.collection.upload && config.storage && snapshot?.filename) {
+        try {
+          await config.storage.delete({ filename: snapshot.filename as string });
+          if (snapshot.sizes && typeof snapshot.sizes === "object") {
+            for (const size of Object.values(snapshot.sizes) as any[]) {
+              if (size?.filename) {
+                await config.storage.delete({ filename: size.filename });
+              }
+            }
+          }
+        } catch {
+          // ignore storage error
+        }
+      }
+
+      await runCollectionHooks(
+        this.collection.hooks?.afterDelete,
+        {
+          id: entry.docId as string,
+          doc: snapshot,
+          user,
+          req: c.req,
+          db,
+          mode: "permanent",
+        },
+        { isolated: true },
+      );
+
+      await db.delete({ collection: TRASH_COLLECTION, id: entry.id });
+    }
+
+    if (this.collection.audit && db) {
+      AuditService.log(
+        db,
+        {
+          operation: "trash-empty",
+          collection: this.collection.slug,
+          user: user
+            ? { id: user.sub, collection: user.collection, email: user.email }
+            : undefined,
+        },
+        config,
+      );
+    }
+
+    return c.json({ message: "Trash emptied", count: all.docs.length });
+  }
+
+  static async listAllTrash(c: Context<DyrectedContext>) {
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const limit = Math.min(Number(c.req.query("limit")) || 50, 100);
+    const page = Math.max(Number(c.req.query("page")) || 1, 1);
+    const sort = c.req.query("sort") || "-deletedAt";
+    const search = c.req.query("search");
+    const user = c.get("user");
+
+    const accessibleSlugs: string[] = [];
+    for (const col of config.collections) {
+      const access = await resolveCollectionAccess(
+        config,
+        col.slug,
+        "delete",
+        col.access?.delete,
+        {
+          user,
+          req: toHookRequestContext(c.req),
+        },
+      );
+      if (access.allowed) {
+        accessibleSlugs.push(col.slug);
+      }
+    }
+
+    if (!accessibleSlugs.length) {
+      return c.json({
+        docs: [],
+        total: 0,
+        limit,
+        page,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      });
+    }
+
+    const where: Record<string, unknown> = {
+      collection: { in: accessibleSlugs },
+    };
+    if (search && search.trim()) {
+      where.title = { contains: search.trim() };
+    }
+
+    const result = await db.find({
+      collection: TRASH_COLLECTION,
+      where,
+      limit,
+      page,
+      sort,
+    });
+
+    const hookReq = toHookRequestContext(c.req);
+    const docs = [];
+    for (const entry of result.docs) {
+      const col = config.collections.find((x) => x.slug === entry.collection);
+      if (!col) continue;
+
+      const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+      const serialized = await applyFieldReadAccess(
+        {
+          config,
+          fields: col.fields,
+          user,
+          req: hookReq,
+          doc: snapshot,
+        },
+        snapshot,
+      );
+
+      const controller = new CollectionController(col);
+      docs.push({
+        ...entry,
+        snapshot: controller.sanitizeDoc(serialized),
+      });
+    }
+
+    return c.json({
+      docs,
+      total: result.total,
+      limit,
+      page,
+      totalPages: result.totalPages,
+      hasNextPage: result.hasNextPage,
+      hasPrevPage: result.hasPrevPage,
     });
   }
 

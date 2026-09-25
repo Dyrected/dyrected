@@ -324,4 +324,28 @@ export interface DyrectedConfig<
    * AI Assistant and LLM tools configuration.
    */
   ai?: AIConfig;
+
+  /**
+   * App-wide trash & retention configuration.
+   */
+  trash?: AppTrashConfig;
+}
+
+export interface AppTrashConfig {
+  /** Every non-system collection defaults to trash when true. */
+  enabled?: boolean;
+
+  /** Default retention period in days. `null` or omitted: keep until manually purged. */
+  retentionDays?: number | null;
+
+  /** When false, blocks immediate hard-delete across collections unless overridden. */
+  allowPermanentDelete?: boolean;
+
+  /** Background purge configuration. */
+  purge?: {
+    /** Cron schedule for automatic purge. Defaults to `"0 3 * * *"`. */
+    cron?: string;
+    /** Maximum number of records to purge per run. Defaults to 200. */
+    batchSize?: number;
+  };
 }

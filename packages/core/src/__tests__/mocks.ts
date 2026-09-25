@@ -88,9 +88,19 @@ export class InMemoryAdapter implements DatabaseAdapter {
     };
   }
 
-  async findOne(params: { collection: string; id: string }) {
+  async findOne(params: { collection: string; id?: string; where?: any }) {
     const col = this.getCollection(params.collection);
-    return col[params.id] ?? null;
+    if (params.id) {
+      return col[params.id] ?? null;
+    }
+    if (params.where) {
+      for (const doc of Object.values(col)) {
+        if (this.matchesWhere(doc, params.where)) {
+          return doc;
+        }
+      }
+    }
+    return null;
   }
 
   async create(params: { collection: string; data: any }) {

@@ -1221,6 +1221,14 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     // delete-many and aggregate must be registered before /:id to avoid the wildcard swallowing them
     app.delete(`${path}/delete-many`, (c) => controller.deleteMany(c));
     app.post(`${path}/aggregate`, (c) => controller.aggregate(c));
+    // Trash routes — registered before /:id wildcard
+    app.get(`${path}/trash`, (c) => controller.listTrash(c));
+    app.delete(`${path}/trash`, (c) => controller.emptyTrash(c));
+    app.post(`${path}/trash/restore-many`, (c) => controller.restoreMany(c));
+    app.get(`${path}/trash/:trashId`, (c) => controller.getTrashEntry(c));
+    app.post(`${path}/trash/:trashId/restore`, (c) => controller.restore(c));
+    app.patch(`${path}/trash/:trashId`, (c) => controller.keep(c));
+    app.delete(`${path}/trash/:trashId`, (c) => controller.purgeTrashEntry(c));
     // Operational view actions — registered when collection or admin.navigation defines views or root-level actions
     const allViews = resolveAllCollectionViews(collection, config);
     if (allViews.length) {
@@ -1265,6 +1273,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.post("/api/preview-token", requireAuth(config), (c) => previewController.createToken(c));
   app.get("/api/preview-data", (c) => previewController.getData(c));
   app.get("/api/audit", (c) => auditController.findAll(c));
+  app.get("/api/trash", (c) => CollectionController.listAllTrash(c));
 
   // 7. Dynamic Routes (Tenant-specific)
   // This handles collections/globals defined via sync:schema and fetched via onSchemaFetch
@@ -1345,6 +1354,98 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
     const controller = new CollectionController(collection);
     return controller.workflowHistory(c);
+  });
+
+  // Dynamic trash routes
+  app.get("/api/collections/:slug/trash", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).listTrash(c);
+  });
+
+  app.delete("/api/collections/:slug/trash", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).emptyTrash(c);
+  });
+
+  app.post("/api/collections/:slug/trash/restore-many", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).restoreMany(c);
+  });
+
+  app.get("/api/collections/:slug/trash/:trashId", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).getTrashEntry(c);
+  });
+
+  app.post("/api/collections/:slug/trash/:trashId/restore", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).restore(c);
+  });
+
+  app.patch("/api/collections/:slug/trash/:trashId", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).keep(c);
+  });
+
+  app.delete("/api/collections/:slug/trash/:trashId", async (c) => {
+    const slug = c.req.param("slug");
+    const { siteId, errorResponse } = getAuthorizedSiteIdSafe(c);
+    if (errorResponse) return errorResponse;
+    const config = c.get("config");
+    if (config.collections.some((col) => col.slug === slug)) return c.json({ message: "Not Found" }, 404);
+    if (!config.onSchemaFetch || !siteId) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection) return c.json({ message: `Collection "${slug}" not found` }, 404);
+    return new CollectionController(collection).purgeTrashEntry(c);
   });
 
   // 7b. Core dynamic catch-all for tenant collections (list, create, findOne, update, delete).

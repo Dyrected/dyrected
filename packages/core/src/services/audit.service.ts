@@ -2,7 +2,7 @@ import type { DatabaseAdapter, DyrectedConfig } from '../types/index.js';
 import { getConfigLogger, getObservabilityRuntime } from '../observability.js';
 
 export interface AuditLogArgs {
-  operation: 'create' | 'update' | 'delete';
+  operation: 'create' | 'update' | 'delete' | 'trash' | 'restore' | 'purge' | 'trash-empty';
   collection: string;
   documentId?: string;
   user?: { id: string; collection: string; email?: string };

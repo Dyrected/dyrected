@@ -78,12 +78,12 @@ interface TrashConfig {
 |---|---|---|
 | `false` | any | hard delete |
 | `true` / object | any | trash enabled |
-| omitted | `true` | trash enabled |
-| omitted | omitted / `false` | hard delete (default, so existing apps are unchanged) |
+| omitted | `false` | hard delete |
+| omitted | omitted / `true` | trash enabled (default: 30 days retention) |
 
-Retention: `collection.trash.retentionDays` (including explicit `null`) → `app.trash.retentionDays` → none.
+Retention: `collection.trash.retentionDays` (including explicit `null`) → `app.trash.retentionDays` → 30 days default.
 
-**Opt-in by default.** Existing apps keep hard delete until they enable trash. Scaffolds and the docs' getting-started config should enable it.
+**Enabled out-of-the-box.** Every non-system collection defaults to trash with 30-day retention. Collections or apps can opt out via `trash: false` or `trash: { enabled: false }`.
 
 ### Validation (config diagnostics)
 

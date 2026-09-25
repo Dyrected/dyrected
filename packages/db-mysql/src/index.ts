@@ -695,6 +695,8 @@ FIX INSTRUCTIONS:
     const colConfig = this.collectionConfigs.get(params.collection);
     const id = params.data.id ?? generateDocumentId(colConfig || params.collection);
     const now = new Date().toISOString().replace("T", " ").replace("Z", "");
+    const createdAt = params.data.createdAt ? toDatetimeColumn(params.data.createdAt) : now;
+    const updatedAt = params.data.updatedAt ? toDatetimeColumn(params.data.updatedAt) : now;
 
     const data = { ...params.data };
     delete data.id;
@@ -713,10 +715,10 @@ FIX INSTRUCTIONS:
 
     const colNames = ["id", "data", "created_at", "updated_at", ...Object.keys(promotedValues).map((k) => `\`${k}\``)];
     const placeholders = colNames.map(() => "?").join(", ");
-    const values = [id, JSON.stringify(data), now, now, ...Object.values(promotedValues)];
+    const values = [id, JSON.stringify(data), createdAt, updatedAt, ...Object.values(promotedValues)];
 
     await this.query(`INSERT INTO \`${tableName}\` (${colNames.join(", ")}) VALUES (${placeholders})`, values);
-    return { id, ...data, ...promotedValues, ...this.isoDates(dateCols, promotedValues), createdAt: now, updatedAt: now };
+    return { id, ...data, ...promotedValues, ...this.isoDates(dateCols, promotedValues), createdAt: fromDatetimeColumn(createdAt), updatedAt: fromDatetimeColumn(updatedAt) };
   }
 
   async update(params: { collection: string; id?: string; where?: any; data: any }): Promise<any> {

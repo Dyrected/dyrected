@@ -8,6 +8,10 @@ import type {
   CollectionBeforeChangeHookEntry,
   CollectionBeforeDeleteHook,
   CollectionBeforeReadHookEntry,
+  CollectionBeforeTrashHook,
+  CollectionAfterTrashHook,
+  CollectionBeforeRestoreHook,
+  CollectionAfterRestoreHook,
   GlobalAfterChangeHook,
   GlobalAfterReadHookEntry,
   GlobalBeforeReadHookEntry,
@@ -17,6 +21,16 @@ import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
 import type { DetailSchema } from "./detail.js";
 import type { ViewConfig, ViewMetric, ActionConfig } from "./views.js";
+
+/**
+ * Trash and retention configuration for a collection.
+ */
+export interface TrashConfig {
+  /** Days before automatic permanent deletion. `null` or omitted: never auto-purge. */
+  retentionDays?: number | null;
+  /** Show and allow "Delete forever" in API/UI. Default true. */
+  allowPermanentDelete?: boolean;
+}
 
 /**
  * Configures account lockout behavior for an auth-enabled collection.
@@ -294,6 +308,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   drafts?: boolean;
 
   /**
+   * Trash & retention settings for this collection.
+   * If `true` or an object, deleting a document moves it to trash rather than destroying it.
+   * If `false`, hard deletes immediately.
+   */
+  trash?: boolean | TrashConfig;
+
+  /**
    * Collection-level access control.
    *
    * Each key is an operation; the value can be a function, a Jexl string, a
@@ -316,6 +337,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     create?: AccessRule<TDoc>;
     update?: AccessRule<TDoc>;
     delete?: AccessRule<TDoc>;
+    /**
+     * Controls who can restore a trashed document in this collection.
+     * Falls back to `delete` access if omitted.
+     */
+    restore?: AccessRule<TDoc>;
     /**
      * Controls who can read this collection's audit log (`GET /:slug/__audit`),
      * for collections with `audit` enabled. Falls back to the `read` rule when
@@ -385,6 +411,18 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * already committed and will not be undone.
      */
     afterDelete?: CollectionAfterDeleteHook<TDoc>[];
+
+    /** Runs before a document is moved to trash. Throw to cancel trashing. */
+    beforeTrash?: CollectionBeforeTrashHook<TDoc>[];
+
+    /** Runs after a document has been moved to trash. Side effects only. */
+    afterTrash?: CollectionAfterTrashHook<TDoc>[];
+
+    /** Runs before a trashed document is restored. Throw to cancel restoration. */
+    beforeRestore?: CollectionBeforeRestoreHook<TDoc>[];
+
+    /** Runs after a document has been restored from trash. Side effects only. */
+    afterRestore?: CollectionAfterRestoreHook<TDoc>[];
   };
 
   /**

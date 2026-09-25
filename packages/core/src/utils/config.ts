@@ -1,6 +1,7 @@
 import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
 import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
 import { TASK_LOCKS_COLLECTION, TASK_LOCKS_COLLECTION_CONFIG } from "../tasks.js";
+import { TRASH_COLLECTION, TRASH_COLLECTION_CONFIG, assertValidTrashInConfig, resolveTrashConfig } from "../trash.js";
 import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
 import { getAdminAuthCollection } from "./admin-auth.js";
 import { normalizeSchemaFragment } from "./block-references.js";
@@ -67,7 +68,7 @@ const AUDIT_COLLECTION: CollectionConfig = {
       name: "operation",
       type: "select",
       label: "Operation",
-      options: ["create", "update", "delete"],
+      options: ["create", "update", "delete", "trash", "restore", "purge", "trash-empty"],
       required: true,
     },
     { name: "user", type: "text", label: "User ID" },
@@ -170,12 +171,16 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   assertValidDeclarativeAccessInConfig(schemaAwareConfig, "config");
   assertValidAdminConditionsInConfig(schemaAwareConfig, "config");
   assertValidPreviewUrlsInConfig(schemaAwareConfig, "config");
+  assertValidTrashInConfig(schemaAwareConfig, "config");
   const collections = schemaAwareConfig?.collections || [];
   const globals = schemaAwareConfig?.globals || [];
   const needsAudit = collections.some((col) => col.audit);
   const needsWorkflow = collections.some((col) => col.workflow || col.drafts);
   const needsTasks = (config.tasks?.length ?? 0) > 0;
   const needsAuthSessions = collections.some((col) => !!col.auth);
+  const needsTrash =
+    schemaAwareConfig.trash?.enabled === true ||
+    collections.some((col) => resolveTrashConfig(col, schemaAwareConfig).enabled);
   const adminAuthCollectionSlug = getAdminAuthCollection({
     collections,
     adminAuth: schemaAwareConfig.adminAuth,
@@ -431,6 +436,9 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   }
   if (needsAuthSessions && !normalizedCollections.some((col) => col.slug === AUTH_SESSIONS_COLLECTION)) {
     systemCollections.push(AUTH_SESSIONS_COLLECTION_CONFIG);
+  }
+  if (needsTrash && !normalizedCollections.some((col) => col.slug === TRASH_COLLECTION)) {
+    systemCollections.push(TRASH_COLLECTION_CONFIG);
   }
 
   return {

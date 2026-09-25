@@ -1,4 +1,5 @@
 import type { CollectionConfig, DyrectedConfig, TaskConfig, TaskLogger, TaskRunResult } from "./types/index.js";
+import { createTrashPurgeTask, resolveTrashConfig } from "./trash.js";
 
 export const TASK_LOCKS_COLLECTION = "__task_locks";
 
@@ -190,6 +191,8 @@ export interface TaskRunner {
   start(options?: { intervalMs?: number }): void;
   /** Stops polling and waits for any run in progress to settle. */
   stop(): Promise<void>;
+  /** Lists all registered tasks with their configured cron expression. */
+  getTasks(): Array<{ name: string; cron?: string }>;
 }
 
 function resolveLogger(config: DyrectedConfig, taskName: string): TaskLogger {
@@ -225,6 +228,15 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
   for (const task of config.tasks ?? []) {
     if (tasks.has(task.name)) throw new Error(`Duplicate task name "${task.name}".`);
     tasks.set(task.name, { ...task, schedule: task.cron ? parseCron(task.cron) : undefined });
+  }
+
+  const hasRetention = (config.collections ?? []).some((col) => {
+    const resolved = resolveTrashConfig(col, config);
+    return resolved.enabled && resolved.retentionDays !== null && resolved.retentionDays > 0;
+  });
+  if (hasRetention && !tasks.has("dyrected:trash-purge")) {
+    const purgeTask = createTrashPurgeTask(config);
+    tasks.set(purgeTask.name, { ...purgeTask, schedule: purgeTask.cron ? parseCron(purgeTask.cron) : undefined });
   }
 
   const instanceId = globalThis.crypto?.randomUUID?.() ?? `inst_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -400,6 +412,10 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
       if (timer) clearInterval(timer);
       timer = undefined;
       await inFlight;
+    },
+
+    getTasks() {
+      return Array.from(tasks.values()).map((t) => ({ name: t.name, cron: t.cron }));
     },
   };
   return runner;

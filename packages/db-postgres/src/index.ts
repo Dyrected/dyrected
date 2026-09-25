@@ -410,6 +410,12 @@ export class PostgresAdapter implements DatabaseAdapter {
         doc[col] = moneyFields.has(col) ? Number(row[col]) : row[col] instanceof Date ? row[col].toISOString() : row[col];
       }
     }
+    if (row.created_at !== undefined && row.created_at !== null && doc.createdAt === undefined) {
+      doc.createdAt = row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at;
+    }
+    if (row.updated_at !== undefined && row.updated_at !== null && doc.updatedAt === undefined) {
+      doc.updatedAt = row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at;
+    }
     return doc;
   }
 
@@ -523,6 +529,12 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     // Extract promoted fields
     const promotedValues: Record<string, any> = {};
+    if (existingCols.includes("created_at") && data.createdAt !== undefined) {
+      promotedValues.created_at = new Date(data.createdAt);
+    }
+    if (existingCols.includes("updated_at") && data.updatedAt !== undefined) {
+      promotedValues.updated_at = new Date(data.updatedAt);
+    }
     for (const col of existingCols) {
       if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (data[col] !== undefined) {

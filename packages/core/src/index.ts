@@ -777,5 +777,6 @@ export * from "./utils/id.js";
 export * from "./utils/index-name.js";
 export * from "./utils/group-key.js";
 export * from "./utils/navigation.js";
+export * from "./trash.js";
 export * from "./types/ai.js";
 export { z } from "zod";

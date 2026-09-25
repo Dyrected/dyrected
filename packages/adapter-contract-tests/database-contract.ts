@@ -868,3 +868,102 @@ export function runIntegrityAndConcurrencyAdapterContract(
     }
   });
 }
+
+export function runTrashAndRetentionAdapterContract(
+  name: string,
+  createAdapter: () => DatabaseAdapter | Promise<DatabaseAdapter>,
+  options: { skip?: boolean } = {},
+) {
+  const suite = options.skip ? describe.skip : describe;
+  suite(`${name} Trash and Retention contract`, () => {
+    it("preserves explicit id, createdAt, and updatedAt on create roundtrip", async () => {
+      const db = await createAdapter();
+      const collection = `trash-create-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "title", type: "text" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      const explicitId = "explicit-id-123";
+      const explicitCreatedAt = "2025-01-15T10:00:00.000Z";
+      const explicitUpdatedAt = "2025-01-20T12:00:00.000Z";
+
+      const created = await db.create({
+        collection,
+        data: {
+          id: explicitId,
+          title: "Trashed Doc",
+          createdAt: explicitCreatedAt,
+          updatedAt: explicitUpdatedAt,
+        },
+      });
+
+      expect(created.id).toBe(explicitId);
+      expect(new Date(created.createdAt).toISOString()).toBe(explicitCreatedAt);
+      expect(new Date(created.updatedAt).toISOString()).toBe(explicitUpdatedAt);
+
+      const found = await db.findOne({ collection, id: explicitId });
+      expect(found).not.toBeNull();
+      expect(found!.id).toBe(explicitId);
+      expect(new Date(found!.createdAt).toISOString()).toBe(explicitCreatedAt);
+      expect(new Date(found!.updatedAt).toISOString()).toBe(explicitUpdatedAt);
+    });
+
+    it("filters numeric purgeAt comparison queries with index", async () => {
+      const db = await createAdapter();
+      const collection = `trash-purge-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "originalCollection", type: "text", promoted: true },
+          { name: "purgeAt", type: "number", promoted: true, indexed: true },
+        ],
+        indexes: [{ fields: ["purgeAt"] }],
+      };
+      await db.sync?.([config], []);
+
+      const now = Date.now();
+      const past1 = now - 10000;
+      const past2 = now - 5000;
+      const future = now + 10000;
+
+      await db.create({ collection, data: { originalCollection: "posts", purgeAt: past1 } });
+      await db.create({ collection, data: { originalCollection: "posts", purgeAt: past2 } });
+      await db.create({ collection, data: { originalCollection: "posts", purgeAt: future } });
+      await db.create({ collection, data: { originalCollection: "posts", purgeAt: null } });
+
+      const due = await db.find({
+        collection,
+        where: {
+          purgeAt: { lte: now },
+        },
+        limit: 10,
+      });
+
+      expect(due.docs).toHaveLength(2);
+      const purgeAts = due.docs.map((d: any) => d.purgeAt).sort();
+      expect(purgeAts).toEqual([past1, past2]);
+    });
+
+    it("enforces deterministic-id idempotent create with DuplicateKeyError", async () => {
+      const db = await createAdapter();
+      const collection = `trash-dup-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [{ name: "name", type: "text" }],
+      };
+      await db.sync?.([config], []);
+
+      const id = "deterministic-doc-id";
+      await db.create({ collection, data: { id, name: "First" } });
+
+      await expect(
+        db.create({ collection, data: { id, name: "Second" } }),
+      ).rejects.toThrow(DuplicateKeyError);
+    });
+  });
+}
+

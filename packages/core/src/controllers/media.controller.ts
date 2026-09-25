@@ -4,6 +4,8 @@ import type { ImageTransformOptions } from "../types/adapters.js";
 import { validateUpload, generateUniqueUploadFilename } from "../utils/upload-validation.js";
 import { mergeDynamicConfig } from "../utils/block-references.js";
 import { getRequestLogger } from "../observability.js";
+import { TRASH_COLLECTION, getTrashEntryId, resolveDocumentTitle, resolveTrashConfig } from "../trash.js";
+import { AuditService } from "../services/audit.service.js";
 
 export class MediaController {
   private collection: string;
@@ -348,6 +350,72 @@ export class MediaController {
 
     const doc = await db.findOne({ collection: this.collection, id });
     if (!doc) return c.json({ message: "Not Found" }, 404);
+
+    const colConfig = config.collections.find((x) => x.slug === this.collection);
+    const resolvedTrash = colConfig
+      ? resolveTrashConfig(colConfig, config)
+      : { enabled: false, retentionDays: null, allowPermanentDelete: true };
+    const isPermanent = c.req.query("permanent") === "true" || c.req.query("permanent") === "1";
+
+    if (resolvedTrash.enabled && !isPermanent) {
+      const user = c.get("user");
+      const deletedAt = Date.now();
+      const purgeAt =
+        resolvedTrash.retentionDays !== null && resolvedTrash.retentionDays !== undefined
+          ? deletedAt + resolvedTrash.retentionDays * 86_400_000
+          : null;
+      const title = colConfig ? resolveDocumentTitle(colConfig, doc) : doc.filename || id;
+      const trashId = getTrashEntryId(this.collection, id);
+
+      const trashData = {
+        id: trashId,
+        collection: this.collection,
+        docId: id,
+        deletedAt,
+        purgeAt,
+        deletedBy: user?.sub ?? null,
+        title,
+        snapshot: doc,
+        createdAt: doc.createdAt ?? new Date(deletedAt).toISOString(),
+      };
+
+      if (db.transaction) {
+        await db.transaction(async (tx) => {
+          await tx.create({ collection: TRASH_COLLECTION, data: trashData });
+          await tx.delete({ collection: this.collection, id });
+        });
+      } else {
+        await db.create({ collection: TRASH_COLLECTION, data: trashData });
+        await db.delete({ collection: this.collection, id });
+      }
+
+      if (colConfig?.audit) {
+        AuditService.log(
+          db,
+          {
+            operation: "trash",
+            collection: this.collection,
+            documentId: id,
+            user: user ? { id: user.sub, collection: user.collection, email: user.email } : undefined,
+            before: doc,
+            after: null,
+          },
+          config,
+        );
+      }
+
+      return c.json({ message: "Trashed", trashId, purgeAt });
+    }
+
+    if (resolvedTrash.enabled && resolvedTrash.allowPermanentDelete === false) {
+      return c.json(
+        {
+          error: true,
+          message: `Permanent deletion is not allowed for collection "${this.collection}"`,
+        },
+        403,
+      );
+    }
 
     if (storage) {
       // Delete main file

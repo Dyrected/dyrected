@@ -97,9 +97,33 @@ export type CollectionBeforeCommitHook<TDoc extends object = Record<string, unkn
 }) => void | Promise<void>;
 
 /**
- * Runs **before** a document is deleted from the database.
+ * Runs **before** a document is deleted from the database or moved to trash.
  */
 export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+  mode?: "trash" | "permanent";
+}) => void | Promise<void>;
+
+/**
+ * Runs **after** a document has been permanently deleted from the database.
+ */
+export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+  mode?: "permanent";
+}) => void | Promise<void>;
+
+/**
+ * Runs **before** a document is moved to trash.
+ */
+export type CollectionBeforeTrashHook<TDoc extends object = Record<string, unknown>> = (args: {
   id: string;
   doc: TDoc;
   req: HookRequestContext;
@@ -108,9 +132,31 @@ export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unkn
 }) => void | Promise<void>;
 
 /**
- * Runs **after** a document has been deleted from the database.
+ * Runs **after** a document has been moved to trash.
  */
-export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
+export type CollectionAfterTrashHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
+
+/**
+ * Runs **before** a trashed document is restored.
+ */
+export type CollectionBeforeRestoreHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => void | Promise<void>;
+
+/**
+ * Runs **after** a trashed document has been restored.
+ */
+export type CollectionAfterRestoreHook<TDoc extends object = Record<string, unknown>> = (args: {
   id: string;
   doc: TDoc;
   req: HookRequestContext;
