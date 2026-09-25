@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { createDyrectedApp } from "../app.js";
-import { defineCollection, defineConfig, defineAction, defineView } from "../index.js";
+import { defineCollection, defineConfig, defineAction, defineView, defineWorkspace } from "../index.js";
 import { InMemoryAdapter } from "./mocks.js";
 
 describe("Collection-root (view-less) actions", () => {
@@ -463,4 +463,185 @@ describe("Header actions (type: 'header')", () => {
     expect(body.message).toContain("Provide an `id` or an `ids` array of documents to act on.");
   });
 });
+
+describe("Workspace and Navigation View Actions", () => {
+  it("resolves and runs an action declared in a workspace view targeting a collection via view.collection", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("ipo_reservations", [{ id: "res-1", status: "paid", receipt_sent: false }]);
+
+    const resendReceipt = defineAction({
+      name: "resend_receipt",
+      label: "Resend Receipt",
+      type: "row",
+      mutation: { receipt_sent: true },
+    });
+
+    const agentPaidView = defineView({
+      slug: "agent_paid",
+      label: "Paid Subscriptions",
+      layout: "table",
+      collection: "ipo_reservations",
+      actions: [resendReceipt],
+    });
+
+    const AgentWorkspace = defineWorkspace({
+      slug: "agents-ipos",
+      label: "Agent - IPO Subscriptions",
+      views: [agentPaidView],
+    });
+
+    const IpoReservations = defineCollection({
+      slug: "ipo_reservations",
+      fields: [
+        { name: "status", type: "text" },
+        { name: "receipt_sent", type: "boolean" },
+      ],
+      // Note: collection.views does NOT declare agent_paid; it lives in the workspace
+      views: [
+        defineView({
+          slug: "all",
+          label: "All Reservations",
+          layout: "table",
+        }),
+      ],
+    });
+
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [IpoReservations],
+        globals: [],
+        db,
+        admin: {
+          navigation: [AgentWorkspace],
+        },
+      }),
+    );
+
+    const res = await app.request(
+      "/api/collections/ipo_reservations/views/agent_paid/actions/resend_receipt",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: "res-1" }),
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.receipt_sent).toBe(true);
+  });
+
+  it("registers action routes and runs actions when the collection has no views of its own", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("applications", [{ id: "app-1", approved: false }]);
+
+    const approveAction = defineAction({
+      name: "approve",
+      label: "Approve",
+      type: "row",
+      mutation: { approved: true },
+    });
+
+    const workspace = defineWorkspace({
+      slug: "compliance",
+      label: "Compliance Queue",
+      collection: "applications",
+      views: [
+        defineView({
+          slug: "pending_review",
+          label: "Pending Review",
+          layout: "table",
+          actions: [approveAction],
+        }),
+      ],
+    });
+
+    const Applications = defineCollection({
+      slug: "applications",
+      fields: [{ name: "approved", type: "boolean" }],
+      // Zero collection-level views or actions
+    });
+
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [Applications],
+        globals: [],
+        db,
+        admin: {
+          navigation: [workspace],
+        },
+      }),
+    );
+
+    const res = await app.request(
+      "/api/collections/applications/views/pending_review/actions/approve",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: "app-1" }),
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.approved).toBe(true);
+  });
+
+  it("enforces view access on workspace view actions", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("orders", [{ id: "order-1", status: "pending" }]);
+
+    const cancelAction = defineAction({
+      name: "cancel",
+      label: "Cancel",
+      type: "row",
+      mutation: { status: "cancelled" },
+    });
+
+    const workspace = defineWorkspace({
+      slug: "operations",
+      label: "Operations",
+      views: [
+        defineView({
+          slug: "restricted_orders",
+          label: "Restricted Orders",
+          layout: "table",
+          collection: "orders",
+          access: { update: () => false },
+          actions: [cancelAction],
+        }),
+      ],
+    });
+
+    const Orders = defineCollection({
+      slug: "orders",
+      fields: [{ name: "status", type: "text" }],
+    });
+
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [Orders],
+        globals: [],
+        db,
+        admin: {
+          navigation: [workspace],
+        },
+      }),
+    );
+
+    const res = await app.request(
+      "/api/collections/orders/views/restricted_orders/actions/cancel",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: "order-1" }),
+      },
+    );
+
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.message).toContain('Access denied: view "restricted_orders"');
+  });
+});
+
 

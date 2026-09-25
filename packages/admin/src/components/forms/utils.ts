@@ -36,21 +36,21 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
 
     if (field.type === "object" && field.fields) {
       validator = z.object(buildSchemaShape(field.fields, isEdit))
-      if (!field.required) validator = validator.optional()
+      if (!field.required) validator = validator.nullable().optional()
       shape[name] = validator
       return
     }
 
     if (field.type === "blocks") {
       validator = z.array(z.any())
-      if (!field.required) validator = validator.optional()
+      if (!field.required) validator = validator.nullable().optional()
       shape[name] = validator
       return
     }
 
     if (field.type === "array" && field.fields) {
       validator = z.array(z.object(buildSchemaShape(field.fields, isEdit)))
-      if (!field.required) validator = validator.optional()
+      if (!field.required) validator = validator.nullable().optional()
       shape[name] = validator
       return
     }
@@ -126,9 +126,9 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
     }
 
     if (!field.required && field.type !== "multiSelect") {
-      validator = validator.optional().or(z.literal(""))
+      validator = validator.nullable().optional().or(z.literal(""))
     } else if (!field.required && field.type === "multiSelect") {
-      validator = validator.optional()
+      validator = validator.nullable().optional()
     }
 
     shape[name] = validator
@@ -319,6 +319,9 @@ export function buildDefaultValues(
       else if (field.type === "multiSelect") defaultVal = []
       else if (field.type === "json") defaultVal = {}
       else defaultVal = ""
+    } else if (defaultVal === null) {
+      if (field.type === "boolean") defaultVal = false
+      else if (field.type === "multiSelect") defaultVal = []
     }
 
     acc[name] = defaultVal

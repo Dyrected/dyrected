@@ -394,4 +394,39 @@ export function pruneNavigationForUser(
   };
 }
 
+/**
+ * Resolves all operational views associated with a collection, combining:
+ * 1. Views declared directly on the collection (`collection.views`)
+ * 2. Views targeting this collection via `admin.navigation` (including `addToCollection`,
+ *    explicit collection navigation items, and views inside standalone operational workspaces).
+ */
+export function resolveAllCollectionViews(
+  collection: CollectionConfig,
+  config?: Partial<DyrectedConfig> | null,
+): ViewConfig[] {
+  const views: ViewConfig[] = [...(collection.views ?? [])];
+  const seenSlugs = new Set(views.map((v) => v.slug));
+
+  const explicitNav = config?.admin?.navigation;
+  if (Array.isArray(explicitNav)) {
+    for (const item of explicitNav) {
+      if (!item) continue;
+      const itemCol = item.collection || item.addToCollection;
+      if (Array.isArray(item.views)) {
+        for (const view of item.views) {
+          if (!view || !view.slug) continue;
+          const targetCol = view.collection || itemCol;
+          if (targetCol === collection.slug && !seenSlugs.has(view.slug)) {
+            views.push(view);
+            seenSlugs.add(view.slug);
+          }
+        }
+      }
+    }
+  }
+
+  return views;
+}
+
 export * from "./navigation-reconciler.js";
+

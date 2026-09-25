@@ -152,9 +152,9 @@ function FormEngineInner({
   // dedicated /change-password endpoint (handled in edit-page). They are NOT
   // mixed into the normal PATCH payload.
   if (hasPassword && passwordChangeMode !== null) {
-    schemaShape.oldPassword = z.string().optional()
-    schemaShape.newPassword = z.string().optional()
-    schemaShape.confirmPassword = z.string().optional()
+    schemaShape.oldPassword = z.string().nullable().optional().or(z.literal(""))
+    schemaShape.newPassword = z.string().nullable().optional().or(z.literal(""))
+    schemaShape.confirmPassword = z.string().nullable().optional().or(z.literal(""))
   }
 
   let formSchema: z.ZodTypeAny = z.object(schemaShape)
@@ -196,7 +196,7 @@ function FormEngineInner({
 
   const { isDirty } = form.formState
   const flatErrors = getFlatErrors(form.formState.errors as Record<string, unknown>)
-  const autosaveEnabled = Boolean(autosave?.enabled && autosave.onSave && !readOnly)
+  const autosaveEnabled = Boolean(autosave?.enabled && typeof autosave.onSave === "function" && !readOnly)
   const autosaveStateRef = React.useRef<WorkflowAutosaveState>("idle")
 
   const emitAutosaveState = useCallback((state: WorkflowAutosaveState) => {

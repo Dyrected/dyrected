@@ -21,6 +21,7 @@ import {
 import { resolveAccess } from "../auth/access.js";
 import { getAdminAuthCollection, isUserAdmin } from "../utils/admin-auth.js";
 import { buildCollectionSearchWhere } from "../utils/collection-search.js";
+import { resolveAllCollectionViews } from "../utils/navigation.js";
 import {
   applyFieldReadAccess,
   applyFieldWriteAccess,
@@ -1185,14 +1186,15 @@ export class CollectionController {
     const config = c.get("config");
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
-    if (!this.collection.views?.length && !this.collection.actions?.length) {
+    const allViews = resolveAllCollectionViews(this.collection, config);
+    if (!allViews.length && !this.collection.actions?.length) {
       return c.json({ error: true, message: `Collection ${this.collection.slug} has no views or actions` }, 404);
     }
 
     const actionName = c.req.param("action");
     const viewSlugParam = c.req.param("viewSlug");
     let action: ActionConfig | undefined;
-    for (const view of this.collection.views ?? []) {
+    for (const view of allViews) {
       if (viewSlugParam && view.slug !== viewSlugParam) continue;
       const match = view.actions?.find((candidate) => candidate.name === actionName);
       if (match) {
@@ -1233,7 +1235,7 @@ export class CollectionController {
 
     // View-level visibility gate.
     const view = viewSlugParam
-      ? this.collection.views?.find((candidate) => candidate.slug === viewSlugParam)
+      ? allViews.find((candidate) => candidate.slug === viewSlugParam)
       : undefined;
     if (view?.access) {
       const allowed = await resolveBooleanAccess(config, view.access.update ?? view.access.read ?? true, {

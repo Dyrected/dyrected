@@ -15,7 +15,7 @@ import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig, isUserAdmin } from "./utils/admin-auth.js";
-import { compileNavigation, pruneNavigationForUser } from "./utils/navigation.js";
+import { compileNavigation, pruneNavigationForUser, resolveAllCollectionViews } from "./utils/navigation.js";
 import { reconcileNavigation } from "./utils/navigation-reconciler.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
@@ -1221,11 +1221,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     // delete-many and aggregate must be registered before /:id to avoid the wildcard swallowing them
     app.delete(`${path}/delete-many`, (c) => controller.deleteMany(c));
     app.post(`${path}/aggregate`, (c) => controller.aggregate(c));
-    // Operational view actions — only registered when the collection defines views or root-level actions
-    if (collection.views?.length) {
+    // Operational view actions — registered when collection or admin.navigation defines views or root-level actions
+    const allViews = resolveAllCollectionViews(collection, config);
+    if (allViews.length) {
       app.post(`${path}/views/:viewSlug/actions/:action`, optionalAuth(config), (c) => controller.runViewAction(c));
     }
-    if (collection.views?.length || collection.actions?.length) {
+    if (allViews.length || collection.actions?.length) {
       app.post(`${path}/actions/:action`, optionalAuth(config), (c) => controller.runViewAction(c));
     }
     if (collection.audit) {
