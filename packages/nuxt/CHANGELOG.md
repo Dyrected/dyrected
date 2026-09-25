@@ -1,5 +1,15 @@
 # @dyrected/nuxt
 
+## 2.18.1
+
+### Patch Changes
+
+- Updated dependencies [6db29db]
+  - @dyrected/core@2.18.1
+  - @dyrected/admin@2.18.1
+  - @dyrected/sdk@2.18.1
+  - @dyrected/vue@2.18.1
+
 ## 2.18.0
 
 ### Minor Changes

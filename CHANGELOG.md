@@ -2,6 +2,15 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.18.1
+
+- Fix operational workspace view action resolution and optional field null validation.
+
+  - **Workspace view actions (`@dyrected/core`):** Support operational view actions defined inside `config.admin.navigation` (such as `defineWorkspace` views targeting a collection via `view.collection`, `item.collection`, or `addToCollection`). `runViewAction` and action route registration now search both `collection.views` and all matching workspace views, preventing `Action "<action>" was not found in view "<viewSlug>"` errors.
+  - **Optional field null validation (`@dyrected/admin`):** Updated `buildSchemaShape` so optional fields accept `null` (`.nullable().optional().or(z.literal(""))`), resolving spurious `Expected string, received null` validation errors when saving existing records with null database values. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.18.0
 
 - Add transactional write hooks and exact money handling. Collections can define `hooks.beforeCommit`, which runs inside the write transaction with a writable `tx` so secondary writes commit or roll back with the document. Workflow transitions can define `onTransition`, run inside the transition transaction and given an optional request `input`. Fields accept `immutable: true`, which rejects any update that changes the value. The new `money` field (`defineMoneyField`) stores integer minor units, validates them on write, maps to `BIGINT` in SQL adapters, and is edited and displayed in major units in the Admin.
