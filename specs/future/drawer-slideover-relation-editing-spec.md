@@ -1,6 +1,6 @@
 # In-Place Slideover (Sheet/Drawer) Editing for Relationships & Joins
 
-**Status:** Proposed / Future  
+**Status:** Implemented  
 **Package:** `@dyrected/admin`, `@dyrected/core`  
 **Inspiration:** Directus Item Drawer, Linear Issue Sub-task Drawer, Notion Side Peek  
 
