@@ -10,7 +10,7 @@ import type {
   CompiledNavTree,
 } from "../types/index.js";
 
-import { resolveTrashConfig } from "../trash.js";
+import { resolveTrashConfig, INTERNAL_SYSTEM_COLLECTIONS } from "../trash.js";
 
 /**
  * System route prefixes reserved by Dyrected.
@@ -300,7 +300,7 @@ export function compileNavigation(
   const mentionedTrash = explicitNav.some((i) => i.trash || i.slug === "trash");
   if (!mentionedTrash) {
     const hasTrash = collections.some(
-      (col) => !col.slug.startsWith("__") && resolveTrashConfig(col, config as any).enabled,
+      (col) => !INTERNAL_SYSTEM_COLLECTIONS.has(col.slug) && resolveTrashConfig(col, config as any).enabled,
     );
     if (hasTrash) {
       registerItem(undefined, {

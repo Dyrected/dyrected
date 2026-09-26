@@ -19,7 +19,7 @@ import { compileNavigation, pruneNavigationForUser, resolveAllCollectionViews } 
 import { reconcileNavigation } from "./utils/navigation-reconciler.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
-import { resolveTrashConfig, TRASH_COLLECTION } from "./trash.js";
+import { resolveTrashConfig, TRASH_COLLECTION, INTERNAL_SYSTEM_COLLECTIONS } from "./trash.js";
 import {
   assertValidAdminConditionsInConfig,
   assertValidDeclarativeAccessInConfig,
@@ -305,7 +305,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
     const filteredCollections = await Promise.all(
       collections
-        .filter((col) => !col.slug.startsWith("__") && (!siteId || col.shared || !col.siteId || col.siteId === siteId))
+        .filter((col) => !INTERNAL_SYSTEM_COLLECTIONS.has(col.slug) && (!siteId || col.shared || !col.siteId || col.siteId === siteId))
         .map(async (col) => ({
           slug: col.slug,
           labels: col.labels,
@@ -464,7 +464,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         model: effectiveAi?.model,
       },
       trash: {
-        enabled: collections.some((col) => !col.slug.startsWith("__") && resolveTrashConfig(col, requestConfig).enabled),
+        enabled: collections.some((col) => !INTERNAL_SYSTEM_COLLECTIONS.has(col.slug) && resolveTrashConfig(col, requestConfig).enabled),
         retentionDays: requestConfig.trash?.retentionDays !== undefined ? requestConfig.trash.retentionDays : 30,
         allowPermanentDelete: requestConfig.trash?.allowPermanentDelete !== false,
       },
@@ -475,7 +475,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         uploadCollectionConfigured: requestConfig.collections.some((collection) => !!collection.upload),
         trashPurgeOverdue: await (async () => {
           const hasRetention = collections.some(
-            (col) => !col.slug.startsWith("__") && resolveTrashConfig(col, requestConfig).retentionDays !== null,
+            (col) => !INTERNAL_SYSTEM_COLLECTIONS.has(col.slug) && resolveTrashConfig(col, requestConfig).retentionDays !== null,
           );
           if (!hasRetention || !requestConfig.db) return false;
           try {

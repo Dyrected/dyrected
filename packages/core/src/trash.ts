@@ -8,6 +8,19 @@ import { runCollectionHooks } from "./utils/hooks.js";
 export const TRASH_COLLECTION = "__trash";
 
 /**
+ * Internal system collections managed directly by Dyrected engine features.
+ * These should never be exposed in public API schemas or user collection navigation.
+ */
+export const INTERNAL_SYSTEM_COLLECTIONS = new Set([
+  "__audit",
+  "__sessions",
+  "__task_locks",
+  "__trash",
+  "__workflow_history",
+  "__lifecycle_events",
+]);
+
+/**
  * Internal collection holding snapshots of trashed documents across all collections.
  */
 export const TRASH_COLLECTION_CONFIG: CollectionConfig = {
@@ -137,7 +150,7 @@ export function assertValidTrashInConfig(config: DyrectedConfig, source = "confi
     if (col.slug === "trash") {
       throw new Error(`Collection slug "trash" is reserved by Dyrected for the trash system.`);
     }
-    const isSystem = col.slug.startsWith("__");
+    const isSystem = INTERNAL_SYSTEM_COLLECTIONS.has(col.slug);
     if (isSystem && col.trash) {
       throw new Error(`System collection "${col.slug}" cannot enable trash.`);
     }
