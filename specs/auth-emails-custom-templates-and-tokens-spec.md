@@ -531,3 +531,88 @@ To maintain Dyrected's task-oriented, practical instructor voice (consulting `DO
     * `client.collection(slug).sendPasswordReset(email, options)`
     * `client.collection(slug).createPasswordResetToken(email, options)`
     * `client.collection(slug).verifyToken(token, purpose)`
+
+---
+
+## 9. Phased Execution Plan & Milestones
+
+The implementation is broken down into 6 discrete, testable phases:
+
+### Phase 1: Core Types, Polymorphic Email Payload & Password Safety (`@dyrected/core`)
+
+* **Scope:**
+  * Define `OutboundEmail`, `EmailTemplateResult`, and `EmailTemplateArgs` in `packages/core/src/types/email.ts`.
+  * Update `DyrectedConfig.email` and `AuthConfig.email` & `AuthConfig.urls`.
+  * Add `siteId?: string` to `CollectionTokenPayload`.
+  * Fix `verifyPassword(plain, stored)` in `packages/core/src/auth/password.ts` to fail closed gracefully instead of crashing on uninitialized/null passwords.
+  * Return `{ error: true, code: "PASSWORD_NOT_SET" }` on login attempts against passwordless accounts.
+* **Testing:**
+  * Unit tests in `packages/core/src/__tests__/password.test.ts` verifying `verifyPassword` with `undefined`, `null`, empty string, and corrupted hashes.
+  * Integration tests for login against passwordless accounts returning 401.
+
+### Phase 2: Core Template Resolution Cascade & Delivery Transparency (`@dyrected/core`)
+
+* **Scope:**
+  * Refactor email builders in `packages/core/src/services/email.service.ts` to accept `collection: CollectionConfig`, context, and template arguments.
+  * Implement the 4-level resolution hierarchy (DB Override $\rightarrow$ Collection Config $\rightarrow$ Global Config $\rightarrow$ Core Defaults).
+  * Update `sendEmail` to support both `type: 'html'` and `type: 'template'` (delivering external template IDs and variables directly to `config.email.send`).
+  * Capture email delivery errors in `auth.controller.ts`, returning `emailSent: boolean` and `emailError?: string`.
+* **Testing:**
+  * Unit tests in `packages/core/src/__tests__/email.service.test.ts` for template resolution order, external template payload delivery, and error capture.
+
+### Phase 3: Token Lifecycle, Unified `invite`, and Verification Endpoint (`@dyrected/core`)
+
+* **Scope:**
+  * Refactor `POST /api/collections/:slug/invite`:
+    * Accept full document payload (`firstName`, `roles`, custom fields, custom `status`).
+    * Filter fields through field access control (`field.access.create` and `field.access.update`).
+    * Remove 409 conflict when inviting an existing record that has no password set.
+    * Support `sendEmail: false` for headless token generation.
+    * Record `user.invitedAt = Date.now()` for superseding older tokens.
+  * Refactor `POST /api/collections/:slug/accept-invite`:
+    * Verify `hasUsablePassword` instead of `status === 'pending'`.
+    * Verify `payload.iat >= user.invitedAt - 1000` to reject superseded invites.
+    * Validate `payload.siteId` matches request tenant context.
+  * Implement `GET /api/collections/:slug/tokens/verify?token=...&purpose=invite|reset`:
+    * Cryptographic signature/expiry validation.
+    * Database check: user existence, trash check, already-active check, superseded check.
+  * Update `POST /api/collections/:slug/forgot-password`:
+    * Support `sendEmail: false` for headless reset tokens.
+* **Testing:**
+  * Integration tests in `packages/core/src/__tests__/auth.controller.test.ts` for:
+    * Inviting new users vs existing passwordless users.
+    * Double-accept prevention.
+    * Re-inviting invalidating older tokens (`TOKEN_SUPERSEDED`).
+    * `/tokens/verify` covering valid, expired, trashed, and already-accepted states.
+
+### Phase 4: SDK Ergonomics & Client Methods (`@dyrected/sdk`)
+
+* **Scope:**
+  * Update `client.collection(slug).invite(emailOrPayload, options)` to return `{ user, token, inviteUrl, emailSent, emailError }`.
+  * Add `client.collection(slug).createInviteToken(emailOrPayload, options)`.
+  * Update `client.collection(slug).sendPasswordReset(email, options)`.
+  * Add `client.collection(slug).createPasswordResetToken(email, options)`.
+  * Add `client.collection(slug).verifyToken(token, purpose)`.
+  * Export TypeScript types and updated response shapes.
+* **Testing:**
+  * Unit tests in `packages/sdk/src/__tests__/auth.test.ts` asserting request shapes, headers, and response mappings.
+
+### Phase 5: Admin UI: Template Management & Invite Experience (`@dyrected/admin`)
+
+* **Scope:**
+  * Update `InviteDialog` and `useCollectionInvite` to display delivery status alerts and instant copyable link if `emailSent === false`.
+  * Auto-promote `__email_templates` system collection when `config.email.adminEditable: true`.
+  * Build template editor using CodeMirror 6 (`@uiw/react-codemirror`) with live iframe preview.
+  * Variable chip tags insertion bar.
+  * External Template mode: template ID display, dynamic variable table, provider dashboard link, and "Send Test Email" drawer.
+* **Testing:**
+  * Component tests in `packages/admin/src/pages/collections/views/__tests__/invite-dialog.test.tsx` and template editor unit tests.
+
+### Phase 6: Documentation (`apps/docs`)
+
+* **Scope:**
+  * Activate `/api-doc-hitl` skill.
+  * Update `email.mdx` (transports, external templates, collection overrides).
+  * Update `operations.mdx` (unified `invite()`, headless tokens, `verifyToken()`).
+  * Update `collections.mdx` (`auth` options).
+  * Update `overview.mdx` (SDK reference).
