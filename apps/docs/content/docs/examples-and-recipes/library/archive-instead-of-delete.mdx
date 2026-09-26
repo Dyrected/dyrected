@@ -22,6 +22,11 @@ Add an archive flag, hide archived rows from normal readers, and disable destruc
 
 **Additional packages:** No additional packages.
 
+> [!TIP]
+> **Looking for soft delete and recoverable document removal?**
+> Dyrected has built-in **[Trash & Retention](/docs/model-content/configuration/trash-and-retention)** enabled out-of-the-box (`trash: true`), which safely moves deleted records to an internal holding area, frees unique keys, clears read paths without query hacks, and automates 30-day retention purges.
+> Use this recipe only when you specifically need business-level record retirement (such as keeping archived rows visible to admins in active collection views via a status toggle).
+
 ## Decisions and cautions
 
 Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.

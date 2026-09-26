@@ -817,6 +817,8 @@ function AIActionProposalCard({
               <Trash2 className="dy-w-3.5 dy-h-3.5 dy-text-destructive" />
             ) : action.type === 'createDocument' ? (
               <Plus className="dy-w-3.5 dy-h-3.5" />
+            ) : action.type === 'restoreDocument' ? (
+              <RotateCcw className="dy-w-3.5 dy-h-3.5 dy-text-primary" />
             ) : (
               <Edit3 className="dy-w-3.5 dy-h-3.5" />
             )}
@@ -826,9 +828,11 @@ function AIActionProposalCard({
               ? `create ${targetName}`
               : action.type === 'deleteDocument'
                 ? `delete ${targetName} #${action.documentId}`
-                : action.type === 'updateGlobal'
-                  ? `global / ${targetName}`
-                  : `${targetName} #${action.documentId}`}
+                : action.type === 'restoreDocument'
+                  ? `restore ${targetName} #${action.documentId}`
+                  : action.type === 'updateGlobal'
+                    ? `global / ${targetName}`
+                    : `${targetName} #${action.documentId}`}
           </span>
         </div>
 
@@ -882,7 +886,16 @@ function AIActionProposalCard({
         {action.type === 'deleteDocument' ? (
           <div className="dy-text-destructive/90 dy-flex dy-items-center dy-gap-1.5 dy-font-sans dy-text-xs">
             <AlertTriangle className="dy-w-3.5 dy-h-3.5 dy-shrink-0" />
-            <span>Document will be permanently removed upon approval.</span>
+            <span>
+              {action.proposedData?.permanent
+                ? 'Document will be permanently removed upon approval.'
+                : 'Document will be moved to trash upon approval.'}
+            </span>
+          </div>
+        ) : action.type === 'restoreDocument' ? (
+          <div className="dy-text-primary dy-flex dy-items-center dy-gap-1.5 dy-font-sans dy-text-xs">
+            <RotateCcw className="dy-w-3.5 dy-h-3.5 dy-shrink-0" />
+            <span>Document will be restored from trash upon approval.</span>
           </div>
         ) : (
           <div className="dy-space-y-2.5">

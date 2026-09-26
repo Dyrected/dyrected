@@ -1,0 +1,189 @@
+---
+title: Trash and Retention
+description: Move deleted documents to a recoverable holding area and configure automatic retention purges.
+---
+
+When an editor deletes a document in Dyrected, destroying the data immediately is rarely what a team actually wants. One accidental click on an order, guest list, or article can cause irreversible data loss.
+
+Dyrected provides built-in **Trash & Retention**: deleting a document moves it to an internal holding area (`__trash`) where it can be inspected and restored with its original `id`. A configurable background retention policy permanently purges expired documents automatically.
+
+---
+
+## What trash does
+
+When trash is active on a collection:
+
+1. **Deletion moves the document out of your table**: The record is removed from your active collection and copied into an internal `__trash` snapshot.
+2. **Read paths stay clean**: Queries, relationship lookups, view counts, aggregate metrics, and AI/RAG tools immediately stop seeing the document without needing manual `deletedAt is null` filters.
+3. **Unique values are freed**: If a deleted user held `email: "alice@example.com"`, another document can immediately reuse that email.
+4. **Restoration is lossless**: Restoring a trashed document recreates it with its original `id` and `createdAt` timestamp, meaning any foreign relationships pointing to it work again immediately.
+
+---
+
+## Enabling trash
+
+Trash is enabled out-of-the-box for all non-system collections with a 30-day retention period. You can configure retention per collection or app-wide in your config.
+
+### Per collection
+
+Configure trash in your `defineCollection` definition:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Articles = defineCollection({
+  slug: "articles",
+  // Enabled with a 60-day recovery window:
+  trash: { retentionDays: 60 },
+  fields: [
+    defineTextField({ name: "title", required: true }),
+  ],
+});
+```
+
+To keep items in trash indefinitely until an administrator manually empties it:
+
+```ts
+export const Invoices = defineCollection({
+  slug: "invoices",
+  // Never auto-purge; keep until manually emptied:
+  trash: { retentionDays: null },
+  fields: [
+    defineTextField({ name: "invoiceNumber", required: true }),
+  ],
+});
+```
+
+To opt out and permanently delete records immediately:
+
+```ts
+export const ActivityLogs = defineCollection({
+  slug: "activity-logs",
+  // Permanent immediate deletion:
+  trash: false,
+  fields: [
+    defineTextField({ name: "message", required: true }),
+  ],
+});
+```
+
+### App-wide configuration
+
+Set global defaults across all collections in `defineConfig`:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  // ... collections, db, etc.
+  trash: {
+    enabled: true,           // Default: true
+    retentionDays: 30,       // Default: 30 days. Set to null for indefinite retention
+    purge: {
+      cron: "0 3 * * *",     // Runs daily at 3:00 AM
+      batchSize: 200,        // Batch limit per run
+    },
+  },
+});
+```
+
+---
+
+## Admin experience
+
+When trash is enabled, Dyrected updates the admin dashboard automatically:
+
+- **Delete actions**: The delete button relabels to **Move to trash** and indicates the retention period (for example, *"Recoverable for 30 days"*).
+- **Undo toast**: An 8-second toast appears upon deletion allowing one-click undo.
+- **Collection toolbar**: A **Trash** button appears in the collection header with a counter badge showing active items in trash.
+- **Global Trash view**: A dedicated `/trash` route in the navigation sidebar lists trashed items across all collections.
+- **Restore with changes**: If a restored document collides with a unique field created after deletion, a conflict drawer opens allowing the editor to adjust the conflicting value before restoring.
+- **Empty trash**: Emptying trash requires typing the collection slug as confirmation to prevent accidental mass deletion.
+
+---
+
+## SDK and client hooks
+
+You can inspect, restore, and manage trash items directly in your frontend or scripts.
+
+### Client SDK
+
+```ts
+import { createDyrectedClient } from "@dyrected/sdk";
+
+const client = createDyrectedClient({ baseURL: "https://your-api.com" });
+
+// List trashed articles
+const { docs, total } = await client.trash("articles").list({ page: 1, limit: 20 });
+
+// Restore a document
+await client.trash("articles").restore("articles:doc_123");
+
+// Restore with field overrides (if resolving unique conflicts)
+await client.trash("articles").restore("articles:doc_123", {
+  overrides: { slug: "new-slug" },
+});
+
+// Exempt an item from automatic purge
+await client.trash("articles").keep("articles:doc_123", { purgeAt: null });
+
+// Permanently delete an item immediately
+await client.trash("articles").purge("articles:doc_123");
+```
+
+### React and Vue hooks
+
+Dyrected provides identical reactive hooks in `@dyrected/react` and `@dyrected/vue`:
+
+```tsx
+import { useTrash } from "@dyrected/react";
+
+export function TrashDrawer({ collection }: { collection: string }) {
+  const { entries, total, isLoading, restore, purge } = useTrash(collection);
+
+  if (isLoading) return <div>Loading trash...</div>;
+
+  return (
+    <div>
+      <h3>Trash ({total})</h3>
+      <ul>
+        {entries.map((item) => (
+          <li key={item.id}>
+            <span>{item.title}</span>
+            <button onClick={() => restore(item.id)}>Restore</button>
+            <button onClick={() => purge(item.id)}>Delete Forever</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+Restoring an item automatically invalidates your active collection queries, so the restored document appears in your UI lists without manual refetching.
+
+---
+
+## Hook execution order
+
+Trash distinguishes between temporary removal and permanent deletion:
+
+| Hook | When it fires | Purpose |
+|---|---|---|
+| `beforeDelete` | On trash **and** on permanent delete | Pre-deletion validation. Receives `{ mode: "trash" \| "permanent" }`. |
+| `beforeTrash` / `afterTrash` | On trash only | Soft-delete side effects (e.g. unpublishing or notifying owners). |
+| `beforeRestore` / `afterRestore` | On restore only | Post-restoration sync (e.g. re-indexing or re-enabling access). |
+| `afterDelete` | On **permanent deletion only** (purge or hard delete) | Destructive cleanup (e.g. purging external SaaS records). |
+
+> [!NOTE]
+> `beforeChange` and `afterChange` do not run during restoration, ensuring create-time side effects (such as welcome emails or initial billing setup) do not fire a second time.
+
+---
+
+## Automatic purge background task
+
+When retention is configured, Dyrected automatically registers the task `dyrected:trash-purge` in the task runner.
+
+- **Node servers**: Running `createTaskRunner(config).start()` runs the daily cron in the background.
+- **Serverless (Vercel / Netlify)**: Trigger `createTaskRunner(config).runDue()` from a scheduled cron route.
+- **CLI Health check**: Run `npx dyrected doctor` to verify that your trash purge background task is running on schedule.
