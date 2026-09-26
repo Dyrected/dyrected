@@ -39,3 +39,6 @@ Documentation voice:
 - Prioritize concrete working guidance over abstract theory; explain why a step exists before expanding into options.
 - Keep the tone human and confidence-building, but do not become chatty, cute, or promotional.
 - For docs work, consult `apps/docs/DOCS_PHILOSOPHY.md` and follow its voice and structure guidance in addition to these repo-wide rules.
+- Use the docs philosopy when writing JSON docs too. and all interfaces must be well document for the dev that will use it in consumer applications.
+
+Always use `/api-doc-hitl` skill when writing documentation in apps/docs
