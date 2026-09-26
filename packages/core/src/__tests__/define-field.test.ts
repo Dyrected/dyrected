@@ -124,13 +124,13 @@ describe("define<Type>Field helpers", () => {
           name: "created_at",
           type: "date",
           label: "Registration Date",
-          admin: { position: "sidebar" },
+          admin: { description: "Creation date" },
         }),
       ).toEqual({
         name: "created_at",
         label: "Registration Date",
         type: "date",
-        admin: { readOnly: true, position: "sidebar" },
+        admin: { readOnly: true, description: "Creation date" },
       });
     });
 
@@ -174,14 +174,14 @@ describe("define<Type>Field helpers", () => {
       const field = defineCreatedByField({
         relationTo: "authors",
         label: "Author",
-        admin: { position: "sidebar" },
+        admin: { description: "Record author" },
       });
       expect(field.name).toBe("createdBy");
       expect(field.label).toBe("Author");
       expect(field.type).toBe("relationship");
       expect((field as any).relationTo).toBe("authors");
       expect(field.admin?.readOnly).toBe(true);
-      expect(field.admin?.position).toBe("sidebar");
+      expect(field.admin?.description).toBe("Record author");
     });
 
     it("defineCreatedByField allows text user identifier type", () => {
@@ -257,6 +257,25 @@ describe("define<Type>Field helpers", () => {
         { value: "guest", label: "Guest" },
       ]);
       expect(field.defaultValue).toBe("guest");
+    });
+
+    it("supports custom adminRole string and array", () => {
+      const singleAdmin = defineRoles({
+        roles: ["super-admin", "moderator", "member"],
+        adminRole: "super-admin",
+        defaultValue: "member",
+      });
+      expect(singleAdmin.access?.update).toBe(
+        "user.role == 'super-admin' || (user.roles != null && 'super-admin' in user.roles)",
+      );
+
+      const multiAdmin = defineRoles({
+        roles: ["owner", "admin", "contributor"],
+        adminRole: ["owner", "admin"],
+      });
+      expect(multiAdmin.access?.update).toBe(
+        "user.role == 'owner' || (user.roles != null && 'owner' in user.roles) || user.role == 'admin' || (user.roles != null && 'admin' in user.roles)",
+      );
     });
   });
 });

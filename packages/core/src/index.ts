@@ -929,6 +929,12 @@ export interface RolesFieldOptions extends Partial<Omit<SelectField, "type" | "o
   hasMany?: boolean;
   roles?: readonly string[] | readonly RoleOption[];
   options?: readonly string[] | readonly RoleOption[] | SelectField["options"];
+  /**
+   * The role name or names authorized to update this field.
+   * Defaults to `"admin"`.
+   * Can be a single role (`"super-admin"`) or an array (`["owner", "super-admin"]`).
+   */
+  adminRole?: string | readonly string[];
 }
 
 const DEFAULT_ROLES: RoleOption[] = [
@@ -936,10 +942,6 @@ const DEFAULT_ROLES: RoleOption[] = [
   { value: "editor", label: "Editor" },
   { value: "viewer", label: "Viewer" },
 ];
-
-const DEFAULT_ROLES_ACCESS = {
-  update: "user.role == 'admin' || (user.roles != null && 'admin' in user.roles)",
-};
 
 /**
  * Define a `roles` authorization field on an auth or users collection.
@@ -950,7 +952,7 @@ const DEFAULT_ROLES_ACCESS = {
  * ```ts
  * defineRolesField() // single select with admin, editor, viewer
  * defineRoles({ multiple: true }) // multiSelect roles array
- * defineRoles({ roles: ['admin', 'manager', 'member'], defaultValue: 'member' })
+ * defineRoles({ roles: ['super-admin', 'moderator', 'member'], adminRole: 'super-admin' })
  * defineRoles({ name: 'role' }) // singular role
  * ```
  */
@@ -996,7 +998,17 @@ export function defineRolesField<
       ? [defaultRoleValue]
       : defaultRoleValue;
 
-  const { multiple: _, roles: __, ...rest } = (config || {}) as any;
+  const adminRoles = Array.isArray(config?.adminRole)
+    ? config.adminRole
+    : typeof config?.adminRole === "string"
+      ? [config.adminRole]
+      : ["admin"];
+
+  const defaultUpdateAccess = adminRoles
+    .map((r) => `user.role == '${r}' || (user.roles != null && '${r}' in user.roles)`)
+    .join(" || ");
+
+  const { multiple: _, roles: __, adminRole: ___, ...rest } = (config || {}) as any;
 
   return {
     name,
@@ -1004,7 +1016,7 @@ export function defineRolesField<
     defaultValue,
     options: resolvedOptions,
     access: {
-      ...DEFAULT_ROLES_ACCESS,
+      update: defaultUpdateAccess,
       ...rest.access,
     },
     ...rest,
