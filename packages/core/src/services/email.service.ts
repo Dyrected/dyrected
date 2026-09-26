@@ -232,7 +232,41 @@ function enrichArgs<T extends Record<string, unknown>>(
     ...args,
     collection: collection?.slug,
     collectionLabel: collection?.labels,
-    siteName: config.admin?.siteName ?? "Dyrected",
+    siteName: config.admin?.branding?.logoText ?? "Dyrected",
+  };
+}
+
+/**
+ * Adapt an EmailTemplateResult into an OutboundEmail payload for dispatching to config.email.send.
+ */
+export function toOutboundEmail(
+  to: string,
+  result: EmailTemplateResult,
+  metadata?: {
+    from?: string;
+    collection?: string;
+    purpose?: "invite" | "resetPassword" | "welcome" | "passwordChanged" | string;
+    user?: Record<string, unknown>;
+  },
+): OutboundEmail {
+  if ("template" in result) {
+    return {
+      to,
+      type: "template",
+      template: result.template,
+      variables: result.variables,
+      ...(result.subject ? { subject: result.subject } : {}),
+      ...metadata,
+    };
+  }
+
+  return {
+    to,
+    type: "html",
+    subject: result.subject ?? "Notification",
+    html: result.html,
+    ...(result.text ? { text: result.text } : {}),
+    ...metadata,
   };
 }
 
@@ -393,20 +427,22 @@ export async function resolveEmailTemplate<T extends Record<string, unknown>>(pa
   db?: any;
 }): Promise<EmailTemplateResult> {
   const { config, collection, purpose, args, db } = params;
+  const enriched = enrichArgs(config, collection, args);
+
   let dbOverride: EmailTemplateResult | null = null;
   if (config.email?.adminEditable !== false && db) {
-    dbOverride = await getDbEmailTemplateOverride(db, collection?.slug, purpose, args);
+    dbOverride = await getDbEmailTemplateOverride(db, collection?.slug, purpose, enriched);
   }
 
   switch (purpose) {
     case "welcome":
-      return buildWelcomeEmail(config, args as any, collection, dbOverride);
+      return buildWelcomeEmail(config, enriched as any, collection, dbOverride);
     case "invite":
-      return buildInviteEmail(config, args as any, collection, dbOverride);
+      return buildInviteEmail(config, enriched as any, collection, dbOverride);
     case "resetPassword":
-      return buildResetPasswordEmail(config, args as any, collection, dbOverride);
+      return buildResetPasswordEmail(config, enriched as any, collection, dbOverride);
     case "passwordChanged":
-      return buildPasswordChangedEmail(config, args as any, collection, dbOverride);
+      return buildPasswordChangedEmail(config, enriched as any, collection, dbOverride);
     default:
       throw new Error(`Unknown email template purpose: ${purpose}`);
   }

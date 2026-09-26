@@ -850,6 +850,45 @@ export const Admins = defineCollection({
 
 When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
 
+### Custom Action URLs and Expirations
+
+For collections representing external end users (such as `customers` or `subscribers`), you typically want invite and reset links to direct users to your custom frontend app rather than the Dyrected Admin dashboard.
+
+Configure `urls` and token expiration settings directly in `auth`:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Customers = defineCollection({
+  slug: "customers",
+  auth: {
+    urls: {
+      invite: "https://store.myapp.com/accept-invite",
+      resetPassword: "https://store.myapp.com/reset-password",
+    },
+    inviteExpiration: "14d", // Defaults to '7d'
+    resetPasswordExpiration: "30m", // Defaults to '1h'
+    email: {
+      templates: {
+        invite: ({ url }) => ({
+          subject: "Activate your store account",
+          html: `<p>Click <a href="${url}">here</a> to activate your account.</p>`,
+        }),
+      },
+    },
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+  ],
+});
+```
+
+- `urls.invite`: base URL used to construct invite acceptance links (`${url}?token=<token>`).
+- `urls.resetPassword`: base URL used to construct password reset links (`${url}?token=<token>`).
+- `inviteExpiration`: lifetime of the invitation token (e.g. `'7d'`, `'24h'`, or milliseconds).
+- `resetPasswordExpiration`: lifetime of the reset token (e.g. `'1h'`, `'30m'`, or milliseconds).
+- `email.templates`: collection-specific template overrides that take precedence over global templates.
+
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](/docs/editor-experience/editor-accounts).
 
 ## `upload`

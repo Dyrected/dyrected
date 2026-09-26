@@ -1981,8 +1981,32 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:InviteOptions",
+      "name": "InviteOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:InviteResult",
+      "name": "InviteResult",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:MediaFolder",
       "name": "MediaFolder",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:PasswordResetOptions",
+      "name": "PasswordResetOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:PasswordResetResult",
+      "name": "PasswordResetResult",
       "category": "sdk",
       "sourcePackage": "@dyrected/sdk"
     },
@@ -2043,6 +2067,12 @@
     {
       "id": "@dyrected/sdk:SerializedSchemaAIConfig",
       "name": "SerializedSchemaAIConfig",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TokenVerificationResult",
+      "name": "TokenVerificationResult",
       "category": "sdk",
       "sourcePackage": "@dyrected/sdk"
     },
@@ -2403,6 +2433,11 @@
       "method": "POST",
       "path": "/api/collections/users/reset-password",
       "summary": "Reset a password"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/users/tokens/verify",
+      "summary": "Verify an invite or password reset token"
     },
     {
       "method": "GET",

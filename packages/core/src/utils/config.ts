@@ -160,6 +160,91 @@ const AUTH_SESSIONS_COLLECTION_CONFIG: CollectionConfig = {
   admin: { hidden: true },
 };
 
+export const EMAIL_TEMPLATES_COLLECTION_SLUG = "__email_templates";
+
+export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
+  slug: EMAIL_TEMPLATES_COLLECTION_SLUG,
+  labels: { singular: "Email Template", plural: "Email Templates" },
+  fields: [
+    {
+      name: "collectionSlug",
+      type: "text",
+      label: "Collection Slug",
+      required: true,
+      defaultValue: "*",
+      admin: {
+        description: "Collection slug to apply this template to, or '*' for global default.",
+      },
+    },
+    {
+      name: "purpose",
+      type: "select",
+      label: "Purpose",
+      required: true,
+      options: [
+        { label: "Invite", value: "invite" },
+        { label: "Password Reset", value: "resetPassword" },
+        { label: "Welcome", value: "welcome" },
+        { label: "Password Changed", value: "passwordChanged" },
+      ],
+    },
+    {
+      name: "format",
+      type: "select",
+      label: "Format",
+      required: true,
+      defaultValue: "html",
+      options: [
+        { label: "HTML", value: "html" },
+        { label: "External Template", value: "external_template" },
+      ],
+    },
+    {
+      name: "subject",
+      type: "text",
+      label: "Subject",
+      admin: {
+        description: "Subject line (optional when using external provider template)",
+      },
+    },
+    {
+      name: "rawHtml",
+      type: "textarea",
+      label: "HTML Content",
+      admin: {
+        description: "Raw HTML email content with {{variable}} tags",
+      },
+    },
+    {
+      name: "externalTemplateId",
+      type: "text",
+      label: "External Template ID",
+      admin: {
+        description: "Template ID or alias from Seamailer, Postmark, SendGrid, etc.",
+      },
+    },
+    {
+      name: "active",
+      type: "boolean",
+      label: "Active",
+      defaultValue: true,
+      admin: {
+        description: "When active, this template overrides code config. When disabled, falls back to code.",
+      },
+    },
+  ],
+  admin: {
+    group: "Settings",
+    icon: "Mail",
+  },
+  access: {
+    read: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
+    create: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
+    update: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
+    delete: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
+  },
+};
+
 /**
  * Normalizes the Dyrected configuration by injecting system fields
  * (createdAt, updatedAt, createdBy, updatedBy) into every collection and
@@ -439,6 +524,10 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   }
   if (needsTrash && !normalizedCollections.some((col) => col.slug === TRASH_COLLECTION)) {
     systemCollections.push(TRASH_COLLECTION_CONFIG);
+  }
+  const needsEmailTemplates = schemaAwareConfig.email?.adminEditable === true;
+  if (needsEmailTemplates && !normalizedCollections.some((col) => col.slug === EMAIL_TEMPLATES_COLLECTION_SLUG)) {
+    systemCollections.push(EMAIL_TEMPLATES_COLLECTION_CONFIG);
   }
 
   return {

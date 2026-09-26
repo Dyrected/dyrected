@@ -43,6 +43,11 @@ const MediaPicker = React.lazy(async () => {
   return { default: module.MediaPicker }
 })
 
+const EmailTemplateEditor = React.lazy(async () => {
+  const module = await import("./fields/email-template-editor")
+  return { default: module.EmailTemplateEditor }
+})
+
 type DefaultTextInputSchema = TextFieldSchema | EmailField | NumberField
 type TextAreaSchema = TextareaFieldSchema
 type AdminUrlFieldSchema = UrlFieldSchema
@@ -138,6 +143,22 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
         />
       )
     case "textarea":
+      if (
+        (schema.admin as any)?.editor === "email-template" ||
+        schema.name === "rawHtml" ||
+        (collection === "__email_templates" && schema.name === "rawHtml")
+      ) {
+        return (
+          <React.Suspense fallback={<div className="dy-h-48 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+            <EmailTemplateEditor
+              value={fieldWithId.value}
+              onChange={fieldWithId.onChange}
+              disabled={disabled}
+              siblingData={context?.siblingData as Record<string, unknown> | undefined}
+            />
+          </React.Suspense>
+        )
+      }
       return <TextAreaField schema={schema as TextAreaSchema} field={fieldWithId} disabled={disabled} />
     case "boolean":
       return (schema.admin as { layout?: string })?.layout === "switch"
@@ -228,7 +249,7 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
           id={fieldWithId.id}
           value={fieldWithId.value}
           onChange={fieldWithId.onChange}
-          relationTo={relSchema.relationTo || relSchema.collection}
+          relationTo={relSchema.relationTo || relSchema.collection || ""}
           multiple={relSchema.hasMany}
           disabled={disabled}
         />

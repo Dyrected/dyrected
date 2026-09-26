@@ -1237,6 +1237,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.post(`${path}/reset-password`, (c) => authController.resetPassword(c));
     app.post(`${path}/invite`, requireAuth(config), (c) => authController.invite(c));
     app.post(`${path}/accept-invite`, (c) => authController.acceptInvite(c));
+    app.get(`${path}/tokens/verify`, (c) => authController.verifyToken(c));
   }
 
   // 4. Collection Routes (Static)

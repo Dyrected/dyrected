@@ -33,3 +33,22 @@ export function resolveAdminUrl(
 export function appendQueryParam(url: string, key: string, value: string): string {
   return `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
 }
+
+/**
+ * Resolves an action URL (invite, password reset) prioritizing explicit client/collection URLs
+ * over the default Dyrected admin panel URL.
+ */
+export function resolveActionUrl(
+  c: Context,
+  config: { admin?: { adminUrl?: string } },
+  customUrl?: string,
+): string {
+  if (customUrl && typeof customUrl === "string" && customUrl.trim().length > 0) {
+    try {
+      return new URL(customUrl.trim(), c.req.url).toString();
+    } catch {
+      return customUrl.trim();
+    }
+  }
+  return resolveAdminUrl(c, config);
+}

@@ -584,4 +584,52 @@ describe("Configuration Helpers", () => {
     expect(valid.adminAuth?.collectionSlug).toBe("users");
     expect(invalid.adminAuth?.collectionSlug).toBe("media");
   });
+
+  it("auto-promotes __email_templates collection when email.adminEditable is true", () => {
+    const configWithTemplates = normalizeConfig({
+      collections: [
+        {
+          slug: "posts",
+          fields: [{ name: "title", type: "text" }],
+        },
+      ],
+      globals: [],
+      email: {
+        from: "noreply@example.com",
+        adminEditable: true,
+        send: async () => {},
+      },
+      db: new MockDatabaseAdapter(),
+    } as any);
+
+    const emailTemplatesCol = configWithTemplates.collections.find(
+      (c) => c.slug === "__email_templates",
+    );
+    expect(emailTemplatesCol).toBeDefined();
+    expect(emailTemplatesCol?.labels?.singular).toBe("Email Template");
+    expect(emailTemplatesCol?.fields.some((f) => f.name === "rawHtml")).toBe(true);
+    expect(emailTemplatesCol?.fields.some((f) => f.name === "externalTemplateId")).toBe(true);
+
+    const configWithoutTemplates = normalizeConfig({
+      collections: [
+        {
+          slug: "posts",
+          fields: [{ name: "title", type: "text" }],
+        },
+      ],
+      globals: [],
+      email: {
+        from: "noreply@example.com",
+        adminEditable: false,
+        send: async () => {},
+      },
+      db: new MockDatabaseAdapter(),
+    } as any);
+
+    expect(
+      configWithoutTemplates.collections.find((c) => c.slug === "__email_templates"),
+    ).toBeUndefined();
+  });
 });
+
+

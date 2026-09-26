@@ -1175,6 +1175,31 @@
     ]
   },
   {
+    "id": "GET /api/collections/users/tokens/verify",
+    "method": "GET",
+    "path": "/api/collections/users/tokens/verify",
+    "summary": "Verify an invite or password reset token",
+    "tags": [
+      "Collection: Users"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "token",
+        "in": "query",
+        "required": true
+      },
+      {
+        "name": "purpose",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
     "id": "GET /api/docs",
     "method": "GET",
     "path": "/api/docs",

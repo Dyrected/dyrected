@@ -48,12 +48,16 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
-    send: async ({ to, subject, html }) => {
+    send: async (msg) => {
+      if (msg.type === 'template') {
+        // If using provider-hosted templates:
+        return
+      }
       await resend.emails.send({
         from: 'no-reply@myapp.com',
-        to,
-        subject,
-        html,
+        to: msg.to,
+        subject: msg.subject,
+        html: msg.html,
       })
     },
   },
@@ -62,21 +66,94 @@ export default defineConfig({
 })
 ```
 
-Once this is in place, Dyrected can hand your provider the recipient, subject, and rendered HTML for any built-in auth email.
-
-Resend is just the example here. The `send` shape is the real contract, so you can swap in any provider that can send `{ to, subject, html }`.
+Once this is in place, Dyrected hands your `send` function an `OutboundEmail` object containing the recipient, subject, and either rendered HTML or external template metadata.
 
 ## What the top-level `email` config does
 
-The top-level `email` config has three important pieces:
+The top-level `email` config has four important pieces:
 
 - `from`: the sender address your provider should use
-- `send`: the function Dyrected calls with `{ to, subject, html }`
-- `templates`: optional overrides for the built-in auth emails
+- `send`: the function Dyrected calls with an `OutboundEmail` (`{ type: 'html', to, subject, html }` or `{ type: 'template', to, templateId, variables, subject? }`)
+- `templates`: optional global overrides for the built-in auth emails
+- `adminEditable`: when `true`, enables the built-in `__email_templates` collection so administrators can edit templates directly in the Admin UI
 
 Dyrected does not scaffold provider-specific email environment variables for you. Add the provider secrets your transport needs yourself, and keep them in your normal environment management flow.
 
 For the exact type signature, the root configuration reference still lives on [Configuration Overview](/docs/model-content/configuration/overview).
+
+## Delivery transport: HTML and external templates
+
+Dyrected supports two delivery types through a polymorphic `OutboundEmail` contract:
+
+1. **Direct HTML (`msg.type === 'html'` or omitted):** Dyrected renders the email body (either the built-in template or your custom HTML) and gives your transport `{ to, subject, html }`.
+2. **External template (`msg.type === 'template'`):** When you use a provider like Postmark, SendGrid, or Seamailer that hosts templates externally, Dyrected sends `{ to, templateId, variables, subject? }` directly to your `send` function.
+
+This means you never have to serialize JSON payloads into fake HTML strings or parse HTML back into template arguments.
+
+### Provider recipe: Resend (Direct HTML)
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    send: async (msg) => {
+      if (msg.type === 'template') {
+        throw new Error(`Resend template delivery not configured for ID: ${msg.templateId}`)
+      }
+      await resend.emails.send({
+        from: 'no-reply@myapp.com',
+        to: msg.to,
+        subject: msg.subject,
+        html: msg.html,
+      })
+    },
+  },
+  collections: [],
+  globals: [],
+})
+```
+
+### Provider recipe: Postmark (Polymorphic templates + HTML)
+
+Postmark supports both template-based delivery (by numeric ID or string alias) and standard HTML:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import * as postmark from 'postmark'
+
+const client = new postmark.ServerClient(process.env.POSTMARK_SERVER_TOKEN!)
+
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    send: async (msg) => {
+      if (msg.type === 'template') {
+        await client.sendEmailWithTemplate({
+          From: 'no-reply@myapp.com',
+          To: msg.to,
+          TemplateId: typeof msg.templateId === 'number' ? msg.templateId : undefined,
+          TemplateAlias: typeof msg.templateId === 'string' ? msg.templateId : undefined,
+          TemplateModel: msg.variables,
+        })
+      } else {
+        await client.sendEmail({
+          From: 'no-reply@myapp.com',
+          To: msg.to,
+          Subject: msg.subject,
+          HtmlBody: msg.html,
+        })
+      }
+    },
+  },
+  collections: [],
+  globals: [],
+})
+```
 
 ## Development fallback
 
@@ -107,23 +184,29 @@ All four are best-effort. The API flow still completes if sending fails, and the
 
 Four details matter here:
 
-- `forgot-password` can receive a `resetUrl`; if it does, the reset email gets both the raw token and the full link, and the default template prefers the link
-- `invite` can receive an `inviteUrl`; if it does, the invite email gets both the raw token and the full acceptance link, and the default template prefers the link
-- invite tokens currently expire in 7 days, and reset tokens expire in 1 hour
+- `forgot-password` resolves the action URL using the collection's `auth.urls.resetPassword`, the request's `resetUrl`, or falls back to the default admin reset URL; the template receives both the raw token and the full link
+- `invite` resolves the action URL using the collection's `auth.urls.invite`, the request's `inviteUrl`, or falls back to the default admin invite URL; the template receives both the raw token and the full link
+- invite tokens default to 7 days (configurable via `auth.inviteExpiration`), and reset tokens default to 1 hour (configurable via `auth.resetPasswordExpiration`)
 - a successful password reset also sends the password-changed notification as a security alert
 
 For the endpoint-by-endpoint behavior, use [Authentication Operations](/docs/deployment-and-operations/authentication/operations).
 
-## Customize the built-in templates
+## Template cascade resolution
 
-Once the provider is working, customize the built-in messages by adding `templates` under `email`.
+Dyrected resolves email templates through a 4-tier cascade:
 
-Each template function returns:
+1. **Database overrides:** Records in the `__email_templates` collection (active when `adminEditable: true`).
+2. **Collection config overrides:** Templates defined on `collection.auth.email.templates`.
+3. **Global config overrides:** Templates defined on `config.email.templates`.
+4. **Core defaults:** Built-in responsive HTML templates with security escaping.
 
-- `html`, which is required
-- `subject`, which is optional
+The first tier that defines a template for an action wins. This allows you to set global defaults in code while customizing templates for specific customer collections or letting marketing edit copies in the Admin UI.
 
-If you omit `subject`, Dyrected keeps the built-in default subject line.
+## Customize templates in code
+
+You can customize templates globally in `config.email.templates` or per collection in `collection.auth.email.templates`.
+
+Each template can return either direct HTML or an external template configuration:
 
 ```ts
 import { defineConfig } from '@dyrected/core'
@@ -134,12 +217,13 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
-    send: async ({ to, subject, html }) => {
+    send: async (msg) => {
+      if (msg.type === 'template') return
       await resend.emails.send({
         from: 'no-reply@myapp.com',
-        to,
-        subject,
-        html,
+        to: msg.to,
+        subject: msg.subject,
+        html: msg.html,
       })
     },
     templates: {
@@ -179,11 +263,81 @@ export default defineConfig({
 })
 ```
 
-The built-in default templates escape user-supplied values before rendering. If you replace them with custom HTML, you own the safety of that markup.
+### External template overrides
 
-For most projects, the recommended path is to pass `inviteUrl` and `resetUrl` from the product surface that should finish the flow. That keeps both emails link-first, matches the admin experience, and avoids teaching end users how to handle raw tokens unless you intentionally want a token-based flow.
+To delegate an email to a provider-hosted template, return `{ type: 'template', templateId, variables }`:
 
-Keep the auth endpoint semantics on [Authentication Operations](/docs/deployment-and-operations/authentication/operations). This page is for the transport setup, the built-in email triggers, and template customization.
+```ts
+templates: {
+  invite: (args) => ({
+    type: 'template',
+    templateId: 'user-invitation',
+    variables: {
+      invite_url: args.url,
+      invited_by: args.invitedByEmail ?? 'Our Team',
+      token: args.token,
+    },
+  }),
+}
+```
+
+## Admin UI template management
+
+When you want non-developers to edit email templates without deploying code, enable `adminEditable: true`:
+
+```ts
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    adminEditable: true,
+    send: async (msg) => { /* ... */ },
+  },
+  // ...
+})
+```
+
+When `adminEditable: true` is enabled, Dyrected automatically adds the `__email_templates` collection to your Admin UI under the System group.
+
+In the Admin UI, administrators can:
+- **Edit HTML templates:** Write raw HTML with full syntax highlighting powered by CodeMirror.
+- **Live Preview:** See real-time iframe rendering with instant mock variable interpolation for both desktop and mobile (375px) screens.
+- **Variable Chips:** Click dynamic chips (`{{url}}`, `{{token}}`, `{{email}}`, `{{invitedByEmail}}`) to insert placeholders at the cursor.
+- **External Template Mode:** Switch a template type to `external` to specify a provider template ID (e.g. Postmark numeric ID or SendGrid `d-` template ID) instead of HTML.
+- **Test Delivery:** Click "Send Test Email" to preview delivery directly to your inbox before saving.
+- **Revert to Defaults:** Restore the built-in system template anytime.
+
+## Collection-specific action URLs and templates
+
+If your application has multiple auth collections (e.g., internal staff in `__admins` and end-users in `customers`), you do not want your customers receiving invite links that point to the `/admin` dashboard.
+
+Configure `auth.urls` and `auth.email.templates` on the collection:
+
+```ts
+import { defineCollection, defineTextField } from '@dyrected/core'
+
+export const Customers = defineCollection({
+  slug: 'customers',
+  auth: {
+    urls: {
+      invite: 'https://store.myapp.com/accept-invite',
+      resetPassword: 'https://store.myapp.com/reset-password',
+    },
+    email: {
+      templates: {
+        invite: ({ url, token }) => ({
+          subject: 'Welcome to the Store - Activate your account',
+          html: `<p>Activate your store account <a href="${url}">here</a>.</p>`,
+        }),
+      },
+    },
+  },
+  fields: [
+    defineTextField({ name: 'name', label: 'Name' }),
+  ],
+})
+```
+
+When an invite is sent for a `customers` document, Dyrected automatically resolves the action URL to `https://store.myapp.com/accept-invite?token=...` instead of the admin dashboard, and renders the customer-specific invite template.
 
 ## Advanced paths
 

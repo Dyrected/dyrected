@@ -436,6 +436,7 @@ const Admins = defineCollection({
   labels: { singular: "Admin", plural: "Admins" },
   auth: true,
   admin: {
+    hidden: false,
     useAsTitle: "name",
   },
   fields: [
@@ -1888,7 +1889,7 @@ export default defineConfig({
       // 5. Settings Group: with Settings icon, collapsed by default
       defineWorkspace({
         global: "site-settings",
-        group: { name: "Settings", icon: "Settings", defaultExpanded: false, order: 30 },
+        group: { name: "Settings", icon: "Settings", order: 30 },
         order: 1,
       }),
       defineWorkspace({

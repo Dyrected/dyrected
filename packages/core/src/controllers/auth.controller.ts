@@ -1,11 +1,16 @@
 import type { Context } from "hono";
-import { appendQueryParam, resolveAdminUrl } from "../utils/admin-url.js";
-import { randomBytes } from "node:crypto";
+import { appendQueryParam, resolveActionUrl } from "../utils/admin-url.js";
 import type { DyrectedContext } from "../app.js";
 import type { CollectionConfig } from "../types/index.js";
 import { getLockedUntilMs, resolveAuthLockoutConfig } from "../auth/lockout.js";
 import { hashPassword, verifyPassword, hasUsablePassword } from "../auth/password.js";
-import { resolveSessionTokenExpiry, signCollectionToken, verifyCollectionToken } from "../auth/token.js";
+import {
+  resolveSessionTokenExpiry,
+  resolveInviteTokenExpiry,
+  resolveResetPasswordTokenExpiry,
+  signCollectionToken,
+  verifyCollectionToken,
+} from "../auth/token.js";
 import {
   issueAuthSessionToken,
   revokeAllAuthSessions,
@@ -13,10 +18,8 @@ import {
 } from "../auth/sessions.js";
 import {
   sendEmail,
-  buildWelcomeEmail,
-  buildInviteEmail,
-  buildResetPasswordEmail,
-  buildPasswordChangedEmail,
+  resolveEmailTemplate,
+  toOutboundEmail,
 } from "../services/email.service.js";
 import { getRequestLogger } from "../observability.js";
 import { getAdminRoleForCollection } from "../utils/admin-auth.js";
@@ -83,10 +86,11 @@ export class AuthController {
     const data: Record<string, unknown> = {
       ...safeExtraFields,
       email,
-      password: await hashPassword(randomBytes(32).toString("hex")),
+      password: null,
+      invitedAt: Date.now(),
     };
 
-    if (this.hasField("status")) {
+    if (this.hasField("status") && !data.status) {
       data.status = "pending";
     }
 
@@ -250,6 +254,8 @@ export class AuthController {
       },
     });
 
+    const safeUser = this.sanitizeUser(user);
+
     // 3. Log them in immediately
     const token = await issueAuthSessionToken({
       config,
@@ -262,16 +268,31 @@ export class AuthController {
     });
 
     // Send welcome email (best-effort — never block login)
-    const { subject, html } = buildWelcomeEmail(config, { email: body.email });
-    sendEmail(config, { to: body.email, subject, html }).catch((err) =>
-      getRequestLogger(c, "auth").error({
-        err,
-        msg: "Failed to send welcome email",
-        email: body.email,
-      }),
-    );
+    resolveEmailTemplate({
+      config,
+      collection: this.collection,
+      purpose: "welcome",
+      args: { email: body.email, user: safeUser },
+      db,
+    })
+      .then((emailResult) =>
+        sendEmail(
+          config,
+          toOutboundEmail(body.email, emailResult, {
+            collection: this.collection.slug,
+            purpose: "welcome",
+            user: safeUser,
+          }),
+        ),
+      )
+      .catch((err) =>
+        getRequestLogger(c, "auth").error({
+          err,
+          msg: "Failed to send welcome email",
+          email: body.email,
+        }),
+      );
 
-    const safeUser = this.sanitizeUser(user);
     return c.json({ token, user: safeUser });
   }
 
@@ -530,32 +551,66 @@ export class AuthController {
 
     const user = result.docs[0];
 
+    let resetToken: string | undefined;
+    let url: string | undefined;
+    let emailSent = false;
+    let emailError: string | undefined;
+
     if (user) {
-      // Issue a short-lived reset token (1-hour)
-      const resetToken = await signCollectionToken(
+      const siteId = c.get("siteId");
+      resetToken = await signCollectionToken(
         {
-          sub: user.id,
-          email: user.email,
+          sub: String(user.id),
+          email: user.email as string,
           collection: this.collection.slug,
           purpose: "reset",
+          ...(siteId ? { siteId } : {}),
         },
-        "1h",
+        resolveResetPasswordTokenExpiry(this.collection),
       );
 
-      const url = appendQueryParam(resolveAdminUrl(c, config, body?.resetUrl), "token", resetToken);
+      const customResetUrl =
+        body?.resetUrl ??
+        (typeof this.collection.auth === "object"
+          ? this.collection.auth.urls?.resetPassword
+          : undefined);
+      url = appendQueryParam(
+        resolveActionUrl(c, config, customResetUrl),
+        "token",
+        resetToken,
+      );
 
-      try {
-        const { subject, html } = buildResetPasswordEmail(config, {
-          token: resetToken,
-          url,
-        });
-        await sendEmail(config, { to: user.email as string, subject, html });
-      } catch (err) {
-        getRequestLogger(c, "auth").error({
-          err,
-          msg: "Failed to send password reset email",
-          email: user.email as string,
-        });
+      if (body?.sendEmail !== false) {
+        try {
+          const emailResult = await resolveEmailTemplate({
+            config,
+            collection: this.collection,
+            purpose: "resetPassword",
+            args: {
+              token: resetToken,
+              url,
+              user,
+            },
+            db,
+          });
+          await sendEmail(
+            config,
+            toOutboundEmail(user.email as string, emailResult, {
+              collection: this.collection.slug,
+              purpose: "resetPassword",
+              user,
+            }),
+          );
+          emailSent = true;
+        } catch (err: any) {
+          emailSent = false;
+          emailError = err?.message ?? "Email delivery failed";
+          getRequestLogger(c, "auth").error({
+            err,
+            msg: "Failed to send password reset email",
+            email: user.email as string,
+          });
+        }
       }
     }
 
@@ -563,6 +618,11 @@ export class AuthController {
       success: true,
       message:
         "If an account with that email exists, a reset link has been sent.",
+      ...(body?.sendEmail === false && resetToken
+        ? { token: resetToken, resetUrl: url }
+        : {}),
+      emailSent,
+      ...(emailError ? { emailError } : {}),
     });
   }
 
@@ -605,6 +665,14 @@ export class AuthController {
       );
     }
 
+    const currentSiteId = c.get("siteId");
+    if (payload.siteId && currentSiteId && payload.siteId !== currentSiteId) {
+      return c.json(
+        { error: true, code: "SITE_MISMATCH", message: "Token is not valid for this site." },
+        403,
+      );
+    }
+
     const hashedPassword = await hashPassword(body.password);
     await db.update({
       collection: this.collection.slug,
@@ -621,16 +689,32 @@ export class AuthController {
     });
 
     // Notify the user their password was changed (security alert)
-    const { subject, html } = buildPasswordChangedEmail(config, {
-      email: payload.email,
-    });
-    sendEmail(config, { to: payload.email, subject, html }).catch((err) =>
-      getRequestLogger(c, "auth").error({
-        err,
-        msg: "Failed to send password-changed email",
+    resolveEmailTemplate({
+      config,
+      collection: this.collection,
+      purpose: "passwordChanged",
+      args: {
         email: payload.email,
-      }),
-    );
+        user: { id: payload.sub, email: payload.email },
+      },
+      db,
+    })
+      .then((emailResult) =>
+        sendEmail(
+          config,
+          toOutboundEmail(payload.email, emailResult, {
+            collection: this.collection.slug,
+            purpose: "passwordChanged",
+          }),
+        ),
+      )
+      .catch((err) =>
+        getRequestLogger(c, "auth").error({
+          err,
+          msg: "Failed to send password-changed email",
+          email: payload.email,
+        }),
+      );
 
     return c.json({
       success: true,
@@ -658,73 +742,138 @@ export class AuthController {
       return c.json({ error: true, message: "email is required." }, 400);
     }
 
-    const inviteData =
-      body?.data && typeof body.data === "object" && !Array.isArray(body.data)
-        ? (body.data as Record<string, unknown>)
-        : {};
+    const {
+      email,
+      inviteUrl,
+      sendEmail: shouldSendEmail,
+      data: nestedData,
+      ...topLevelFields
+    } = body;
+    const inviteData = {
+      ...topLevelFields,
+      ...(nestedData && typeof nestedData === "object" && !Array.isArray(nestedData)
+        ? nestedData
+        : {}),
+    };
 
-    // Prevent inviting an email that already has an active account.
+    // Prevent inviting an email that already has an active account with a set password.
     const existing = await db.find({
       collection: this.collection.slug,
-      where: { email: body.email },
+      where: { email },
       limit: 1,
     });
     const existingUser = existing.docs[0] as Record<string, unknown> | undefined;
     const existingIsPending = existingUser?.status === "pending";
 
-    if (existingUser && !existingIsPending) {
+    if (existingUser && !existingIsPending && hasUsablePassword(existingUser.password)) {
       return c.json(
-        { error: true, message: "An account with that email already exists." },
+        {
+          error: true,
+          code: "USER_ALREADY_EXISTS",
+          message:
+            "An account with that email already exists and has a password set. Use forgot password if needed.",
+        },
         409,
       );
     }
 
+    const now = Date.now();
+    let targetUser: Record<string, unknown>;
+
     if (!existingUser) {
-      await db.create({
+      const pendingData = await this.buildPendingInviteData(email, inviteData);
+      pendingData.invitedAt = now;
+      targetUser = await db.create({
         collection: this.collection.slug,
-        data: await this.buildPendingInviteData(body.email, inviteData),
+        data: pendingData,
       });
-    } else if (Object.keys(inviteData).length > 0) {
-      await db.update({
+    } else {
+      const updateData: Record<string, unknown> = {
+        ...inviteData,
+        invitedAt: now,
+      };
+      if (this.hasField("status") && !existingUser.status) {
+        updateData.status = "pending";
+      }
+      targetUser = await db.update({
         collection: this.collection.slug,
         id: String(existingUser.id),
-        data: await this.buildPendingInviteData(body.email, inviteData),
+        data: updateData,
       });
     }
 
-    // sub = invitee email (no user doc yet); purpose = 'invite'
+    const siteId = c.get("siteId");
     const inviteToken = await signCollectionToken(
       {
-        sub: body.email,
-        email: body.email,
+        sub: email,
+        email,
         collection: this.collection.slug,
         purpose: "invite",
+        ...(siteId ? { siteId } : {}),
       },
-      "7d",
+      resolveInviteTokenExpiry(this.collection),
     );
 
-    const url = appendQueryParam(resolveAdminUrl(c, config, body?.inviteUrl), "inviteToken", inviteToken);
+    const customInviteUrl =
+      inviteUrl ??
+      (typeof this.collection.auth === "object"
+        ? this.collection.auth.urls?.invite
+        : undefined);
+    const url = appendQueryParam(
+      resolveActionUrl(c, config, customInviteUrl),
+      "inviteToken",
+      inviteToken,
+    );
 
-    try {
-      const { subject, html } = buildInviteEmail(config, {
-        token: inviteToken,
-        invitedByEmail: requestUser.email,
-        url,
-      });
-      await sendEmail(config, { to: body.email, subject, html });
-    } catch (err) {
-      getRequestLogger(c, "auth").error({
-        err,
-        msg: "Failed to send invite email",
-        email: body.email,
-      });
+    let emailSent = false;
+    let emailError: string | undefined;
+
+    if (shouldSendEmail !== false) {
+      try {
+        const emailResult = await resolveEmailTemplate({
+          config,
+          collection: this.collection,
+          purpose: "invite",
+          args: {
+            token: inviteToken,
+            invitedByEmail: requestUser.email,
+            url,
+            data: inviteData,
+            user: targetUser,
+          },
+          db,
+        });
+        await sendEmail(
+          config,
+          toOutboundEmail(email, emailResult, {
+            collection: this.collection.slug,
+            purpose: "invite",
+            user: targetUser,
+          }),
+        );
+        emailSent = true;
+      } catch (err: any) {
+        emailSent = false;
+        emailError = err?.message ?? "Email delivery failed";
+        getRequestLogger(c, "auth").error({
+          err,
+          msg: "Failed to send invite email",
+          email,
+        });
+      }
     }
 
     return c.json({
       success: true,
-      message: `Invite sent to ${body.email}.`,
+      message: emailSent
+        ? `Invite sent to ${email}.`
+        : shouldSendEmail === false
+          ? `Invite created for ${email}.`
+          : `Invite created for ${email}, but email delivery failed.`,
       token: inviteToken,
       inviteUrl: url,
+      emailSent,
+      ...(emailError ? { emailError } : {}),
     });
   }
 
@@ -766,6 +915,14 @@ export class AuthController {
       );
     }
 
+    const currentSiteId = c.get("siteId");
+    if (payload.siteId && currentSiteId && payload.siteId !== currentSiteId) {
+      return c.json(
+        { error: true, code: "SITE_MISMATCH", message: "Token is not valid for this site." },
+        403,
+      );
+    }
+
     const inviteeEmail = payload.sub;
 
     // Guard against double-accept while still supporting pending pre-provisioned users.
@@ -777,10 +934,32 @@ export class AuthController {
     const existingUser = existing.docs[0] as Record<string, unknown> | undefined;
     const existingIsPending = existingUser?.status === "pending";
 
-    if (existingUser && !existingIsPending) {
+    if (existingUser && !existingIsPending && hasUsablePassword(existingUser.password)) {
       return c.json(
-        { error: true, message: "An account with that email already exists." },
+        {
+          error: true,
+          code: "INVITE_ALREADY_ACCEPTED",
+          message:
+            "This invitation has already been accepted. Please log in or use forgot password.",
+        },
         409,
+      );
+    }
+
+    if (
+      existingUser &&
+      payload.iat &&
+      typeof existingUser.invitedAt === "number" &&
+      payload.iat * 1000 < existingUser.invitedAt - 2000
+    ) {
+      return c.json(
+        {
+          error: true,
+          code: "INVITE_SUPERSEDED",
+          message:
+            "This invitation link has been superseded by a newer invitation. Please use the latest link.",
+        },
+        400,
       );
     }
 
@@ -812,19 +991,199 @@ export class AuthController {
       authSource: "local",
     });
 
-    // Send welcome email (best-effort)
-    const { subject, html } = buildWelcomeEmail(config, {
-      email: inviteeEmail,
-    });
-    sendEmail(config, { to: inviteeEmail, subject, html }).catch((err) =>
-      getRequestLogger(c, "auth").error({
-        err,
-        msg: "Failed to send welcome email",
-        email: inviteeEmail,
-      }),
-    );
-
     const safeUser = this.sanitizeUser(user);
+
+    // Send welcome email (best-effort)
+    resolveEmailTemplate({
+      config,
+      collection: this.collection,
+      purpose: "welcome",
+      args: {
+        email: inviteeEmail,
+        user: safeUser,
+      },
+      db,
+    })
+      .then((emailResult) =>
+        sendEmail(
+          config,
+          toOutboundEmail(inviteeEmail, emailResult, {
+            collection: this.collection.slug,
+            purpose: "welcome",
+            user: safeUser,
+          }),
+        ),
+      )
+      .catch((err) =>
+        getRequestLogger(c, "auth").error({
+          err,
+          msg: "Failed to send welcome email",
+          email: inviteeEmail,
+        }),
+      );
+
     return c.json({ token: sessionToken, user: safeUser }, 201);
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /tokens/verify?token=...&purpose=invite|reset
+  // Public. Validates token signature, expiration, database existence, and state.
+  // ---------------------------------------------------------------------------
+  async verifyToken(c: Context<DyrectedContext>) {
+    const db = c.get("config").db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const token = c.req.query("token");
+    const purpose = c.req.query("purpose");
+
+    if (!token) {
+      return c.json(
+        { valid: false, code: "TOKEN_REQUIRED", message: "Token is required." },
+        400,
+      );
+    }
+
+    let payload: any;
+    try {
+      payload = await verifyCollectionToken(token);
+    } catch {
+      return c.json(
+        {
+          valid: false,
+          code: "TOKEN_EXPIRED_OR_INVALID",
+          message: "Token is invalid or has expired.",
+        },
+        200,
+      );
+    }
+
+    if (payload.collection !== this.collection.slug) {
+      return c.json(
+        {
+          valid: false,
+          code: "COLLECTION_MISMATCH",
+          message: "Token does not belong to this collection.",
+        },
+        200,
+      );
+    }
+
+    if (purpose && payload.purpose !== purpose) {
+      return c.json(
+        {
+          valid: false,
+          code: "PURPOSE_MISMATCH",
+          message: `Token was issued for '${payload.purpose}', not '${purpose}'.`,
+        },
+        200,
+      );
+    }
+
+    const currentSiteId = c.get("siteId");
+    if (payload.siteId && currentSiteId && payload.siteId !== currentSiteId) {
+      return c.json(
+        {
+          valid: false,
+          code: "SITE_MISMATCH",
+          message: "Token is not valid for this site.",
+        },
+        200,
+      );
+    }
+
+    if (payload.purpose === "invite") {
+      const result = await db.find({
+        collection: this.collection.slug,
+        where: { email: payload.email ?? payload.sub },
+        limit: 1,
+      });
+      const user = result.docs[0] as Record<string, unknown> | undefined;
+
+      if (!user) {
+        return c.json(
+          {
+            valid: false,
+            code: "USER_NOT_FOUND",
+            message: "Invited account was not found.",
+          },
+          200,
+        );
+      }
+
+      if (user._deleted || user.deletedAt) {
+        return c.json(
+          {
+            valid: false,
+            code: "USER_DELETED",
+            message: "Account has been deleted.",
+          },
+          200,
+        );
+      }
+
+      if (user.status !== "pending" && hasUsablePassword(user.password)) {
+        return c.json(
+          {
+            valid: false,
+            code: "INVITE_ALREADY_ACCEPTED",
+            message: "This invitation has already been accepted.",
+          },
+          200,
+        );
+      }
+
+      if (
+        payload.iat &&
+        typeof user.invitedAt === "number" &&
+        payload.iat * 1000 < user.invitedAt - 2000
+      ) {
+        return c.json(
+          {
+            valid: false,
+            code: "INVITE_SUPERSEDED",
+            message: "This invitation link has been superseded by a newer one.",
+          },
+          200,
+        );
+      }
+
+      return c.json({
+        valid: true,
+        email: user.email,
+        collection: this.collection.slug,
+      });
+    }
+
+    if (payload.purpose === "reset") {
+      const result = await db.find({
+        collection: this.collection.slug,
+        where: { id: payload.sub },
+        limit: 1,
+      });
+      const user = result.docs[0] as Record<string, unknown> | undefined;
+
+      if (!user || user._deleted || user.deletedAt) {
+        return c.json(
+          {
+            valid: false,
+            code: "USER_NOT_FOUND",
+            message: "Account was not found.",
+          },
+          200,
+        );
+      }
+
+      return c.json({
+        valid: true,
+        email: user.email,
+        collection: this.collection.slug,
+      });
+    }
+
+    return c.json({
+      valid: true,
+      email: payload.email,
+      collection: this.collection.slug,
+    });
   }
 }

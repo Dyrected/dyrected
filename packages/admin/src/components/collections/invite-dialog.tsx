@@ -1,5 +1,5 @@
 import * as React from "react"
-import { MailPlus, Copy, CheckCircle2 } from "lucide-react"
+import { MailPlus, Copy, CheckCircle2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select"
-import { useCollectionInvite } from "../../hooks/use-collection-invite"
+import { useCollectionInvite, type InviteResult } from "../../hooks/use-collection-invite"
 
 interface InviteDialogProps {
   collectionSlug: string
@@ -38,7 +38,7 @@ export function InviteDialog({
   const [isOpen, setIsOpen] = React.useState(false)
   const [email, setEmail] = React.useState("")
   const [role, setRole] = React.useState(defaultRole || "")
-  const [result, setResult] = React.useState<{ email: string; inviteUrl: string } | null>(null)
+  const [result, setResult] = React.useState<InviteResult | null>(null)
 
   const inviteMutation = useCollectionInvite({
     collectionSlug,
@@ -124,17 +124,43 @@ export function InviteDialog({
           ) : null}
 
           {result ? (
-            <div className="dy-space-y-3 dy-rounded-2xl dy-border dy-border-emerald-500/20 dy-bg-emerald-500/5 dy-p-4">
+            <div
+              className={
+                result.emailSent === false
+                  ? "dy-space-y-3 dy-rounded-2xl dy-border dy-border-amber-500/20 dy-bg-amber-500/5 dy-p-4"
+                  : "dy-space-y-3 dy-rounded-2xl dy-border dy-border-emerald-500/20 dy-bg-emerald-500/5 dy-p-4"
+              }
+            >
               <div className="dy-flex dy-items-start dy-gap-3">
-                <div className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-full dy-bg-emerald-500/10 dy-text-emerald-600">
-                  <CheckCircle2 className="dy-h-4.5 dy-w-4.5" />
+                <div
+                  className={
+                    result.emailSent === false
+                      ? "dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-full dy-bg-amber-500/10 dy-text-amber-600"
+                      : "dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-full dy-bg-emerald-500/10 dy-text-emerald-600"
+                  }
+                >
+                  {result.emailSent === false ? (
+                    <AlertCircle className="dy-h-4.5 dy-w-4.5" />
+                  ) : (
+                    <CheckCircle2 className="dy-h-4.5 dy-w-4.5" />
+                  )}
                 </div>
                 <div className="dy-min-w-0 dy-flex-1">
                   <p className="dy-text-sm dy-font-semibold dy-text-foreground">
-                    Invite ready for {result.email}
+                    {result.emailSent === false
+                      ? `Invite created for ${result.email}`
+                      : `Invite ready for ${result.email}`}
                   </p>
-                  <p className="dy-text-xs dy-text-muted-foreground">
-                    The email has been sent. You can also copy the invite link below and share it manually.
+                  <p
+                    className={
+                      result.emailSent === false
+                        ? "dy-text-xs dy-text-amber-700 dark:dy-text-amber-400"
+                        : "dy-text-xs dy-text-muted-foreground"
+                    }
+                  >
+                    {result.emailSent === false
+                      ? "Email delivery was skipped (or not configured). Share this invite link directly with the user."
+                      : "The email has been sent. You can also copy the invite link below and share it manually."}
                   </p>
                 </div>
               </div>
@@ -156,6 +182,7 @@ export function InviteDialog({
               </div>
             </div>
           ) : null}
+
 
           <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
             <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>

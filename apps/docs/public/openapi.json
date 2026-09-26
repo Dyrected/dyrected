@@ -1594,6 +1594,41 @@
         }
       }
     },
+    "/api/collections/users/tokens/verify": {
+      "get": {
+        "tags": [
+          "Collection: Users"
+        ],
+        "summary": "Verify an invite or password reset token",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "invite",
+                "reset"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token verification result"
+          }
+        }
+      }
+    },
     "/api/collections/users/{id}/change-password": {
       "post": {
         "tags": [

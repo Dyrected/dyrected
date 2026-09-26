@@ -2049,7 +2049,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The root configuration object passed to `createDyrectedApp`.\n\nThis is the single source of truth for your entire Dyrected instance —\ncollections, globals, database adapter, storage, email, and more.",
-    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /**\n   * Media management, dynamic transformations, and transformation preset configurations.\n   */\n  media?: {\n    /** Whether to restrict dynamic transformations to registered preset keys in production. */\n    restrictTransforms?: boolean;\n    /** Named transformation presets available via `?key=name`. */\n    presets?: Record<string, ImageTransformOptions>;\n  };\n\n  /**\n   * Runtime logger configuration. Accepts either logger options/destination or\n   * a fully-instantiated Pino logger.\n   */\n  logger?: DyrectedLoggerConfig;\n\n  /**\n   * Request logging, redaction, sampling, tracing, metrics, and transport\n   * configuration for the Dyrected server runtime.\n   */\n  observability?: DyrectedObservabilityConfig;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /**\n   * Background tasks. Define each with `defineTask`, then run them with\n   * `createTaskRunner(config)`.\n   */\n  tasks?: TaskConfig[];\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * App-level HTTP request rate limiting.\n   *\n   * Similar to Payload's `rateLimit` option, this counts requests by client IP\n   * over a rolling time window and returns `429` responses once the limit is\n   * exhausted.\n   */\n  rateLimit?: RateLimitConfig;\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n\n  /**\n   * AI Assistant and LLM tools configuration.\n   */\n  ai?: AIConfig;\n\n  /**\n   * App-wide trash & retention configuration.\n   */\n  trash?: AppTrashConfig;\n}",
+    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /**\n   * Media management, dynamic transformations, and transformation preset configurations.\n   */\n  media?: {\n    /** Whether to restrict dynamic transformations to registered preset keys in production. */\n    restrictTransforms?: boolean;\n    /** Named transformation presets available via `?key=name`. */\n    presets?: Record<string, ImageTransformOptions>;\n  };\n\n  /**\n   * Runtime logger configuration. Accepts either logger options/destination or\n   * a fully-instantiated Pino logger.\n   */\n  logger?: DyrectedLoggerConfig;\n\n  /**\n   * Request logging, redaction, sampling, tracing, metrics, and transport\n   * configuration for the Dyrected server runtime.\n   */\n  observability?: DyrectedObservabilityConfig;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /**\n     * Whether admins can edit email templates via the Admin UI.\n     * Defaults to true.\n     */\n    adminEditable?: boolean;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, Seamailer, Postmark, etc.). */\n    send: (args: OutboundEmail) => Promise<void>;\n\n    /** Global default email templates. */\n    templates?: {\n      welcome?: (args: EmailTemplateArgs<{ email: string }>) => EmailTemplateResult;\n      invite?: (args: EmailTemplateArgs<{\n        token: string;\n        invitedByEmail?: string;\n        url?: string;\n        data?: Record<string, unknown>;\n      }>) => EmailTemplateResult;\n      resetPassword?: (\n        args: EmailTemplateArgs<{ token: string; url?: string }>\n      ) => EmailTemplateResult;\n      passwordChanged?: (\n        args: EmailTemplateArgs<{ email: string }>\n      ) => EmailTemplateResult;\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /**\n   * Background tasks. Define each with `defineTask`, then run them with\n   * `createTaskRunner(config)`.\n   */\n  tasks?: TaskConfig[];\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * App-level HTTP request rate limiting.\n   *\n   * Similar to Payload's `rateLimit` option, this counts requests by client IP\n   * over a rolling time window and returns `429` responses once the limit is\n   * exhausted.\n   */\n  rateLimit?: RateLimitConfig;\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (siteId: string) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    accessPolicies?: Record<\n      string,\n      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n    >;\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n\n  /**\n   * AI Assistant and LLM tools configuration.\n   */\n  ai?: AIConfig;\n\n  /**\n   * App-wide trash & retention configuration.\n   */\n  trash?: AppTrashConfig;\n}",
     "members": [
       {
         "name": "blocks",
@@ -2113,7 +2113,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "email",
-        "signature": "email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  }",
+        "signature": "email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /**\n     * Whether admins can edit email templates via the Admin UI.\n     * Defaults to true.\n     */\n    adminEditable?: boolean;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, Seamailer, Postmark, etc.). */\n    send: (args: OutboundEmail) => Promise<void>;\n\n    /** Global default email templates. */\n    templates?: {\n      welcome?: (args: EmailTemplateArgs<{ email: string }>) => EmailTemplateResult;\n      invite?: (args: EmailTemplateArgs<{\n        token: string;\n        invitedByEmail?: string;\n        url?: string;\n        data?: Record<string, unknown>;\n      }>) => EmailTemplateResult;\n      resetPassword?: (\n        args: EmailTemplateArgs<{ token: string; url?: string }>\n      ) => EmailTemplateResult;\n      passwordChanged?: (\n        args: EmailTemplateArgs<{ email: string }>\n      ) => EmailTemplateResult;\n    };\n  }",
         "description": "Email transport configuration. Required for welcome emails, password\nresets, and invite links."
       },
       {
@@ -4344,11 +4344,6 @@ export const references: readonly ReferenceEntry[] = [
         "name": "deleteMedia",
         "signature": "deleteMedia(id: string, collection: string = \"media\"): Promise<{ message: string }>",
         "description": ""
-      },
-      {
-        "name": "request",
-        "signature": "request<T = unknown>(path: string, init?: RequestInit): Promise<T>",
-        "description": ""
       }
     ]
   },
@@ -4440,6 +4435,73 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/sdk:InviteOptions",
+    "name": "InviteOptions",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export interface InviteOptions {\n  inviteUrl?: string;\n  sendEmail?: boolean;\n  data?: UnknownRecord;\n  [key: string]: unknown;\n}",
+    "members": [
+      {
+        "name": "inviteUrl",
+        "signature": "inviteUrl?: string",
+        "description": ""
+      },
+      {
+        "name": "sendEmail",
+        "signature": "sendEmail?: boolean",
+        "description": ""
+      },
+      {
+        "name": "data",
+        "signature": "data?: UnknownRecord",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/sdk:InviteResult",
+    "name": "InviteResult",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export interface InviteResult {\n  success: boolean;\n  message: string;\n  token: string;\n  inviteUrl: string;\n  emailSent: boolean;\n  emailError?: string;\n}",
+    "members": [
+      {
+        "name": "success",
+        "signature": "success: boolean",
+        "description": ""
+      },
+      {
+        "name": "message",
+        "signature": "message: string",
+        "description": ""
+      },
+      {
+        "name": "token",
+        "signature": "token: string",
+        "description": ""
+      },
+      {
+        "name": "inviteUrl",
+        "signature": "inviteUrl: string",
+        "description": ""
+      },
+      {
+        "name": "emailSent",
+        "signature": "emailSent: boolean",
+        "description": ""
+      },
+      {
+        "name": "emailError",
+        "signature": "emailError?: string",
+        "description": ""
+      }
+    ]
+  },
+  {
     "id": "@dyrected/sdk:MediaFolder",
     "name": "MediaFolder",
     "kind": "interface",
@@ -4491,6 +4553,68 @@ export const references: readonly ReferenceEntry[] = [
       {
         "name": "updatedAt",
         "signature": "updatedAt?: string",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/sdk:PasswordResetOptions",
+    "name": "PasswordResetOptions",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export interface PasswordResetOptions {\n  resetUrl?: string;\n  sendEmail?: boolean;\n}",
+    "members": [
+      {
+        "name": "resetUrl",
+        "signature": "resetUrl?: string",
+        "description": ""
+      },
+      {
+        "name": "sendEmail",
+        "signature": "sendEmail?: boolean",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/sdk:PasswordResetResult",
+    "name": "PasswordResetResult",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export interface PasswordResetResult {\n  success: boolean;\n  message: string;\n  emailSent: boolean;\n  emailError?: string;\n  token?: string;\n  resetUrl?: string;\n}",
+    "members": [
+      {
+        "name": "success",
+        "signature": "success: boolean",
+        "description": ""
+      },
+      {
+        "name": "message",
+        "signature": "message: string",
+        "description": ""
+      },
+      {
+        "name": "emailSent",
+        "signature": "emailSent: boolean",
+        "description": ""
+      },
+      {
+        "name": "emailError",
+        "signature": "emailError?: string",
+        "description": ""
+      },
+      {
+        "name": "token",
+        "signature": "token?: string",
+        "description": ""
+      },
+      {
+        "name": "resetUrl",
+        "signature": "resetUrl?: string",
         "description": ""
       }
     ]
@@ -4948,6 +5072,42 @@ export const references: readonly ReferenceEntry[] = [
       {
         "name": "model",
         "signature": "model?: string",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/sdk:TokenVerificationResult",
+    "name": "TokenVerificationResult",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export interface TokenVerificationResult {\n  valid: boolean;\n  email?: string;\n  collection?: string;\n  code?: string;\n  message?: string;\n}",
+    "members": [
+      {
+        "name": "valid",
+        "signature": "valid: boolean",
+        "description": ""
+      },
+      {
+        "name": "email",
+        "signature": "email?: string",
+        "description": ""
+      },
+      {
+        "name": "collection",
+        "signature": "collection?: string",
+        "description": ""
+      },
+      {
+        "name": "code",
+        "signature": "code?: string",
+        "description": ""
+      },
+      {
+        "name": "message",
+        "signature": "message?: string",
         "description": ""
       }
     ]
@@ -6448,6 +6608,31 @@ export const endpoints: readonly EndpointReference[] = [
     "responses": [
       "200",
       "400"
+    ]
+  },
+  {
+    "id": "GET /api/collections/users/tokens/verify",
+    "method": "GET",
+    "path": "/api/collections/users/tokens/verify",
+    "summary": "Verify an invite or password reset token",
+    "tags": [
+      "Collection: Users"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "token",
+        "in": "query",
+        "required": true
+      },
+      {
+        "name": "purpose",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200"
     ]
   },
   {

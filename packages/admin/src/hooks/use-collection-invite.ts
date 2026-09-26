@@ -3,9 +3,11 @@ import { toast } from "sonner"
 import { useDyrected } from "../providers/dyrected-context"
 import { getAdminActionUrl } from "../lib/utils"
 
-interface InviteResult {
+export interface InviteResult {
   email: string
   inviteUrl: string
+  emailSent?: boolean
+  token?: string
 }
 
 interface UseCollectionInviteOptions {
@@ -31,7 +33,7 @@ export function useCollectionInvite({ collectionSlug, inviteRoleField }: UseColl
         invite: (
           email: string,
           inviteUrlOrOptions?: string | { inviteUrl?: string; data?: Record<string, unknown> },
-        ) => Promise<{ inviteUrl?: string; token?: string }>
+        ) => Promise<{ inviteUrl?: string; token?: string; emailSent?: boolean }>
       }
 
       const response = await authCollectionClient.invite(email, {
@@ -56,12 +58,20 @@ export function useCollectionInvite({ collectionSlug, inviteRoleField }: UseColl
       return {
         email,
         inviteUrl,
+        emailSent: response.emailSent,
+        token: response.token,
       }
     },
     onSuccess: (result) => {
-      toast.success("Invite sent", {
-        description: `An invitation is ready for ${result.email}.`,
-      })
+      if (result.emailSent === false) {
+        toast.warning("Invite link generated", {
+          description: `Email delivery was skipped for ${result.email}. Share the link manually.`,
+        })
+      } else {
+        toast.success("Invite sent", {
+          description: `An invitation has been sent to ${result.email}.`,
+        })
+      }
     },
     onError: (error: Error) => {
       toast.error("Failed to send invite", {
@@ -70,3 +80,4 @@ export function useCollectionInvite({ collectionSlug, inviteRoleField }: UseColl
     },
   })
 }
+

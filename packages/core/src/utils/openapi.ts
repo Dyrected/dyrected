@@ -994,6 +994,31 @@ export function generateOpenApi(config: DyrectedConfig) {
       spec.paths[`${path}/accept-invite`] = {
         post: publicAuthPost("Accept an invitation"),
       };
+      spec.paths[`${path}/tokens/verify`] = {
+        get: {
+          tags: [collectionTag],
+          summary: `Verify an invite or password reset token`,
+          parameters: [
+            {
+              name: "token",
+              in: "query",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "purpose",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["invite", "reset"] },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Token verification result",
+            },
+          },
+        },
+      };
       spec.paths[`${path}/{id}/change-password`] = {
         post: {
           tags: [collectionTag],

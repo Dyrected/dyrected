@@ -303,6 +303,44 @@ export interface TrashOperations {
 
 export type TrashClient = ((collectionSlug?: string) => TrashOperations) & TrashOperations;
 
+export interface InviteOptions {
+  inviteUrl?: string;
+  sendEmail?: boolean;
+  data?: UnknownRecord;
+  [key: string]: unknown;
+}
+
+export interface InviteResult {
+  success: boolean;
+  message: string;
+  token: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailError?: string;
+}
+
+export interface PasswordResetOptions {
+  resetUrl?: string;
+  sendEmail?: boolean;
+}
+
+export interface PasswordResetResult {
+  success: boolean;
+  message: string;
+  emailSent: boolean;
+  emailError?: string;
+  token?: string;
+  resetUrl?: string;
+}
+
+export interface TokenVerificationResult {
+  valid: boolean;
+  email?: string;
+  collection?: string;
+  code?: string;
+  message?: string;
+}
+
 type ExtractDoc<T> =
   T extends CollectionConfig<infer TDoc>
     ? TDoc
@@ -894,20 +932,58 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           method: "POST",
           body: JSON.stringify(data),
         }),
-      /** Send an invitation email to a new user. Requires authentication. Pass inviteUrl to send a clickable acceptance link. */
+      /**
+       * Send an invitation email to a user, or generate a headless invite token.
+       * Accepts an email string + options, or a full document payload containing `email`.
+       */
       invite: (
-        email: string,
-        inviteUrlOrOptions?: string | { inviteUrl?: string; data?: UnknownRecord },
-      ): Promise<{ success: boolean; message: string; token: string; inviteUrl?: string }> => {
-        const options =
-          typeof inviteUrlOrOptions === "string"
-            ? { inviteUrl: inviteUrlOrOptions, data: undefined }
-            : inviteUrlOrOptions ?? {};
+        emailOrPayload: string | ({ email: string } & UnknownRecord),
+        inviteUrlOrOptions?: string | InviteOptions,
+      ): Promise<InviteResult> => {
+        let body: Record<string, unknown>;
+        if (typeof emailOrPayload === "string") {
+          const options =
+            typeof inviteUrlOrOptions === "string"
+              ? { inviteUrl: inviteUrlOrOptions }
+              : inviteUrlOrOptions ?? {};
+          body = {
+            email: emailOrPayload,
+            inviteUrl: options.inviteUrl,
+            sendEmail: options.sendEmail,
+            data: options.data,
+            ...options,
+          };
+        } else {
+          const { email, ...rest } = emailOrPayload;
+          const options =
+            typeof inviteUrlOrOptions === "string"
+              ? { inviteUrl: inviteUrlOrOptions }
+              : inviteUrlOrOptions ?? {};
+          body = {
+            email,
+            ...rest,
+            ...options,
+          };
+        }
 
         return this.request(`/api/collections/${slug}/invite`, {
           method: "POST",
-          body: JSON.stringify({ email, inviteUrl: options.inviteUrl, data: options.data }),
+          body: JSON.stringify(body),
         });
+      },
+      /**
+       * Generate an invitation token headlessly without sending an email.
+       * Useful for SMS onboarding, custom notification services, or headless registration.
+       */
+      createInviteToken: async (
+        emailOrPayload: string | ({ email: string } & UnknownRecord),
+        options?: { inviteUrl?: string },
+      ): Promise<{ token: string; inviteUrl: string }> => {
+        const res = await this.collection(slug).invite(
+          emailOrPayload as any,
+          { ...options, sendEmail: false },
+        );
+        return { token: res.token, inviteUrl: res.inviteUrl };
       },
       /** Accept an invitation and create an account. Returns token + user. */
       acceptInvite: (
@@ -919,6 +995,17 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           method: "POST",
           body: JSON.stringify({ token, password, ...extraFields }),
         }),
+      /**
+       * Verify an invite or reset token on page mount before rendering password setup inputs.
+       */
+      verifyToken: (
+        token: string,
+        purpose?: "invite" | "reset",
+      ): Promise<TokenVerificationResult> => {
+        const query = new URLSearchParams({ token });
+        if (purpose) query.set("purpose", purpose);
+        return this.request(`/api/collections/${slug}/tokens/verify?${query.toString()}`);
+      },
       /**
        * Change the password for a specific user document.
        * Non-admins must supply oldPassword. newPassword and confirmPassword must match.
@@ -936,6 +1023,43 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           body: JSON.stringify(payload),
         }),
       /**
+       * Request a password reset email or token for a user.
+       */
+      sendPasswordReset: (
+        email: string,
+        optionsOrResetUrl?: string | PasswordResetOptions,
+      ): Promise<PasswordResetResult> => {
+        const options =
+          typeof optionsOrResetUrl === "string"
+            ? { resetUrl: optionsOrResetUrl }
+            : optionsOrResetUrl ?? {};
+
+        return this.request(`/api/collections/${slug}/forgot-password`, {
+          method: "POST",
+          body: JSON.stringify({
+            email,
+            resetUrl: options.resetUrl,
+            sendEmail: options.sendEmail,
+          }),
+        });
+      },
+      /**
+       * Generate a password reset token headlessly without sending an email.
+       */
+      createPasswordResetToken: async (
+        email: string,
+        options?: { resetUrl?: string },
+      ): Promise<{ token: string; resetUrl: string }> => {
+        const res = await this.collection(slug).sendPasswordReset(email, {
+          ...options,
+          sendEmail: false,
+        });
+        return {
+          token: res.token ?? "",
+          resetUrl: res.resetUrl ?? "",
+        };
+      },
+      /**
        * Admin-initiated password reset. Sends a reset link to the given email address.
        * Wraps the existing POST /forgot-password endpoint.
        */
@@ -943,10 +1067,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
         email: string,
         resetUrl?: string,
       ): Promise<{ success: boolean; message: string }> =>
-        this.request(`/api/collections/${slug}/forgot-password`, {
-          method: "POST",
-          body: JSON.stringify({ email, resetUrl }),
-        }),
+        this.collection(slug).sendPasswordReset(email, resetUrl),
       /**
        * Reset password using a reset token.
        * Wraps the POST /reset-password endpoint.
@@ -1727,7 +1848,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     return this.delete(collection, id);
   }
 
-  async request<T = unknown>(
+  private async request<T = unknown>(
     path: string,
     init?: RequestInit,
   ): Promise<T> {

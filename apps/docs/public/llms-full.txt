@@ -1055,6 +1055,7 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/collections/users/me` | Get the current User | Required |
 | POST | `/api/collections/users/refresh-token` | Refresh an authentication token | Required |
 | POST | `/api/collections/users/reset-password` | Reset a password | Public |
+| GET | `/api/collections/users/tokens/verify` | Verify an invite or password reset token | Required |
 | GET | `/api/docs` | Open interactive API documentation | Public |
 | GET | `/api/dyrected/options/{collection}/{field}` | Resolve dynamic field options | Required |
 | GET | `/api/globals/settings` | Get Site settings | Required |
@@ -1549,6 +1550,49 @@ await client.deleteMany("media", {
 });
 ```
 
+## Managing authentication & invitations
+
+When a collection has `auth: true` or an auth config, `client.collection(slug)` exposes full auth lifecycle methods:
+
+```ts
+// 1. Invite a user with initial role data and custom action URL
+const invite = await client.collection("users").invite("alex@example.com", {
+  inviteUrl: "https://myapp.com/accept-invite",
+  data: { roles: ["editor"], name: "Alex" },
+});
+console.log(`Invite sent: ${invite.emailSent}, token: ${invite.token}`);
+
+// 2. Mint a headless invite token without sending an email (for SMS, custom delivery)
+const headless = await client.collection("users").createInviteToken({
+  email: "partner@example.com",
+  inviteUrl: "https://myapp.com/onboarding",
+});
+
+// 3. Verify an invite or reset token when your frontend component mounts
+const check = await client.collection("users").verifyToken(tokenFromUrl, "invite");
+if (check.valid) {
+  console.log(`Token verified for ${check.email}`);
+} else {
+  console.error(`Token invalid or expired: ${check.error}`);
+}
+
+// 4. Complete invite acceptance with a user-chosen password
+const { token, user } = await client.collection("users").acceptInvite(
+  tokenFromUrl,
+  "secure-password-123",
+  { department: "Design" },
+);
+client.setToken(token);
+
+// 5. Send a password reset or mint a headless reset token
+await client.collection("users").sendPasswordReset("alex@example.com", {
+  resetUrl: "https://myapp.com/reset-password",
+});
+const resetToken = await client.collection("users").createPasswordResetToken("alex@example.com");
+```
+
+For the endpoint-by-endpoint details and server behavior, read [Authentication Operations](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
@@ -1662,7 +1706,6 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>uploadMedia</code> (required) |  |
 | <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
-| <code>request</code> (optional) |  |
 
 
 ## DyrectedClientConfig
@@ -1750,6 +1793,51 @@ export type InferSchema<
 ```
 
 
+## InviteOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface InviteOptions {
+  inviteUrl?: string;
+  sendEmail?: boolean;
+  data?: UnknownRecord;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>inviteUrl</code> (optional) |  |
+| <code>sendEmail</code> (optional) |  |
+| <code>data</code> (optional) |  |
+
+
+## InviteResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface InviteResult {
+  success: boolean;
+  message: string;
+  token: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailError?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>success</code> (required) |  |
+| <code>message</code> (required) |  |
+| <code>token</code> (required) |  |
+| <code>inviteUrl</code> (required) |  |
+| <code>emailSent</code> (required) |  |
+| <code>emailError</code> (optional) |  |
+
+
 ## MediaFolder
 
 Shape of a media folder document in the DAM system.
@@ -1779,6 +1867,48 @@ export interface MediaFolder {
 | <code>color</code> (optional) |  |
 | <code>createdAt</code> (optional) |  |
 | <code>updatedAt</code> (optional) |  |
+
+
+## PasswordResetOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface PasswordResetOptions {
+  resetUrl?: string;
+  sendEmail?: boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>resetUrl</code> (optional) |  |
+| <code>sendEmail</code> (optional) |  |
+
+
+## PasswordResetResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface PasswordResetResult {
+  success: boolean;
+  message: string;
+  emailSent: boolean;
+  emailError?: string;
+  token?: string;
+  resetUrl?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>success</code> (required) |  |
+| <code>message</code> (required) |  |
+| <code>emailSent</code> (required) |  |
+| <code>emailError</code> (optional) |  |
+| <code>token</code> (optional) |  |
+| <code>resetUrl</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM
@@ -2072,6 +2202,29 @@ export interface SerializedSchemaAIConfig {
 | <code>enabled</code> (required) |  |
 | <code>provider</code> (optional) |  |
 | <code>model</code> (optional) |  |
+
+
+## TokenVerificationResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TokenVerificationResult {
+  valid: boolean;
+  email?: string;
+  collection?: string;
+  code?: string;
+  message?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>valid</code> (required) |  |
+| <code>email</code> (optional) |  |
+| <code>collection</code> (optional) |  |
+| <code>code</code> (optional) |  |
+| <code>message</code> (optional) |  |
 
 
 ## TransitionOptions
@@ -18416,6 +18569,45 @@ export const Admins = defineCollection({
 
 When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
 
+### Custom Action URLs and Expirations
+
+For collections representing external end users (such as `customers` or `subscribers`), you typically want invite and reset links to direct users to your custom frontend app rather than the Dyrected Admin dashboard.
+
+Configure `urls` and token expiration settings directly in `auth`:
+
+```ts
+
+
+export const Customers = defineCollection({
+  slug: "customers",
+  auth: {
+    urls: {
+      invite: "https://store.myapp.com/accept-invite",
+      resetPassword: "https://store.myapp.com/reset-password",
+    },
+    inviteExpiration: "14d", // Defaults to '7d'
+    resetPasswordExpiration: "30m", // Defaults to '1h'
+    email: {
+      templates: {
+        invite: ({ url }) => ({
+          subject: "Activate your store account",
+          html: `<p>Click <a href="${url}">here</a> to activate your account.</p>`,
+        }),
+      },
+    },
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+  ],
+});
+```
+
+- `urls.invite`: base URL used to construct invite acceptance links (`${url}?token=<token>`).
+- `urls.resetPassword`: base URL used to construct password reset links (`${url}?token=<token>`).
+- `inviteExpiration`: lifetime of the invitation token (e.g. `'7d'`, `'24h'`, or milliseconds).
+- `resetPasswordExpiration`: lifetime of the reset token (e.g. `'1h'`, `'30m'`, or milliseconds).
+- `email.templates`: collection-specific template overrides that take precedence over global templates.
+
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](https://docs.dyrected.com/docs/cloud/editor-experience/editor-accounts).
 
 ## `upload`
@@ -19305,28 +19497,30 @@ export interface DyrectedConfig<
     /** The `From` address for all outbound emails. */
     from: string;
 
-    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: {
-      to: string;
-      subject: string;
-      html: string;
-    }) => Promise<void>;
+    /**
+     * Whether admins can edit email templates via the Admin UI.
+     * Defaults to true.
+     */
+    adminEditable?: boolean;
 
-    /** Override the default email templates. */
+    /** The send function. Wire in any email provider (Resend, SendGrid, SES, Seamailer, Postmark, etc.). */
+    send: (args: OutboundEmail) => Promise<void>;
+
+    /** Global default email templates. */
     templates?: {
-      welcome?: (args: { email: string }) => { subject?: string; html: string };
-      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {
-        subject?: string;
-        html: string;
-      };
-      resetPassword?: (args: { token: string; url?: string }) => {
-        subject?: string;
-        html: string;
-      };
-      passwordChanged?: (args: { email: string }) => {
-        subject?: string;
-        html: string;
-      };
+      welcome?: (args: EmailTemplateArgs<{ email: string }>) => EmailTemplateResult;
+      invite?: (args: EmailTemplateArgs<{
+        token: string;
+        invitedByEmail?: string;
+        url?: string;
+        data?: Record<string, unknown>;
+      }>) => EmailTemplateResult;
+      resetPassword?: (
+        args: EmailTemplateArgs<{ token: string; url?: string }>
+      ) => EmailTemplateResult;
+      passwordChanged?: (
+        args: EmailTemplateArgs<{ email: string }>
+      ) => EmailTemplateResult;
     };
   };
 
@@ -30989,6 +31183,7 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/collections/users/me` | Get the current User | Required |
 | POST | `/api/collections/users/refresh-token` | Refresh an authentication token | Required |
 | POST | `/api/collections/users/reset-password` | Reset a password | Public |
+| GET | `/api/collections/users/tokens/verify` | Verify an invite or password reset token | Required |
 | GET | `/api/docs` | Open interactive API documentation | Public |
 | GET | `/api/dyrected/options/{collection}/{field}` | Resolve dynamic field options | Required |
 | GET | `/api/globals/settings` | Get Site settings | Required |
@@ -31483,6 +31678,49 @@ await client.deleteMany("media", {
 });
 ```
 
+## Managing authentication & invitations
+
+When a collection has `auth: true` or an auth config, `client.collection(slug)` exposes full auth lifecycle methods:
+
+```ts
+// 1. Invite a user with initial role data and custom action URL
+const invite = await client.collection("users").invite("alex@example.com", {
+  inviteUrl: "https://myapp.com/accept-invite",
+  data: { roles: ["editor"], name: "Alex" },
+});
+console.log(`Invite sent: ${invite.emailSent}, token: ${invite.token}`);
+
+// 2. Mint a headless invite token without sending an email (for SMS, custom delivery)
+const headless = await client.collection("users").createInviteToken({
+  email: "partner@example.com",
+  inviteUrl: "https://myapp.com/onboarding",
+});
+
+// 3. Verify an invite or reset token when your frontend component mounts
+const check = await client.collection("users").verifyToken(tokenFromUrl, "invite");
+if (check.valid) {
+  console.log(`Token verified for ${check.email}`);
+} else {
+  console.error(`Token invalid or expired: ${check.error}`);
+}
+
+// 4. Complete invite acceptance with a user-chosen password
+const { token, user } = await client.collection("users").acceptInvite(
+  tokenFromUrl,
+  "secure-password-123",
+  { department: "Design" },
+);
+client.setToken(token);
+
+// 5. Send a password reset or mint a headless reset token
+await client.collection("users").sendPasswordReset("alex@example.com", {
+  resetUrl: "https://myapp.com/reset-password",
+});
+const resetToken = await client.collection("users").createPasswordResetToken("alex@example.com");
+```
+
+For the endpoint-by-endpoint details and server behavior, read [Authentication Operations](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/operations).
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
@@ -31596,7 +31834,6 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>uploadMedia</code> (required) |  |
 | <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
-| <code>request</code> (optional) |  |
 
 
 ## DyrectedClientConfig
@@ -31684,6 +31921,51 @@ export type InferSchema<
 ```
 
 
+## InviteOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface InviteOptions {
+  inviteUrl?: string;
+  sendEmail?: boolean;
+  data?: UnknownRecord;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>inviteUrl</code> (optional) |  |
+| <code>sendEmail</code> (optional) |  |
+| <code>data</code> (optional) |  |
+
+
+## InviteResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface InviteResult {
+  success: boolean;
+  message: string;
+  token: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailError?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>success</code> (required) |  |
+| <code>message</code> (required) |  |
+| <code>token</code> (required) |  |
+| <code>inviteUrl</code> (required) |  |
+| <code>emailSent</code> (required) |  |
+| <code>emailError</code> (optional) |  |
+
+
 ## MediaFolder
 
 Shape of a media folder document in the DAM system.
@@ -31713,6 +31995,48 @@ export interface MediaFolder {
 | <code>color</code> (optional) |  |
 | <code>createdAt</code> (optional) |  |
 | <code>updatedAt</code> (optional) |  |
+
+
+## PasswordResetOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface PasswordResetOptions {
+  resetUrl?: string;
+  sendEmail?: boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>resetUrl</code> (optional) |  |
+| <code>sendEmail</code> (optional) |  |
+
+
+## PasswordResetResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface PasswordResetResult {
+  success: boolean;
+  message: string;
+  emailSent: boolean;
+  emailError?: string;
+  token?: string;
+  resetUrl?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>success</code> (required) |  |
+| <code>message</code> (required) |  |
+| <code>emailSent</code> (required) |  |
+| <code>emailError</code> (optional) |  |
+| <code>token</code> (optional) |  |
+| <code>resetUrl</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM
@@ -32006,6 +32330,29 @@ export interface SerializedSchemaAIConfig {
 | <code>enabled</code> (required) |  |
 | <code>provider</code> (optional) |  |
 | <code>model</code> (optional) |  |
+
+
+## TokenVerificationResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TokenVerificationResult {
+  valid: boolean;
+  email?: string;
+  collection?: string;
+  code?: string;
+  message?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>valid</code> (required) |  |
+| <code>email</code> (optional) |  |
+| <code>collection</code> (optional) |  |
+| <code>code</code> (optional) |  |
+| <code>message</code> (optional) |  |
 
 
 ## TransitionOptions
@@ -33156,11 +33503,12 @@ Throughout, `{slug}` is your collection's slug (for example `users` or `__admins
 | `POST` | `/{slug}/logout`               | Public | `logout()`                              | `{ success, message }` |
 | `GET`  | `/{slug}/me`                   | Bearer | `me()`                                  | the user document      |
 | `POST` | `/{slug}/refresh-token`        | Bearer | `refreshToken()`                        | `{ token }`            |
-| `POST` | `/{slug}/forgot-password`      | Public | `sendResetLink(email, resetUrl?)`       | `{ success, message }` |
+| `POST` | `/{slug}/forgot-password`      | Public | `sendPasswordReset(email, options?)`    | `{ success, message, token?, resetUrl?, emailSent? }` |
 | `POST` | `/{slug}/reset-password`       | Public | `resetPassword(token, password)`        | `{ success, message }` |
 | `POST` | `/{slug}/{id}/change-password` | Bearer | `changePassword(id, payload)`           | `{ success, message }` |
-| `POST` | `/{slug}/invite`               | Bearer | `invite(email, inviteUrlOrOptions?)`    | `{ success, message, token, inviteUrl? }` |
+| `POST` | `/{slug}/invite`               | Bearer | `invite(email, options?)`               | `{ success, message, token, inviteUrl?, emailSent }` |
 | `POST` | `/{slug}/accept-invite`        | Public | `acceptInvite(token, password, extra?)` | `{ token, user }`      |
+| `GET`  | `/{slug}/tokens/verify`        | Public | `verifyToken(token, type)`              | `{ valid, purpose, email, expired?, error? }` |
 
 "Bearer" means the request must include a valid `Authorization: Bearer <token>` header. The rest are public. The `password` field is stripped from every user object these endpoints return.
 
@@ -33202,6 +33550,18 @@ const { token, user } = await client
 client.setToken(token);
 // POST /api/collections/users/login → { token, user }
 ```
+
+If an account was invited or created without a password, attempting to log in before accepting the invitation returns a `401` with `code: "PASSWORD_NOT_SET"`:
+
+```json
+{
+  "error": true,
+  "message": "Password has not been set for this account. Please accept your invitation or set up your password.",
+  "code": "PASSWORD_NOT_SET"
+}
+```
+
+This explicit code lets your frontend immediately direct the user to accept their invite or request a setup link instead of showing a generic credential error.
 
 If the collection's built-in lockout is enabled and someone keeps guessing wrong passwords, Dyrected temporarily locks that account and `login` starts returning `429 Too Many Requests` until the lock window expires:
 
@@ -33261,20 +33621,41 @@ This requires a valid Bearer token — an expired token cannot refresh itself, s
 
 ## Password recovery
 
-This is a two-step flow. First, `forgot-password` sends a reset email. It **always** returns `200` with the same message whether or not the email belongs to a real account, so it can never be used to probe which emails are registered:
+This is a two-step flow. First, `forgot-password` generates a single-use reset token and dispatches an email:
 
 ```ts
-await client.collection("users").sendResetLink(
-  "jane@example.com",
-  "https://mysite.com/reset-password", // optional
-);
+await client.collection("users").sendPasswordReset("jane@example.com", {
+  resetUrl: "https://mysite.com/reset-password", // optional
+});
 // POST /api/collections/users/forgot-password
 // → { "success": true, "message": "If an account with that email exists, a reset link has been sent." }
 ```
 
-When you pass a `resetUrl`, Dyrected builds a clickable link by appending `token=<token>` to it, and the email links there. Omit it and the email template receives only the raw token — useful if you would rather build the link yourself. After a successful reset, Dyrected also sends a password-changed notification email as a security alert. To customize the email content, see [Email](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/infrastructure/email).
+It **always** returns `200` with the same message whether or not the email belongs to a real account, so it can never be used to probe which emails are registered.
 
-Second, `reset-password` sets the new password using the token from that email:
+When you pass a `resetUrl`, Dyrected builds a clickable link by appending `token=<token>` to it, and the email links there. If omitted, Dyrected uses `auth.urls.resetPassword` from your collection config or the default admin reset URL.
+
+### Headless password reset tokens
+
+If you send password reset links through your own transactional pipeline (such as SMS, WhatsApp, or an internal customer service tool), you can mint the reset token without triggering Dyrected's email dispatch:
+
+```ts
+const { token, resetUrl } = await client.collection("users").createPasswordResetToken(
+  "jane@example.com",
+  { resetUrl: "https://mysite.com/reset-password" },
+);
+```
+
+Passing `sendEmail: false` to `sendPasswordReset` achieves the same result:
+
+```ts
+const result = await client.collection("users").sendPasswordReset("jane@example.com", {
+  sendEmail: false,
+});
+// result.token contains the minted token, result.emailSent is false
+```
+
+Second, `reset-password` sets the new password using the token:
 
 ```ts
 await client
@@ -33284,7 +33665,7 @@ await client
 // → { "success": true, "message": "Password has been reset. You can now log in." }
 ```
 
-The reset token is single-purpose and time-limited — it is valid for one hour and only works against the collection it was issued for. A successful reset also revokes that user's active sessions so older login tokens stop working.
+The reset token is single-purpose and time-limited — it defaults to one hour (configurable with `auth.resetPasswordExpiration` on the collection) and only works against the collection it was issued for. A successful reset also revokes that user's active sessions so older login tokens stop working.
 
 ## Changing a known password
 
@@ -33303,29 +33684,46 @@ A successful password change revokes that user's active sessions too, so any old
 
 ## Inviting users
 
-Invitations let an existing, signed-in user bring someone new in without handing out a shared password. `invite` sends an invitation email to an address that does not yet have an active account — it requires a Bearer token, and returns `409` if the email is already registered with an active user:
+Invitations let an existing, signed-in user bring someone new in without handing out a shared password. `invite` sends an invitation email to an address that does not yet have an active account — it requires a Bearer token, and returns `409` only if the email is already registered with an active user who has a usable password:
 
 ```ts
-const inviteEntryUrl = "https://cms.example.com/admin";
+const inviteEntryUrl = "https://myapp.com/accept-invite";
 
-await client.collection("users").invite(
-  "newteammate@example.com",
-  {
-    inviteUrl: inviteEntryUrl,
-    data: { roles: ["editor"] },
+await client.collection("users").invite("newteammate@example.com", {
+  inviteUrl: inviteEntryUrl,
+  data: {
+    roles: ["editor"],
+    firstName: "Alex",
+    department: "Marketing",
   },
-);
+});
 // POST /api/collections/users/invite
-// → { success: true, message, token, inviteUrl }
+// → { success: true, message, token, inviteUrl, emailSent: true }
 ```
 
-When you pass `inviteUrl`, Dyrected emails a clickable acceptance link in the same style as password reset emails. Without it, the default template falls back to the raw invite token.
+When you pass `inviteUrl`, Dyrected builds a clickable acceptance link with `token=<token>`. If omitted, it resolves `auth.urls.invite` on the collection config, falling back to the admin invite URL.
 
-The important implementation detail is that the invite endpoint also pre-creates a **pending** user record. That means:
+### Pre-created and pending accounts
 
-- invited users can already appear in the admin list before they accept
-- any `data` you pass during invite, such as a role field, is stored on that pending record
-- the invited user cannot log in yet; login returns a pending-invite error until they accept
+Calling `invite` creates a **pending** user record:
+
+- Invited users appear in the admin list immediately with their pending status.
+- Any initial fields passed in `data` (such as `roles`, `name`, or custom attributes) are saved directly onto the pending record.
+- If a user record was already pre-created in the database (for example, imported from an external system with `password: null`), calling `invite()` does **not** fail with 409. Dyrected identifies the pending account, refreshes `invitedAt`, saves any updated data, and dispatches a fresh invite token.
+- Re-inviting an unaccepted user refreshes their expiration window and supersedes older invite tokens.
+
+### Headless invitation tokens
+
+If you need to deliver invitations out-of-band (via SMS, clipboard copy in an admin panel, or a third-party CRM), use `createInviteToken`:
+
+```ts
+const { token, inviteUrl } = await client.collection("users").createInviteToken({
+  email: "partner@example.com",
+  inviteUrl: "https://myapp.com/onboarding",
+  data: { tier: "premium" },
+});
+// emailSent is false; no outbound email is triggered
+```
 
 The invited person completes signup with `accept-invite`, which is public — the invite token is what authorizes it. Their email comes from the token, so they only choose a password (plus any extra fields you collect). On success the pending user is activated, signed in, and the response is `201`:
 
@@ -33339,7 +33737,47 @@ client.setToken(token);
 // POST /api/collections/users/accept-invite → { token, user }
 ```
 
-An invite token is valid for 7 days. Accepting an already-used invite returns `409`.
+An invite token defaults to 7 days (configurable via `auth.inviteExpiration`). Accepting an already-used or superseded invite returns `409`.
+
+## Validating tokens on frontend mount
+
+When building custom invite acceptance or password reset pages, verify the token immediately when the frontend view mounts. This avoids letting a user enter a password only to receive an error when submitting an expired or invalid link.
+
+Use `verifyToken`:
+
+```ts
+const verification = await client.collection("users").verifyToken(tokenFromUrl, "invite");
+
+if (!verification.valid) {
+  if (verification.expired) {
+    // Show "Your invitation has expired. Please contact an admin."
+  } else {
+    // Show "Invalid or already-used invitation link."
+  }
+} else {
+  // Token is valid; display user email: verification.email
+}
+```
+
+This calls `GET /api/collections/:slug/tokens/verify?token=...&type=invite|reset` and returns:
+
+```json
+{
+  "valid": true,
+  "purpose": "invite",
+  "email": "jane@example.com"
+}
+```
+
+Or for an expired or invalid token:
+
+```json
+{
+  "valid": false,
+  "error": "Invite token has expired. Please request a new invitation.",
+  "expired": true
+}
+```
 
 ## Error shapes
 
@@ -34559,12 +34997,16 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
-    send: async ({ to, subject, html }) => {
+    send: async (msg) => {
+      if (msg.type === 'template') {
+        // If using provider-hosted templates:
+        return
+      }
       await resend.emails.send({
         from: 'no-reply@myapp.com',
-        to,
-        subject,
-        html,
+        to: msg.to,
+        subject: msg.subject,
+        html: msg.html,
       })
     },
   },
@@ -34573,21 +35015,94 @@ export default defineConfig({
 })
 ```
 
-Once this is in place, Dyrected can hand your provider the recipient, subject, and rendered HTML for any built-in auth email.
-
-Resend is just the example here. The `send` shape is the real contract, so you can swap in any provider that can send `{ to, subject, html }`.
+Once this is in place, Dyrected hands your `send` function an `OutboundEmail` object containing the recipient, subject, and either rendered HTML or external template metadata.
 
 ## What the top-level `email` config does
 
-The top-level `email` config has three important pieces:
+The top-level `email` config has four important pieces:
 
 - `from`: the sender address your provider should use
-- `send`: the function Dyrected calls with `{ to, subject, html }`
-- `templates`: optional overrides for the built-in auth emails
+- `send`: the function Dyrected calls with an `OutboundEmail` (`{ type: 'html', to, subject, html }` or `{ type: 'template', to, templateId, variables, subject? }`)
+- `templates`: optional global overrides for the built-in auth emails
+- `adminEditable`: when `true`, enables the built-in `__email_templates` collection so administrators can edit templates directly in the Admin UI
 
 Dyrected does not scaffold provider-specific email environment variables for you. Add the provider secrets your transport needs yourself, and keep them in your normal environment management flow.
 
 For the exact type signature, the root configuration reference still lives on [Configuration Overview](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/overview).
+
+## Delivery transport: HTML and external templates
+
+Dyrected supports two delivery types through a polymorphic `OutboundEmail` contract:
+
+1. **Direct HTML (`msg.type === 'html'` or omitted):** Dyrected renders the email body (either the built-in template or your custom HTML) and gives your transport `{ to, subject, html }`.
+2. **External template (`msg.type === 'template'`):** When you use a provider like Postmark, SendGrid, or Seamailer that hosts templates externally, Dyrected sends `{ to, templateId, variables, subject? }` directly to your `send` function.
+
+This means you never have to serialize JSON payloads into fake HTML strings or parse HTML back into template arguments.
+
+### Provider recipe: Resend (Direct HTML)
+
+```ts
+
+
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    send: async (msg) => {
+      if (msg.type === 'template') {
+        throw new Error(`Resend template delivery not configured for ID: ${msg.templateId}`)
+      }
+      await resend.emails.send({
+        from: 'no-reply@myapp.com',
+        to: msg.to,
+        subject: msg.subject,
+        html: msg.html,
+      })
+    },
+  },
+  collections: [],
+  globals: [],
+})
+```
+
+### Provider recipe: Postmark (Polymorphic templates + HTML)
+
+Postmark supports both template-based delivery (by numeric ID or string alias) and standard HTML:
+
+```ts
+
+
+
+const client = new postmark.ServerClient(process.env.POSTMARK_SERVER_TOKEN!)
+
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    send: async (msg) => {
+      if (msg.type === 'template') {
+        await client.sendEmailWithTemplate({
+          From: 'no-reply@myapp.com',
+          To: msg.to,
+          TemplateId: typeof msg.templateId === 'number' ? msg.templateId : undefined,
+          TemplateAlias: typeof msg.templateId === 'string' ? msg.templateId : undefined,
+          TemplateModel: msg.variables,
+        })
+      } else {
+        await client.sendEmail({
+          From: 'no-reply@myapp.com',
+          To: msg.to,
+          Subject: msg.subject,
+          HtmlBody: msg.html,
+        })
+      }
+    },
+  },
+  collections: [],
+  globals: [],
+})
+```
 
 ## Development fallback
 
@@ -34618,23 +35133,29 @@ All four are best-effort. The API flow still completes if sending fails, and the
 
 Four details matter here:
 
-- `forgot-password` can receive a `resetUrl`; if it does, the reset email gets both the raw token and the full link, and the default template prefers the link
-- `invite` can receive an `inviteUrl`; if it does, the invite email gets both the raw token and the full acceptance link, and the default template prefers the link
-- invite tokens currently expire in 7 days, and reset tokens expire in 1 hour
+- `forgot-password` resolves the action URL using the collection's `auth.urls.resetPassword`, the request's `resetUrl`, or falls back to the default admin reset URL; the template receives both the raw token and the full link
+- `invite` resolves the action URL using the collection's `auth.urls.invite`, the request's `inviteUrl`, or falls back to the default admin invite URL; the template receives both the raw token and the full link
+- invite tokens default to 7 days (configurable via `auth.inviteExpiration`), and reset tokens default to 1 hour (configurable via `auth.resetPasswordExpiration`)
 - a successful password reset also sends the password-changed notification as a security alert
 
 For the endpoint-by-endpoint behavior, use [Authentication Operations](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/operations).
 
-## Customize the built-in templates
+## Template cascade resolution
 
-Once the provider is working, customize the built-in messages by adding `templates` under `email`.
+Dyrected resolves email templates through a 4-tier cascade:
 
-Each template function returns:
+1. **Database overrides:** Records in the `__email_templates` collection (active when `adminEditable: true`).
+2. **Collection config overrides:** Templates defined on `collection.auth.email.templates`.
+3. **Global config overrides:** Templates defined on `config.email.templates`.
+4. **Core defaults:** Built-in responsive HTML templates with security escaping.
 
-- `html`, which is required
-- `subject`, which is optional
+The first tier that defines a template for an action wins. This allows you to set global defaults in code while customizing templates for specific customer collections or letting marketing edit copies in the Admin UI.
 
-If you omit `subject`, Dyrected keeps the built-in default subject line.
+## Customize templates in code
+
+You can customize templates globally in `config.email.templates` or per collection in `collection.auth.email.templates`.
+
+Each template can return either direct HTML or an external template configuration:
 
 ```ts
 
@@ -34645,12 +35166,13 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
-    send: async ({ to, subject, html }) => {
+    send: async (msg) => {
+      if (msg.type === 'template') return
       await resend.emails.send({
         from: 'no-reply@myapp.com',
-        to,
-        subject,
-        html,
+        to: msg.to,
+        subject: msg.subject,
+        html: msg.html,
       })
     },
     templates: {
@@ -34690,11 +35212,81 @@ export default defineConfig({
 })
 ```
 
-The built-in default templates escape user-supplied values before rendering. If you replace them with custom HTML, you own the safety of that markup.
+### External template overrides
 
-For most projects, the recommended path is to pass `inviteUrl` and `resetUrl` from the product surface that should finish the flow. That keeps both emails link-first, matches the admin experience, and avoids teaching end users how to handle raw tokens unless you intentionally want a token-based flow.
+To delegate an email to a provider-hosted template, return `{ type: 'template', templateId, variables }`:
 
-Keep the auth endpoint semantics on [Authentication Operations](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/operations). This page is for the transport setup, the built-in email triggers, and template customization.
+```ts
+templates: {
+  invite: (args) => ({
+    type: 'template',
+    templateId: 'user-invitation',
+    variables: {
+      invite_url: args.url,
+      invited_by: args.invitedByEmail ?? 'Our Team',
+      token: args.token,
+    },
+  }),
+}
+```
+
+## Admin UI template management
+
+When you want non-developers to edit email templates without deploying code, enable `adminEditable: true`:
+
+```ts
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    adminEditable: true,
+    send: async (msg) => { /* ... */ },
+  },
+  // ...
+})
+```
+
+When `adminEditable: true` is enabled, Dyrected automatically adds the `__email_templates` collection to your Admin UI under the System group.
+
+In the Admin UI, administrators can:
+- **Edit HTML templates:** Write raw HTML with full syntax highlighting powered by CodeMirror.
+- **Live Preview:** See real-time iframe rendering with instant mock variable interpolation for both desktop and mobile (375px) screens.
+- **Variable Chips:** Click dynamic chips (`{{url}}`, `{{token}}`, `{{email}}`, `{{invitedByEmail}}`) to insert placeholders at the cursor.
+- **External Template Mode:** Switch a template type to `external` to specify a provider template ID (e.g. Postmark numeric ID or SendGrid `d-` template ID) instead of HTML.
+- **Test Delivery:** Click "Send Test Email" to preview delivery directly to your inbox before saving.
+- **Revert to Defaults:** Restore the built-in system template anytime.
+
+## Collection-specific action URLs and templates
+
+If your application has multiple auth collections (e.g., internal staff in `__admins` and end-users in `customers`), you do not want your customers receiving invite links that point to the `/admin` dashboard.
+
+Configure `auth.urls` and `auth.email.templates` on the collection:
+
+```ts
+
+
+export const Customers = defineCollection({
+  slug: 'customers',
+  auth: {
+    urls: {
+      invite: 'https://store.myapp.com/accept-invite',
+      resetPassword: 'https://store.myapp.com/reset-password',
+    },
+    email: {
+      templates: {
+        invite: ({ url, token }) => ({
+          subject: 'Welcome to the Store - Activate your account',
+          html: `<p>Activate your store account <a href="${url}">here</a>.</p>`,
+        }),
+      },
+    },
+  },
+  fields: [
+    defineTextField({ name: 'name', label: 'Name' }),
+  ],
+})
+```
+
+When an invite is sent for a `customers` document, Dyrected automatically resolves the action URL to `https://store.myapp.com/accept-invite?token=...` instead of the admin dashboard, and renders the customer-specific invite template.
 
 ## Advanced paths
 
@@ -50255,6 +50847,45 @@ export const Admins = defineCollection({
 
 When configured, Dyrected grants this role to the initial user created through `/api/collections/:slug/first-user` and checks for it when verifying administrative privileges in the Admin UI.
 
+### Custom Action URLs and Expirations
+
+For collections representing external end users (such as `customers` or `subscribers`), you typically want invite and reset links to direct users to your custom frontend app rather than the Dyrected Admin dashboard.
+
+Configure `urls` and token expiration settings directly in `auth`:
+
+```ts
+
+
+export const Customers = defineCollection({
+  slug: "customers",
+  auth: {
+    urls: {
+      invite: "https://store.myapp.com/accept-invite",
+      resetPassword: "https://store.myapp.com/reset-password",
+    },
+    inviteExpiration: "14d", // Defaults to '7d'
+    resetPasswordExpiration: "30m", // Defaults to '1h'
+    email: {
+      templates: {
+        invite: ({ url }) => ({
+          subject: "Activate your store account",
+          html: `<p>Click <a href="${url}">here</a> to activate your account.</p>`,
+        }),
+      },
+    },
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Full Name", required: true }),
+  ],
+});
+```
+
+- `urls.invite`: base URL used to construct invite acceptance links (`${url}?token=<token>`).
+- `urls.resetPassword`: base URL used to construct password reset links (`${url}?token=<token>`).
+- `inviteExpiration`: lifetime of the invitation token (e.g. `'7d'`, `'24h'`, or milliseconds).
+- `resetPasswordExpiration`: lifetime of the reset token (e.g. `'1h'`, `'30m'`, or milliseconds).
+- `email.templates`: collection-specific template overrides that take precedence over global templates.
+
 For the full auth model, token behavior, and login strategies, read [Authentication Overview](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/overview).
 
 ## `upload`
@@ -51144,28 +51775,30 @@ export interface DyrectedConfig<
     /** The `From` address for all outbound emails. */
     from: string;
 
-    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: {
-      to: string;
-      subject: string;
-      html: string;
-    }) => Promise<void>;
+    /**
+     * Whether admins can edit email templates via the Admin UI.
+     * Defaults to true.
+     */
+    adminEditable?: boolean;
 
-    /** Override the default email templates. */
+    /** The send function. Wire in any email provider (Resend, SendGrid, SES, Seamailer, Postmark, etc.). */
+    send: (args: OutboundEmail) => Promise<void>;
+
+    /** Global default email templates. */
     templates?: {
-      welcome?: (args: { email: string }) => { subject?: string; html: string };
-      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {
-        subject?: string;
-        html: string;
-      };
-      resetPassword?: (args: { token: string; url?: string }) => {
-        subject?: string;
-        html: string;
-      };
-      passwordChanged?: (args: { email: string }) => {
-        subject?: string;
-        html: string;
-      };
+      welcome?: (args: EmailTemplateArgs<{ email: string }>) => EmailTemplateResult;
+      invite?: (args: EmailTemplateArgs<{
+        token: string;
+        invitedByEmail?: string;
+        url?: string;
+        data?: Record<string, unknown>;
+      }>) => EmailTemplateResult;
+      resetPassword?: (
+        args: EmailTemplateArgs<{ token: string; url?: string }>
+      ) => EmailTemplateResult;
+      passwordChanged?: (
+        args: EmailTemplateArgs<{ email: string }>
+      ) => EmailTemplateResult;
     };
   };
 

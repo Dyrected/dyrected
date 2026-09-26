@@ -86,6 +86,49 @@ await client.deleteMany("media", {
 });
 ```
 
+## Managing authentication & invitations
+
+When a collection has `auth: true` or an auth config, `client.collection(slug)` exposes full auth lifecycle methods:
+
+```ts
+// 1. Invite a user with initial role data and custom action URL
+const invite = await client.collection("users").invite("alex@example.com", {
+  inviteUrl: "https://myapp.com/accept-invite",
+  data: { roles: ["editor"], name: "Alex" },
+});
+console.log(`Invite sent: ${invite.emailSent}, token: ${invite.token}`);
+
+// 2. Mint a headless invite token without sending an email (for SMS, custom delivery)
+const headless = await client.collection("users").createInviteToken({
+  email: "partner@example.com",
+  inviteUrl: "https://myapp.com/onboarding",
+});
+
+// 3. Verify an invite or reset token when your frontend component mounts
+const check = await client.collection("users").verifyToken(tokenFromUrl, "invite");
+if (check.valid) {
+  console.log(`Token verified for ${check.email}`);
+} else {
+  console.error(`Token invalid or expired: ${check.error}`);
+}
+
+// 4. Complete invite acceptance with a user-chosen password
+const { token, user } = await client.collection("users").acceptInvite(
+  tokenFromUrl,
+  "secure-password-123",
+  { department: "Design" },
+);
+client.setToken(token);
+
+// 5. Send a password reset or mint a headless reset token
+await client.collection("users").sendPasswordReset("alex@example.com", {
+  resetUrl: "https://myapp.com/reset-password",
+});
+const resetToken = await client.collection("users").createPasswordResetToken("alex@example.com");
+```
+
+For the endpoint-by-endpoint details and server behavior, read [Authentication Operations](/docs/deployment-and-operations/authentication/operations).
+
 ## Handling errors
 
 SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
@@ -199,7 +242,6 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>uploadMedia</code> (required) |  |
 | <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
-| <code>request</code> (optional) |  |
 
 
 ## DyrectedClientConfig
@@ -287,6 +329,51 @@ export type InferSchema<
 ```
 
 
+## InviteOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface InviteOptions {
+  inviteUrl?: string;
+  sendEmail?: boolean;
+  data?: UnknownRecord;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>inviteUrl</code> (optional) |  |
+| <code>sendEmail</code> (optional) |  |
+| <code>data</code> (optional) |  |
+
+
+## InviteResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface InviteResult {
+  success: boolean;
+  message: string;
+  token: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailError?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>success</code> (required) |  |
+| <code>message</code> (required) |  |
+| <code>token</code> (required) |  |
+| <code>inviteUrl</code> (required) |  |
+| <code>emailSent</code> (required) |  |
+| <code>emailError</code> (optional) |  |
+
+
 ## MediaFolder
 
 Shape of a media folder document in the DAM system.
@@ -316,6 +403,48 @@ export interface MediaFolder {
 | <code>color</code> (optional) |  |
 | <code>createdAt</code> (optional) |  |
 | <code>updatedAt</code> (optional) |  |
+
+
+## PasswordResetOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface PasswordResetOptions {
+  resetUrl?: string;
+  sendEmail?: boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>resetUrl</code> (optional) |  |
+| <code>sendEmail</code> (optional) |  |
+
+
+## PasswordResetResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface PasswordResetResult {
+  success: boolean;
+  message: string;
+  emailSent: boolean;
+  emailError?: string;
+  token?: string;
+  resetUrl?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>success</code> (required) |  |
+| <code>message</code> (required) |  |
+| <code>emailSent</code> (required) |  |
+| <code>emailError</code> (optional) |  |
+| <code>token</code> (optional) |  |
+| <code>resetUrl</code> (optional) |  |
 
 
 ## PREVIEW_TOKEN_PARAM
@@ -609,6 +738,29 @@ export interface SerializedSchemaAIConfig {
 | <code>enabled</code> (required) |  |
 | <code>provider</code> (optional) |  |
 | <code>model</code> (optional) |  |
+
+
+## TokenVerificationResult
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TokenVerificationResult {
+  valid: boolean;
+  email?: string;
+  collection?: string;
+  code?: string;
+  message?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>valid</code> (required) |  |
+| <code>email</code> (optional) |  |
+| <code>collection</code> (optional) |  |
+| <code>code</code> (optional) |  |
+| <code>message</code> (optional) |  |
 
 
 ## TransitionOptions

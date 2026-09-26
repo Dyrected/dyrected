@@ -658,6 +658,48 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deliver-content/sdk-api/overview#example-34",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-35",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-36",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-37",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-38",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-39",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deliver-content/sdk-api/pagination#example-1",
     "page": "/deliver-content/sdk-api/pagination",
     "language": "ts",
@@ -898,9 +940,9 @@
   {
     "id": "/deployment-and-operations/authentication/operations#example-5",
     "page": "/deployment-and-operations/authentication/operations",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
   },
   {
     "id": "/deployment-and-operations/authentication/operations#example-6",
@@ -913,15 +955,15 @@
     "id": "/deployment-and-operations/authentication/operations#example-7",
     "page": "/deployment-and-operations/authentication/operations",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/deployment-and-operations/authentication/operations#example-8",
     "page": "/deployment-and-operations/authentication/operations",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/deployment-and-operations/authentication/operations#example-9",
@@ -961,12 +1003,61 @@
   {
     "id": "/deployment-and-operations/authentication/operations#example-14",
     "page": "/deployment-and-operations/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-15",
+    "page": "/deployment-and-operations/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-16",
+    "page": "/deployment-and-operations/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-17",
+    "page": "/deployment-and-operations/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-18",
+    "page": "/deployment-and-operations/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-19",
+    "page": "/deployment-and-operations/authentication/operations",
     "language": "json",
     "classification": "parsed",
     "validation": "Parsed as JSON"
   },
   {
-    "id": "/deployment-and-operations/authentication/operations#example-15",
+    "id": "/deployment-and-operations/authentication/operations#example-20",
+    "page": "/deployment-and-operations/authentication/operations",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-21",
+    "page": "/deployment-and-operations/authentication/operations",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/deployment-and-operations/authentication/operations#example-22",
     "page": "/deployment-and-operations/authentication/operations",
     "language": "ts",
     "classification": "syntax-checked",
@@ -1226,6 +1317,41 @@
   },
   {
     "id": "/deployment-and-operations/infrastructure/email#example-4",
+    "page": "/deployment-and-operations/infrastructure/email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/email#example-5",
+    "page": "/deployment-and-operations/infrastructure/email",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/email#example-6",
+    "page": "/deployment-and-operations/infrastructure/email",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/email#example-7",
+    "page": "/deployment-and-operations/infrastructure/email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/email#example-8",
+    "page": "/deployment-and-operations/infrastructure/email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/infrastructure/email#example-9",
     "page": "/deployment-and-operations/infrastructure/email",
     "language": "ts",
     "classification": "syntax-checked",
@@ -4329,8 +4455,8 @@
     "id": "/model-content/configuration/collections#example-13",
     "page": "/model-content/configuration/collections",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/configuration/collections#example-14",
@@ -4341,6 +4467,13 @@
   },
   {
     "id": "/model-content/configuration/collections#example-15",
+    "page": "/model-content/configuration/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/collections#example-16",
     "page": "/model-content/configuration/collections",
     "language": "ts",
     "classification": "illustrative",
