@@ -30,6 +30,7 @@ import type { AspectRatioMode } from "./media-filter-bar";
 interface MediaCardProps {
   item: any;
   baseUrl: string;
+  isTrash?: boolean;
   onDelete: (id: string) => void;
   editPath: string;
   aspectRatio?: AspectRatioMode;
@@ -51,6 +52,7 @@ function formatBytes(bytes?: number, decimals = 1) {
 export function MediaCard({
   item,
   baseUrl,
+  isTrash,
   onDelete,
   editPath,
   aspectRatio = "square",
@@ -289,7 +291,7 @@ export function MediaCard({
             e.stopPropagation();
             onDelete(item.id);
           }}
-          title="Delete Asset"
+          title={isTrash ? "Move to trash" : "Delete Asset"}
         >
           <Trash2 className="dy-h-3.5 dy-w-3.5" />
         </Button>

@@ -396,6 +396,7 @@ export function CollectionTrashPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         onRestore={handleRestore}
+        collections={schemas?.collections}
       />
 
       <RestoreConflictDialog

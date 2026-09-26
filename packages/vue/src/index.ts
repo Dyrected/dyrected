@@ -20,6 +20,7 @@ export * from './composables/useAddMediaFromUrl';
 export * from './composables/useDyrectedForm';
 export * from './composables/useField';
 export * from './composables/useAdminTheme';
+export * from './composables/useTrash';
 
 // Bridge
 export * from './bridge/react-in-vue';

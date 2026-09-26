@@ -35,6 +35,7 @@ interface MediaInspectorProps {
   folders?: MediaFolder[];
   onUpdate: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
+  isTrash?: boolean;
 }
 
 function formatBytes(bytes?: number) {
@@ -53,6 +54,7 @@ export function MediaInspector({
   folders,
   onUpdate,
   onDelete,
+  isTrash,
 }: MediaInspectorProps) {
   const isMobile = useIsMobile();
 
@@ -75,6 +77,7 @@ export function MediaInspector({
           onClose={onClose}
           onUpdate={onUpdate}
           onDelete={onDelete}
+          isTrash={isTrash}
         />
       </SheetContent>
     </Sheet>
@@ -88,6 +91,7 @@ function MediaInspectorForm({
   onClose,
   onUpdate,
   onDelete,
+  isTrash,
 }: {
   item: any;
   baseUrl: string;
@@ -95,6 +99,7 @@ function MediaInspectorForm({
   onClose: () => void;
   onUpdate: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
+  isTrash?: boolean;
 }) {
   const { client } = useDyrected();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -397,11 +402,10 @@ function MediaInspectorForm({
           className="dy-text-destructive hover:dy-bg-destructive/10 dy-h-8 dy-text-xs"
           onClick={() => {
             onDelete(item.id);
-            onClose();
           }}
         >
           <Trash2 className="dy-h-3.5 dy-w-3.5 dy-mr-1.5" />
-          Delete
+          {isTrash ? "Move to trash" : "Delete"}
         </Button>
 
         <div className="dy-flex dy-items-center dy-gap-2">

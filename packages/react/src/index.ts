@@ -6,6 +6,7 @@ export * from './hooks/useMediaUpload';
 export * from './hooks/useMediaLibrary';
 export * from './hooks/useMediaURL';
 export * from './hooks/useAddMediaFromUrl';
+export * from './hooks/useTrash';
 export * from './providers/DyrectedProvider';
 export * from './providers/DyPathProvider';
 export * from './components/DyrectedImage';

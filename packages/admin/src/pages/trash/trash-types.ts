@@ -8,8 +8,8 @@ export interface TrashEntrySnapshot {
   id: string
   collection: string
   docId: string
-  deletedAt: number
-  purgeAt: number | null
+  deletedAt: number | string
+  purgeAt: number | string | null
   deletedBy?: string
   title?: string
   snapshot: Record<string, unknown>

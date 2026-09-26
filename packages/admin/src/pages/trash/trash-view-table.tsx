@@ -48,12 +48,33 @@ export interface TrashViewTableProps {
   restoringId?: string | null
 }
 
-function formatCountdown(purgeAt: number | null): { text: string; variant: "default" | "warning" | "destructive" | "secondary" } {
-  if (purgeAt === null) {
+function parseSafeTimestamp(val: unknown): number | null {
+  if (val === null || val === undefined || val === "") return null
+  if (typeof val === "number") return isNaN(val) ? null : val
+  if (typeof val === "string") {
+    const trimmed = val.trim()
+    if (/^\d+$/.test(trimmed)) {
+      const num = Number(trimmed)
+      return isNaN(num) ? null : num
+    }
+    const d = new Date(trimmed)
+    return isNaN(d.getTime()) ? null : d.getTime()
+  }
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val.getTime()
+  return null
+}
+
+function formatCountdown(purgeAt: number | string | null | undefined): { text: string; variant: "default" | "warning" | "destructive" | "secondary" } {
+  if (purgeAt === null || purgeAt === undefined || purgeAt === "") {
     return { text: "Kept until emptied", variant: "secondary" }
   }
 
-  const diffMs = purgeAt - Date.now()
+  const purgeTime = parseSafeTimestamp(purgeAt)
+  if (purgeTime === null) {
+    return { text: "Kept until emptied", variant: "secondary" }
+  }
+
+  const diffMs = purgeTime - Date.now()
   if (diffMs <= 0) {
     return { text: "Purge overdue", variant: "destructive" }
   }
@@ -67,10 +88,12 @@ function formatCountdown(purgeAt: number | null): { text: string; variant: "defa
   return { text: `Purges in ${days} day${days === 1 ? "" : "s"}`, variant: days <= 3 ? "warning" : "default" }
 }
 
-function formatDateTime(timestamp: number | string | undefined): string {
+function formatDateTime(timestamp: number | string | undefined | null): string {
   if (!timestamp) return "—"
   try {
-    const d = new Date(timestamp)
+    const time = parseSafeTimestamp(timestamp)
+    if (time === null) return "—"
+    const d = new Date(time)
     return d.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",

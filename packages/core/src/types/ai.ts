@@ -250,7 +250,7 @@ export interface AggregateCollectionResult {
   result: Record<string, unknown>;
 }
 
-export type AIActionType = 'createDocument' | 'updateDocument' | 'deleteDocument' | 'updateGlobal';
+export type AIActionType = 'createDocument' | 'updateDocument' | 'deleteDocument' | 'updateGlobal' | 'restoreDocument';
 export type AIActionStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'failed';
 
 export interface AIAction {

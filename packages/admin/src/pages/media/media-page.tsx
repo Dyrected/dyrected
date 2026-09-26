@@ -1,5 +1,6 @@
 import * as React from "react"
-import { keepPreviousData, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Link } from "react-router-dom"
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../../components/ui/button"
@@ -13,6 +14,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -95,6 +98,19 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   const [aspectRatio, setAspectRatio] = React.useState<AspectRatioMode>("square")
   const [movingItems, setMovingItems] = React.useState<Media[] | null>(null)
   const debouncedSearch = useDebouncedValue(search.trim(), 300)
+
+  const isTrashEnabled = (schema.trash as any)?.enabled !== false && !schema.slug?.startsWith("__")
+  const retentionDays = (schema.trash as any)?.retentionDays ?? (schemas as any)?.trash?.retentionDays ?? 30
+  const [assetToDelete, setAssetToDelete] = React.useState<{ id: string; name?: string } | null>(null)
+
+  const { data: trashData } = useQuery({
+    queryKey: ["trash-count", collectionSlug],
+    queryFn: async () => {
+      if (!client) return { total: 0 }
+      return (client as any).request(`/api/collections/${collectionSlug}/trash?limit=1`)
+    },
+    enabled: !!client && isTrashEnabled,
+  })
 
   const {
     folders,
@@ -242,12 +258,47 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => client!.deleteMedia(id, collectionSlug),
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
-      toast.success("Asset deleted successfully")
+      queryClient.invalidateQueries({ queryKey: ["trash-count", collectionSlug] })
+      if (selectedItem?.id === deletedId) {
+        setSelectedItem(null)
+      }
+      setAssetToDelete(null)
+
+      if (isTrashEnabled) {
+        toast("Moved to trash", {
+          duration: 8000,
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              try {
+                const trashId = `${collectionSlug}:${deletedId}`
+                const colClient = (client as any)?.collection?.(collectionSlug)
+                if (colClient?.trash?.restore) {
+                  await colClient.trash.restore(trashId)
+                } else if ((client as any)?.trash) {
+                  await (client as any).trash(collectionSlug).restore(trashId)
+                } else {
+                  await (client as any)?.request(`/api/collections/${collectionSlug}/trash/${encodeURIComponent(trashId)}/restore`, {
+                    method: "POST",
+                  })
+                }
+                queryClient.invalidateQueries({ queryKey: ["media"] })
+                queryClient.invalidateQueries({ queryKey: ["trash-count", collectionSlug] })
+                toast.success("Restored from trash")
+              } catch (error: any) {
+                toast.error("Failed to restore", { description: error.message })
+              }
+            },
+          },
+        })
+      } else {
+        toast.success("Asset deleted successfully")
+      }
     },
     onError: (error: Error) => {
-      toast.error("Failed to delete asset", {
+      toast.error(isTrashEnabled ? "Failed to move asset to trash" : "Failed to delete asset", {
         description: error.message
       })
     }
@@ -359,13 +410,31 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             Manage your images, documents, and other assets for this site.
           </p>
         </div>
-        {canCreate && <Dialog open={isUploadOpen} onOpenChange={handleUploadOpenChange}>
-          <DialogTrigger asChild>
-            <Button className="dy-h-10 dy-w-full dy-justify-center dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95 sm:dy-w-auto">
-              <Upload className="dy-mr-2 dy-h-4 dy-w-4" />
-              Upload Assets
+        <div className="dy-flex dy-items-center dy-gap-2">
+          {isTrashEnabled && (
+            <Button
+              asChild
+              variant="outline"
+              className="dy-h-10 dy-gap-2 dy-px-3.5 dy-rounded-lg"
+            >
+              <Link to={`/collections/${collectionSlug}/trash`}>
+                <Trash2 className="dy-h-4 dy-w-4" />
+                <span>Trash</span>
+                {typeof trashData?.total === "number" && trashData.total > 0 && (
+                  <span className="dy-ml-0.5 dy-rounded-full dy-bg-muted dy-px-1.5 dy-py-0.5 dy-text-xs dy-font-semibold dy-tabular-nums">
+                    {trashData.total}
+                  </span>
+                )}
+              </Link>
             </Button>
-          </DialogTrigger>
+          )}
+          {canCreate && <Dialog open={isUploadOpen} onOpenChange={handleUploadOpenChange}>
+            <DialogTrigger asChild>
+              <Button className="dy-h-10 dy-w-full dy-justify-center dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95 sm:dy-w-auto">
+                <Upload className="dy-mr-2 dy-h-4 dy-w-4" />
+                Upload Assets
+              </Button>
+            </DialogTrigger>
           <DialogContent className="dy-max-h-[88dvh] dy-w-[calc(100vw)] sm:dy-max-w-[560px] dy-flex dy-flex-col dy-p-0 dy-gap-0 dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border dy-bg-background dy-shadow-2xl">
             <DialogHeader className="dy-px-6 dy-py-4 dy-border-b dy-border-border/60 dy-bg-muted/10">
               <DialogTitle className="dy-font-serif dy-text-lg sm:dy-text-xl dy-font-bold dy-tracking-tight">
@@ -384,6 +453,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             />
           </DialogContent>
         </Dialog>}
+        </div>
       </div>
 
       <div className="dy-flex dy-flex-col md:dy-flex-row dy-gap-4 dy-min-h-[calc(100vh-220px)]">
@@ -469,7 +539,8 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
                       key={item.id as string}
                       item={item}
                       baseUrl={client!.getBaseUrl()}
-                      onDelete={() => deleteMutation.mutate(item.id as string)}
+                      isTrash={isTrashEnabled}
+                      onDelete={() => setAssetToDelete({ id: item.id as string, name: item.filename })}
                       onMoveToFolder={() => setMovingItems([item])}
                       onClick={() => setSelectedItem(item)}
                       isSelected={selectedItem?.id === item.id}
@@ -488,12 +559,13 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
               <MediaListView
                 items={mediaResponse}
                 baseUrl={client!.getBaseUrl()}
+                isTrash={isTrashEnabled}
                 selectedId={selectedItem?.id as string | undefined}
                 sortValue={sortValue}
                 onSort={setSortValue}
                 onSelect={setSelectedItem}
                 onMoveToFolder={(item) => setMovingItems([item])}
-                onDelete={(id) => deleteMutation.mutate(id)}
+                onDelete={(id, name) => setAssetToDelete({ id, name })}
                 sentinelRef={sentinelRef}
                 isFetchingNextPage={isFetchingNextPage}
                 isRefreshing={showSearchRefreshing}
@@ -524,12 +596,52 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
         onClose={() => setSelectedItem(null)}
         baseUrl={client!.getBaseUrl()}
         folders={folders}
+        isTrash={isTrashEnabled}
         onUpdate={(id, data) => updateMutation.mutate({ id, data })}
         onDelete={(id) => {
-          deleteMutation.mutate(id)
-          setSelectedItem(null)
+          setAssetToDelete({ id, name: selectedItem?.filename })
         }}
       />
+
+      {/* Confirmation Dialog for Delete / Move to Trash */}
+      <Dialog open={!!assetToDelete} onOpenChange={(open) => !open && setAssetToDelete(null)}>
+        <DialogContent className="sm:dy-max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {isTrashEnabled ? "Move asset to trash?" : "Delete asset?"}
+            </DialogTitle>
+            <DialogDescription>
+              {isTrashEnabled
+                ? `"${assetToDelete?.name || "This asset"}" will be moved to trash and purged automatically after ${retentionDays} days. You can restore it anytime before then.`
+                : `Are you sure you want to delete "${assetToDelete?.name || "this asset"}"? This action cannot be undone.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAssetToDelete(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (assetToDelete) {
+                  deleteMutation.mutate(assetToDelete.id)
+                }
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending
+                ? isTrashEnabled ? "Moving to trash..." : "Deleting..."
+                : isTrashEnabled ? "Move to trash" : "Delete asset"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <MoveToFolderDialog
         open={!!movingItems}
@@ -550,15 +662,16 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
-function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect, onMoveToFolder, onDelete, sentinelRef, isFetchingNextPage, isRefreshing }: {
+function MediaListView({ items, baseUrl, isTrash, selectedId, sortValue, onSort, onSelect, onMoveToFolder, onDelete, sentinelRef, isFetchingNextPage, isRefreshing }: {
   items?: Media[]
   baseUrl: string
+  isTrash?: boolean
   selectedId?: string
   sortValue: SortValue
   onSort: (v: SortValue) => void
   onSelect: (item: Media) => void
   onMoveToFolder?: (item: Media) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string, name?: string) => void
   sentinelRef: (node: HTMLDivElement | null) => void
   isFetchingNextPage: boolean
   isRefreshing?: boolean
@@ -657,7 +770,13 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
                     <Download className="dy-h-4 dy-w-4" />
                   </a>
                 )}
-                <Button variant="ghost" size="icon" className="dy-h-8 dy-w-8 dy-text-destructive hover:dy-bg-destructive/10" onClick={() => onDelete(item.id as string)} title="Delete">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="dy-h-8 dy-w-8 dy-text-destructive hover:dy-bg-destructive/10"
+                  onClick={() => onDelete(item.id as string, item.filename)}
+                  title={isTrash ? "Move to trash" : "Delete"}
+                >
                   <Trash2 className="dy-h-4 dy-w-4" />
                 </Button>
               </div>
@@ -675,9 +794,10 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
   )
 }
 
-function MediaCard({ item, baseUrl, onDelete, onMoveToFolder, onClick, isSelected, aspectRatio = "square" }: {
+function MediaCard({ item, baseUrl, isTrash, onDelete, onMoveToFolder, onClick, isSelected, aspectRatio = "square" }: {
   item: Media,
   baseUrl: string,
+  isTrash?: boolean,
   onDelete: () => void,
   onMoveToFolder?: () => void,
   onClick: () => void,
@@ -822,13 +942,11 @@ function MediaCard({ item, baseUrl, onDelete, onMoveToFolder, onClick, isSelecte
               className="dy-text-destructive focus:dy-text-destructive"
               onClick={(e) => {
                 e.stopPropagation()
-                if (confirm("Are you sure you want to delete this file?")) {
-                  onDelete()
-                }
+                onDelete()
               }}
             >
               <Trash2 className="dy-h-3.5 dy-w-3.5 dy-mr-2" />
-              Delete Asset
+              {isTrash ? "Move to trash" : "Delete Asset"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

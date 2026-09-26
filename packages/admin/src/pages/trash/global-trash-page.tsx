@@ -420,6 +420,7 @@ export function GlobalTrashPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         onRestore={handleRestore}
+        collections={schemas?.collections}
       />
 
       <RestoreConflictDialog

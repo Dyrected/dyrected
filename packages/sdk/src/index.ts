@@ -272,6 +272,37 @@ export interface TrashEntry {
   updatedAt?: string;
 }
 
+export interface TrashKeepOptions {
+  purgeAt?: Date | string | number | null;
+}
+
+export interface TrashEmptyOptions {
+  confirm?: string;
+}
+
+export interface TrashRestoreOptions {
+  overrides?: Record<string, unknown>;
+}
+
+export interface TrashListArgs {
+  page?: number;
+  limit?: number;
+  search?: string;
+  [key: string]: unknown;
+}
+
+export interface TrashOperations {
+  list: (args?: TrashListArgs) => Promise<PaginatedResult<TrashEntry>>;
+  get: (trashId: string) => Promise<TrashEntry>;
+  restore: (trashId: string, options?: TrashRestoreOptions) => Promise<UnknownRecord>;
+  restoreMany: (trashIds: string[]) => Promise<{ restored: string[]; failed: unknown[]; count: number }>;
+  keep: (trashId: string, options?: TrashKeepOptions | boolean) => Promise<{ message: string; purgeAt: number | null }>;
+  purge: (trashId: string) => Promise<{ message: string }>;
+  empty: (options?: TrashEmptyOptions | string) => Promise<{ message: string; count: number }>;
+}
+
+export type TrashClient = ((collectionSlug?: string) => TrashOperations) & TrashOperations;
+
 type ExtractDoc<T> =
   T extends CollectionConfig<infer TDoc>
     ? TDoc
@@ -808,8 +839,10 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
         this.create<TSchema["collections"][K]>(slug, data),
       update: (id: string, data: Partial<TSchema["collections"][K]>) =>
         this.update<TSchema["collections"][K]>(slug, id, data),
-      delete: (id: string) => this.delete(slug, id),
-      deleteMany: (ids: string[]) => this.deleteMany(slug, ids),
+      delete: (id: string, options?: { permanent?: boolean }) =>
+        this.delete(slug, id, options),
+      deleteMany: (ids: string[], options?: { permanent?: boolean }) =>
+        this.deleteMany(slug, ids, options),
       /**
        * Upload a file to this collection. Sends as multipart/form-data.
        * @param file - A File or Blob (browser) or Buffer with filename/mimeType (Node.js)
@@ -1071,14 +1104,14 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           },
         ),
       trash: {
-        list: (args: Record<string, unknown> = {}) => {
+        list: (args: TrashListArgs = {}) => {
           const query = stringifyQuery(args, { addQueryPrefix: true });
           return this.request<PaginatedResult<TrashEntry>>(`/api/collections/${slug}/trash${query}`);
         },
         get: (trashId: string) => {
           return this.request<TrashEntry>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}`);
         },
-        restore: (trashId: string, options: { overrides?: Record<string, unknown> } = {}) => {
+        restore: (trashId: string, options: TrashRestoreOptions = {}) => {
           return this.request<UnknownRecord>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}/restore`, {
             method: "POST",
             body: JSON.stringify(options),
@@ -1090,10 +1123,26 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             body: JSON.stringify({ trashIds }),
           });
         },
-        keep: (trashId: string, keep: boolean = true) => {
+        keep: (trashId: string, options: TrashKeepOptions | boolean = true) => {
+          let body: { keep?: boolean; purgeAt?: number | null };
+          if (typeof options === "boolean") {
+            body = { keep: options };
+          } else if (options && "purgeAt" in options) {
+            body = {
+              keep: options.purgeAt === null ? true : false,
+              purgeAt:
+                options.purgeAt instanceof Date
+                  ? options.purgeAt.getTime()
+                  : typeof options.purgeAt === "string"
+                    ? new Date(options.purgeAt).getTime()
+                    : options.purgeAt,
+            };
+          } else {
+            body = { keep: true };
+          }
           return this.request<{ message: string; purgeAt: number | null }>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}`, {
             method: "PATCH",
-            body: JSON.stringify({ keep }),
+            body: JSON.stringify(body),
           });
         },
         purge: (trashId: string) => {
@@ -1101,7 +1150,8 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             method: "DELETE",
           });
         },
-        empty: (confirm: string) => {
+        empty: (options?: TrashEmptyOptions | string) => {
+          const confirm = typeof options === "string" ? options : (options?.confirm ?? slug);
           return this.request<{ message: string; count: number }>(`/api/collections/${slug}/trash?confirm=${encodeURIComponent(confirm)}`, {
             method: "DELETE",
           });
@@ -1125,16 +1175,80 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     };
   }
 
-  get trash() {
-    return {
-      list: (args: Record<string, unknown> = {}) => {
+  /**
+   * Access trash operations, either collection-scoped or globally.
+   *
+   * @example
+   * client.trash('guests').list({ page: 1, limit: 20 })
+   * client.trash('guests').restore(id)
+   * client.trash('guests').keep(id, { purgeAt: null })
+   * client.trash.list()
+   */
+  get trash(): TrashClient {
+    const createCollectionTrash = (collectionSlug: string): TrashOperations => ({
+      list: (args: TrashListArgs = {}) => {
+        const query = stringifyQuery(args, { addQueryPrefix: true });
+        return this.request<PaginatedResult<TrashEntry>>(`/api/collections/${collectionSlug}/trash${query}`);
+      },
+      get: (trashId: string) => {
+        return this.request<TrashEntry>(`/api/collections/${collectionSlug}/trash/${encodeURIComponent(trashId)}`);
+      },
+      restore: (trashId: string, options: TrashRestoreOptions = {}) => {
+        return this.request<UnknownRecord>(`/api/collections/${collectionSlug}/trash/${encodeURIComponent(trashId)}/restore`, {
+          method: "POST",
+          body: JSON.stringify(options),
+        });
+      },
+      restoreMany: (trashIds: string[]) => {
+        return this.request<{ restored: string[]; failed: unknown[]; count: number }>(`/api/collections/${collectionSlug}/trash/restore-many`, {
+          method: "POST",
+          body: JSON.stringify({ trashIds }),
+        });
+      },
+      keep: (trashId: string, options: TrashKeepOptions | boolean = true) => {
+        let body: { keep?: boolean; purgeAt?: number | null };
+        if (typeof options === "boolean") {
+          body = { keep: options };
+        } else if (options && "purgeAt" in options) {
+          body = {
+            keep: options.purgeAt === null ? true : false,
+            purgeAt:
+              options.purgeAt instanceof Date
+                ? options.purgeAt.getTime()
+                : typeof options.purgeAt === "string"
+                  ? new Date(options.purgeAt).getTime()
+                  : options.purgeAt,
+          };
+        } else {
+          body = { keep: true };
+        }
+        return this.request<{ message: string; purgeAt: number | null }>(`/api/collections/${collectionSlug}/trash/${encodeURIComponent(trashId)}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        });
+      },
+      purge: (trashId: string) => {
+        return this.request<{ message: string }>(`/api/collections/${collectionSlug}/trash/${encodeURIComponent(trashId)}`, {
+          method: "DELETE",
+        });
+      },
+      empty: (options?: TrashEmptyOptions | string) => {
+        const confirm = typeof options === "string" ? options : (options?.confirm ?? collectionSlug);
+        return this.request<{ message: string; count: number }>(`/api/collections/${collectionSlug}/trash?confirm=${encodeURIComponent(confirm)}`, {
+          method: "DELETE",
+        });
+      },
+    });
+
+    const globalOps: TrashOperations = {
+      list: (args: TrashListArgs = {}) => {
         const query = stringifyQuery(args, { addQueryPrefix: true });
         return this.request<PaginatedResult<TrashEntry>>(`/api/trash${query}`);
       },
       get: (trashId: string) => {
         return this.request<TrashEntry>(`/api/trash/${encodeURIComponent(trashId)}`);
       },
-      restore: (trashId: string, options: { overrides?: Record<string, unknown> } = {}) => {
+      restore: (trashId: string, options: TrashRestoreOptions = {}) => {
         return this.request<UnknownRecord>(`/api/trash/${encodeURIComponent(trashId)}/restore`, {
           method: "POST",
           body: JSON.stringify(options),
@@ -1146,10 +1260,26 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           body: JSON.stringify({ trashIds }),
         });
       },
-      keep: (trashId: string, keep: boolean = true) => {
+      keep: (trashId: string, options: TrashKeepOptions | boolean = true) => {
+        let body: { keep?: boolean; purgeAt?: number | null };
+        if (typeof options === "boolean") {
+          body = { keep: options };
+        } else if (options && "purgeAt" in options) {
+          body = {
+            keep: options.purgeAt === null ? true : false,
+            purgeAt:
+              options.purgeAt instanceof Date
+                ? options.purgeAt.getTime()
+                : typeof options.purgeAt === "string"
+                  ? new Date(options.purgeAt).getTime()
+                  : options.purgeAt,
+          };
+        } else {
+          body = { keep: true };
+        }
         return this.request<{ message: string; purgeAt: number | null }>(`/api/trash/${encodeURIComponent(trashId)}`, {
           method: "PATCH",
-          body: JSON.stringify({ keep }),
+          body: JSON.stringify(body),
         });
       },
       purge: (trashId: string) => {
@@ -1157,13 +1287,21 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           method: "DELETE",
         });
       },
-      empty: (collectionSlug?: string) => {
-        const query = collectionSlug ? `?confirm=${encodeURIComponent(collectionSlug)}` : "";
+      empty: (options?: TrashEmptyOptions | string) => {
+        const confirm = typeof options === "string" ? options : options?.confirm;
+        const query = confirm ? `?confirm=${encodeURIComponent(confirm)}` : "";
         return this.request<{ message: string; count: number }>(`/api/trash${query}`, {
           method: "DELETE",
         });
       },
     };
+
+    const callable = ((collectionSlug?: string) => {
+      if (!collectionSlug) return globalOps;
+      return createCollectionTrash(collectionSlug);
+    }) as TrashClient;
+
+    return Object.assign(callable, globalOps);
   }
 
   async findOne<T = UnknownRecord>(
@@ -1222,8 +1360,13 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     });
   }
 
-  async delete(collection: string, id: string): Promise<{ message: string }> {
-    return this.request(`/api/collections/${collection}/${id}`, {
+  async delete(
+    collection: string,
+    id: string,
+    options?: { permanent?: boolean },
+  ): Promise<{ message: string }> {
+    const query = options?.permanent ? "?permanent=true" : "";
+    return this.request(`/api/collections/${collection}/${id}${query}`, {
       method: "DELETE",
     });
   }
@@ -1309,8 +1452,10 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   async deleteMany(
     collection: string,
     ids: string[],
+    options?: { permanent?: boolean },
   ): Promise<{ message: string }> {
-    return this.request(`/api/collections/${collection}/delete-many`, {
+    const query = options?.permanent ? "?permanent=true" : "";
+    return this.request(`/api/collections/${collection}/delete-many${query}`, {
       method: "DELETE",
       body: JSON.stringify({ ids }),
     });

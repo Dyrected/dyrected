@@ -12,6 +12,7 @@ import { isAccessAllowed, resolveAccess } from '../auth/access.js';
 import { mergeWhereConstraint } from '../utils/access-control.js';
 import { RAGService } from './rag/rag.service.js';
 import { sanitizeDocForAI } from '../utils/ai-pii.js';
+import { TRASH_COLLECTION } from '../trash.js';
 
 function generateActionId(): string {
   return `act_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
@@ -872,23 +873,20 @@ export function createDyrectedAITools({
 
     proposeDeleteDocument: tool({
       description:
-        'Propose deleting an existing document from a collection. Does NOT delete from the database immediately; creates a proposal requiring human approval in the chat UI.',
+        'Propose moving an existing document from a collection to trash (soft deletion). Does NOT delete from the database immediately; creates a proposal requiring human approval in the chat UI. Agents cannot permanently delete records.',
       inputSchema: z.object({
         collection: z.string().describe('Slug of the target collection'),
         id: z.string().describe('Primary key ID of the document to delete'),
-        summary: z.string().describe('Clear explanation of why this document should be deleted'),
-        permanent: z.boolean().optional().default(false).describe('Whether this is a permanent deletion'),
+        summary: z.string().describe('Clear explanation of why this document should be moved to trash'),
       }),
       execute: async ({
         collection,
         id,
         summary,
-        permanent = false,
       }: {
         collection: string;
         id: string;
         summary: string;
-        permanent?: boolean;
       }) => {
         return withTimeout(
           (async () => {
@@ -975,7 +973,7 @@ export function createDyrectedAITools({
               documentId: id,
               summary,
               beforeSnapshot: existingDoc,
-              proposedData: { permanent },
+              proposedData: { permanent: false },
               status: 'pending',
               expiresAt: new Date(Date.now() + 30 * 60 * 1000),
               createdAt: new Date(),
@@ -1000,13 +998,135 @@ export function createDyrectedAITools({
               documentId: id,
               summary,
               beforeSnapshot: existingDoc,
-              proposedData: { permanent },
+              proposedData: { permanent: false },
               status: 'pending',
               requiresApproval: true,
             };
           })(),
           10000,
           'proposeDeleteDocument'
+        );
+      },
+    }),
+
+    proposeRestoreDocument: tool({
+      description:
+        'Propose restoring a soft-deleted document from trash back into its collection. Does NOT restore immediately; creates a proposal requiring human approval in the chat UI.',
+      inputSchema: z.object({
+        collection: z.string().describe('Slug of the target collection'),
+        trashId: z.string().describe('Primary key ID of the trash record to restore (or original doc ID)'),
+        summary: z.string().describe('Clear explanation of why this document should be restored'),
+        overrides: z.record(z.string(), z.any()).optional().describe('Optional field overrides to resolve unique or schema conflicts during restore'),
+      }),
+      execute: async ({
+        collection,
+        trashId,
+        summary,
+        overrides,
+      }: {
+        collection: string;
+        trashId: string;
+        summary: string;
+        overrides?: Record<string, unknown>;
+      }) => {
+        return withTimeout(
+          (async () => {
+            if (isAICollection(collection) || collection.startsWith('_')) {
+              return {
+                error: `Collection "${collection}" is internal and cannot be restored.`,
+                suggestion: `Target public collections: [${getAvailableCollectionSlugs(config, projectId)}]`,
+                recoverable: true,
+              };
+            }
+            const col = config.collections?.find((c) => c.slug === collection);
+            if (!col || !isCollectionVisibleToProject(col, projectId)) {
+              return {
+                error: `Collection "${collection}" not found in project.`,
+                suggestion: `Available collections are: [${getAvailableCollectionSlugs(config, projectId)}].`,
+                recoverable: true,
+              };
+            }
+
+            // Access check: restore requires delete permission
+            const deleteAccessResult = await resolveAccess(config, col.access?.delete, {
+              req: { user, siteId: projectId } as any,
+              user,
+            });
+            if (deleteAccessResult === false) {
+              return {
+                error: `Access denied: you do not have permission to restore documents in "${collection}".`,
+                recoverable: false,
+              };
+            }
+
+            // Look up trash record in __trash by trashId or docId
+            let trashRecord: any = await db.findOne({
+              collection: TRASH_COLLECTION,
+              id: trashId,
+            });
+            if (!trashRecord) {
+              const res = await db.find({
+                collection: TRASH_COLLECTION,
+                where: {
+                  collection: { equals: collection },
+                  docId: { equals: trashId },
+                },
+                limit: 1,
+              });
+              if (res?.docs?.length) {
+                trashRecord = res.docs[0];
+              }
+            }
+
+            if (!trashRecord || trashRecord.collection !== collection) {
+              return {
+                error: `Trash record "${trashId}" not found for collection "${collection}".`,
+                recoverable: true,
+              };
+            }
+
+            const actionId = generateActionId();
+            const actionRecord: AIAction = {
+              id: actionId,
+              projectId,
+              userId: user?.id ? String(user.id) : undefined,
+              type: 'restoreDocument',
+              targetCollection: collection,
+              documentId: String(trashRecord.id),
+              summary,
+              beforeSnapshot: (trashRecord.snapshot as Record<string, unknown>) || null,
+              proposedData: { overrides: overrides || {} },
+              status: 'pending',
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+              createdAt: new Date(),
+            };
+
+            try {
+              await db.create({
+                collection: AI_ACTIONS_COLLECTION,
+                data: actionRecord,
+              });
+            } catch (err: any) {
+              return {
+                error: `Failed to persist action proposal: ${err.message}`,
+                recoverable: true,
+              };
+            }
+
+            return {
+              actionId,
+              type: 'restoreDocument',
+              collection,
+              trashId: String(trashRecord.id),
+              documentId: String(trashRecord.docId),
+              summary,
+              overrides,
+              status: 'pending',
+              requiresApproval: true,
+            };
+          })(),
+          10000,
+          'proposeRestoreDocument'
         );
       },
     }),

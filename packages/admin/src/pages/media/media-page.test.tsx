@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import type { ReactNode } from "react"
+import { MemoryRouter } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { CollectionConfig } from "@dyrected/core"
 import { MediaPage } from "./media-page"
@@ -96,7 +97,11 @@ describe("MediaPage component slots", () => {
   })
 
   it("renders all collection slots around the real media grid with rich props", () => {
-    const { container } = render(<MediaPage collectionSlug="assets" schema={createSchema()} />)
+    const { container } = render(
+      <MemoryRouter>
+        <MediaPage collectionSlug="assets" schema={createSchema()} />
+      </MemoryRouter>
+    )
 
     const orderedTestIds = Array.from(container.querySelectorAll("[data-testid]"))
       .map((element) => element.getAttribute("data-testid"))
@@ -109,10 +114,26 @@ describe("MediaPage component slots", () => {
   })
 
   it("does not render extensions when collection read access is denied", () => {
-    render(<MediaPage collectionSlug="assets" schema={createSchema({ read: "false" })} />)
+    render(
+      <MemoryRouter>
+        <MediaPage collectionSlug="assets" schema={createSchema({ read: "false" })} />
+      </MemoryRouter>
+    )
 
     expect(screen.getByText("Access Denied")).toBeDefined()
     expect(screen.queryByTestId("before-list")).toBeNull()
     expect(screen.queryByTestId("media-grid")).toBeNull()
+  })
+
+  it("renders trash link in header when trash is enabled", () => {
+    render(
+      <MemoryRouter>
+        <MediaPage collectionSlug="assets" schema={createSchema()} />
+      </MemoryRouter>
+    )
+
+    const trashLink = screen.getByRole("link", { name: /trash/i })
+    expect(trashLink).toBeDefined()
+    expect(trashLink.getAttribute("href")).toBe("/collections/assets/trash")
   })
 })

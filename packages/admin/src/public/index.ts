@@ -38,6 +38,14 @@ export {
   createMediaUploadController,
   createMediaURLController,
 } from "../controllers/media";
+export {
+  createTrashController,
+} from "../controllers/trash";
+export type {
+  TrashController,
+  TrashControllerOptions,
+  TrashControllerState,
+} from "../controllers/trash";
 export type {
   DyrectedFieldController,
 } from "../controllers/field";
@@ -119,6 +127,12 @@ export { useMediaLibrary } from "../hooks/use-media-library";
 export { useMediaUpload } from "../hooks/use-media-upload";
 export { useMediaURL } from "../hooks/use-media-url";
 export { useAddMediaFromUrl } from "../hooks/use-add-media-from-url";
+export { useTrash } from "../hooks/use-trash";
+export type {
+  UseTrashOptions,
+  UseTrashPagination,
+  UseTrashResult,
+} from "../hooks/use-trash";
 export {
   resolveBadgePresentation,
   BADGE_COLOR_PALETTES,

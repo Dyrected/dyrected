@@ -1,7 +1,7 @@
 import { createClient, DyrectedClient } from "@dyrected/sdk";
 
-export { dyrectedNextHandler } from "./handler.js";
-export type { DyrectedNextHandlerOptions } from "./handler.js";
+export { dyrectedNextHandler, dyrectedNextCronHandler } from "./handler.js";
+export type { DyrectedNextHandlerOptions, DyrectedNextCronHandlerOptions } from "./handler.js";
 
 /**
  * Returns a pre-configured Dyrected SDK client for server-side use.

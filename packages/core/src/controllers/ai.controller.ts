@@ -5,6 +5,7 @@ import type { DyrectedConfig } from "../types/index.js";
 import { AIAgent } from "../services/ai.service.js";
 import { resolveAuthorizedSiteId, isSiteAuthorized } from "../utils/tenant.js";
 import { mergeDynamicConfig } from "../utils/block-references.js";
+import { resolveTrashConfig, softDeleteDocument, restoreDocument } from "../trash.js";
 
 export class AIController {
   private config: DyrectedConfig;
@@ -371,7 +372,7 @@ export class AIController {
 
       let opAccess = col.access?.update;
       if (action.type === "createDocument") opAccess = col.access?.create;
-      else if (action.type === "deleteDocument") opAccess = col.access?.delete;
+      else if (action.type === "deleteDocument" || action.type === "restoreDocument") opAccess = col.access?.delete;
 
       const allowed = await isAccessAllowed(activeConfig, opAccess, {
         req: { user, siteId: projectId } as any,
@@ -456,12 +457,34 @@ export class AIController {
         });
         rollbackPayload = action.beforeSnapshot;
       } else if (action.type === "deleteDocument") {
-        await db.delete({
-          collection: action.targetCollection!,
-          id: action.documentId!,
-        });
+        const colConfig = activeConfig.collections.find((c) => c.slug === action.targetCollection);
+        const trashConfig = colConfig ? resolveTrashConfig(colConfig, activeConfig) : { enabled: false };
+        if (trashConfig.enabled && !action.proposedData?.permanent) {
+          await softDeleteDocument({
+            db,
+            config: activeConfig,
+            collection: action.targetCollection!,
+            id: action.documentId!,
+            deletedBy: action.userId,
+          });
+        } else {
+          await db.delete({
+            collection: action.targetCollection!,
+            id: action.documentId!,
+          });
+        }
         snapshotAfter = null;
         rollbackPayload = action.beforeSnapshot;
+      } else if (action.type === "restoreDocument") {
+        const restoreRes = await restoreDocument({
+          db,
+          config: activeConfig,
+          collection: action.targetCollection!,
+          trashId: action.documentId!,
+          overrides: action.proposedData?.overrides as Record<string, unknown> | undefined,
+        });
+        snapshotAfter = restoreRes.restoredDoc;
+        rollbackPayload = { id: snapshotAfter?.id };
       } else if (action.type === "updateGlobal") {
         snapshotAfter = await db.updateGlobal({
           slug: action.targetGlobal!,

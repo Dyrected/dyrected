@@ -3,8 +3,6 @@ import type {
   DyrectedConfig,
   TaskConfig,
 } from "./types/index.js";
-import { getConfigLogger } from "./observability.js";
-import { AuditService } from "./services/audit.service.js";
 import { runCollectionHooks } from "./utils/hooks.js";
 
 export const TRASH_COLLECTION = "__trash";
@@ -107,12 +105,18 @@ export function resolveTrashConfig(
   };
 }
 
+function logTrashWarning(config: DyrectedConfig | undefined, payload: { msg: string; [key: string]: unknown }): void {
+  if (config?.logger && typeof (config.logger as any).warn === "function") {
+    (config.logger as any).warn(payload);
+  } else if (typeof console !== "undefined" && console.warn) {
+    console.warn(`[dyrected] ${payload.msg}`);
+  }
+}
+
 /**
  * Validates trash configuration for app and collections.
  */
 export function assertValidTrashInConfig(config: DyrectedConfig, source = "config"): void {
-  const logger = getConfigLogger(config, "trash");
-
   if (config.trash) {
     const { retentionDays } = config.trash;
     if (retentionDays !== undefined && retentionDays !== null) {
@@ -122,7 +126,7 @@ export function assertValidTrashInConfig(config: DyrectedConfig, source = "confi
         );
       }
       if (retentionDays > 3650) {
-        logger.warn({
+        logTrashWarning(config, {
           msg: `Trash retentionDays in ${source} is unusually large (${retentionDays} days > 10 years). Check if value was provided in hours or seconds.`,
         });
       }
@@ -151,7 +155,7 @@ export function assertValidTrashInConfig(config: DyrectedConfig, source = "confi
           );
         }
         if (retentionDays > 3650) {
-          logger.warn({
+          logTrashWarning(config, {
             msg: `Trash retentionDays for collection "${col.slug}" is unusually large (${retentionDays} days > 10 years). Check if value was provided in hours or seconds.`,
             collection: col.slug,
           });
@@ -255,18 +259,24 @@ export function createTrashPurgeTask(config: DyrectedConfig): TaskConfig {
 
             // 3. Audit "purge"
             if (colConfig?.audit) {
-              await AuditService.log(
-                db,
-                {
-                  operation: "purge",
-                  collection: colSlug,
-                  documentId: entry.docId as string,
-                  user: undefined,
-                  before: snapshot,
-                  after: null,
-                },
-                config,
-              );
+              try {
+                await db.create({
+                  collection: "__audit",
+                  data: {
+                    collection: colSlug,
+                    documentId: entry.docId as string,
+                    operation: "purge",
+                    user: null,
+                    timestamp: new Date().toISOString(),
+                    changes: JSON.stringify({
+                      before: snapshot,
+                      after: null,
+                    }),
+                  },
+                });
+              } catch (auditErr: any) {
+                logger.warn({ err: auditErr?.message || auditErr, docId: entry.docId, collection: colSlug }, "Failed to write audit log on purge");
+              }
             }
 
             // 4. Delete the __trash entry last
@@ -281,3 +291,99 @@ export function createTrashPurgeTask(config: DyrectedConfig): TaskConfig {
     },
   };
 }
+
+export interface SoftDeleteOptions {
+  db: any;
+  config: DyrectedConfig;
+  collection: string;
+  id: string;
+  deletedBy?: string | null;
+}
+
+export async function softDeleteDocument(options: SoftDeleteOptions): Promise<{ id: string; purgeAt: number | null }> {
+  const { db, config, collection: collectionSlug, id, deletedBy } = options;
+  const colConfig = config.collections.find((c) => c.slug === collectionSlug);
+  if (!colConfig) throw new Error(`Collection ${collectionSlug} not found`);
+
+  const doc = await db.findOne({ collection: collectionSlug, id });
+  if (!doc) throw new Error(`Document ${id} in ${collectionSlug} not found`);
+
+  const resolvedTrash = resolveTrashConfig(colConfig, config);
+  const deletedAt = Date.now();
+  const purgeAt =
+    resolvedTrash.retentionDays !== null && resolvedTrash.retentionDays !== undefined
+      ? deletedAt + resolvedTrash.retentionDays * 86_400_000
+      : null;
+  const title = resolveDocumentTitle(colConfig, doc);
+  const trashId = getTrashEntryId(collectionSlug, id);
+
+  const trashData = {
+    id: trashId,
+    collection: collectionSlug,
+    docId: id,
+    deletedAt,
+    purgeAt,
+    deletedBy: deletedBy ?? null,
+    title,
+    snapshot: doc,
+    createdAt: doc.createdAt ?? new Date(deletedAt).toISOString(),
+  };
+
+  if (db.transaction) {
+    await db.transaction(async (tx: any) => {
+      await tx.create({ collection: TRASH_COLLECTION, data: trashData });
+      await tx.delete({ collection: collectionSlug, id });
+    });
+  } else {
+    await db.create({ collection: TRASH_COLLECTION, data: trashData });
+    await db.delete({ collection: collectionSlug, id });
+  }
+
+  return { id: trashId, purgeAt };
+}
+
+export interface RestoreDocumentOptions {
+  db: any;
+  config: DyrectedConfig;
+  collection: string;
+  trashId: string;
+  overrides?: Record<string, unknown>;
+}
+
+export async function restoreDocument(options: RestoreDocumentOptions): Promise<{ restoredDoc: any }> {
+  const { db, config, collection: collectionSlug, trashId: param, overrides } = options;
+  const colConfig = config.collections.find((c) => c.slug === collectionSlug);
+  if (!colConfig) throw new Error(`Collection ${collectionSlug} not found`);
+
+  const trashId = param.includes(":") ? param : getTrashEntryId(collectionSlug, param);
+  const entry =
+    (await db.findOne({ collection: TRASH_COLLECTION, id: trashId })) ||
+    (await db.findOne({ collection: TRASH_COLLECTION, id: param }));
+
+  if (!entry || entry.collection !== collectionSlug) {
+    throw new Error(`Trash entry ${param} not found for collection ${collectionSlug}`);
+  }
+
+  const snapshot = typeof entry.snapshot === "string" ? JSON.parse(entry.snapshot) : entry.snapshot;
+  const now = new Date().toISOString();
+  const docToRestore: Record<string, any> = {
+    ...snapshot,
+    ...(overrides || {}),
+    id: entry.docId,
+    createdAt: snapshot.createdAt ?? entry.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  if (db.transaction) {
+    await db.transaction(async (tx: any) => {
+      await tx.create({ collection: collectionSlug, data: docToRestore });
+      await tx.delete({ collection: TRASH_COLLECTION, id: entry.id });
+    });
+  } else {
+    await db.create({ collection: collectionSlug, data: docToRestore });
+    await db.delete({ collection: TRASH_COLLECTION, id: entry.id });
+  }
+
+  return { restoredDoc: docToRestore };
+}
+

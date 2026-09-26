@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest"
 import { EmptyTrashDialog } from "../empty-trash-dialog"
 import { RestoreConflictDialog } from "../restore-conflict-dialog"
 import { TrashViewTable } from "../trash-view-table"
+import { TrashPreviewSheet } from "../trash-preview-sheet"
 import type { TrashConflict, TrashEntrySnapshot } from "../trash-types"
 
 afterEach(() => {
@@ -138,3 +139,63 @@ describe("TrashViewTable", () => {
     expect(screen.getByText(/Kept until emptied/i)).toBeTruthy()
   })
 })
+
+describe("TrashPreviewSheet", () => {
+  it("renders preview with formatted dates, boolean pills, and image preview without Invalid Date", () => {
+    // Test with string numeric timestamps as returned by PostgreSQL
+    const entry: TrashEntrySnapshot = {
+      id: "trash_4ufil",
+      collection: "guest-responses",
+      docId: "4ufil",
+      title: "Someone",
+      deletedBy: "eu36go",
+      deletedAt: "1758872000000",
+      purgeAt: "1761464000000",
+      snapshot: {
+        id: "4ufil",
+        name: "Someone",
+        email: "someone@example.com",
+        asobi: false,
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
+        attending: true,
+        checkedIn: true,
+        createdAt: "2026-08-24T10:36:55.630Z",
+      },
+    }
+
+    const { container } = render(
+      <TrashPreviewSheet
+        entry={entry}
+        open={true}
+        onOpenChange={vi.fn()}
+        onRestore={vi.fn()}
+      />
+    )
+
+    // Must never contain "Invalid Date"
+    expect(container.textContent).not.toContain("Invalid Date")
+
+    // Document header info
+    expect(screen.getAllByText("Someone").length).toBeGreaterThanOrEqual(2)
+    expect(screen.getAllByText("4ufil").length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText(/User \(eu36go\)/i)).toBeTruthy()
+
+    // Boolean friendly pills
+    expect(screen.getAllByText("Yes").length).toBeGreaterThanOrEqual(2) // attending, checkedIn
+    expect(screen.getByText("No")).toBeTruthy() // asobi
+
+    // Humanized labels
+    expect(screen.getByText("Checked In")).toBeTruthy()
+    expect(screen.getByText("Created At")).toBeTruthy()
+
+    // Image preview (Sheet renders into Portal at document.body)
+    const img = document.body.querySelector("img")
+    expect(img).toBeTruthy()
+    expect(img?.getAttribute("src")).toContain("images.unsplash.com")
+
+    // Email link
+    const mailLink = document.body.querySelector('a[href="mailto:someone@example.com"]')
+    expect(mailLink).toBeTruthy()
+  })
+})
+
