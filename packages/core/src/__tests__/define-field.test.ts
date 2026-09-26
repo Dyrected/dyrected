@@ -11,6 +11,12 @@ import {
   defineBlock,
   defineBlocksField,
   defineCollection,
+  defineCreatedAtField,
+  defineUpdatedAtField,
+  defineCreatedByField,
+  defineUpdatedByField,
+  defineRolesField,
+  defineRoles,
 } from "../index.js";
 import type { Block, InferDocShape } from "../index.js";
 
@@ -101,6 +107,158 @@ describe("define<Type>Field helpers", () => {
       "blocks",
     ]);
   });
+
+  describe("audit timestamp helpers", () => {
+    it("defineCreatedAtField provides sensible defaults", () => {
+      expect(defineCreatedAtField()).toEqual({
+        name: "createdAt",
+        label: "Created At",
+        type: "datetime",
+        admin: { readOnly: true },
+      });
+    });
+
+    it("defineCreatedAtField allows customizing name, type, and options", () => {
+      expect(
+        defineCreatedAtField({
+          name: "created_at",
+          type: "date",
+          label: "Registration Date",
+          admin: { position: "sidebar" },
+        }),
+      ).toEqual({
+        name: "created_at",
+        label: "Registration Date",
+        type: "date",
+        admin: { readOnly: true, position: "sidebar" },
+      });
+    });
+
+    it("defineUpdatedAtField provides sensible defaults", () => {
+      expect(defineUpdatedAtField()).toEqual({
+        name: "updatedAt",
+        label: "Updated At",
+        type: "datetime",
+        admin: { readOnly: true },
+      });
+    });
+
+    it("defineUpdatedAtField allows customizing name and options", () => {
+      expect(
+        defineUpdatedAtField({
+          name: "updated_at",
+          label: "Last Modified",
+        }),
+      ).toEqual({
+        name: "updated_at",
+        label: "Last Modified",
+        type: "datetime",
+        admin: { readOnly: true },
+      });
+    });
+  });
+
+  describe("audit user helpers", () => {
+    it("defineCreatedByField defaults to relationship with users collection", () => {
+      const field = defineCreatedByField();
+      expect(field.name).toBe("createdBy");
+      expect(field.label).toBe("Created By");
+      expect(field.type).toBe("relationship");
+      expect((field as any).relationTo).toBe("users");
+      expect(field.admin?.readOnly).toBe(true);
+      expect(typeof field.access?.update).toBe("function");
+      expect((field.access as any).update()).toBe(false);
+    });
+
+    it("defineCreatedByField allows custom relationTo and options", () => {
+      const field = defineCreatedByField({
+        relationTo: "authors",
+        label: "Author",
+        admin: { position: "sidebar" },
+      });
+      expect(field.name).toBe("createdBy");
+      expect(field.label).toBe("Author");
+      expect(field.type).toBe("relationship");
+      expect((field as any).relationTo).toBe("authors");
+      expect(field.admin?.readOnly).toBe(true);
+      expect(field.admin?.position).toBe("sidebar");
+    });
+
+    it("defineCreatedByField allows text user identifier type", () => {
+      const field = defineCreatedByField({ type: "text" });
+      expect(field.name).toBe("createdBy");
+      expect(field.type).toBe("text");
+      expect(field.admin?.readOnly).toBe(true);
+    });
+
+    it("defineUpdatedByField defaults to relationship with users collection", () => {
+      const field = defineUpdatedByField();
+      expect(field.name).toBe("updatedBy");
+      expect(field.label).toBe("Updated By");
+      expect(field.type).toBe("relationship");
+      expect((field as any).relationTo).toBe("users");
+      expect(field.admin?.readOnly).toBe(true);
+      expect(typeof field.access?.update).toBe("function");
+    });
+
+    it("defineUpdatedByField allows custom relationTo and text type", () => {
+      const relField = defineUpdatedByField({ relationTo: "staff" });
+      expect((relField as any).relationTo).toBe("staff");
+
+      const textField = defineUpdatedByField({ type: "text", name: "modifiedBy" });
+      expect(textField.name).toBe("modifiedBy");
+      expect(textField.type).toBe("text");
+    });
+  });
+
+  describe("roles helpers", () => {
+    it("defineRolesField provides out-of-the-box admin/editor/viewer options and update access protection", () => {
+      const field = defineRolesField();
+      expect(field.name).toBe("roles");
+      expect(field.label).toBe("Roles");
+      expect(field.type).toBe("select");
+      expect(field.defaultValue).toBe("viewer");
+      expect(field.options).toEqual([
+        { value: "admin", label: "Admin" },
+        { value: "editor", label: "Editor" },
+        { value: "viewer", label: "Viewer" },
+      ]);
+      expect(field.access?.update).toBe(
+        "user.role == 'admin' || (user.roles != null && 'admin' in user.roles)",
+      );
+    });
+
+    it("defineRoles alias behaves identically to defineRolesField", () => {
+      expect(defineRoles()).toEqual(defineRolesField());
+    });
+
+    it("supports singular role naming", () => {
+      const field = defineRoles({ name: "role" });
+      expect(field.name).toBe("role");
+      expect(field.label).toBe("Role");
+      expect(field.type).toBe("select");
+    });
+
+    it("supports multiSelect mode via multiple: true", () => {
+      const field = defineRoles({ multiple: true });
+      expect(field.type).toBe("multiSelect");
+      expect(field.hasMany).toBe(true);
+      expect(field.defaultValue).toEqual(["viewer"]);
+    });
+
+    it("supports custom roles shorthand string array", () => {
+      const field = defineRoles({
+        roles: ["admin", "moderator", "guest"],
+        defaultValue: "guest",
+      });
+      expect(field.options).toEqual([
+        { value: "admin", label: "Admin" },
+        { value: "moderator", label: "Moderator" },
+        { value: "guest", label: "Guest" },
+      ]);
+      expect(field.defaultValue).toBe("guest");
+    });
+  });
 });
 
 /**
@@ -119,6 +277,12 @@ const inferredFields = [
     hasMany: true,
   }),
   defineRichTextField({ name: "body", required: true }),
+  defineCreatedAtField(),
+  defineUpdatedAtField(),
+  defineCreatedByField(),
+  defineUpdatedByField(),
+  defineRolesField(),
+  defineRoles({ name: "assignedRoles", multiple: true }),
 ] as const;
 
 type InferredDoc = InferDocShape<typeof inferredFields>;
@@ -129,6 +293,12 @@ const _shapeOk: InferredDoc = {
   featured: true, // optional boolean
   authors: ["author-1"], // hasMany relationship -> string[]
   body: "<p>hello</p>", // required richText -> HTML string
+  createdAt: "2026-09-26T00:00:00.000Z",
+  updatedAt: "2026-09-26T00:00:00.000Z",
+  createdBy: "usr_1",
+  updatedBy: "usr_1",
+  roles: "admin",
+  assignedRoles: ["admin", "editor"],
 };
 
 // @ts-expect-error `title` is required and cannot be omitted

@@ -13,6 +13,11 @@ import type {
   RelationshipField,
   ImageField,
   JoinField,
+  DateField,
+  DateTimeField,
+  TextField,
+  SelectField,
+  MultiSelectField,
   SystemDocFields,
   AuthDocFields,
   UploadDocFields,
@@ -657,14 +662,17 @@ const _defineJoinFieldBase = createFieldDefiner("join");
  * })
  * ```
  */
-export function defineRelationshipField<TValidSlugs extends string = string>(
-  config: Omit<Omit<Parameters<typeof _defineRelationshipFieldBase>[0], "type">, "relationTo"> & {
+export function defineRelationshipField<
+  TValidSlugs extends string = string,
+  const T extends Omit<Omit<Parameters<typeof _defineRelationshipFieldBase>[0], "type">, "relationTo"> & {
     relationTo: TValidSlugs;
-  },
-): RelationshipField;
+  } = any,
+>(
+  config: T,
+): T & { type: "relationship"; relationTo: TValidSlugs };
 export function defineRelationshipField(config: Parameters<typeof _defineRelationshipFieldBase>[0]): RelationshipField;
-export function defineRelationshipField(config: any): RelationshipField {
-  return _defineRelationshipFieldBase(config) as RelationshipField;
+export function defineRelationshipField(config: any): any {
+  return _defineRelationshipFieldBase(config);
 }
 
 /**
@@ -717,6 +725,299 @@ export function defineJoinField(config: Parameters<typeof _defineJoinFieldBase>[
 export function defineJoinField(config: any): JoinField {
   return _defineJoinFieldBase(config) as JoinField;
 }
+
+export interface CreatedAtFieldOptions extends Partial<Omit<DateTimeField, "type">> {
+  type?: "datetime" | "date";
+}
+
+/**
+ * Define a `createdAt` timestamp field.
+ * Defaults to `type: "datetime"`, `name: "createdAt"`, `label: "Created At"`, and `admin: { readOnly: true }`.
+ *
+ * @example
+ * ```ts
+ * defineCreatedAtField()
+ * defineCreatedAtField({ name: "created_at", admin: { position: "sidebar" } })
+ * ```
+ */
+export function defineCreatedAtField<
+  const T extends CreatedAtFieldOptions = { name: "createdAt" },
+>(
+  config?: T,
+): (T extends { type: "date" } ? DateField : DateTimeField) & {
+  name: T extends { name: infer N extends string } ? N : "createdAt";
+  type: T extends { type: infer Type extends "datetime" | "date" } ? Type : "datetime";
+} {
+  const type = (config?.type ?? "datetime") as any;
+  const name = (config?.name ?? "createdAt") as any;
+  return {
+    name,
+    label: "Created At",
+    ...config,
+    type,
+    admin: {
+      readOnly: true,
+      ...config?.admin,
+    },
+  } as any;
+}
+
+export interface UpdatedAtFieldOptions extends Partial<Omit<DateTimeField, "type">> {
+  type?: "datetime" | "date";
+}
+
+/**
+ * Define an `updatedAt` timestamp field.
+ * Defaults to `type: "datetime"`, `name: "updatedAt"`, `label: "Updated At"`, and `admin: { readOnly: true }`.
+ *
+ * @example
+ * ```ts
+ * defineUpdatedAtField()
+ * defineUpdatedAtField({ name: "updated_at", admin: { position: "sidebar" } })
+ * ```
+ */
+export function defineUpdatedAtField<
+  const T extends UpdatedAtFieldOptions = { name: "updatedAt" },
+>(
+  config?: T,
+): (T extends { type: "date" } ? DateField : DateTimeField) & {
+  name: T extends { name: infer N extends string } ? N : "updatedAt";
+  type: T extends { type: infer Type extends "datetime" | "date" } ? Type : "datetime";
+} {
+  const type = (config?.type ?? "datetime") as any;
+  const name = (config?.name ?? "updatedAt") as any;
+  return {
+    name,
+    label: "Updated At",
+    ...config,
+    type,
+    admin: {
+      readOnly: true,
+      ...config?.admin,
+    },
+  } as any;
+}
+
+export interface CreatedByFieldOptions<TValidSlugs extends string = string>
+  extends Partial<Omit<RelationshipField, "type" | "relationTo">> {
+  type?: "relationship" | "text";
+  relationTo?: TValidSlugs | TValidSlugs[];
+}
+
+/**
+ * Define a `createdBy` audit user field.
+ * Defaults to `type: "relationship"`, `name: "createdBy"`, `label: "Created By"`, `relationTo: "users"`, and `admin: { readOnly: true }`.
+ * If `type: "text"` is specified, creates a read-only text field instead of a relationship.
+ *
+ * @example
+ * ```ts
+ * defineCreatedByField() // relationship to 'users'
+ * defineCreatedByField({ relationTo: 'authors' }) // relationship to 'authors'
+ * defineCreatedByField({ type: 'text' }) // text user identifier
+ * ```
+ */
+export function defineCreatedByField<
+  TValidSlugs extends string = string,
+  const T extends CreatedByFieldOptions<TValidSlugs> = CreatedByFieldOptions<TValidSlugs>,
+>(
+  config?: T,
+): (T extends { type: "text" } ? TextField : RelationshipField) & {
+  name: T extends { name: infer N extends string } ? N : "createdBy";
+  type: T extends { type: "text" } ? "text" : "relationship";
+} {
+  const name = (config?.name ?? "createdBy") as any;
+  if (config?.type === "text") {
+    const { type: _, ...rest } = config as any;
+    return {
+      name,
+      label: "Created By",
+      ...rest,
+      type: "text",
+      admin: {
+        readOnly: true,
+        ...rest?.admin,
+      },
+    } as any;
+  }
+
+  const { type: _, relationTo = "users", ...rest } = (config || {}) as any;
+  return {
+    name,
+    label: "Created By",
+    ...rest,
+    type: "relationship",
+    relationTo,
+    admin: {
+      readOnly: true,
+      ...rest?.admin,
+    },
+    access: {
+      update: () => false,
+      ...rest?.access,
+    },
+  } as any;
+}
+
+export interface UpdatedByFieldOptions<TValidSlugs extends string = string>
+  extends Partial<Omit<RelationshipField, "type" | "relationTo">> {
+  type?: "relationship" | "text";
+  relationTo?: TValidSlugs | TValidSlugs[];
+}
+
+/**
+ * Define an `updatedBy` audit user field.
+ * Defaults to `type: "relationship"`, `name: "updatedBy"`, `label: "Updated By"`, `relationTo: "users"`, and `admin: { readOnly: true }`.
+ * If `type: "text"` is specified, creates a read-only text field instead of a relationship.
+ *
+ * @example
+ * ```ts
+ * defineUpdatedByField() // relationship to 'users'
+ * defineUpdatedByField({ relationTo: 'authors' }) // relationship to 'authors'
+ * defineUpdatedByField({ type: 'text' }) // text user identifier
+ * ```
+ */
+export function defineUpdatedByField<
+  TValidSlugs extends string = string,
+  const T extends UpdatedByFieldOptions<TValidSlugs> = UpdatedByFieldOptions<TValidSlugs>,
+>(
+  config?: T,
+): (T extends { type: "text" } ? TextField : RelationshipField) & {
+  name: T extends { name: infer N extends string } ? N : "updatedBy";
+  type: T extends { type: "text" } ? "text" : "relationship";
+} {
+  const name = (config?.name ?? "updatedBy") as any;
+  if (config?.type === "text") {
+    const { type: _, ...rest } = config as any;
+    return {
+      name,
+      label: "Updated By",
+      ...rest,
+      type: "text",
+      admin: {
+        readOnly: true,
+        ...rest?.admin,
+      },
+    } as any;
+  }
+
+  const { type: _, relationTo = "users", ...rest } = (config || {}) as any;
+  return {
+    name,
+    label: "Updated By",
+    ...rest,
+    type: "relationship",
+    relationTo,
+    admin: {
+      readOnly: true,
+      ...rest?.admin,
+    },
+    access: {
+      update: () => false,
+      ...rest?.access,
+    },
+  } as any;
+}
+
+export interface RoleOption {
+  value: string;
+  label: string;
+}
+
+export interface RolesFieldOptions extends Partial<Omit<SelectField, "type" | "options">> {
+  type?: "select" | "multiSelect";
+  multiple?: boolean;
+  hasMany?: boolean;
+  roles?: readonly string[] | readonly RoleOption[];
+  options?: readonly string[] | readonly RoleOption[] | SelectField["options"];
+}
+
+const DEFAULT_ROLES: RoleOption[] = [
+  { value: "admin", label: "Admin" },
+  { value: "editor", label: "Editor" },
+  { value: "viewer", label: "Viewer" },
+];
+
+const DEFAULT_ROLES_ACCESS = {
+  update: "user.role == 'admin' || (user.roles != null && 'admin' in user.roles)",
+};
+
+/**
+ * Define a `roles` authorization field on an auth or users collection.
+ * Replaces manual select/multiSelect field boilerplate with built-in role options,
+ * safe non-self-elevation update access control, and singular/multiple mode support.
+ *
+ * @example
+ * ```ts
+ * defineRolesField() // single select with admin, editor, viewer
+ * defineRoles({ multiple: true }) // multiSelect roles array
+ * defineRoles({ roles: ['admin', 'manager', 'member'], defaultValue: 'member' })
+ * defineRoles({ name: 'role' }) // singular role
+ * ```
+ */
+export function defineRolesField<
+  const T extends RolesFieldOptions = { name: "roles" },
+>(
+  config?: T,
+): (T extends { multiple: true } | { hasMany: true } | { type: "multiSelect" }
+  ? MultiSelectField
+  : SelectField) & {
+  name: T extends { name: infer N extends string } ? N : "roles";
+  type: T extends { multiple: true } | { hasMany: true } | { type: "multiSelect" }
+    ? "multiSelect"
+    : "select";
+} {
+  const isMultiple = Boolean(config?.multiple || config?.hasMany || config?.type === "multiSelect");
+  const type = isMultiple ? "multiSelect" : "select";
+  const name = (config?.name ?? "roles") as any;
+  const label = config?.label ?? (name === "role" ? "Role" : "Roles");
+
+  const rawRoles = (config?.roles ?? config?.options ?? DEFAULT_ROLES) as readonly (string | RoleOption)[];
+  const resolvedOptions = Array.isArray(rawRoles)
+    ? rawRoles.map((r: string | RoleOption) =>
+        typeof r === "string"
+          ? { value: r, label: r.charAt(0).toUpperCase() + r.slice(1).replace(/[-_]/g, " ") }
+          : r,
+      )
+    : (rawRoles as any);
+
+  const lastOption = Array.isArray(resolvedOptions) && resolvedOptions.length > 0
+    ? resolvedOptions[resolvedOptions.length - 1]
+    : undefined;
+
+  const defaultRoleValue = lastOption
+    ? typeof lastOption === "string"
+      ? lastOption
+      : (lastOption as RoleOption).value
+    : "viewer";
+
+  const defaultValue = config?.defaultValue !== undefined
+    ? config.defaultValue
+    : isMultiple
+      ? [defaultRoleValue]
+      : defaultRoleValue;
+
+  const { multiple: _, roles: __, ...rest } = (config || {}) as any;
+
+  return {
+    name,
+    label,
+    defaultValue,
+    options: resolvedOptions,
+    access: {
+      ...DEFAULT_ROLES_ACCESS,
+      ...rest.access,
+    },
+    ...rest,
+    type,
+    ...(isMultiple ? { hasMany: true } : {}),
+  } as any;
+}
+
+/**
+ * Convenience alias for {@link defineRolesField}.
+ */
+export const defineRoles = defineRolesField;
+
 
 /**
  * Group fields under a named tab in the Admin edit form. Tabs are presentational

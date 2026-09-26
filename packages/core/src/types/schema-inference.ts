@@ -28,8 +28,10 @@ type FieldValueType<F extends Field> = F["type"] extends
             ? F extends { hasMany: true }
               ? string[]
               : string
-            : F["type"] extends "richText" | "json"
-              ? Record<string, unknown>
+            : F["type"] extends "richText"
+              ? string | Record<string, unknown>
+              : F["type"] extends "json"
+                ? Record<string, unknown>
               : F["type"] extends "object"
                 ? F extends { fields: infer SF extends readonly Field[] }
                   ? Prettify<InferDocShape<SF>>
