@@ -51,6 +51,9 @@ export interface DefineWorkspaceOptions {
   /** Designates this item as the dashboard link. */
   dashboard?: boolean;
 
+  /** Designates this item as the trash link. */
+  trash?: boolean;
+
   /** Stable URL slug for standalone operational workspaces (`/:slug`). */
   slug?: string;
 
@@ -113,7 +116,7 @@ export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspac
  */
 export interface CompiledNavItem {
   id: string;
-  type: "workspace" | "collection" | "global" | "dashboard" | "link";
+  type: "workspace" | "collection" | "global" | "dashboard" | "trash" | "link";
   slug: string;
   label: string;
   icon?: string;
@@ -149,7 +152,7 @@ export interface CompiledNavTree {
 }
 
 export interface PinnedNavItemRef {
-  type: "workspace" | "collection" | "global" | "link" | "dashboard";
+  type: "workspace" | "collection" | "global" | "trash" | "link" | "dashboard";
   slug: string;
   view?: string;
   label?: string;

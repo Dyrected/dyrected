@@ -12,7 +12,7 @@ describe("createAdminThemeController", () => {
       theme: "system",
       systemTheme: "dark",
       resolvedTheme: "dark",
-      themeClassName: "dy-admin-ui dark",
+      themeClassName: "dy-admin-ui dark dy-dark",
     })
 
     controller.setSystemTheme("light")

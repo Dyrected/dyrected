@@ -145,11 +145,17 @@ export interface SchemaResponse {
   hasStorage?: boolean;
   configDiagnostics?: ConfigDiagnostic[];
   ai?: SerializedSchemaAIConfig;
+  trash?: {
+    enabled?: boolean;
+    retentionDays?: number | null;
+    allowPermanentDelete?: boolean;
+  };
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
+    trashPurgeOverdue?: boolean;
   };
 }
 
@@ -250,6 +256,20 @@ export interface AuditEntry {
   user: string | null;
   timestamp: string;
   changes?: string | Record<string, unknown> | null;
+}
+
+/** A single trash entry representing a soft-deleted document snapshot. */
+export interface TrashEntry {
+  id: string;
+  collection: string;
+  docId: string;
+  deletedAt: number;
+  purgeAt: number | null;
+  deletedBy?: string;
+  title?: string;
+  snapshot: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 type ExtractDoc<T> =
@@ -1050,6 +1070,43 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
             body: JSON.stringify(args),
           },
         ),
+      trash: {
+        list: (args: Record<string, unknown> = {}) => {
+          const query = stringifyQuery(args, { addQueryPrefix: true });
+          return this.request<PaginatedResult<TrashEntry>>(`/api/collections/${slug}/trash${query}`);
+        },
+        get: (trashId: string) => {
+          return this.request<TrashEntry>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}`);
+        },
+        restore: (trashId: string, options: { overrides?: Record<string, unknown> } = {}) => {
+          return this.request<UnknownRecord>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}/restore`, {
+            method: "POST",
+            body: JSON.stringify(options),
+          });
+        },
+        restoreMany: (trashIds: string[]) => {
+          return this.request<{ restored: string[]; failed: unknown[]; count: number }>(`/api/collections/${slug}/trash/restore-many`, {
+            method: "POST",
+            body: JSON.stringify({ trashIds }),
+          });
+        },
+        keep: (trashId: string, keep: boolean = true) => {
+          return this.request<{ message: string; purgeAt: number | null }>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}`, {
+            method: "PATCH",
+            body: JSON.stringify({ keep }),
+          });
+        },
+        purge: (trashId: string) => {
+          return this.request<{ message: string }>(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}`, {
+            method: "DELETE",
+          });
+        },
+        empty: (confirm: string) => {
+          return this.request<{ message: string; count: number }>(`/api/collections/${slug}/trash?confirm=${encodeURIComponent(confirm)}`, {
+            method: "DELETE",
+          });
+        },
+      },
     };
   }
 
@@ -1065,6 +1122,47 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
       ) => this.getGlobal<TSchema["globals"][K]>(slug, args),
       update: (data: Partial<TSchema["globals"][K]>) =>
         this.updateGlobal<TSchema["globals"][K]>(slug, data),
+    };
+  }
+
+  get trash() {
+    return {
+      list: (args: Record<string, unknown> = {}) => {
+        const query = stringifyQuery(args, { addQueryPrefix: true });
+        return this.request<PaginatedResult<TrashEntry>>(`/api/trash${query}`);
+      },
+      get: (trashId: string) => {
+        return this.request<TrashEntry>(`/api/trash/${encodeURIComponent(trashId)}`);
+      },
+      restore: (trashId: string, options: { overrides?: Record<string, unknown> } = {}) => {
+        return this.request<UnknownRecord>(`/api/trash/${encodeURIComponent(trashId)}/restore`, {
+          method: "POST",
+          body: JSON.stringify(options),
+        });
+      },
+      restoreMany: (trashIds: string[]) => {
+        return this.request<{ restored: string[]; failed: unknown[]; count: number }>(`/api/trash/restore-many`, {
+          method: "POST",
+          body: JSON.stringify({ trashIds }),
+        });
+      },
+      keep: (trashId: string, keep: boolean = true) => {
+        return this.request<{ message: string; purgeAt: number | null }>(`/api/trash/${encodeURIComponent(trashId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ keep }),
+        });
+      },
+      purge: (trashId: string) => {
+        return this.request<{ message: string }>(`/api/trash/${encodeURIComponent(trashId)}`, {
+          method: "DELETE",
+        });
+      },
+      empty: (collectionSlug?: string) => {
+        const query = collectionSlug ? `?confirm=${encodeURIComponent(collectionSlug)}` : "";
+        return this.request<{ message: string; count: number }>(`/api/trash${query}`, {
+          method: "DELETE",
+        });
+      },
     };
   }
 
@@ -1484,7 +1582,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
     return this.delete(collection, id);
   }
 
-  private async request<T = unknown>(
+  async request<T = unknown>(
     path: string,
     init?: RequestInit,
   ): Promise<T> {

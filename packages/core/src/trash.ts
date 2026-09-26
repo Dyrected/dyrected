@@ -130,6 +130,9 @@ export function assertValidTrashInConfig(config: DyrectedConfig, source = "confi
   }
 
   for (const col of config.collections || []) {
+    if (col.slug === "trash") {
+      throw new Error(`Collection slug "trash" is reserved by Dyrected for the trash system.`);
+    }
     const isSystem = col.slug.startsWith("__");
     if (isSystem && col.trash) {
       throw new Error(`System collection "${col.slug}" cannot enable trash.`);
@@ -154,6 +157,12 @@ export function assertValidTrashInConfig(config: DyrectedConfig, source = "confi
           });
         }
       }
+    }
+  }
+
+  for (const glob of config.globals || []) {
+    if (glob.slug === "trash") {
+      throw new Error(`Global slug "trash" is reserved by Dyrected for the trash system.`);
     }
   }
 }

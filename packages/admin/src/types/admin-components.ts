@@ -19,11 +19,17 @@ export interface AdminSchemas {
   adminAuth?: PublicAdminAuthConfig;
   hasStorage?: boolean;
   configDiagnostics?: ConfigDiagnostic[];
+  trash?: {
+    enabled?: boolean;
+    retentionDays?: number | null;
+    allowPermanentDelete?: boolean;
+  };
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
+    trashPurgeOverdue?: boolean;
   };
   ai?: {
     enabled: boolean;

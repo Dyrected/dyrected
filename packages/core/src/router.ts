@@ -19,6 +19,7 @@ import { compileNavigation, pruneNavigationForUser, resolveAllCollectionViews } 
 import { reconcileNavigation } from "./utils/navigation-reconciler.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
+import { resolveTrashConfig, TRASH_COLLECTION } from "./trash.js";
 import {
   assertValidAdminConditionsInConfig,
   assertValidDeclarativeAccessInConfig,
@@ -304,18 +305,20 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
     const filteredCollections = await Promise.all(
       collections
-        .filter((col) => !siteId || col.shared || !col.siteId || col.siteId === siteId)
+        .filter((col) => !col.slug.startsWith("__") && (!siteId || col.shared || !col.siteId || col.siteId === siteId))
         .map(async (col) => ({
           slug: col.slug,
           labels: col.labels,
           shared: !!col.shared,
           siteId: col.siteId,
           ai: col.ai,
+          trash: resolveTrashConfig(col, requestConfig),
           access: {
             read: await serializeAccess(col.access?.read),
             create: await serializeAccess(col.access?.create),
             update: await serializeAccess(col.access?.update),
             delete: await serializeAccess(col.access?.delete),
+            restore: await serializeAccess((col.access as any)?.restore ?? col.access?.delete),
           },
           fields: await Promise.all(
             col.fields.map(serializeFieldForApi).map(async (f: any) => ({
@@ -460,11 +463,38 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         provider: aiProvider,
         model: effectiveAi?.model,
       },
+      trash: {
+        enabled: collections.some((col) => !col.slug.startsWith("__") && resolveTrashConfig(col, requestConfig).enabled),
+        retentionDays: requestConfig.trash?.retentionDays !== undefined ? requestConfig.trash.retentionDays : 30,
+        allowPermanentDelete: requestConfig.trash?.allowPermanentDelete !== false,
+      },
       adminHealth: {
         emailConfigured: !!requestConfig.email,
         secureAuthSecretConfigured: !!process.env.DYRECTED_JWT_SECRET,
         authCollectionConfigured: requestConfig.collections.some((collection) => !!collection.auth),
         uploadCollectionConfigured: requestConfig.collections.some((collection) => !!collection.upload),
+        trashPurgeOverdue: await (async () => {
+          const hasRetention = collections.some(
+            (col) => !col.slug.startsWith("__") && resolveTrashConfig(col, requestConfig).retentionDays !== null,
+          );
+          if (!hasRetention || !requestConfig.db) return false;
+          try {
+            const overdueThreshold = Date.now() - 2 * 24 * 60 * 60 * 1000;
+            const overdueEntries = await requestConfig.db.find({
+              collection: TRASH_COLLECTION,
+              where: {
+                purgeAt: {
+                  ne: null,
+                  lt: overdueThreshold,
+                },
+              },
+              limit: 1,
+            });
+            return Boolean(overdueEntries.docs && overdueEntries.docs.length > 0);
+          } catch {
+            return false;
+          }
+        })(),
       },
     });
   });
@@ -1274,6 +1304,69 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   app.get("/api/preview-data", (c) => previewController.getData(c));
   app.get("/api/audit", (c) => auditController.findAll(c));
   app.get("/api/trash", (c) => CollectionController.listAllTrash(c));
+  app.get("/api/trash/:trashId", async (c) => {
+    const trashId = c.req.param("trashId");
+    const [colSlug] = String(trashId).split(":");
+    const col = config.collections.find((x) => x.slug === colSlug);
+    if (!col) return c.json({ message: `Collection "${colSlug}" not found` }, 404);
+    const controller = new CollectionController(col);
+    return controller.getTrashEntry(c);
+  });
+  app.post("/api/trash/:trashId/restore", async (c) => {
+    const trashId = c.req.param("trashId");
+    const [colSlug] = String(trashId).split(":");
+    const col = config.collections.find((x) => x.slug === colSlug);
+    if (!col) return c.json({ message: `Collection "${colSlug}" not found` }, 404);
+    const controller = new CollectionController(col);
+    return controller.restore(c);
+  });
+  app.patch("/api/trash/:trashId", async (c) => {
+    const trashId = c.req.param("trashId");
+    const [colSlug] = String(trashId).split(":");
+    const col = config.collections.find((x) => x.slug === colSlug);
+    if (!col) return c.json({ message: `Collection "${colSlug}" not found` }, 404);
+    const controller = new CollectionController(col);
+    return controller.keep(c);
+  });
+  app.delete("/api/trash/:trashId", async (c) => {
+    const trashId = c.req.param("trashId");
+    const [colSlug] = String(trashId).split(":");
+    const col = config.collections.find((x) => x.slug === colSlug);
+    if (!col) return c.json({ message: `Collection "${colSlug}" not found` }, 404);
+    const controller = new CollectionController(col);
+    return controller.purgeTrashEntry(c);
+  });
+  app.post("/api/trash/restore-many", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const trashIds = Array.isArray(body?.trashIds) ? body.trashIds : [];
+    const restored: string[] = [];
+    const failed: Array<{ trashId: string; error: string }> = [];
+    for (const trashId of trashIds) {
+      const [colSlug] = String(trashId).split(":");
+      const col = config.collections.find((x) => x.slug === colSlug);
+      if (!col) {
+        failed.push({ trashId, error: "Collection not found" });
+        continue;
+      }
+      const controller = new CollectionController(col);
+      const subContext = {
+        ...c,
+        req: {
+          ...c.req,
+          param: (name?: string) => (name === "trashId" ? trashId : c.req.param(name as any)),
+          json: async () => ({}),
+        },
+      } as any;
+      const res = await controller.restore(subContext);
+      if (res.status === 200) {
+        restored.push(trashId);
+      } else {
+        const err = await res.json().catch(() => ({ message: "Failed" }));
+        failed.push({ trashId, error: err.message || "Failed" });
+      }
+    }
+    return c.json({ restored, failed, count: restored.length });
+  });
 
   // 7. Dynamic Routes (Tenant-specific)
   // This handles collections/globals defined via sync:schema and fetched via onSchemaFetch

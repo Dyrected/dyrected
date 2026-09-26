@@ -40,6 +40,8 @@ import { OperationalViewPage } from "./pages/collections/views/operational-view-
 import { mergeFilters } from "./pages/collections/views/resolve-view-filter";
 import { EditEntryPage } from "./pages/collections/edit-page";
 import { DetailEntryPage } from "./pages/collections/detail-page";
+import { CollectionTrashPage } from "./pages/collections/trash-page";
+import { GlobalTrashPage } from "./pages/trash/global-trash-page";
 import { MediaPage } from "./pages/media/media-page";
 import { GlobalDetailPage } from "./pages/globals/detail-page";
 import { GlobalEditorPage } from "./pages/globals/editor-page";
@@ -159,6 +161,8 @@ export { useMediaLibrary } from "./hooks/use-media-library";
 export { useMediaUpload } from "./hooks/use-media-upload";
 export { useMediaURL } from "./hooks/use-media-url";
 export { useAddMediaFromUrl } from "./hooks/use-add-media-from-url";
+export { CollectionTrashPage } from "./pages/collections/trash-page";
+export { GlobalTrashPage } from "./pages/trash/global-trash-page";
 
 // ─── Route that resolves collection → list or media page ─────────────────────
 // Legacy `list-view-v1` is deprecated — operational views (table layout) are now
@@ -320,8 +324,10 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/trash" element={<GlobalTrashPage />} />
             <Route path="/collections/:slug" element={<CollectionRoute />} />
             <Route path="/collections/:slug/views/:viewSlug" element={<OperationalViewRoute />} />
+            <Route path="/collections/:slug/trash" element={<CollectionTrashPage />} />
             <Route path="/collections/:slug/:id" element={<DetailEntryPage />} />
             <Route path="/collections/:slug/new" element={<EditEntryPage />} />
             <Route path="/collections/:slug/edit/:id" element={<LegacyCollectionEditRedirect />} />

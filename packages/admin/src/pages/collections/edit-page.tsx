@@ -690,14 +690,50 @@ export function EditEntryPage() {
   const handleConfirmDelete = async () => {
     if (!client || !slug || !id) return
     setIsDeletingEntry(true)
+    const isTrashEnabled = (schema?.trash as any)?.enabled !== false && schema?.trash !== false && !schema?.slug?.startsWith("__")
+
     try {
       await client.collection(slug).delete(id)
-      toast.success(`${schema?.labels?.singular || schema?.slug || "Entry"} deleted`)
       setIsDeleteDialogOpen(false)
       await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
       await queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       await queryClient.invalidateQueries({ queryKey: ["collections", slug] })
       await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
+      await queryClient.invalidateQueries({ queryKey: ["trash-count", slug] })
+
+      if (isTrashEnabled) {
+        const deletedId = id
+        toast("Moved to trash", {
+          duration: 8000,
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              try {
+                const trashId = `${slug}:${deletedId}`
+                const colClient = (client as any)?.collection?.(slug)
+                if (colClient?.trash?.restore) {
+                  await colClient.trash.restore(trashId)
+                } else {
+                  await (client as any)?.request(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}/restore`, {
+                    method: "POST",
+                  })
+                }
+                await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
+                await queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+                await queryClient.invalidateQueries({ queryKey: ["collections", slug] })
+                await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
+                await queryClient.invalidateQueries({ queryKey: ["trash-count", slug] })
+                toast.success("Restored from trash")
+              } catch (e: any) {
+                toast.error("Failed to restore", { description: e.message })
+              }
+            },
+          },
+        })
+      } else {
+        toast.success(`${schema?.labels?.singular || schema?.slug || "Entry"} deleted`)
+      }
+
       navigate(`/collections/${slug}`)
     } catch (err: unknown) {
       toast.error(`Failed to delete ${schema?.labels?.singular || schema?.slug || "entry"}`, {
@@ -1145,15 +1181,20 @@ export function EditEntryPage() {
                 onClick={handleSendResetLink}
               />
             )}
-            {isEdit && canDelete && (
-              <HeaderAction
-                icon={Trash2}
-                label="Delete"
-                title={`Delete this ${schema?.labels?.singular || schema?.slug || "entry"}`}
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="hover:dy-text-destructive hover:dy-bg-destructive/10"
-              />
-            )}
+            {isEdit && canDelete && (() => {
+              const isTrash = (schema?.trash as any)?.enabled !== false && schema?.trash !== false && !schema?.slug?.startsWith("__")
+              return (
+                <HeaderAction
+                  icon={Trash2}
+                  label={isTrash ? "Move to trash" : "Delete"}
+                  title={isTrash
+                    ? `Move this ${schema?.labels?.singular || schema?.slug || "entry"} to trash`
+                    : `Delete this ${schema?.labels?.singular || schema?.slug || "entry"}`}
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="hover:dy-text-destructive hover:dy-bg-destructive/10"
+                />
+              )
+            })()}
             {/* Document metadata popover */}
             <Popover>
               <PopoverTrigger asChild>
@@ -1592,27 +1633,41 @@ export function EditEntryPage() {
           comparison={draftLiveComparison}
         />
       )}
-      {isDeleteDialogOpen && id && (
-        <DeleteEntriesDialog
-          state={{
-            open: isDeleteDialogOpen,
-            mode: "single",
-            ids: [id],
-            title: `Delete ${schema?.labels?.singular || schema?.slug || "entry"}`,
-            description: `Are you sure you want to delete this ${schema?.labels?.singular || schema?.slug || "entry"}? This action cannot be undone.`,
-            requiresTypedConfirmation: Boolean(schema?.auth),
-            expectedValue: schema?.auth ? String((entry as any)?.email || (entry as any)?.name || id) : "",
-          }}
-          confirmationValue={deleteConfirmationValue}
-          onConfirmationValueChange={setDeleteConfirmationValue}
-          isPending={isDeletingEntry}
-          onCancel={() => {
-            setIsDeleteDialogOpen(false)
-            setDeleteConfirmationValue("")
-          }}
-          onConfirm={handleConfirmDelete}
-        />
-      )}
+      {isDeleteDialogOpen && id && (() => {
+        const isTrash = (schema?.trash as any)?.enabled !== false && schema?.trash !== false && !schema?.slug?.startsWith("__")
+        const retentionDays = (schema?.trash as any)?.retentionDays
+        const desc = isTrash
+          ? (retentionDays !== undefined && retentionDays !== null
+              ? `Recoverable for ${retentionDays} day${retentionDays === 1 ? "" : "s"}.`
+              : "Stays in the trash until someone empties it.")
+          : `Are you sure you want to delete this ${schema?.labels?.singular || schema?.slug || "entry"}? This action cannot be undone.`
+        return (
+          <DeleteEntriesDialog
+            state={{
+              open: isDeleteDialogOpen,
+              mode: "single",
+              ids: [id],
+              title: isTrash
+                ? `Move this ${schema?.labels?.singular || schema?.slug || "entry"} to trash?`
+                : `Delete ${schema?.labels?.singular || schema?.slug || "entry"}`,
+              description: schema?.auth
+                ? "This user will be removed. To prevent accidental deletion, confirm by typing the exact name below."
+                : desc,
+              requiresTypedConfirmation: Boolean(schema?.auth),
+              expectedValue: schema?.auth ? String((entry as any)?.email || (entry as any)?.name || id) : "",
+              isTrash,
+            }}
+            confirmationValue={deleteConfirmationValue}
+            onConfirmationValueChange={setDeleteConfirmationValue}
+            isPending={isDeletingEntry}
+            onCancel={() => {
+              setIsDeleteDialogOpen(false)
+              setDeleteConfirmationValue("")
+            }}
+            onConfirm={handleConfirmDelete}
+          />
+        )
+      })()}
     </NestedEditorProvider>
   )
 }

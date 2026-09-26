@@ -89,4 +89,28 @@ describe("resolveViewActions", () => {
       "__duplicate",
     ])
   })
+
+  it("relabels delete action to 'Move to trash' when trash is enabled", () => {
+    const withTrash = resolveViewActions(
+      {},
+      { ...allAccess, trash: { enabled: true, retentionDays: 30 } },
+    )
+    const deleteRow = withTrash.rowActions.find((a) => a.name === "__delete")
+    expect(deleteRow?.label).toBe("Move to trash")
+
+    const deleteBulk = withTrash.bulkActions.find((a) => a.name === "__delete-bulk")
+    expect(deleteBulk?.label).toBe("Move to trash")
+  })
+
+  it("keeps 'Delete' label when trash is explicitly disabled", () => {
+    const withoutTrash = resolveViewActions(
+      {},
+      { ...allAccess, trash: { enabled: false } },
+    )
+    const deleteRow = withoutTrash.rowActions.find((a) => a.name === "__delete")
+    expect(deleteRow?.label).toBe("Delete")
+
+    const deleteBulk = withoutTrash.bulkActions.find((a) => a.name === "__delete-bulk")
+    expect(deleteBulk?.label).toBe("Delete selected")
+  })
 })

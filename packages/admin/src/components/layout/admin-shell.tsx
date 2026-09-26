@@ -22,6 +22,7 @@ import {
   Briefcase,
   ExternalLink,
   SlidersHorizontal,
+  Trash2,
   icons,
 } from "lucide-react"
 import type { CompiledNavItem } from "@dyrected/sdk"
@@ -881,6 +882,8 @@ function SidebarInner({
     let defaultPath = "/"
     if (item.type === "dashboard") {
       defaultPath = "/"
+    } else if (item.type === "trash" || item.slug === "trash") {
+      defaultPath = "/trash"
     } else if (item.type === "link") {
       defaultPath = item.href || "#"
     } else if (item.type === "global") {
@@ -901,6 +904,8 @@ function SidebarInner({
 
     if (item.type === "dashboard") {
       isExactActive = location.pathname === "/" || location.pathname === ""
+    } else if (item.type === "trash" || item.slug === "trash") {
+      isExactActive = location.pathname === "/trash"
     } else if (item.type === "global") {
       isExactActive = location.pathname === `/globals/${item.slug}` || location.pathname === `/globals/${item.slug}/edit`
     } else if (item.type === "collection") {
@@ -918,6 +923,7 @@ function SidebarInner({
 
     const col = item.type === "collection" ? schemas?.collections?.find((c: any) => c.slug === item.slug) : undefined
     const FallbackIcon = item.type === "dashboard" ? LayoutDashboard :
+      (item.type === "trash" || item.slug === "trash") ? Trash2 :
       item.type === "global" ? Settings :
         item.type === "link" ? ExternalLink :
           item.type === "collection" ? (col?.auth ? Users : col?.upload ? ImageIcon : Database) :
@@ -1252,6 +1258,19 @@ function SidebarInner({
                     )
                   })}
                 </div>
+              </div>
+            )}
+
+            {Boolean((schemas?.collections as any)?.some((c: any) => c.trash?.enabled !== false && c.trash !== false)) && (
+              <div className="dy-space-y-0.5">
+                <NavItem
+                  to="/trash"
+                  icon={Trash2}
+                  label="Trash"
+                  active={location.pathname === "/trash"}
+                  collapsed={collapsed}
+                  onClick={onNavigate}
+                />
               </div>
             )}
           </>

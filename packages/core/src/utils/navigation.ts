@@ -10,6 +10,8 @@ import type {
   CompiledNavTree,
 } from "../types/index.js";
 
+import { resolveTrashConfig } from "../trash.js";
+
 /**
  * System route prefixes reserved by Dyrected.
  * Cannot be used as operational workspace slugs.
@@ -25,6 +27,7 @@ export const RESERVED_NAVIGATION_SLUGS = new Set([
   "admin",
   "preferences",
   "auth",
+  "trash",
 ]);
 
 /**
@@ -32,6 +35,7 @@ export const RESERVED_NAVIGATION_SLUGS = new Set([
  */
 export function assertValidNavigationSlugs(navigation: DefineWorkspaceOptions[]): void {
   for (const item of navigation) {
+    if (item.dashboard || item.trash) continue;
     if (item.slug) {
       const normalizedSlug = item.slug.toLowerCase().trim().replace(/^\//, "");
       if (RESERVED_NAVIGATION_SLUGS.has(normalizedSlug)) {
@@ -149,6 +153,22 @@ export function compileNavigation(
         group: groupName,
         order: item.order ?? 0,
         views: [],
+        access: item.access,
+      });
+      continue;
+    }
+
+    if (item.trash) {
+      registerItem(groupName, {
+        id: "trash",
+        type: "trash",
+        slug: "trash",
+        label: item.label || "Trash",
+        icon: (item.icon as string) || "Trash2",
+        group: groupName,
+        order: item.order ?? 950,
+        views: [],
+        badge: item.badge,
         access: item.access,
       });
       continue;
@@ -274,6 +294,25 @@ export function compileNavigation(
       order: 100,
       views: [],
     });
+  }
+
+  // Step 5 (part c): Auto-merge Trash system item if any collection has trash enabled
+  const mentionedTrash = explicitNav.some((i) => i.trash || i.slug === "trash");
+  if (!mentionedTrash) {
+    const hasTrash = collections.some(
+      (col) => !col.slug.startsWith("__") && resolveTrashConfig(col, config as any).enabled,
+    );
+    if (hasTrash) {
+      registerItem(undefined, {
+        id: "trash",
+        type: "trash",
+        slug: "trash",
+        label: "Trash",
+        icon: "Trash2",
+        order: 950,
+        views: [],
+      });
+    }
   }
 
   // Helper to apply relative splicing (`before` / `after`) and sorting on an item array

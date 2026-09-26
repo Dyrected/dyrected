@@ -16,6 +16,7 @@ export interface DeleteDialogState {
   requiresTypedConfirmation: boolean
   expectedValue: string
   mode: "single" | "bulk"
+  isTrash?: boolean
 }
 
 const IDLE_DELETE_STATE: DeleteDialogState = {
@@ -78,9 +79,49 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
       }
       return ids.length
     },
-    onSuccess: async (count) => {
+    onSuccess: async (count, ids) => {
       await invalidate()
-      toast.success(count === 1 ? "Entry deleted successfully" : `Deleted ${count} entries`)
+      const isTrash = schema?.trash?.enabled !== false
+      if (isTrash) {
+        toast("Moved to trash", {
+          duration: 8000,
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              try {
+                if (ids.length === 1) {
+                  const trashId = `${slug}:${ids[0]}`
+                  const colClient = (client as any)?.collection?.(slug)
+                  if (colClient?.trash?.restore) {
+                    await colClient.trash.restore(trashId)
+                  } else {
+                    await (client as any)?.request(`/api/collections/${slug}/trash/${encodeURIComponent(trashId)}/restore`, {
+                      method: "POST",
+                    })
+                  }
+                } else {
+                  const trashIds = ids.map((id) => `${slug}:${id}`)
+                  const colClient = (client as any)?.collection?.(slug)
+                  if (colClient?.trash?.restoreMany) {
+                    await colClient.trash.restoreMany(trashIds)
+                  } else {
+                    await (client as any)?.request(`/api/collections/${slug}/trash/restore-many`, {
+                      method: "POST",
+                      body: JSON.stringify({ trashIds }),
+                    })
+                  }
+                }
+                await invalidate()
+                toast.success("Restored from trash")
+              } catch (error: any) {
+                toast.error("Failed to restore", { description: error.message })
+              }
+            },
+          },
+        })
+      } else {
+        toast.success(count === 1 ? "Entry deleted successfully" : `Deleted ${count} entries`)
+      }
     },
     onError: (error: Error) => {
       toast.error("Failed to delete entries", { description: error.message })
@@ -137,21 +178,39 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
         })
         : ""
 
+    const isTrash = schema?.trash?.enabled !== false
+    const retentionDays = schema?.trash?.retentionDays
+
+    const trashDescription =
+      retentionDays !== undefined && retentionDays !== null
+        ? `Recoverable for ${retentionDays} day${retentionDays === 1 ? "" : "s"}.`
+        : "Stays in the trash until someone empties it."
+
+    const title = isTrash
+      ? mode === "single"
+        ? "Move this entry to trash?"
+        : `Move ${cleanIds.length} entr${cleanIds.length === 1 ? "y" : "ies"} to trash?`
+      : mode === "single"
+        ? "Delete this entry?"
+        : `Delete ${cleanIds.length} entr${cleanIds.length === 1 ? "y" : "ies"}?`
+
+    const description = schema.auth
+      ? "This user will be removed. To prevent accidental deletion, confirm by typing the exact name below."
+      : isTrash
+        ? trashDescription
+        : mode === "single"
+          ? "This entry will be permanently deleted. This action cannot be undone."
+          : "These entries will be permanently deleted. This action cannot be undone."
+
     setDeleteDialog({
       open: true,
       ids: cleanIds,
-      title:
-        mode === "single"
-          ? "Delete this entry?"
-          : `Delete ${cleanIds.length} entr${cleanIds.length === 1 ? "y" : "ies"}?`,
-      description: schema.auth
-        ? "This user will be permanently removed. To prevent accidental deletion, confirm by typing the exact name below."
-        : mode === "single"
-          ? "This entry will be permanently deleted. This action cannot be undone."
-          : "These entries will be permanently deleted. This action cannot be undone.",
+      title,
+      description,
       requiresTypedConfirmation: !!(schema.auth && expectedValue),
       expectedValue,
       mode,
+      isTrash,
     })
     setConfirmationValue("")
   }, [schema, schemas, user, findDoc])

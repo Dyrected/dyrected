@@ -53,6 +53,11 @@ export interface SystemActionOptions {
   canDelete: boolean
   hasDetail: boolean
   features?: ViewActionFeatures
+  trash?: {
+    enabled?: boolean
+    retentionDays?: number | null
+    allowPermanentDelete?: boolean
+  }
 }
 
 /**
@@ -69,6 +74,7 @@ export function createBuiltinActions(options: SystemActionOptions): {
   bulk: SerializedAction[]
 } {
   const features = options.features ?? {}
+  const isTrash = options.trash?.enabled !== false
 
   const make = (
     key: keyof ViewActionFeatures,
@@ -81,9 +87,14 @@ export function createBuiltinActions(options: SystemActionOptions): {
     if (key === "duplicate" && !options.canCreate) return null
     if (key === "delete" && !options.canDelete) return null
 
+    let label = builtin.label
+    if (key === "delete" && isTrash) {
+      label = "Move to trash"
+    }
+
     return {
       name: builtin.name,
-      label: builtin.label,
+      label,
       icon: builtin.icon,
       type: builtin.type,
       destructive: builtin.destructive,

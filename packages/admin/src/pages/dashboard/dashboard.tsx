@@ -376,6 +376,14 @@ export function Dashboard() {
           to: "/setup",
         }]
       : []),
+    ...(schemas?.adminHealth?.trashPurgeOverdue
+      ? [{
+          key: "trash-purge-overdue",
+          title: "Trash purge task is overdue",
+          description: "Documents scheduled for permanent purge have not been deleted. Ensure your background task runner or cron schedule is running.",
+          to: "/trash",
+        }]
+      : []),
 
     ...(hasUpdate
       ? [{

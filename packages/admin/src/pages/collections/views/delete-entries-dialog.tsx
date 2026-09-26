@@ -68,10 +68,14 @@ export function DeleteEntriesDialog({
             disabled={isPending || !confirmationMatches}
           >
             {isPending
-              ? "Deleting..."
-              : state.mode === "single"
-                ? "Delete entry"
-                : `Delete ${state.ids.length} entr${state.ids.length === 1 ? "y" : "ies"}`}
+              ? state.isTrash ? "Moving to trash..." : "Deleting..."
+              : state.isTrash
+                ? state.mode === "single"
+                  ? "Move to trash"
+                  : `Move ${state.ids.length} to trash`
+                : state.mode === "single"
+                  ? "Delete entry"
+                  : `Delete ${state.ids.length} entr${state.ids.length === 1 ? "y" : "ies"}`}
           </Button>
         </DialogFooter>
       </DialogContent>

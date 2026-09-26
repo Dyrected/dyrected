@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
-import { useIsFetching, useQueryClient } from "@tanstack/react-query"
-import { FileDown, FileUp, Loader2, Plus, RefreshCw } from "lucide-react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query"
+import { FileDown, FileUp, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react"
 
 import { Button } from "../../../components/ui/button"
 import { useDyrected } from "../../../providers/dyrected-context"
@@ -57,6 +57,7 @@ export interface OperationalViewPageProps {
 export function OperationalViewPage({ slug, schema, view, schemas }: OperationalViewPageProps) {
   const { client, components, user } = useDyrected()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const peekRecordId = searchParams.get("record")
   const isPeekOpen = Boolean(peekRecordId)
@@ -142,6 +143,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         canCreate,
         canDelete,
         hasDetail,
+        trash: schema?.trash,
       }),
     // `view` fields are stable per route; features/order ride along on it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -189,6 +191,16 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     findArgs: { where: resolveViewFilter(view.filter), sort: resolveViewSort(view.sort) },
   })
 
+  const isTrashEnabled = schema?.trash?.enabled !== false && !schema?.slug?.startsWith("__")
+  const { data: trashData } = useQuery({
+    queryKey: ["trash-count", slug],
+    queryFn: async () => {
+      if (!client) return { total: 0 }
+      return (client as any).request(`/api/collections/${slug}/trash?limit=1`)
+    },
+    enabled: !!client && isTrashEnabled,
+  })
+
   const [isImportOpen, setIsImportOpen] = useState(false)
 
   const mobileMenuItems: HeaderMenuItem[] = [
@@ -199,6 +211,16 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
       disabled: isFetchingData,
       onSelect: () => void handleRefresh(),
     },
+    ...(isTrashEnabled
+      ? [
+          {
+            key: "trash",
+            label: `Trash${typeof trashData?.total === "number" && trashData.total > 0 ? ` (${trashData.total})` : ""}`,
+            icon: Trash2,
+            onSelect: () => void navigate(`/collections/${slug}/trash`),
+          },
+        ]
+      : []),
     ...headerActions.map((action) => ({
       key: `header:${action.name}`,
       label: action.label,
@@ -403,6 +425,25 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
               <Link to={`/collections/${slug}/new`}>
                 <Plus className="dy-h-3.5 dy-w-3.5" />
                 New {schema.labels?.singular || schema.slug}
+              </Link>
+            </Button>
+          )}
+
+          {isTrashEnabled && (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="dy-h-8 dy-gap-1.5 dy-px-3 dy-text-xs"
+            >
+              <Link to={`/collections/${slug}/trash`}>
+                <Trash2 className="dy-h-3.5 dy-w-3.5" />
+                <span>Trash</span>
+                {typeof trashData?.total === "number" && trashData.total > 0 && (
+                  <span className="dy-ml-0.5 dy-rounded-full dy-bg-muted dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-semibold dy-tabular-nums">
+                    {trashData.total}
+                  </span>
+                )}
               </Link>
             </Button>
           )}

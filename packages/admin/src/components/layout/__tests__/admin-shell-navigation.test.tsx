@@ -184,5 +184,85 @@ describe("AdminShell Navigation & Polymorphic Sidebar", () => {
     fireEvent.click(themeButtons[0])
     expect(mockSetTheme).toHaveBeenCalledWith("dark")
   })
+
+  it("renders Trash link to /trash when present in compiled navigation", () => {
+    useDyrectedMock.mockReturnValue({
+      user: { email: "admin@example.com", role: "admin" },
+      config: { siteId: "default" },
+      schemas: { collections: [], globals: [] },
+      navigation: {
+        groups: [
+          {
+            id: "ops",
+            label: "Operations",
+            icon: "Briefcase",
+            items: [
+              {
+                id: "trash",
+                slug: "trash",
+                label: "Trash",
+                type: "trash" as const,
+                views: [],
+              },
+            ],
+          },
+        ],
+      },
+      badges: {},
+      client: {
+        getBaseUrl: () => "http://localhost:3000",
+      },
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/"]}>
+          <AdminShell>
+            <div>Child Content</div>
+          </AdminShell>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    const trashLink = screen.getAllByRole("link", { name: /Trash/i })[0]
+    expect(trashLink).toBeTruthy()
+    expect(trashLink.getAttribute("href")).toBe("/trash")
+  })
+
+  it("renders Trash link in fallback navigation when collections have trash enabled", () => {
+    useDyrectedMock.mockReturnValue({
+      user: { email: "admin@example.com", role: "admin" },
+      config: { siteId: "default" },
+      schemas: {
+        collections: [
+          {
+            slug: "articles",
+            labels: { plural: "Articles" },
+            trash: { enabled: true, retentionDays: 30 },
+          },
+        ],
+        globals: [],
+      },
+      navigation: null,
+      badges: {},
+      client: {
+        getBaseUrl: () => "http://localhost:3000",
+      },
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/"]}>
+          <AdminShell>
+            <div>Child Content</div>
+          </AdminShell>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    const trashLink = screen.getAllByRole("link", { name: /Trash/i })[0]
+    expect(trashLink).toBeTruthy()
+    expect(trashLink.getAttribute("href")).toBe("/trash")
+  })
 })
 
