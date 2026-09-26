@@ -179,15 +179,16 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>find</code> (required) |  |
 | <code>collection</code> (required) | Returns a fluent query builder for a collection. |
 | <code>global</code> (required) | Access a global by its slug with a fluent builder. |
+| <code>trash</code> (optional) | Access trash operations, either collection-scoped or globally. |
 | <code>findOne</code> (optional) |  |
 | <code>create</code> (required) |  |
 | <code>update</code> (required) |  |
-| <code>delete</code> (required) |  |
+| <code>delete</code> (optional) |  |
 | <code>transition</code> (required) | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
 | <code>workflowHistory</code> (optional) | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
 | <code>audit</code> (required) | Fetch audit entries across every audited collection the current caller can read.  Sends &#96;GET /api/audit&#96;. |
 | <code>collectionAudit</code> (required) | Fetch audit entries for a single collection.  Sends &#96;GET /api/collections/:collection/__audit&#96;. |
-| <code>deleteMany</code> (required) |  |
+| <code>deleteMany</code> (optional) |  |
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
@@ -198,6 +199,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>uploadMedia</code> (required) |  |
 | <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
+| <code>request</code> (optional) |  |
 
 
 ## DyrectedClientConfig
@@ -385,11 +387,17 @@ export interface SchemaResponse {
   hasStorage?: boolean;
   configDiagnostics?: ConfigDiagnostic[];
   ai?: SerializedSchemaAIConfig;
+  trash?: {
+    enabled?: boolean;
+    retentionDays?: number | null;
+    allowPermanentDelete?: boolean;
+  };
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
+    trashPurgeOverdue?: boolean;
   };
 }
 ```
@@ -404,6 +412,7 @@ export interface SchemaResponse {
 | <code>hasStorage</code> (optional) |  |
 | <code>configDiagnostics</code> (optional) |  |
 | <code>ai</code> (optional) |  |
+| <code>trash</code> (optional) |  |
 | <code>adminHealth</code> (optional) |  |
 
 
@@ -629,6 +638,140 @@ export interface TransitionOptions {
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
 | <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
 | <code>input</code> (optional) | Extra data passed to the transition's server-side &#96;onTransition&#96; handler, for example an amount the handler needs to act on. |
+
+
+## TrashClient
+
+Exported type from @dyrected/sdk.
+
+```ts
+export type TrashClient = ((collectionSlug?: string) => TrashOperations) & TrashOperations;
+```
+
+
+## TrashEmptyOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashEmptyOptions {
+  confirm?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>confirm</code> (optional) |  |
+
+
+## TrashEntry
+
+A single trash entry representing a soft-deleted document snapshot.
+
+```ts
+export interface TrashEntry {
+  id: string;
+  collection: string;
+  docId: string;
+  deletedAt: number;
+  purgeAt: number | null;
+  deletedBy?: string;
+  title?: string;
+  snapshot: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>docId</code> (required) |  |
+| <code>deletedAt</code> (required) |  |
+| <code>purgeAt</code> (required) |  |
+| <code>deletedBy</code> (optional) |  |
+| <code>title</code> (optional) |  |
+| <code>snapshot</code> (required) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
+
+
+## TrashKeepOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashKeepOptions {
+  purgeAt?: Date | string | number | null;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>purgeAt</code> (optional) |  |
+
+
+## TrashListArgs
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashListArgs {
+  page?: number;
+  limit?: number;
+  search?: string;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>page</code> (optional) |  |
+| <code>limit</code> (optional) |  |
+| <code>search</code> (optional) |  |
+
+
+## TrashOperations
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashOperations {
+  list: (args?: TrashListArgs) => Promise<PaginatedResult<TrashEntry>>;
+  get: (trashId: string) => Promise<TrashEntry>;
+  restore: (trashId: string, options?: TrashRestoreOptions) => Promise<UnknownRecord>;
+  restoreMany: (trashIds: string[]) => Promise<{ restored: string[]; failed: unknown[]; count: number }>;
+  keep: (trashId: string, options?: TrashKeepOptions | boolean) => Promise<{ message: string; purgeAt: number | null }>;
+  purge: (trashId: string) => Promise<{ message: string }>;
+  empty: (options?: TrashEmptyOptions | string) => Promise<{ message: string; count: number }>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>list</code> (optional) |  |
+| <code>get</code> (required) |  |
+| <code>restore</code> (optional) |  |
+| <code>restoreMany</code> (required) |  |
+| <code>keep</code> (optional) |  |
+| <code>purge</code> (required) |  |
+| <code>empty</code> (optional) |  |
+
+
+## TrashRestoreOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashRestoreOptions {
+  overrides?: Record<string, unknown>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>overrides</code> (optional) |  |
 
 
 ## UploadOptions

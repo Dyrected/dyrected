@@ -172,6 +172,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - [Collections](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/collections): Use collections for repeatable content such as posts, products, users, and submissions.
 - [Globals](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/globals): Use globals for singleton content such as site settings, navigation, footer content, and SEO defaults.
 - [Overview](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/overview): Learn what lives in `dyrected.config.ts` and how the root config shapes your content model, admin, and runtime.
+- [Trash and Retention](https://docs.dyrected.com/docs/self-hosted/model-content/configuration/trash-and-retention): Move deleted documents to a recoverable holding area and configure automatic retention purges.
 - [Collections](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/collections): Read, create, update, and delete rules that decide who can touch a collection's documents.
 - [Fields](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/fields): Control whether individual fields can be read or written — enforced on the API and reflected in the admin panel.
 - [Globals](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/globals): Read and update rules for a global — the single-document config objects like site settings or a navigation menu.

@@ -227,7 +227,7 @@ export type CollectionAfterChangeHook<TDoc extends object = Record<string, unkno
 
 ## CollectionAfterDeleteHook
 
-Runs **after** a document has been deleted from the database.
+Runs **after** a document has been permanently deleted from the database.
 
 ```ts
 export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
@@ -236,6 +236,7 @@ export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unkno
   req: HookRequestContext;
   user?: AuthenticatedUser;
   db: DatabaseAdapter;
+  mode?: "permanent";
 }) => void | Promise<void>;
 ```
 
@@ -263,6 +264,36 @@ Exported type from @dyrected/core.
 export type CollectionAfterReadHookEntry<
   TDoc extends object = Record<string, unknown>,
 > = CollectionAfterReadHook<TDoc> | DeclarativeHookExpression;
+```
+
+
+## CollectionAfterRestoreHook
+
+Runs **after** a trashed document has been restored.
+
+```ts
+export type CollectionAfterRestoreHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionAfterTrashHook
+
+Runs **after** a document has been moved to trash.
+
+```ts
+export type CollectionAfterTrashHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
 ```
 
 
@@ -322,7 +353,7 @@ export type CollectionBeforeCommitHook<TDoc extends object = Record<string, unkn
 
 ## CollectionBeforeDeleteHook
 
-Runs **before** a document is deleted from the database.
+Runs **before** a document is deleted from the database or moved to trash.
 
 ```ts
 export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
@@ -331,6 +362,7 @@ export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unkn
   req: HookRequestContext;
   user?: AuthenticatedUser;
   db: ReadonlyDatabaseAdapter;
+  mode?: "trash" | "permanent";
 }) => void | Promise<void>;
 ```
 
@@ -360,6 +392,36 @@ Exported type from @dyrected/core.
 export type CollectionBeforeReadHookEntry =
   | CollectionBeforeReadHook
   | DeclarativeHookExpression;
+```
+
+
+## CollectionBeforeRestoreHook
+
+Runs **before** a trashed document is restored.
+
+```ts
+export type CollectionBeforeRestoreHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionBeforeTrashHook
+
+Runs **before** a document is moved to trash.
+
+```ts
+export type CollectionBeforeTrashHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => void | Promise<void>;
 ```
 
 

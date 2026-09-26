@@ -853,6 +853,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:CollectionAfterRestoreHook",
+      "name": "CollectionAfterRestoreHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionAfterTrashHook",
+      "name": "CollectionAfterTrashHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:CollectionBeforeChangeHook",
       "name": "CollectionBeforeChangeHook",
       "category": "hooks",
@@ -885,6 +897,18 @@
     {
       "id": "@dyrected/core:CollectionBeforeReadHookEntry",
       "name": "CollectionBeforeReadHookEntry",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeRestoreHook",
+      "name": "CollectionBeforeRestoreHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeTrashHook",
+      "name": "CollectionBeforeTrashHook",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
@@ -2025,6 +2049,48 @@
     {
       "id": "@dyrected/sdk:TransitionOptions",
       "name": "TransitionOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashClient",
+      "name": "TrashClient",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashEmptyOptions",
+      "name": "TrashEmptyOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashEntry",
+      "name": "TrashEntry",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashKeepOptions",
+      "name": "TrashKeepOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashListArgs",
+      "name": "TrashListArgs",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashOperations",
+      "name": "TrashOperations",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TrashRestoreOptions",
+      "name": "TrashRestoreOptions",
       "category": "sdk",
       "sourcePackage": "@dyrected/sdk"
     },

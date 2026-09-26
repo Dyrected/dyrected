@@ -6,6 +6,17 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
+## v2.19.0
+
+- Add built-in Trash & Retention system and audit/roles field helpers across core, admin, SDK, and framework integrations:
+
+  - **Core Trash & Retention**: Move deleted documents to internal `__trash` collection with deterministic IDs, freeing unique keys and keeping read paths clean. Configurable retention periods with automatic `dyrected:trash-purge` task runner integration.
+  - **Audit & Schema Field Helpers**: Add `defineCreatedAtField`, `defineUpdatedAtField`, `defineCreatedByField`, `defineUpdatedByField`, and `defineRolesField` (with customizable `adminRole` authorization).
+  - **Admin UI**: Add collection-level and global `/trash` views, 8-second undo toast on delete, media library trash support, empty trash confirmation dialog, and conflict drawer for "Restore with changes".
+  - **Ecosystem**: Add `client.trash()` in `@dyrected/sdk`, `useTrash` in `@dyrected/react` and `@dyrected/vue`, `dyrected doctor` trash & retention diagnostics in `@dyrected/cli`, and secret-protected cron endpoints in `@dyrected/next`.
+
+---
+
 ## v2.18.1
 
 - Fix operational workspace view action resolution and optional field null validation.
@@ -852,26 +863,6 @@ Release notes and version history across all Dyrected packages.
   - **Fixed DatePicker closing prematurely.** Intercept `pointerdown` events instead of `mousedown` on the wrapper, preventing the picker from instantly closing on click due to React event phase mismatches.
   - **Downgraded `react-day-picker` to v8.** Version 9 introduced breaking DOM/CSS structure that conflicted with our existing styling. Downgrading to the highly stable v8 restores standard navigation button interactions and styling.
   - **Fixed `aria-hidden` focus retention warning.** Replaced `aria-hidden` with the modern `inert` attribute on the closed calendar wrapper, forcing the browser to safely drop keyboard focus and satisfy screen reader constraints when the picker closes. (`@dyrected/admin`)
-
----
-
-## v2.5.59
-
-- Fix server-side field access evaluation so field rules receive the current document `id` during API reads and updates, matching admin behavior and preventing `!id`-style rules from silently allowing protected field changes.
-
-  Improve the public access-control type surface by allowing `AccessFunctionArgs`, `AccessFunction`, `AccessRule`, `AccessPolicyResolver`, `DyrectedConfig`, and `defineConfig` to carry a custom authenticated-user type for deployments that extend the default user claims.
-
-  Align the access-control overview docs with runtime behavior by documenting that field access is enforced by both the API and the admin panel.
-
-  I improved dyrected upgrade in packages/cli/src/commands/upgrade.t
-  It now:
-
-  - resolves the actual published version for each @dyrected/* package with `npm view <pkg> version`
-  - installs explicit versions instead of relying on @latest
-  - upgrades dependencies and devDependencies separately
-  - uses exact-version installs (--save-exact / --exact)
-  - verifies both package.json and node_modules after install
-  - fails loudly if the installed result is still stale (`dyrected`, `@dyrected/core`)
 
 ---
 

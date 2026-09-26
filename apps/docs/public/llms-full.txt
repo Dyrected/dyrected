@@ -1642,15 +1642,16 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>find</code> (required) |  |
 | <code>collection</code> (required) | Returns a fluent query builder for a collection. |
 | <code>global</code> (required) | Access a global by its slug with a fluent builder. |
+| <code>trash</code> (optional) | Access trash operations, either collection-scoped or globally. |
 | <code>findOne</code> (optional) |  |
 | <code>create</code> (required) |  |
 | <code>update</code> (required) |  |
-| <code>delete</code> (required) |  |
+| <code>delete</code> (optional) |  |
 | <code>transition</code> (required) | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
 | <code>workflowHistory</code> (optional) | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
 | <code>audit</code> (required) | Fetch audit entries across every audited collection the current caller can read.  Sends &#96;GET /api/audit&#96;. |
 | <code>collectionAudit</code> (required) | Fetch audit entries for a single collection.  Sends &#96;GET /api/collections/:collection/__audit&#96;. |
-| <code>deleteMany</code> (required) |  |
+| <code>deleteMany</code> (optional) |  |
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
@@ -1661,6 +1662,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>uploadMedia</code> (required) |  |
 | <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
+| <code>request</code> (optional) |  |
 
 
 ## DyrectedClientConfig
@@ -1848,11 +1850,17 @@ export interface SchemaResponse {
   hasStorage?: boolean;
   configDiagnostics?: ConfigDiagnostic[];
   ai?: SerializedSchemaAIConfig;
+  trash?: {
+    enabled?: boolean;
+    retentionDays?: number | null;
+    allowPermanentDelete?: boolean;
+  };
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
+    trashPurgeOverdue?: boolean;
   };
 }
 ```
@@ -1867,6 +1875,7 @@ export interface SchemaResponse {
 | <code>hasStorage</code> (optional) |  |
 | <code>configDiagnostics</code> (optional) |  |
 | <code>ai</code> (optional) |  |
+| <code>trash</code> (optional) |  |
 | <code>adminHealth</code> (optional) |  |
 
 
@@ -2092,6 +2101,140 @@ export interface TransitionOptions {
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
 | <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
 | <code>input</code> (optional) | Extra data passed to the transition's server-side &#96;onTransition&#96; handler, for example an amount the handler needs to act on. |
+
+
+## TrashClient
+
+Exported type from @dyrected/sdk.
+
+```ts
+export type TrashClient = ((collectionSlug?: string) => TrashOperations) & TrashOperations;
+```
+
+
+## TrashEmptyOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashEmptyOptions {
+  confirm?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>confirm</code> (optional) |  |
+
+
+## TrashEntry
+
+A single trash entry representing a soft-deleted document snapshot.
+
+```ts
+export interface TrashEntry {
+  id: string;
+  collection: string;
+  docId: string;
+  deletedAt: number;
+  purgeAt: number | null;
+  deletedBy?: string;
+  title?: string;
+  snapshot: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>docId</code> (required) |  |
+| <code>deletedAt</code> (required) |  |
+| <code>purgeAt</code> (required) |  |
+| <code>deletedBy</code> (optional) |  |
+| <code>title</code> (optional) |  |
+| <code>snapshot</code> (required) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
+
+
+## TrashKeepOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashKeepOptions {
+  purgeAt?: Date | string | number | null;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>purgeAt</code> (optional) |  |
+
+
+## TrashListArgs
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashListArgs {
+  page?: number;
+  limit?: number;
+  search?: string;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>page</code> (optional) |  |
+| <code>limit</code> (optional) |  |
+| <code>search</code> (optional) |  |
+
+
+## TrashOperations
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashOperations {
+  list: (args?: TrashListArgs) => Promise<PaginatedResult<TrashEntry>>;
+  get: (trashId: string) => Promise<TrashEntry>;
+  restore: (trashId: string, options?: TrashRestoreOptions) => Promise<UnknownRecord>;
+  restoreMany: (trashIds: string[]) => Promise<{ restored: string[]; failed: unknown[]; count: number }>;
+  keep: (trashId: string, options?: TrashKeepOptions | boolean) => Promise<{ message: string; purgeAt: number | null }>;
+  purge: (trashId: string) => Promise<{ message: string }>;
+  empty: (options?: TrashEmptyOptions | string) => Promise<{ message: string; count: number }>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>list</code> (optional) |  |
+| <code>get</code> (required) |  |
+| <code>restore</code> (optional) |  |
+| <code>restoreMany</code> (required) |  |
+| <code>keep</code> (optional) |  |
+| <code>purge</code> (required) |  |
+| <code>empty</code> (optional) |  |
+
+
+## TrashRestoreOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashRestoreOptions {
+  overrides?: Record<string, unknown>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>overrides</code> (optional) |  |
 
 
 ## UploadOptions
@@ -17791,6 +17934,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   drafts?: boolean;
 
   /**
+   * Trash & retention settings for this collection.
+   * If `true` or an object, deleting a document moves it to trash rather than destroying it.
+   * If `false`, hard deletes immediately.
+   */
+  trash?: boolean | TrashConfig;
+
+  /**
    * Collection-level access control.
    *
    * Each key is an operation; the value can be a function, a Jexl string, a
@@ -17813,6 +17963,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     create?: AccessRule<TDoc>;
     update?: AccessRule<TDoc>;
     delete?: AccessRule<TDoc>;
+    /**
+     * Controls who can restore a trashed document in this collection.
+     * Falls back to `delete` access if omitted.
+     */
+    restore?: AccessRule<TDoc>;
     /**
      * Controls who can read this collection's audit log (`GET /:slug/__audit`),
      * for collections with `audit` enabled. Falls back to the `read` rule when
@@ -17882,6 +18037,18 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * already committed and will not be undone.
      */
     afterDelete?: CollectionAfterDeleteHook<TDoc>[];
+
+    /** Runs before a document is moved to trash. Throw to cancel trashing. */
+    beforeTrash?: CollectionBeforeTrashHook<TDoc>[];
+
+    /** Runs after a document has been moved to trash. Side effects only. */
+    afterTrash?: CollectionAfterTrashHook<TDoc>[];
+
+    /** Runs before a trashed document is restored. Throw to cancel restoration. */
+    beforeRestore?: CollectionBeforeRestoreHook<TDoc>[];
+
+    /** Runs after a document has been restored from trash. Side effects only. */
+    afterRestore?: CollectionAfterRestoreHook<TDoc>[];
   };
 
   /**
@@ -18151,6 +18318,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>audit</code> (optional) | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity.  Turn this on when you need accountability around changes, such as knowing who changed what, inspecting before-and-after state, or supporting compliance and operational review. |
 | <code>workflow</code> (optional) | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response.  Use this when content moves through stages such as draft, review, and published, or when teams need an approval process before changes go live. |
 | <code>drafts</code> (optional) | If &#96;true&#96;, enables zero-config draft and publish functionality. Documents start as drafts, editors can save working drafts without affecting live content, and any authorized editor can publish or unpublish entries. |
+| <code>trash</code> (optional) | Trash &amp; retention settings for this collection. If &#96;true&#96; or an object, deleting a document moves it to trash rather than destroying it. If &#96;false&#96;, hard deletes immediately. |
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
@@ -19231,6 +19399,11 @@ export interface DyrectedConfig<
    * AI Assistant and LLM tools configuration.
    */
   ai?: AIConfig;
+
+  /**
+   * App-wide trash & retention configuration.
+   */
+  trash?: AppTrashConfig;
 }
 ```
 
@@ -19256,6 +19429,198 @@ export interface DyrectedConfig<
 | <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
 | <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
 | <code>ai</code> (optional) | AI Assistant and LLM tools configuration. |
+| <code>trash</code> (optional) | App-wide trash &amp; retention configuration. |
+
+---
+
+## Trash and Retention
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/model-content/configuration/trash-and-retention
+
+When an editor deletes a document in Dyrected, destroying the data immediately is rarely what a team actually wants. One accidental click on an order, guest list, or article can cause irreversible data loss.
+
+Dyrected provides built-in **Trash & Retention**: deleting a document moves it to an internal holding area (`__trash`) where it can be inspected and restored with its original `id`. A configurable background retention policy permanently purges expired documents automatically.
+
+---
+
+## What trash does
+
+When trash is active on a collection:
+
+1. **Deletion moves the document out of your table**: The record is removed from your active collection and copied into an internal `__trash` snapshot.
+2. **Read paths stay clean**: Queries, relationship lookups, view counts, aggregate metrics, and AI/RAG tools immediately stop seeing the document without needing manual `deletedAt is null` filters.
+3. **Unique values are freed**: If a deleted user held `email: "alice@example.com"`, another document can immediately reuse that email.
+4. **Restoration is lossless**: Restoring a trashed document recreates it with its original `id` and `createdAt` timestamp, meaning any foreign relationships pointing to it work again immediately.
+
+---
+
+## Enabling trash
+
+Trash is enabled out-of-the-box for all non-system collections with a 30-day retention period. You can configure retention per collection or app-wide in your config.
+
+### Per collection
+
+Configure trash in your `defineCollection` definition:
+
+```ts
+
+
+export const Articles = defineCollection({
+  slug: "articles",
+  // Enabled with a 60-day recovery window:
+  trash: { retentionDays: 60 },
+  fields: [
+    defineTextField({ name: "title", required: true }),
+  ],
+});
+```
+
+To keep items in trash indefinitely until an administrator manually empties it:
+
+```ts
+export const Invoices = defineCollection({
+  slug: "invoices",
+  // Never auto-purge; keep until manually emptied:
+  trash: { retentionDays: null },
+  fields: [
+    defineTextField({ name: "invoiceNumber", required: true }),
+  ],
+});
+```
+
+To opt out and permanently delete records immediately:
+
+```ts
+export const ActivityLogs = defineCollection({
+  slug: "activity-logs",
+  // Permanent immediate deletion:
+  trash: false,
+  fields: [
+    defineTextField({ name: "message", required: true }),
+  ],
+});
+```
+
+### App-wide configuration
+
+Set global defaults across all collections in `defineConfig`:
+
+```ts
+
+
+export default defineConfig({
+  // ... collections, db, etc.
+  trash: {
+    enabled: true,           // Default: true
+    retentionDays: 30,       // Default: 30 days. Set to null for indefinite retention
+    purge: {
+      cron: "0 3 * * *",     // Runs daily at 3:00 AM
+      batchSize: 200,        // Batch limit per run
+    },
+  },
+});
+```
+
+---
+
+## Admin experience
+
+When trash is enabled, Dyrected updates the admin dashboard automatically:
+
+- **Delete actions**: The delete button relabels to **Move to trash** and indicates the retention period (for example, *"Recoverable for 30 days"*).
+- **Undo toast**: An 8-second toast appears upon deletion allowing one-click undo.
+- **Collection toolbar**: A **Trash** button appears in the collection header with a counter badge showing active items in trash.
+- **Global Trash view**: A dedicated `/trash` route in the navigation sidebar lists trashed items across all collections.
+- **Restore with changes**: If a restored document collides with a unique field created after deletion, a conflict drawer opens allowing the editor to adjust the conflicting value before restoring.
+- **Empty trash**: Emptying trash requires typing the collection slug as confirmation to prevent accidental mass deletion.
+
+---
+
+## SDK and client hooks
+
+You can inspect, restore, and manage trash items directly in your frontend or scripts.
+
+### Client SDK
+
+```ts
+
+
+const client = createDyrectedClient({ baseURL: "https://your-api.com" });
+
+// List trashed articles
+const { docs, total } = await client.trash("articles").list({ page: 1, limit: 20 });
+
+// Restore a document
+await client.trash("articles").restore("articles:doc_123");
+
+// Restore with field overrides (if resolving unique conflicts)
+await client.trash("articles").restore("articles:doc_123", {
+  overrides: { slug: "new-slug" },
+});
+
+// Exempt an item from automatic purge
+await client.trash("articles").keep("articles:doc_123", { purgeAt: null });
+
+// Permanently delete an item immediately
+await client.trash("articles").purge("articles:doc_123");
+```
+
+### React and Vue hooks
+
+Dyrected provides identical reactive hooks in `@dyrected/react` and `@dyrected/vue`:
+
+```tsx
+
+
+export function TrashDrawer({ collection }: { collection: string }) {
+  const { entries, total, isLoading, restore, purge } = useTrash(collection);
+
+  if (isLoading) return <div>Loading trash...</div>;
+
+  return (
+    <div>
+      <h3>Trash ({total})</h3>
+      <ul>
+        {entries.map((item) => (
+          <li key={item.id}>
+            <span>{item.title}</span>
+            <button onClick={() => restore(item.id)}>Restore</button>
+            <button onClick={() => purge(item.id)}>Delete Forever</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+Restoring an item automatically invalidates your active collection queries, so the restored document appears in your UI lists without manual refetching.
+
+---
+
+## Hook execution order
+
+Trash distinguishes between temporary removal and permanent deletion:
+
+| Hook | When it fires | Purpose |
+|---|---|---|
+| `beforeDelete` | On trash **and** on permanent delete | Pre-deletion validation. Receives `{ mode: "trash" \| "permanent" }`. |
+| `beforeTrash` / `afterTrash` | On trash only | Soft-delete side effects (e.g. unpublishing or notifying owners). |
+| `beforeRestore` / `afterRestore` | On restore only | Post-restoration sync (e.g. re-indexing or re-enabling access). |
+| `afterDelete` | On **permanent deletion only** (purge or hard delete) | Destructive cleanup (e.g. purging external SaaS records). |
+
+> [!NOTE]
+> `beforeChange` and `afterChange` do not run during restoration, ensuring create-time side effects (such as welcome emails or initial billing setup) do not fire a second time.
+
+---
+
+## Automatic purge background task
+
+When retention is configured, Dyrected automatically registers the task `dyrected:trash-purge` in the task runner.
+
+- **Node servers**: Running `createTaskRunner(config).start()` runs the daily cron in the background.
+- **Serverless (Vercel / Netlify)**: Trigger `createTaskRunner(config).runDue()` from a scheduled cron route.
+- **CLI Health check**: Run `npx dyrected doctor` to verify that your trash purge background task is running on schedule.
 
 ---
 
@@ -27743,6 +28108,17 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.19.0
+
+- Add built-in Trash & Retention system and audit/roles field helpers across core, admin, SDK, and framework integrations:
+
+  - **Core Trash & Retention**: Move deleted documents to internal `__trash` collection with deterministic IDs, freeing unique keys and keeping read paths clean. Configurable retention periods with automatic `dyrected:trash-purge` task runner integration.
+  - **Audit & Schema Field Helpers**: Add `defineCreatedAtField`, `defineUpdatedAtField`, `defineCreatedByField`, `defineUpdatedByField`, and `defineRolesField` (with customizable `adminRole` authorization).
+  - **Admin UI**: Add collection-level and global `/trash` views, 8-second undo toast on delete, media library trash support, empty trash confirmation dialog, and conflict drawer for "Restore with changes".
+  - **Ecosystem**: Add `client.trash()` in `@dyrected/sdk`, `useTrash` in `@dyrected/react` and `@dyrected/vue`, `dyrected doctor` trash & retention diagnostics in `@dyrected/cli`, and secret-protected cron endpoints in `@dyrected/next`.
+
+---
+
 ## v2.18.1
 
 - Fix operational workspace view action resolution and optional field null validation.
@@ -28589,26 +28965,6 @@ Release notes and version history across all Dyrected packages.
   - **Fixed DatePicker closing prematurely.** Intercept `pointerdown` events instead of `mousedown` on the wrapper, preventing the picker from instantly closing on click due to React event phase mismatches.
   - **Downgraded `react-day-picker` to v8.** Version 9 introduced breaking DOM/CSS structure that conflicted with our existing styling. Downgrading to the highly stable v8 restores standard navigation button interactions and styling.
   - **Fixed `aria-hidden` focus retention warning.** Replaced `aria-hidden` with the modern `inert` attribute on the closed calendar wrapper, forcing the browser to safely drop keyboard focus and satisfy screen reader constraints when the picker closes. (`@dyrected/admin`)
-
----
-
-## v2.5.59
-
-- Fix server-side field access evaluation so field rules receive the current document `id` during API reads and updates, matching admin behavior and preventing `!id`-style rules from silently allowing protected field changes.
-
-  Improve the public access-control type surface by allowing `AccessFunctionArgs`, `AccessFunction`, `AccessRule`, `AccessPolicyResolver`, `DyrectedConfig`, and `defineConfig` to carry a custom authenticated-user type for deployments that extend the default user claims.
-
-  Align the access-control overview docs with runtime behavior by documenting that field access is enforced by both the API and the admin panel.
-
-  I improved dyrected upgrade in packages/cli/src/commands/upgrade.t
-  It now:
-
-  - resolves the actual published version for each @dyrected/* package with `npm view <pkg> version`
-  - installs explicit versions instead of relying on @latest
-  - upgrades dependencies and devDependencies separately
-  - uses exact-version installs (--save-exact / --exact)
-  - verifies both package.json and node_modules after install
-  - fails loudly if the installed result is still stale (`dyrected`, `@dyrected/core`)
 
 ---
 
@@ -31220,15 +31576,16 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>find</code> (required) |  |
 | <code>collection</code> (required) | Returns a fluent query builder for a collection. |
 | <code>global</code> (required) | Access a global by its slug with a fluent builder. |
+| <code>trash</code> (optional) | Access trash operations, either collection-scoped or globally. |
 | <code>findOne</code> (optional) |  |
 | <code>create</code> (required) |  |
 | <code>update</code> (required) |  |
-| <code>delete</code> (required) |  |
+| <code>delete</code> (optional) |  |
 | <code>transition</code> (required) | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
 | <code>workflowHistory</code> (optional) | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
 | <code>audit</code> (required) | Fetch audit entries across every audited collection the current caller can read.  Sends &#96;GET /api/audit&#96;. |
 | <code>collectionAudit</code> (required) | Fetch audit entries for a single collection.  Sends &#96;GET /api/collections/:collection/__audit&#96;. |
-| <code>deleteMany</code> (required) |  |
+| <code>deleteMany</code> (optional) |  |
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |
 | <code>listMedia</code> (required) |  |
@@ -31239,6 +31596,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>uploadMedia</code> (required) |  |
 | <code>replaceMedia</code> (required) | Replace the underlying file of an existing media document in-place without creating a duplicate record. |
 | <code>deleteMedia</code> (required) |  |
+| <code>request</code> (optional) |  |
 
 
 ## DyrectedClientConfig
@@ -31426,11 +31784,17 @@ export interface SchemaResponse {
   hasStorage?: boolean;
   configDiagnostics?: ConfigDiagnostic[];
   ai?: SerializedSchemaAIConfig;
+  trash?: {
+    enabled?: boolean;
+    retentionDays?: number | null;
+    allowPermanentDelete?: boolean;
+  };
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;
     authCollectionConfigured?: boolean;
     uploadCollectionConfigured?: boolean;
+    trashPurgeOverdue?: boolean;
   };
 }
 ```
@@ -31445,6 +31809,7 @@ export interface SchemaResponse {
 | <code>hasStorage</code> (optional) |  |
 | <code>configDiagnostics</code> (optional) |  |
 | <code>ai</code> (optional) |  |
+| <code>trash</code> (optional) |  |
 | <code>adminHealth</code> (optional) |  |
 
 
@@ -31670,6 +32035,140 @@ export interface TransitionOptions {
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
 | <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
 | <code>input</code> (optional) | Extra data passed to the transition's server-side &#96;onTransition&#96; handler, for example an amount the handler needs to act on. |
+
+
+## TrashClient
+
+Exported type from @dyrected/sdk.
+
+```ts
+export type TrashClient = ((collectionSlug?: string) => TrashOperations) & TrashOperations;
+```
+
+
+## TrashEmptyOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashEmptyOptions {
+  confirm?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>confirm</code> (optional) |  |
+
+
+## TrashEntry
+
+A single trash entry representing a soft-deleted document snapshot.
+
+```ts
+export interface TrashEntry {
+  id: string;
+  collection: string;
+  docId: string;
+  deletedAt: number;
+  purgeAt: number | null;
+  deletedBy?: string;
+  title?: string;
+  snapshot: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>docId</code> (required) |  |
+| <code>deletedAt</code> (required) |  |
+| <code>purgeAt</code> (required) |  |
+| <code>deletedBy</code> (optional) |  |
+| <code>title</code> (optional) |  |
+| <code>snapshot</code> (required) |  |
+| <code>createdAt</code> (optional) |  |
+| <code>updatedAt</code> (optional) |  |
+
+
+## TrashKeepOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashKeepOptions {
+  purgeAt?: Date | string | number | null;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>purgeAt</code> (optional) |  |
+
+
+## TrashListArgs
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashListArgs {
+  page?: number;
+  limit?: number;
+  search?: string;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>page</code> (optional) |  |
+| <code>limit</code> (optional) |  |
+| <code>search</code> (optional) |  |
+
+
+## TrashOperations
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashOperations {
+  list: (args?: TrashListArgs) => Promise<PaginatedResult<TrashEntry>>;
+  get: (trashId: string) => Promise<TrashEntry>;
+  restore: (trashId: string, options?: TrashRestoreOptions) => Promise<UnknownRecord>;
+  restoreMany: (trashIds: string[]) => Promise<{ restored: string[]; failed: unknown[]; count: number }>;
+  keep: (trashId: string, options?: TrashKeepOptions | boolean) => Promise<{ message: string; purgeAt: number | null }>;
+  purge: (trashId: string) => Promise<{ message: string }>;
+  empty: (options?: TrashEmptyOptions | string) => Promise<{ message: string; count: number }>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>list</code> (optional) |  |
+| <code>get</code> (required) |  |
+| <code>restore</code> (optional) |  |
+| <code>restoreMany</code> (required) |  |
+| <code>keep</code> (optional) |  |
+| <code>purge</code> (required) |  |
+| <code>empty</code> (optional) |  |
+
+
+## TrashRestoreOptions
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface TrashRestoreOptions {
+  overrides?: Record<string, unknown>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>overrides</code> (optional) |  |
 
 
 ## UploadOptions
@@ -37136,7 +37635,7 @@ export type CollectionAfterChangeHook<TDoc extends object = Record<string, unkno
 
 ## CollectionAfterDeleteHook
 
-Runs **after** a document has been deleted from the database.
+Runs **after** a document has been permanently deleted from the database.
 
 ```ts
 export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
@@ -37145,6 +37644,7 @@ export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unkno
   req: HookRequestContext;
   user?: AuthenticatedUser;
   db: DatabaseAdapter;
+  mode?: "permanent";
 }) => void | Promise<void>;
 ```
 
@@ -37172,6 +37672,36 @@ Exported type from @dyrected/core.
 export type CollectionAfterReadHookEntry<
   TDoc extends object = Record<string, unknown>,
 > = CollectionAfterReadHook<TDoc> | DeclarativeHookExpression;
+```
+
+
+## CollectionAfterRestoreHook
+
+Runs **after** a trashed document has been restored.
+
+```ts
+export type CollectionAfterRestoreHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionAfterTrashHook
+
+Runs **after** a document has been moved to trash.
+
+```ts
+export type CollectionAfterTrashHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
 ```
 
 
@@ -37231,7 +37761,7 @@ export type CollectionBeforeCommitHook<TDoc extends object = Record<string, unkn
 
 ## CollectionBeforeDeleteHook
 
-Runs **before** a document is deleted from the database.
+Runs **before** a document is deleted from the database or moved to trash.
 
 ```ts
 export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
@@ -37240,6 +37770,7 @@ export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unkn
   req: HookRequestContext;
   user?: AuthenticatedUser;
   db: ReadonlyDatabaseAdapter;
+  mode?: "trash" | "permanent";
 }) => void | Promise<void>;
 ```
 
@@ -37269,6 +37800,36 @@ Exported type from @dyrected/core.
 export type CollectionBeforeReadHookEntry =
   | CollectionBeforeReadHook
   | DeclarativeHookExpression;
+```
+
+
+## CollectionBeforeRestoreHook
+
+Runs **before** a trashed document is restored.
+
+```ts
+export type CollectionBeforeRestoreHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionBeforeTrashHook
+
+Runs **before** a document is moved to trash.
+
+```ts
+export type CollectionBeforeTrashHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => void | Promise<void>;
 ```
 
 
@@ -49212,6 +49773,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   drafts?: boolean;
 
   /**
+   * Trash & retention settings for this collection.
+   * If `true` or an object, deleting a document moves it to trash rather than destroying it.
+   * If `false`, hard deletes immediately.
+   */
+  trash?: boolean | TrashConfig;
+
+  /**
    * Collection-level access control.
    *
    * Each key is an operation; the value can be a function, a Jexl string, a
@@ -49234,6 +49802,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     create?: AccessRule<TDoc>;
     update?: AccessRule<TDoc>;
     delete?: AccessRule<TDoc>;
+    /**
+     * Controls who can restore a trashed document in this collection.
+     * Falls back to `delete` access if omitted.
+     */
+    restore?: AccessRule<TDoc>;
     /**
      * Controls who can read this collection's audit log (`GET /:slug/__audit`),
      * for collections with `audit` enabled. Falls back to the `read` rule when
@@ -49303,6 +49876,18 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * already committed and will not be undone.
      */
     afterDelete?: CollectionAfterDeleteHook<TDoc>[];
+
+    /** Runs before a document is moved to trash. Throw to cancel trashing. */
+    beforeTrash?: CollectionBeforeTrashHook<TDoc>[];
+
+    /** Runs after a document has been moved to trash. Side effects only. */
+    afterTrash?: CollectionAfterTrashHook<TDoc>[];
+
+    /** Runs before a trashed document is restored. Throw to cancel restoration. */
+    beforeRestore?: CollectionBeforeRestoreHook<TDoc>[];
+
+    /** Runs after a document has been restored from trash. Side effects only. */
+    afterRestore?: CollectionAfterRestoreHook<TDoc>[];
   };
 
   /**
@@ -49572,6 +50157,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>audit</code> (optional) | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity.  Turn this on when you need accountability around changes, such as knowing who changed what, inspecting before-and-after state, or supporting compliance and operational review. |
 | <code>workflow</code> (optional) | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response.  Use this when content moves through stages such as draft, review, and published, or when teams need an approval process before changes go live. |
 | <code>drafts</code> (optional) | If &#96;true&#96;, enables zero-config draft and publish functionality. Documents start as drafts, editors can save working drafts without affecting live content, and any authorized editor can publish or unpublish entries. |
+| <code>trash</code> (optional) | Trash &amp; retention settings for this collection. If &#96;true&#96; or an object, deleting a document moves it to trash rather than destroying it. If &#96;false&#96;, hard deletes immediately. |
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
@@ -50652,6 +51238,11 @@ export interface DyrectedConfig<
    * AI Assistant and LLM tools configuration.
    */
   ai?: AIConfig;
+
+  /**
+   * App-wide trash & retention configuration.
+   */
+  trash?: AppTrashConfig;
 }
 ```
 
@@ -50677,6 +51268,198 @@ export interface DyrectedConfig<
 | <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
 | <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
 | <code>ai</code> (optional) | AI Assistant and LLM tools configuration. |
+| <code>trash</code> (optional) | App-wide trash &amp; retention configuration. |
+
+---
+
+## Trash and Retention
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/model-content/configuration/trash-and-retention
+
+When an editor deletes a document in Dyrected, destroying the data immediately is rarely what a team actually wants. One accidental click on an order, guest list, or article can cause irreversible data loss.
+
+Dyrected provides built-in **Trash & Retention**: deleting a document moves it to an internal holding area (`__trash`) where it can be inspected and restored with its original `id`. A configurable background retention policy permanently purges expired documents automatically.
+
+---
+
+## What trash does
+
+When trash is active on a collection:
+
+1. **Deletion moves the document out of your table**: The record is removed from your active collection and copied into an internal `__trash` snapshot.
+2. **Read paths stay clean**: Queries, relationship lookups, view counts, aggregate metrics, and AI/RAG tools immediately stop seeing the document without needing manual `deletedAt is null` filters.
+3. **Unique values are freed**: If a deleted user held `email: "alice@example.com"`, another document can immediately reuse that email.
+4. **Restoration is lossless**: Restoring a trashed document recreates it with its original `id` and `createdAt` timestamp, meaning any foreign relationships pointing to it work again immediately.
+
+---
+
+## Enabling trash
+
+Trash is enabled out-of-the-box for all non-system collections with a 30-day retention period. You can configure retention per collection or app-wide in your config.
+
+### Per collection
+
+Configure trash in your `defineCollection` definition:
+
+```ts
+
+
+export const Articles = defineCollection({
+  slug: "articles",
+  // Enabled with a 60-day recovery window:
+  trash: { retentionDays: 60 },
+  fields: [
+    defineTextField({ name: "title", required: true }),
+  ],
+});
+```
+
+To keep items in trash indefinitely until an administrator manually empties it:
+
+```ts
+export const Invoices = defineCollection({
+  slug: "invoices",
+  // Never auto-purge; keep until manually emptied:
+  trash: { retentionDays: null },
+  fields: [
+    defineTextField({ name: "invoiceNumber", required: true }),
+  ],
+});
+```
+
+To opt out and permanently delete records immediately:
+
+```ts
+export const ActivityLogs = defineCollection({
+  slug: "activity-logs",
+  // Permanent immediate deletion:
+  trash: false,
+  fields: [
+    defineTextField({ name: "message", required: true }),
+  ],
+});
+```
+
+### App-wide configuration
+
+Set global defaults across all collections in `defineConfig`:
+
+```ts
+
+
+export default defineConfig({
+  // ... collections, db, etc.
+  trash: {
+    enabled: true,           // Default: true
+    retentionDays: 30,       // Default: 30 days. Set to null for indefinite retention
+    purge: {
+      cron: "0 3 * * *",     // Runs daily at 3:00 AM
+      batchSize: 200,        // Batch limit per run
+    },
+  },
+});
+```
+
+---
+
+## Admin experience
+
+When trash is enabled, Dyrected updates the admin dashboard automatically:
+
+- **Delete actions**: The delete button relabels to **Move to trash** and indicates the retention period (for example, *"Recoverable for 30 days"*).
+- **Undo toast**: An 8-second toast appears upon deletion allowing one-click undo.
+- **Collection toolbar**: A **Trash** button appears in the collection header with a counter badge showing active items in trash.
+- **Global Trash view**: A dedicated `/trash` route in the navigation sidebar lists trashed items across all collections.
+- **Restore with changes**: If a restored document collides with a unique field created after deletion, a conflict drawer opens allowing the editor to adjust the conflicting value before restoring.
+- **Empty trash**: Emptying trash requires typing the collection slug as confirmation to prevent accidental mass deletion.
+
+---
+
+## SDK and client hooks
+
+You can inspect, restore, and manage trash items directly in your frontend or scripts.
+
+### Client SDK
+
+```ts
+
+
+const client = createDyrectedClient({ baseURL: "https://your-api.com" });
+
+// List trashed articles
+const { docs, total } = await client.trash("articles").list({ page: 1, limit: 20 });
+
+// Restore a document
+await client.trash("articles").restore("articles:doc_123");
+
+// Restore with field overrides (if resolving unique conflicts)
+await client.trash("articles").restore("articles:doc_123", {
+  overrides: { slug: "new-slug" },
+});
+
+// Exempt an item from automatic purge
+await client.trash("articles").keep("articles:doc_123", { purgeAt: null });
+
+// Permanently delete an item immediately
+await client.trash("articles").purge("articles:doc_123");
+```
+
+### React and Vue hooks
+
+Dyrected provides identical reactive hooks in `@dyrected/react` and `@dyrected/vue`:
+
+```tsx
+
+
+export function TrashDrawer({ collection }: { collection: string }) {
+  const { entries, total, isLoading, restore, purge } = useTrash(collection);
+
+  if (isLoading) return <div>Loading trash...</div>;
+
+  return (
+    <div>
+      <h3>Trash ({total})</h3>
+      <ul>
+        {entries.map((item) => (
+          <li key={item.id}>
+            <span>{item.title}</span>
+            <button onClick={() => restore(item.id)}>Restore</button>
+            <button onClick={() => purge(item.id)}>Delete Forever</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+Restoring an item automatically invalidates your active collection queries, so the restored document appears in your UI lists without manual refetching.
+
+---
+
+## Hook execution order
+
+Trash distinguishes between temporary removal and permanent deletion:
+
+| Hook | When it fires | Purpose |
+|---|---|---|
+| `beforeDelete` | On trash **and** on permanent delete | Pre-deletion validation. Receives `{ mode: "trash" \| "permanent" }`. |
+| `beforeTrash` / `afterTrash` | On trash only | Soft-delete side effects (e.g. unpublishing or notifying owners). |
+| `beforeRestore` / `afterRestore` | On restore only | Post-restoration sync (e.g. re-indexing or re-enabling access). |
+| `afterDelete` | On **permanent deletion only** (purge or hard delete) | Destructive cleanup (e.g. purging external SaaS records). |
+
+> [!NOTE]
+> `beforeChange` and `afterChange` do not run during restoration, ensuring create-time side effects (such as welcome emails or initial billing setup) do not fire a second time.
+
+---
+
+## Automatic purge background task
+
+When retention is configured, Dyrected automatically registers the task `dyrected:trash-purge` in the task runner.
+
+- **Node servers**: Running `createTaskRunner(config).start()` runs the daily cron in the background.
+- **Serverless (Vercel / Netlify)**: Trigger `createTaskRunner(config).runDue()` from a scheduled cron route.
+- **CLI Health check**: Run `npx dyrected doctor` to verify that your trash purge background task is running on schedule.
 
 ---
 
@@ -57752,6 +58535,17 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.19.0
+
+- Add built-in Trash & Retention system and audit/roles field helpers across core, admin, SDK, and framework integrations:
+
+  - **Core Trash & Retention**: Move deleted documents to internal `__trash` collection with deterministic IDs, freeing unique keys and keeping read paths clean. Configurable retention periods with automatic `dyrected:trash-purge` task runner integration.
+  - **Audit & Schema Field Helpers**: Add `defineCreatedAtField`, `defineUpdatedAtField`, `defineCreatedByField`, `defineUpdatedByField`, and `defineRolesField` (with customizable `adminRole` authorization).
+  - **Admin UI**: Add collection-level and global `/trash` views, 8-second undo toast on delete, media library trash support, empty trash confirmation dialog, and conflict drawer for "Restore with changes".
+  - **Ecosystem**: Add `client.trash()` in `@dyrected/sdk`, `useTrash` in `@dyrected/react` and `@dyrected/vue`, `dyrected doctor` trash & retention diagnostics in `@dyrected/cli`, and secret-protected cron endpoints in `@dyrected/next`.
+
+---
+
 ## v2.18.1
 
 - Fix operational workspace view action resolution and optional field null validation.
@@ -58598,26 +59392,6 @@ Release notes and version history across all Dyrected packages.
   - **Fixed DatePicker closing prematurely.** Intercept `pointerdown` events instead of `mousedown` on the wrapper, preventing the picker from instantly closing on click due to React event phase mismatches.
   - **Downgraded `react-day-picker` to v8.** Version 9 introduced breaking DOM/CSS structure that conflicted with our existing styling. Downgrading to the highly stable v8 restores standard navigation button interactions and styling.
   - **Fixed `aria-hidden` focus retention warning.** Replaced `aria-hidden` with the modern `inert` attribute on the closed calendar wrapper, forcing the browser to safely drop keyboard focus and satisfy screen reader constraints when the picker closes. (`@dyrected/admin`)
-
----
-
-## v2.5.59
-
-- Fix server-side field access evaluation so field rules receive the current document `id` during API reads and updates, matching admin behavior and preventing `!id`-style rules from silently allowing protected field changes.
-
-  Improve the public access-control type surface by allowing `AccessFunctionArgs`, `AccessFunction`, `AccessRule`, `AccessPolicyResolver`, `DyrectedConfig`, and `defineConfig` to carry a custom authenticated-user type for deployments that extend the default user claims.
-
-  Align the access-control overview docs with runtime behavior by documenting that field access is enforced by both the API and the admin panel.
-
-  I improved dyrected upgrade in packages/cli/src/commands/upgrade.t
-  It now:
-
-  - resolves the actual published version for each @dyrected/* package with `npm view <pkg> version`
-  - installs explicit versions instead of relying on @latest
-  - upgrades dependencies and devDependencies separately
-  - uses exact-version installs (--save-exact / --exact)
-  - verifies both package.json and node_modules after install
-  - fails loudly if the installed result is still stale (`dyrected`, `@dyrected/core`)
 
 ---
 

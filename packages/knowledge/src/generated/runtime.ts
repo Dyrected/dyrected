@@ -2973,6 +2973,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "model-content--configuration--trash-and-retention",
+    "relativePath": "model-content/configuration/trash-and-retention",
+    "title": "Trash and Retention",
+    "description": "Move deleted documents to a recoverable holding area and configure automatic retention purges.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "model-content/configuration",
+    "sourceFile": "apps/docs/content/docs/model-content/configuration/trash-and-retention.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/model-content/configuration/trash-and-retention",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/model-content/configuration/trash-and-retention",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/model-content/configuration/trash-and-retention",
+    "status": "classified"
+  },
+  {
     "id": "model-content--content-rules--access-control--cloud",
     "relativePath": "model-content/content-rules/access-control/cloud",
     "title": "Dyrected Cloud",

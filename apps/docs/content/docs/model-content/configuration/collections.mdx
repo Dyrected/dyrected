@@ -368,6 +368,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   drafts?: boolean;
 
   /**
+   * Trash & retention settings for this collection.
+   * If `true` or an object, deleting a document moves it to trash rather than destroying it.
+   * If `false`, hard deletes immediately.
+   */
+  trash?: boolean | TrashConfig;
+
+  /**
    * Collection-level access control.
    *
    * Each key is an operation; the value can be a function, a Jexl string, a
@@ -390,6 +397,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     create?: AccessRule<TDoc>;
     update?: AccessRule<TDoc>;
     delete?: AccessRule<TDoc>;
+    /**
+     * Controls who can restore a trashed document in this collection.
+     * Falls back to `delete` access if omitted.
+     */
+    restore?: AccessRule<TDoc>;
     /**
      * Controls who can read this collection's audit log (`GET /:slug/__audit`),
      * for collections with `audit` enabled. Falls back to the `read` rule when
@@ -459,6 +471,18 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * already committed and will not be undone.
      */
     afterDelete?: CollectionAfterDeleteHook<TDoc>[];
+
+    /** Runs before a document is moved to trash. Throw to cancel trashing. */
+    beforeTrash?: CollectionBeforeTrashHook<TDoc>[];
+
+    /** Runs after a document has been moved to trash. Side effects only. */
+    afterTrash?: CollectionAfterTrashHook<TDoc>[];
+
+    /** Runs before a trashed document is restored. Throw to cancel restoration. */
+    beforeRestore?: CollectionBeforeRestoreHook<TDoc>[];
+
+    /** Runs after a document has been restored from trash. Side effects only. */
+    afterRestore?: CollectionAfterRestoreHook<TDoc>[];
   };
 
   /**
@@ -728,6 +752,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>audit</code> (optional) | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity.  Turn this on when you need accountability around changes, such as knowing who changed what, inspecting before-and-after state, or supporting compliance and operational review. |
 | <code>workflow</code> (optional) | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response.  Use this when content moves through stages such as draft, review, and published, or when teams need an approval process before changes go live. |
 | <code>drafts</code> (optional) | If &#96;true&#96;, enables zero-config draft and publish functionality. Documents start as drafts, editors can save working drafts without affecting live content, and any authorized editor can publish or unpublish entries. |
+| <code>trash</code> (optional) | Trash &amp; retention settings for this collection. If &#96;true&#96; or an object, deleting a document moves it to trash rather than destroying it. If &#96;false&#96;, hard deletes immediately. |
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |

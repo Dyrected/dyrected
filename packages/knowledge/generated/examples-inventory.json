@@ -609,6 +609,55 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deliver-content/sdk-api/overview#example-27",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-28",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-29",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-30",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-31",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-32",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/overview#example-33",
+    "page": "/deliver-content/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/deliver-content/sdk-api/pagination#example-1",
     "page": "/deliver-content/sdk-api/pagination",
     "language": "ts",
@@ -1793,6 +1842,34 @@
   },
   {
     "id": "/deployment-and-operations/server-runtime/hooks/overview#example-34",
+    "page": "/deployment-and-operations/server-runtime/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/hooks/overview#example-35",
+    "page": "/deployment-and-operations/server-runtime/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/hooks/overview#example-36",
+    "page": "/deployment-and-operations/server-runtime/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/hooks/overview#example-37",
+    "page": "/deployment-and-operations/server-runtime/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment-and-operations/server-runtime/hooks/overview#example-38",
     "page": "/deployment-and-operations/server-runtime/hooks/overview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -4338,6 +4415,48 @@
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/trash-and-retention#example-1",
+    "page": "/model-content/configuration/trash-and-retention",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/trash-and-retention#example-2",
+    "page": "/model-content/configuration/trash-and-retention",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/trash-and-retention#example-3",
+    "page": "/model-content/configuration/trash-and-retention",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/trash-and-retention#example-4",
+    "page": "/model-content/configuration/trash-and-retention",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/configuration/trash-and-retention#example-5",
+    "page": "/model-content/configuration/trash-and-retention",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/configuration/trash-and-retention#example-6",
+    "page": "/model-content/configuration/trash-and-retention",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/model-content/content-rules/access-control/cloud#example-1",
