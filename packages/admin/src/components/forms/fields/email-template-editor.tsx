@@ -34,111 +34,7 @@ import {
   TableRow,
 } from "../../ui/table"
 import { useDyrected } from "../../../providers/dyrected-context"
-
-const DEFAULT_TEMPLATES: Record<string, string> = {
-  invite: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 20px; }
-    .card { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 36px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    h1 { color: #111827; font-size: 20px; font-weight: 600; margin-top: 0; }
-    p { color: #4b5563; font-size: 15px; line-height: 1.6; }
-    .btn { display: inline-block; background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; margin: 20px 0; }
-    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>You're invited to join {{siteName}}</h1>
-    <p>Hello,</p>
-    <p>You have been invited to access the <strong>{{collectionLabel}}</strong> portal. Click the button below to accept your invitation and set up your password.</p>
-    <a href="{{url}}" class="btn">Accept Invitation</a>
-    <p>This link is valid for 7 days. If you did not expect this invitation, you can safely ignore this email.</p>
-    <div class="footer">
-      <p>Sent by {{siteName}} &bull; Direct and secure onboarding</p>
-    </div>
-  </div>
-</body>
-</html>`,
-
-  resetPassword: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 20px; }
-    .card { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 36px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    h1 { color: #111827; font-size: 20px; font-weight: 600; margin-top: 0; }
-    p { color: #4b5563; font-size: 15px; line-height: 1.6; }
-    .btn { display: inline-block; background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; margin: 20px 0; }
-    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Reset your password</h1>
-    <p>Hello,</p>
-    <p>We received a request to reset your password for your <strong>{{collectionLabel}}</strong> account. Click the button below to choose a new password.</p>
-    <a href="{{url}}" class="btn">Reset Password</a>
-    <p>If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
-    <div class="footer">
-      <p>Sent by {{siteName}} &bull; Direct and secure onboarding</p>
-    </div>
-  </div>
-</body>
-</html>`,
-
-  welcome: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 20px; }
-    .card { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 36px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    h1 { color: #111827; font-size: 20px; font-weight: 600; margin-top: 0; }
-    p { color: #4b5563; font-size: 15px; line-height: 1.6; }
-    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Welcome to {{siteName}}!</h1>
-    <p>Hello {{email}},</p>
-    <p>Your account is now active and ready to use. Thank you for joining us.</p>
-    <div class="footer">
-      <p>Sent by {{siteName}} &bull; Direct and secure onboarding</p>
-    </div>
-  </div>
-</body>
-</html>`,
-
-  passwordChanged: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 20px; }
-    .card { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 36px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    h1 { color: #111827; font-size: 20px; font-weight: 600; margin-top: 0; }
-    p { color: #4b5563; font-size: 15px; line-height: 1.6; }
-    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Your password was changed</h1>
-    <p>Hello {{email}},</p>
-    <p>This is a confirmation that your password for <strong>{{siteName}}</strong> was recently changed.</p>
-    <p>If you did not make this change, please contact your administrator immediately.</p>
-    <div class="footer">
-      <p>Sent by {{siteName}} &bull; Direct and secure onboarding</p>
-    </div>
-  </div>
-</body>
-</html>`,
-}
+import { getDefaultEmailTemplate } from '@dyrected/core';
 
 const TEMPLATE_VARIABLES = [
   { tag: "{{url}}", label: "Action URL", description: "Invite or password reset link" },
@@ -156,13 +52,58 @@ export interface EmailTemplateEditorProps {
   siblingData?: Record<string, unknown>
 }
 
+function formatHtml(html: string): string {
+  if (!html || typeof html !== "string") return ""
+
+  const voidTags = new Set([
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr", "!doctype",
+  ])
+
+  let indent = 0
+  const tab = "  "
+
+  const rawLines = html
+    .replace(/(>)(<)(\/*)/g, "$1\n$2$3")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+
+  const result: string[] = []
+
+  for (const line of rawLines) {
+    if (line.match(/^<\/[a-zA-Z0-9-]+/)) {
+      indent = Math.max(0, indent - 1)
+      result.push(tab.repeat(indent) + line)
+    } else if (line.match(/^<([a-zA-Z0-9-]+)[^>]*>.*<\/\1>$/)) {
+      result.push(tab.repeat(indent) + line)
+    } else if (line.match(/^<(!|!--|\?)/)) {
+      result.push(tab.repeat(indent) + line)
+    } else if (line.match(/^<[a-zA-Z0-9-]+[^>]*\/>/)) {
+      result.push(tab.repeat(indent) + line)
+    } else if (line.match(/^<[a-zA-Z0-9-]+/)) {
+      const tagMatch = line.match(/^<([a-zA-Z0-9-]+)/)
+      const tag = tagMatch ? tagMatch[1].toLowerCase() : ""
+      result.push(tab.repeat(indent) + line)
+      if (!voidTags.has(tag)) {
+        indent++
+      }
+    } else {
+      result.push(tab.repeat(indent) + line)
+    }
+  }
+
+  return result.join("\n")
+}
+
 export function EmailTemplateEditor({
   value,
   onChange,
   disabled = false,
   siblingData,
 }: EmailTemplateEditorProps) {
-  const { user } = useDyrected()
+  const { user, schemas, client } = useDyrected()
+  const siteName = schemas?.admin?.branding?.logoText || "Dyrected"
   const [viewMode, setViewMode] = React.useState<"split" | "editor" | "preview">("split")
   const [previewDevice, setPreviewDevice] = React.useState<"desktop" | "mobile">("desktop")
   const [isTestEmailOpen, setIsTestEmailOpen] = React.useState(false)
@@ -176,19 +117,28 @@ export function EmailTemplateEditor({
   const collectionSlug = (siblingData?.collectionSlug as string) || "users"
   const externalTemplateId = siblingData?.externalTemplateId as string | number | undefined
 
+  const defaultHtml = React.useMemo(() => {
+    return getDefaultEmailTemplate(purpose || "invite", { siteName }).rawHtml
+  }, [purpose, siteName])
+
   // Ensure default template if value is empty
   React.useEffect(() => {
     if (!value && format === "html") {
-      const defaultHtml = DEFAULT_TEMPLATES[purpose] || DEFAULT_TEMPLATES.invite
       onChange(defaultHtml)
     }
-  }, [value, format, purpose, onChange])
+  }, [value, format, defaultHtml, onChange])
 
   const handleRevertToDefault = React.useCallback(() => {
-    const defaultHtml = DEFAULT_TEMPLATES[purpose] || DEFAULT_TEMPLATES.invite
     onChange(defaultHtml)
     toast.success("Reverted to code default template")
-  }, [purpose, onChange])
+  }, [defaultHtml, onChange])
+
+  const handleFormatHtml = React.useCallback(() => {
+    if (!value) return
+    const formatted = formatHtml(value)
+    onChange(formatted)
+    toast.success("HTML formatted")
+  }, [value, onChange])
 
   const handleInsertTag = React.useCallback(
     (tag: string) => {
@@ -200,15 +150,22 @@ export function EmailTemplateEditor({
 
   const compiledPreviewHtml = React.useMemo(() => {
     if (!value) return ""
+    const targetCol = schemas?.collections?.find((c) => c.slug === collectionSlug)
+    const resolvedCollectionLabel =
+      collectionSlug === "*"
+        ? "Account"
+        : targetCol?.labels?.singular ||
+          targetCol?.labels?.plural ||
+          (collectionSlug.startsWith("__")
+            ? collectionSlug.slice(2).charAt(0).toUpperCase() + collectionSlug.slice(3)
+            : collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1))
+
     const mockData: Record<string, string> = {
       "{{url}}": "https://app.example.com/auth/setup-password?token=mock_jwt_token_sample_xyz",
       "{{token}}": "mock_jwt_token_sample_xyz",
       "{{email}}": "alex.johnson@example.com",
-      "{{collectionLabel}}":
-        collectionSlug === "*"
-          ? "Account"
-          : collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1),
-      "{{siteName}}": "Dyrected Application",
+      "{{collectionLabel}}": resolvedCollectionLabel,
+      "{{siteName}}": siteName,
       "{{user.name}}": "Alex Johnson",
       "{{user.first_name}}": "Alex",
       "{{user.email}}": "alex.johnson@example.com",
@@ -219,15 +176,52 @@ export function EmailTemplateEditor({
       rendered = rendered.split(tag).join(sample)
     }
     return rendered
-  }, [value, collectionSlug])
+  }, [value, collectionSlug, siteName, schemas?.collections])
 
   const handleSendTestEmail = React.useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
+      if (!testRecipient) return
       setIsSendingTest(true)
       try {
-        await new Promise((r) => setTimeout(r, 600))
-        toast.success(`Test email dispatched to ${testRecipient}`)
+        const baseUrl = client?.getBaseUrl() || ""
+        const authHeaders = client?.getAuthHeaders() || {}
+        const subjectVal = (siblingData?.subject as string) || undefined
+
+        const res = await fetch(`${baseUrl}/api/__email_templates/test`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders,
+          },
+          body: JSON.stringify({
+            to: testRecipient,
+            subject: subjectVal,
+            html: value,
+            format,
+            externalTemplateId,
+            purpose,
+            collectionSlug,
+          }),
+        })
+
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(data.message || `Failed to send test email (status: ${res.status})`)
+        }
+
+        if (data.previewUrl) {
+          toast.success(`Test email sent!`, {
+            description: `Preview: ${data.previewUrl}`,
+            action: {
+              label: "Open Preview",
+              onClick: () => window.open(data.previewUrl, "_blank"),
+            },
+            duration: 10000,
+          })
+        } else {
+          toast.success(`Test email dispatched to ${testRecipient}`)
+        }
         setIsTestEmailOpen(false)
       } catch (err: any) {
         toast.error(`Failed to send test email: ${err.message}`)
@@ -235,7 +229,7 @@ export function EmailTemplateEditor({
         setIsSendingTest(false)
       }
     },
-    [testRecipient],
+    [testRecipient, client, siblingData, value, format, externalTemplateId, purpose, collectionSlug],
   )
 
   if (format === "external_template") {
@@ -378,16 +372,6 @@ export function EmailTemplateEditor({
           <Button
             type="button"
             size="sm"
-            variant={viewMode === "split" ? "secondary" : "ghost"}
-            onClick={() => setViewMode("split")}
-            className="dy-h-8 dy-text-xs"
-          >
-            <Columns2 className="dy-mr-1.5 dy-h-3.5 dy-w-3.5" />
-            Split View
-          </Button>
-          <Button
-            type="button"
-            size="sm"
             variant={viewMode === "editor" ? "secondary" : "ghost"}
             onClick={() => setViewMode("editor")}
             className="dy-h-8 dy-text-xs"
@@ -404,6 +388,16 @@ export function EmailTemplateEditor({
           >
             <Eye className="dy-mr-1.5 dy-h-3.5 dy-w-3.5" />
             Live Preview
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={viewMode === "split" ? "secondary" : "ghost"}
+            onClick={() => setViewMode("split")}
+            className="dy-h-8 dy-text-xs dy-hidden md:dy-flex"
+          >
+            <Columns2 className="dy-mr-1.5 dy-h-3.5 dy-w-3.5" />
+            Split View
           </Button>
         </div>
 
@@ -477,22 +471,33 @@ export function EmailTemplateEditor({
       </div>
 
       {/* Main Content Area */}
-      <div className="dy-grid dy-gap-4 lg:dy-grid-cols-12">
+      <div
+        className={
+          viewMode === "split"
+            ? "dy-grid dy-gap-3 lg:dy-grid-cols-2"
+            : "dy-w-full"
+        }
+      >
         {/* Editor Pane */}
         {viewMode !== "preview" && (
-          <div
-            className={
-              viewMode === "split"
-                ? "lg:dy-col-span-6 dy-min-h-[460px] dy-rounded-lg dy-border dy-border-border/80 dy-overflow-hidden dy-bg-background"
-                : "lg:dy-col-span-12 dy-min-h-[460px] dy-rounded-lg dy-border dy-border-border/80 dy-overflow-hidden dy-bg-background"
-            }
-          >
-            <div className="dy-border-b dy-border-border/60 dy-bg-muted/30 dy-px-3 dy-py-1.5 dy-text-[11px] dy-font-mono dy-text-muted-foreground">
-              HTML Template Source
+          <div className="dy-relative dy-h-[520px] dy-rounded-lg dy-border dy-border-border dy-overflow-hidden dy-bg-background dy-flex dy-flex-col">
+            <div className="dy-absolute dy-top-2.5 dy-right-3 dy-z-10">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleFormatHtml}
+                disabled={disabled || !value}
+                className="dy-h-6 dy-px-2 dy-text-[11px] dy-font-medium dy-shadow-sm dy-bg-background/90 dy-backdrop-blur dy-border dy-border-border/70 hover:dy-bg-accent dy-text-muted-foreground hover:dy-text-foreground dy-gap-1"
+                title="Format HTML indentation"
+              >
+                <Sparkles className="dy-h-3 dy-w-3" />
+                Format HTML
+              </Button>
             </div>
             <CodeMirror
               value={value || ""}
-              height="440px"
+              height="520px"
               extensions={[html()]}
               onChange={(val) => onChange(val)}
               editable={!disabled}
@@ -503,40 +508,33 @@ export function EmailTemplateEditor({
                 autocompletion: true,
                 closeBrackets: true,
               }}
-              className="dy-text-xs dy-font-mono"
+              className="dy-text-xs dy-font-mono dy-h-full"
             />
           </div>
         )}
 
         {/* Live Preview Pane */}
         {viewMode !== "editor" && (
-          <div
-            className={
-              viewMode === "split"
-                ? "lg:dy-col-span-6 dy-min-h-[460px] dy-rounded-lg dy-border dy-border-border/80 dy-overflow-hidden dy-bg-muted/10 dy-flex dy-flex-col"
-                : "lg:dy-col-span-12 dy-min-h-[460px] dy-rounded-lg dy-border dy-border-border/80 dy-overflow-hidden dy-bg-muted/10 dy-flex dy-flex-col"
-            }
-          >
-            <div className="dy-border-b dy-border-border/60 dy-bg-muted/30 dy-px-3 dy-py-1.5 dy-text-[11px] dy-font-mono dy-text-muted-foreground dy-flex dy-items-center dy-justify-between">
-              <span>Live Compiled Preview (Mock Variables)</span>
-              <span className="dy-capitalize">{previewDevice}</span>
-            </div>
-            <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-4 dy-overflow-auto">
-              <div
-                className={
-                  previewDevice === "mobile"
-                    ? "dy-w-[375px] dy-h-[500px] dy-rounded-2xl dy-border-4 dy-border-border dy-shadow-xl dy-overflow-hidden dy-bg-white"
-                    : "dy-w-full dy-h-[500px] dy-rounded-lg dy-border dy-border-border/60 dy-shadow-sm dy-overflow-hidden dy-bg-white"
-                }
-              >
-                <iframe
-                  title="Email Template Preview"
-                  srcDoc={compiledPreviewHtml}
-                  sandbox="allow-same-origin"
-                  className="dy-w-full dy-h-full dy-border-none"
-                />
+          <div className="dy-h-[520px] dy-rounded-lg dy-border dy-border-border dy-overflow-hidden dy-bg-white dy-flex dy-flex-col">
+            {previewDevice === "mobile" ? (
+              <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-3 dy-bg-muted/10 dy-overflow-auto">
+                <div className="dy-w-[375px] dy-h-[480px] dy-rounded-xl dy-border dy-border-border dy-shadow-md dy-overflow-hidden dy-bg-white">
+                  <iframe
+                    title="Email Template Preview"
+                    srcDoc={compiledPreviewHtml}
+                    sandbox="allow-same-origin"
+                    className="dy-w-full dy-h-full dy-border-none"
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <iframe
+                title="Email Template Preview"
+                srcDoc={compiledPreviewHtml}
+                sandbox="allow-same-origin"
+                className="dy-w-full dy-h-full dy-border-none dy-flex-1"
+              />
+            )}
           </div>
         )}
       </div>

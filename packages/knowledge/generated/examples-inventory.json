@@ -1358,6 +1358,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment-and-operations/infrastructure/email#example-10",
+    "page": "/deployment-and-operations/infrastructure/email",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
     "id": "/deployment-and-operations/infrastructure/environment-variables#example-1",
     "page": "/deployment-and-operations/infrastructure/environment-variables",
     "language": "bash",

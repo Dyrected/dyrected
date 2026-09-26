@@ -30,6 +30,7 @@ import {
 import { getConfigLogger, getRequestLogger } from "./observability.js";
 import { HTTPException } from "hono/http-exception";
 import { getAllowedSitesForUser, resolveAuthorizedSiteId } from "./utils/tenant.js";
+import { sendEmail } from "./services/email.service.js";
 
 const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:";
 
@@ -1293,6 +1294,119 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.get(path, (c) => controller.get(c));
     app.patch(path, (c) => controller.update(c));
   }
+
+  // Email Template Test Dispatch
+  const handleTestEmailDispatch = async (c: any) => {
+    const user = c.get("user");
+    const adminCol = config.collections.find((col) => col.slug === "__admins") || config.collections.find((col) => col.auth);
+    if (!isUserAdmin(user, adminCol)) {
+      return c.json({ error: true, message: "Forbidden: Admin access required to dispatch test emails" }, 403);
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const {
+      to,
+      subject,
+      html,
+      format = "html",
+      externalTemplateId,
+      purpose = "invite",
+      collectionSlug = "users",
+    } = body;
+
+    if (!to || typeof to !== "string" || !to.includes("@")) {
+      return c.json({ error: true, message: "A valid recipient email address is required" }, 400);
+    }
+
+    const siteName = config.admin?.branding?.logoText || "Dyrected";
+    const appUrl = config.admin?.siteUrl || new URL(c.req.url).origin || "http://localhost:3000";
+    const targetCol = config.collections.find((x) => x.slug === collectionSlug);
+    const resolvedCollectionLabel =
+      collectionSlug === "*"
+        ? "Account"
+        : targetCol?.labels?.singular ||
+          targetCol?.labels?.plural ||
+          (collectionSlug.startsWith("__")
+            ? collectionSlug.slice(2).charAt(0).toUpperCase() + collectionSlug.slice(3)
+            : collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1));
+
+    const mockData: Record<string, string> = {
+      "{{url}}": `${appUrl}/auth/setup-password?token=mock_test_token_${Date.now()}`,
+      "{{token}}": `mock_test_token_${Date.now()}`,
+      "{{email}}": to,
+      "{{collectionLabel}}": resolvedCollectionLabel,
+      "{{siteName}}": siteName,
+      "{{user.name}}": typeof user?.name === "string" ? user.name : "Test Recipient",
+      "{{user.first_name}}": typeof user?.first_name === "string" ? user.first_name : "Test",
+      "{{user.email}}": to,
+    };
+
+    try {
+      let result: { success: boolean; previewUrl?: string };
+      if (format === "external_template") {
+        if (!externalTemplateId) {
+          return c.json({ error: true, message: "External template ID is required when format is external_template" }, 400);
+        }
+        const variables = {
+          email: to,
+          url: `${appUrl}/auth/setup-password?token=mock_test_token_${Date.now()}`,
+          token: `mock_test_token_${Date.now()}`,
+          collection: collectionSlug,
+          collectionLabel: resolvedCollectionLabel,
+          siteName,
+          user: {
+            name: typeof user?.name === "string" ? user.name : "Test Recipient",
+            first_name: typeof user?.first_name === "string" ? user.first_name : "Test",
+            email: to,
+          },
+        };
+        let testSubject = subject || `[TEST] ${purpose} email`;
+        for (const [tag, sample] of Object.entries(mockData)) {
+          testSubject = testSubject.split(tag).join(sample);
+        }
+        result = await sendEmail(config, {
+          to,
+          type: "template",
+          template: externalTemplateId,
+          variables,
+          subject: testSubject,
+          purpose,
+          collection: collectionSlug,
+        });
+      } else {
+        let finalSubject = subject || `[TEST] ${purpose} email`;
+        let finalHtml = html || "";
+        for (const [tag, sample] of Object.entries(mockData)) {
+          finalSubject = finalSubject.split(tag).join(sample);
+          finalHtml = finalHtml.split(tag).join(sample);
+        }
+        result = await sendEmail(config, {
+          to,
+          type: "html",
+          subject: finalSubject,
+          html: finalHtml,
+          purpose,
+          collection: collectionSlug,
+        });
+      }
+
+      return c.json({
+        success: true,
+        message: `Test email sent to ${to}`,
+        previewUrl: result?.previewUrl,
+      });
+    } catch (err: any) {
+      getConfigLogger(config, "email").error({
+        err,
+        msg: "Failed to dispatch test email",
+        to,
+      });
+      return c.json({ error: true, message: err.message || "Failed to send test email" }, 500);
+    }
+  };
+
+  app.post("/api/__email_templates/test", requireAuth(config), handleTestEmailDispatch);
+  app.post("/api/email-templates/test", requireAuth(config), handleTestEmailDispatch);
 
   // 6. Preview Routes
   if (!process.env.DYRECTED_JWT_SECRET) {

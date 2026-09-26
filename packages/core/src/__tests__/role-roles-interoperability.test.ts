@@ -63,14 +63,30 @@ describe("Role and Roles Interoperability", () => {
     it("isUserAdmin handles singular role string", () => {
       expect(isUserAdmin({ role: "admin" })).toBe(true);
       expect(isUserAdmin({ role: "super_admin" })).toBe(true);
+      expect(isUserAdmin({ role: "super admin" })).toBe(true);
+      expect(isUserAdmin({ role: "superadmin" })).toBe(true);
+      expect(isUserAdmin({ role: "owner" })).toBe(true);
+      expect(isUserAdmin({ role: "Super Admin" })).toBe(true);
       expect(isUserAdmin({ role: "viewer" })).toBe(false);
     });
 
     it("isUserAdmin handles plural roles array", () => {
       expect(isUserAdmin({ roles: ["admin"] })).toBe(true);
       expect(isUserAdmin({ roles: ["super_admin"] })).toBe(true);
+      expect(isUserAdmin({ roles: ["super admin"] })).toBe(true);
+      expect(isUserAdmin({ roles: ["superadmin"] })).toBe(true);
+      expect(isUserAdmin({ roles: ["owner"] })).toBe(true);
       expect(isUserAdmin({ roles: ["viewer", "admin"] })).toBe(true);
+      expect(isUserAdmin({ roles: ["viewer", "super admin"] })).toBe(true);
       expect(isUserAdmin({ roles: ["viewer"] })).toBe(false);
+    });
+
+    it("isUserAdmin honors custom adminRole configured on collection", () => {
+      const customCol = { auth: { adminRole: "lead_administrator" } } as any;
+      expect(isUserAdmin({ role: "lead_administrator" }, customCol)).toBe(true);
+      expect(isUserAdmin({ roles: ["lead_administrator"] }, customCol)).toBe(true);
+      expect(isUserAdmin({ role: "admin" }, customCol)).toBe(true);
+      expect(isUserAdmin({ role: "editor" }, customCol)).toBe(false);
     });
 
     it("workflowCapabilities resolves capabilities with singular role", () => {

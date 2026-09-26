@@ -300,10 +300,11 @@ When `adminEditable: true` is enabled, Dyrected automatically adds the `__email_
 
 In the Admin UI, administrators can:
 - **Edit HTML templates:** Write raw HTML with full syntax highlighting powered by CodeMirror.
+- **Quick Format HTML:** Click the **Format HTML** button in the top-right corner of the code editor to tidy and re-indent nested HTML elements, tables, and conditional comments.
 - **Live Preview:** See real-time iframe rendering with instant mock variable interpolation for both desktop and mobile (375px) screens.
-- **Variable Chips:** Click dynamic chips (`{{url}}`, `{{token}}`, `{{email}}`, `{{invitedByEmail}}`) to insert placeholders at the cursor.
+- **Variable Chips:** Click dynamic chips (`{{url}}`, `{{token}}`, `{{email}}`, `{{invitedByEmail}}`, `{{siteName}}`) to insert placeholders at the cursor.
 - **External Template Mode:** Switch a template type to `external` to specify a provider template ID (e.g. Postmark numeric ID or SendGrid `d-` template ID) instead of HTML.
-- **Test Delivery:** Click "Send Test Email" to preview delivery directly to your inbox before saving.
+- **Test Delivery:** Click **Send Test** to dispatch a test email directly to any inbox before saving. In production, this delivers through your configured email provider; in development without a configured provider, Dyrected dispatches to an Ethereal preview inbox and provides a click-to-open preview link in the toast.
 - **Revert to Defaults:** Restore the built-in system template anytime.
 
 ## Collection-specific action URLs and templates
@@ -343,11 +344,15 @@ When an invite is sent for a `customers` document, Dyrected automatically resolv
 
 Most projects only need one provider and the four built-in auth emails. If you need more control, there are two common advanced paths.
 
-### Send your own app emails from hooks
+### Send transactional and product emails from hooks
 
-Use built-in auth emails for auth flows, then send product-specific email yourself from hooks or other server code.
+Use built-in auth emails for auth flows, and send product-specific notifications (such as order confirmations, booking reminders, or contact form alerts) from collection lifecycle hooks.
 
-For example, an `afterChange` hook can send an order confirmation:
+You can dispatch emails directly using a third-party SDK or route them through Dyrected's centralized `sendEmail` transport with database-managed templates.
+
+#### Option A: Direct provider dispatch
+
+When you want direct control inside a specific collection hook using your email provider's client:
 
 ```ts
 import { defineCollection, defineConfig, defineEmailField } from '@dyrected/core'
@@ -366,7 +371,7 @@ const Orders = defineCollection({
           from: 'orders@myapp.com',
           to: doc.customerEmail,
           subject: `Order #${doc.id} confirmed`,
-          html: '<p>Thanks for your order.</p>',
+          html: `<p>Thanks for your order, ${doc.customerName}!</p>`,
         })
       },
     ],
@@ -379,7 +384,67 @@ const Orders = defineCollection({
     }),
   ],
 })
+```
 
+#### Option B: Centralized transport with database-managed templates
+
+When `email.adminEditable: true` is enabled, administrators can manage non-auth notification templates directly in the Admin UI under `__email_templates` (for instance, creating a template record with purpose `order_confirmation`).
+
+Inside your hook or custom API route, look up the active template from the database and dispatch it through Dyrected's `sendEmail` helper:
+
+```ts
+import { defineCollection, defineEmailField, sendEmail } from '@dyrected/core'
+
+const Orders = defineCollection({
+  slug: 'orders',
+  hooks: {
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create') return
+
+        // 1. Fetch template from __email_templates (or fall back to a default)
+        const templateDoc = await req.db?.findOne({
+          collection: '__email_templates',
+          where: { purpose: { equals: 'order_confirmation' } },
+        })
+
+        // 2. Interpolate dynamic variables into subject and HTML
+        let subject = templateDoc?.subject || `Order #${doc.id} Confirmed`
+        let html =
+          templateDoc?.html || `<p>Thank you for your order, ${doc.customerName}.</p>`
+
+        const variables: Record<string, string> = {
+          '{{orderId}}': String(doc.id),
+          '{{customerName}}': String(doc.customerName),
+          '{{total}}': `$${Number(doc.total).toFixed(2)}`,
+        }
+
+        for (const [tag, val] of Object.entries(variables)) {
+          subject = subject.split(tag).join(val)
+          html = html.split(tag).join(val)
+        }
+
+        // 3. Dispatch through Dyrected's configured email transport
+        await sendEmail(req.config, {
+          to: doc.customerEmail,
+          type: 'html',
+          subject,
+          html,
+          purpose: 'order_confirmation',
+          collection: 'orders',
+        })
+      },
+    ],
+  },
+  fields: [
+    defineEmailField({
+      name: 'customerEmail',
+      label: 'Customer email',
+      required: true,
+    }),
+  ],
+})
+```
 export default defineConfig({
   collections: [Orders],
   globals: [],

@@ -17,7 +17,7 @@ import {
 } from "./email-template.js";
 import { getConfigLogger, getObservabilityRuntime } from "../observability.js";
 
-type SendFn = (args: { to: string; subject: string; html: string }) => Promise<void>;
+type SendFn = (args: { to: string; subject: string; html: string }) => Promise<{ previewUrl?: string } | void>;
 
 // Lazy Ethereal singleton — created once on first send in dev
 let _devSend: SendFn | null = null;
@@ -55,10 +55,12 @@ async function getDevSend(): Promise<SendFn | null> {
           subject,
           html,
         });
+        const previewUrl = nodemailer.default.getTestMessageUrl(info) || undefined;
         logger.info({
           msg: "Email preview URL",
-          previewUrl: nodemailer.default.getTestMessageUrl(info),
+          previewUrl,
         });
+        return { previewUrl };
       };
       return _devSend;
     } catch {
@@ -75,7 +77,7 @@ async function getDevSend(): Promise<SendFn | null> {
 export async function sendEmail(
   config: DyrectedConfig,
   payload: OutboundEmail,
-): Promise<void> {
+): Promise<{ success: boolean; previewUrl?: string }> {
   const logger = getConfigLogger(config, "email");
   const observability = getObservabilityRuntime(config);
   if (config.email) {
@@ -94,7 +96,7 @@ export async function sendEmail(
       });
       throw err;
     }
-    return;
+    return { success: true };
   }
   if (process.env.NODE_ENV !== "production") {
     const devSend = await getDevSend();
@@ -110,20 +112,23 @@ export async function sendEmail(
             <pre style="background: #f8fafc; padding: 12px; border-radius: 6px; overflow-x: auto;">${JSON.stringify(payload.variables, null, 2)}</pre>
           </div>
         `;
-        await devSend({
+        const res = await devSend({
           to: payload.to,
           subject: payload.subject ?? `[Template: ${payload.template}] External Email`,
           html: devHtml,
         });
+        return { success: true, previewUrl: res?.previewUrl };
       } else if ("html" in payload) {
-        await devSend({
+        const res = await devSend({
           to: payload.to,
           subject: payload.subject,
           html: payload.html,
         });
+        return { success: true, previewUrl: res?.previewUrl };
       }
     }
   }
+  return { success: true };
 }
 
 /**
@@ -299,7 +304,8 @@ export function buildWelcomeEmail(
   return {
     subject: "Welcome — your account is ready",
     html: layout({
-      preheader: "Your Dyrected account is ready.",
+      siteName: enriched.siteName,
+      preheader: `Your ${enriched.siteName} account is ready.`,
       title: "Welcome — your account is ready",
       content: `${paragraph("Your account has been created. You can now log in with:")}${detailBox(args.email)}`,
       footer: "If you didn't create this account, you can safely ignore this email.",
@@ -339,7 +345,8 @@ export function buildInviteEmail(
   return {
     subject: "You've been invited",
     html: layout({
-      preheader: "You've been invited to join a Dyrected admin area.",
+      siteName: enriched.siteName,
+      preheader: `You've been invited to join ${enriched.siteName}.`,
       title: "You've been invited",
       content: inviteLink
         ? `${args.invitedByEmail ? paragraph(`You were invited by ${args.invitedByEmail}.`) : ""}${paragraph("Use the invitation link below to create your account. The link expires in 7 days.")}${ctaButton("Accept invitation", inviteLink)}${sectionLabel("Invitation link")}${inviteLinkBlock}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`
@@ -376,7 +383,8 @@ export function buildResetPasswordEmail(
   return {
     subject: "Reset your password",
     html: layout({
-      preheader: "Reset your Dyrected password.",
+      siteName: enriched.siteName,
+      preheader: `Reset your ${enriched.siteName} password.`,
       title: "Reset your password",
       content: resetLink
         ? `${paragraph("We received a request to reset your password. The reset link expires in 1 hour.")}${ctaButton("Reset password", resetLink)}${sectionLabel("Reset link")}${resetLinkBlock}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`
@@ -411,7 +419,8 @@ export function buildPasswordChangedEmail(
   return {
     subject: "Your password has been changed",
     html: layout({
-      preheader: "Your Dyrected password was changed.",
+      siteName: enriched.siteName,
+      preheader: `Your ${enriched.siteName} password was changed.`,
       title: "Password changed",
       content: `${paragraph("The password for this account was just changed:")}${detailBox(args.email)}${spacer()}${alertBox("If you did not make this change, please contact support immediately.")}`,
       footer: "This is an automated security notification.",

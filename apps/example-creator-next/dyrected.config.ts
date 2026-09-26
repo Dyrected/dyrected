@@ -1916,6 +1916,14 @@ export default defineConfig({
     collectionSlug: "__admins",
     providers: [],
   },
+  email: {
+    async send(args) {
+      console.log("send email", args);
+      // TODO: send email
+    },
+    from: "noreply@example.com",
+    adminEditable: true, // <--- activates database-backed template management
+  },
   // @ts-expect-error TypeScript readonly inference limitation with nested fields
   collections: [Admins, Media, Pages, Services, BlogArticles, ArticleComments, GuestResponses],
   globals: [SiteSettings, AssessmentCategories],

@@ -1,38 +1,45 @@
 export const emailTokens = {
   colors: {
-    canvas: '#f6f7f2',
-    surface: '#ffffff',
-    text: '#171717',
-    muted: '#62665b',
-    subtle: '#8a8f82',
-    border: '#dde0d7',
-    accent: '#b6ff2e',
-    code: '#f1f3ec',
-    codeBorder: '#e2e5dc',
-    dangerSurface: '#fff2f0',
-    dangerBorder: '#ffc9c2',
-    dangerText: '#9f251b',
+    canvas: "#f6f7f2",
+    surface: "#ffffff",
+    text: "#171717",
+    muted: "#62665b",
+    subtle: "#8a8f82",
+    border: "#dde0d7",
+    accent: "#b6ff2e",
+    code: "#f1f3ec",
+    codeBorder: "#e2e5dc",
+    dangerSurface: "#fff2f0",
+    dangerBorder: "#ffc9c2",
+    dangerText: "#9f251b",
   },
   font: "Arial, 'Helvetica Neue', Helvetica, sans-serif",
   mono: "'Courier New', Courier, monospace",
-  radius: { card: '12px', control: '6px' },
-  width: '600px',
+  radius: { card: "12px", control: "6px" },
+  width: "600px",
 } as const;
 
 export function escapeHtml(value: string): string {
-  return value.replace(/[&<>'"]/g, (character) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#39;',
-    '"': '&quot;',
-  })[character] as string);
+  return value.replace(
+    /[&<>'"]/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;",
+      })[character] as string,
+  );
 }
 
 function safeHttpUrl(value: string): string | undefined {
+  if (value.startsWith("{{") && value.endsWith("}}")) {
+    return value;
+  }
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? escapeHtml(url.toString()) : undefined;
+    return url.protocol === "https:" || url.protocol === "http:" ? escapeHtml(url.toString()) : undefined;
   } catch {
     return undefined;
   }
@@ -42,7 +49,7 @@ export function heading(content: string): string {
   return `<h1 style="margin:0;font-family:${emailTokens.font};font-size:24px;line-height:1.25;font-weight:700;color:${emailTokens.colors.text}">${escapeHtml(content)}</h1>`;
 }
 
-export function paragraph(content: string, margin = '0 0 16px'): string {
+export function paragraph(content: string, margin = "0 0 16px"): string {
   return `<p style="margin:${margin};font-family:${emailTokens.font};font-size:15px;line-height:1.6;color:${emailTokens.colors.muted}">${escapeHtml(content)}</p>`;
 }
 
@@ -55,14 +62,14 @@ export function divider(): string {
 }
 
 export function spacer(height = 16): string {
-  return table(row('&nbsp;', `height:${height}px;font-size:0;line-height:0`));
+  return table(row("&nbsp;", `height:${height}px;font-size:0;line-height:0`));
 }
 
-export function row(content: string, cellStyle = ''): string {
+export function row(content: string, cellStyle = ""): string {
   return `<tr><td style="${cellStyle}">${content}</td></tr>`;
 }
 
-export function table(content: string, style = 'width:100%'): string {
+export function table(content: string, style = "width:100%"): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="${style}">${content}</table>`;
 }
 
@@ -71,36 +78,51 @@ export function detailBox(content: string, monospace = false): string {
   return table(
     row(
       escapeHtml(content),
-      `padding:14px 16px;font-family:${font};font-size:13px;line-height:1.5;font-weight:${monospace ? '400' : '700'};color:${emailTokens.colors.text};word-break:break-all`,
+      `padding:14px 16px;font-family:${font};font-size:13px;line-height:1.5;font-weight:${monospace ? "400" : "700"};color:${emailTokens.colors.text};word-break:break-all`,
     ),
     `width:100%;background:${emailTokens.colors.code};border:1px solid ${emailTokens.colors.codeBorder};border-radius:${emailTokens.radius.control}`,
   );
 }
 
 export function eventList(events: ReadonlyArray<{ label: string; value: string }>): string {
-  return table(events.map(({ label, value }) => row(
-    `${sectionLabel(label)}${paragraph(value, '0')}`,
-    `padding:12px 0;border-bottom:1px solid ${emailTokens.colors.border}`,
-  )).join(''));
+  return table(
+    events
+      .map(({ label, value }) =>
+        row(
+          `${sectionLabel(label)}${paragraph(value, "0")}`,
+          `padding:12px 0;border-bottom:1px solid ${emailTokens.colors.border}`,
+        ),
+      )
+      .join(""),
+  );
 }
 
 export function ctaButton(label: string, href: string): string {
   const safeHref = safeHttpUrl(href);
-  if (!safeHref) return '';
-  return table(row(
-    `<a href="${safeHref}" style="display:inline-block;padding:13px 22px;border-radius:${emailTokens.radius.control};background:${emailTokens.colors.accent};font-family:${emailTokens.font};font-size:14px;line-height:1.2;font-weight:700;color:${emailTokens.colors.text};text-decoration:none">${escapeHtml(label)}</a>`,
-    'padding:8px 0 24px',
-  ), 'width:auto');
+  if (!safeHref) return "";
+  return table(
+    row(
+      `<a href="${safeHref}" style="display:inline-block;padding:13px 22px;border-radius:${emailTokens.radius.control};background:${emailTokens.colors.accent};font-family:${emailTokens.font};font-size:14px;line-height:1.2;font-weight:700;color:${emailTokens.colors.text};text-decoration:none">${escapeHtml(label)}</a>`,
+      "padding:8px 0 24px",
+    ),
+    "width:auto",
+  );
 }
 
 export function safeLinkDetailBox(href: string): string {
   const safeHref = safeHttpUrl(href);
-  if (!safeHref) return '';
+  if (!safeHref) return "";
   return detailBox(safeHref, true);
 }
 
 export function alertBox(content: string): string {
-  return table(row(escapeHtml(content), `padding:13px 16px;font-family:${emailTokens.font};font-size:13px;line-height:1.5;color:${emailTokens.colors.dangerText}`), `width:100%;background:${emailTokens.colors.dangerSurface};border:1px solid ${emailTokens.colors.dangerBorder};border-radius:${emailTokens.radius.control}`);
+  return table(
+    row(
+      escapeHtml(content),
+      `padding:13px 16px;font-family:${emailTokens.font};font-size:13px;line-height:1.5;color:${emailTokens.colors.dangerText}`,
+    ),
+    `width:100%;background:${emailTokens.colors.dangerSurface};border:1px solid ${emailTokens.colors.dangerBorder};border-radius:${emailTokens.radius.control}`,
+  );
 }
 
 interface LayoutOptions {
@@ -108,9 +130,10 @@ interface LayoutOptions {
   title: string;
   content: string;
   footer: string;
+  siteName?: string;
 }
 
-export function layout({ preheader, title, content, footer }: LayoutOptions): string {
+export function layout({ preheader, title, content, footer, siteName }: LayoutOptions): string {
   return `<!doctype html>
 <html lang="en" dir="ltr" xmlns="http://www.w3.org/1999/xhtml">
   <head>
@@ -131,20 +154,90 @@ export function layout({ preheader, title, content, footer }: LayoutOptions): st
       ${table(
         row(
           table(
-            row('&nbsp;', `height:5px;background:${emailTokens.colors.accent};font-size:0;line-height:0`) +
-            row(`${sectionLabel('Dyrected')}${heading(title)}`, 'padding:30px 32px 24px') +
-            row(content, 'padding:0 32px 32px') +
-            row(
-              `${divider()}${paragraph(footer, '20px 0 6px')}${paragraph('Privacy: this message contains account-related information; please avoid forwarding it.', '0')}`,
-              'padding:0 32px 28px',
-            ),
+            row("&nbsp;", `height:5px;background:${emailTokens.colors.accent};font-size:0;line-height:0`) +
+              row(`${sectionLabel(siteName ?? "Dyrected")}${heading(title)}`, "padding:30px 32px 24px") +
+              row(content, "padding:0 32px 32px") +
+              row(
+                `${divider()}${paragraph(footer, "20px 0 6px")}${paragraph("Privacy: this message contains account-related information; please avoid forwarding it.", "0")}`,
+                "padding:0 32px 28px",
+              ),
             `width:100%;max-width:${emailTokens.width};background:${emailTokens.colors.surface};border:1px solid ${emailTokens.colors.border};border-radius:${emailTokens.radius.card};overflow:hidden`,
           ),
-          'padding:32px 12px',
+          "padding:32px 12px",
         ),
         `width:100%;background:${emailTokens.colors.canvas}`,
       )}
     </center>
   </body>
 </html>`;
+}
+
+/**
+ * Returns the canonical, bulletproof Dyrected HTML email template
+ * for a specific auth purpose (invite, resetPassword, welcome, passwordChanged).
+ * Formatted using responsive tables and inline styles tested across Gmail, Apple Mail, Outlook, and mobile clients.
+ */
+export function getDefaultEmailTemplate(
+  purpose: "invite" | "resetPassword" | "welcome" | "passwordChanged" | string,
+  options?: { siteName?: string },
+): { subject: string; rawHtml: string } {
+  const siteName = options?.siteName ?? "Dyrected";
+
+  switch (purpose) {
+    case "invite":
+      return {
+        subject: `You've been invited to ${siteName}`,
+        rawHtml: layout({
+          siteName,
+          preheader: `You've been invited to join ${siteName}.`,
+          title: "You've been invited",
+          content: `${paragraph("Use the invitation link below to create your account. The link expires in 7 days.")}${ctaButton("Accept invitation", "{{url}}")}${sectionLabel("Invitation link")}${safeLinkDetailBox("{{url}}")}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`,
+          footer: "If you weren't expecting this invitation, you can safely ignore this email.",
+        }),
+      };
+    case "resetPassword":
+      return {
+        subject: "Reset your password",
+        rawHtml: layout({
+          siteName,
+          preheader: `Reset your ${siteName} password.`,
+          title: "Reset your password",
+          content: `${paragraph("We received a request to reset your password. The reset link expires in 1 hour.")}${ctaButton("Reset password", "{{url}}")}${sectionLabel("Reset link")}${safeLinkDetailBox("{{url}}")}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`,
+          footer: "If you didn't request a password reset, you can safely ignore this email.",
+        }),
+      };
+    case "welcome":
+      return {
+        subject: `Welcome to ${siteName} — your account is ready`,
+        rawHtml: layout({
+          siteName,
+          preheader: `Your ${siteName} account is ready.`,
+          title: "Welcome — your account is ready",
+          content: `${paragraph("Your account has been created. You can now log in with:")}${detailBox("{{email}}")}`,
+          footer: "If you didn't create this account, you can safely ignore this email.",
+        }),
+      };
+    case "passwordChanged":
+      return {
+        subject: "Your password has been changed",
+        rawHtml: layout({
+          siteName,
+          preheader: `Your ${siteName} password was changed.`,
+          title: "Password changed",
+          content: `${paragraph("The password for your account has been changed.")}${alertBox("If you did not make this change, please contact support or reset your password immediately.")}`,
+          footer: "Security notice: this confirms a recent credential change.",
+        }),
+      };
+    default:
+      return {
+        subject: `Notification from ${siteName}`,
+        rawHtml: layout({
+          siteName,
+          preheader: `Account notification from ${siteName}.`,
+          title: "Account Notification",
+          content: paragraph(`This is an account notification from ${siteName}.`),
+          footer: "If you have any questions, please reach out to our team.",
+        }),
+      };
+  }
 }

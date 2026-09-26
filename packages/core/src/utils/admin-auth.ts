@@ -66,24 +66,53 @@ export function getAdminRoleForCollection(collection?: CollectionConfig | null):
   return "admin";
 }
 
+const STANDARD_ADMIN_ROLES = new Set([
+  "admin",
+  "super_admin",
+  "superadmin",
+  "super admin",
+  "super-admin",
+  "owner",
+]);
+
 /**
  * Checks whether a user possesses an administrative role.
  * Considers:
- * 1. The collection's configured `adminRole` (e.g. 'super_admin')
- * 2. Standard admin roles ('admin', 'super_admin')
+ * 1. The collection's configured `adminRole` (e.g. 'super_admin' or 'super admin')
+ * 2. Standard admin roles ('admin', 'super_admin', 'super admin', 'superadmin', 'owner')
  */
 export function isUserAdmin(
   user: any,
   collection?: CollectionConfig | null,
 ): boolean {
   if (!user) return false;
-  const roles = Array.isArray(user.roles)
+  const rawRoles = Array.isArray(user.roles)
     ? user.roles
-    : typeof user.role === "string"
-      ? [user.role]
-      : [];
-  if (roles.length === 0) return false;
+    : typeof user.roles === "string"
+      ? [user.roles]
+      : Array.isArray(user.role)
+        ? user.role
+        : typeof user.role === "string"
+          ? [user.role]
+          : [];
+  if (rawRoles.length === 0) return false;
+
+  const roles = rawRoles.filter((r: any): r is string => typeof r === "string");
   const configuredRole = getAdminRoleForCollection(collection);
-  if (roles.includes(configuredRole)) return true;
-  return roles.includes("admin") || roles.includes("super_admin");
+
+  for (const r of roles) {
+    if (r === configuredRole || r.toLowerCase() === configuredRole.toLowerCase()) {
+      return true;
+    }
+    const normalized = r.trim().toLowerCase();
+    if (STANDARD_ADMIN_ROLES.has(normalized)) {
+      return true;
+    }
+    const stripped = normalized.replace(/[\s_-]+/g, "");
+    if (stripped === "admin" || stripped === "superadmin" || stripped === "owner") {
+      return true;
+    }
+  }
+
+  return false;
 }

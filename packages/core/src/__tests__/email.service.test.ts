@@ -220,4 +220,110 @@ describe('default email templates', () => {
       subject: 'Custom Subject Override',
     });
   });
+
+  it('passes down custom siteName to layout header label and subjects', () => {
+    const customSiteConfig = {
+      admin: {
+        branding: {
+          logoText: 'Future You Coaching',
+        },
+      },
+    } as unknown as DyrectedConfig;
+
+    const welcome = buildWelcomeEmail(customSiteConfig, { email: 'client@example.com' });
+    const invite = buildInviteEmail(customSiteConfig, { token: 'tok-123', url: 'https://futureyou.com/invite' });
+    const reset = buildResetPasswordEmail(customSiteConfig, { token: 'tok-456' });
+
+    expect(getHtml(welcome)).toContain('Future You Coaching');
+    expect(getHtml(invite)).toContain('Future You Coaching');
+    expect(getHtml(reset)).toContain('Future You Coaching');
+  });
+});
+
+describe('POST /api/__email_templates/test', () => {
+  it('dispatches real test email with interpolated tokens for authorized admin', async () => {
+    process.env.DYRECTED_JWT_SECRET = 'test-jwt-secret-key-1234567890123456';
+    const { createDyrectedApp } = await import('../app.js');
+    const { defineConfig, defineCollection } = await import('../index.js');
+    const { signCollectionToken } = await import('../auth/token.js');
+    const { MockDatabaseAdapter } = await import('./mocks.js');
+
+    const sendSpy = vi.fn().mockResolvedValue(undefined);
+    const mockDb = new MockDatabaseAdapter();
+    mockDb.findOne = vi.fn().mockResolvedValue({
+      id: 'admin-1',
+      email: 'admin@example.com',
+      role: 'admin',
+    });
+
+    const testConfig = defineConfig({
+      admin: {
+        branding: {
+          logoText: 'Future You Coaching',
+        },
+      },
+      collections: [
+        defineCollection({
+          slug: '__admins',
+          auth: true,
+          fields: [{ name: 'name', type: 'text' }],
+        }),
+        defineCollection({
+          slug: 'users',
+          auth: true,
+          fields: [{ name: 'name', type: 'text' }],
+        }),
+      ],
+      globals: [],
+      db: mockDb,
+      email: {
+        from: 'no-reply@example.com',
+        adminEditable: true,
+        send: sendSpy,
+      },
+    });
+
+    const app = await createDyrectedApp(testConfig);
+    const token = await signCollectionToken(
+      { sub: 'admin-1', email: 'admin@example.com', collection: '__admins', role: 'admin' },
+      '1h',
+    );
+
+    // 1. Unauthorized request without token
+    const unauthRes = await app.request('/api/__email_templates/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: 'tester@example.com' }),
+    });
+    expect(unauthRes.status).toBe(401);
+
+    // 2. Authorized HTML test email dispatch
+    const authRes = await app.request('/api/__email_templates/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        to: 'tester@example.com',
+        subject: 'Welcome to {{siteName}}',
+        html: '<p>Hi {{user.name}}, your setup link is {{url}}</p>',
+        purpose: 'welcome',
+      }),
+    });
+
+    expect(authRes.status).toBe(200);
+    const body = await authRes.json();
+    expect(body.success).toBe(true);
+    expect(body.message).toContain('tester@example.com');
+
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'tester@example.com',
+        type: 'html',
+        subject: 'Welcome to Future You Coaching',
+        html: expect.stringContaining('Hi Test Recipient, your setup link is'),
+      }),
+    );
+  });
 });

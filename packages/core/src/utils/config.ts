@@ -3,7 +3,7 @@ import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
 import { TASK_LOCKS_COLLECTION, TASK_LOCKS_COLLECTION_CONFIG } from "../tasks.js";
 import { TRASH_COLLECTION, TRASH_COLLECTION_CONFIG, assertValidTrashInConfig, resolveTrashConfig } from "../trash.js";
 import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
-import { getAdminAuthCollection } from "./admin-auth.js";
+import { getAdminAuthCollection, isUserAdmin } from "./admin-auth.js";
 import { normalizeSchemaFragment } from "./block-references.js";
 import {
   assertValidAdminConditionsInConfig,
@@ -12,6 +12,7 @@ import {
   assertValidPreviewUrlsInConfig,
 } from "./declarative-hooks.js";
 import { resolvePrefix } from "./id.js";
+import { getDefaultEmailTemplate } from "../services/email-template.js";
 
 const AUDIT_COLLECTION_SLUG = "__audit";
 
@@ -165,15 +166,19 @@ export const EMAIL_TEMPLATES_COLLECTION_SLUG = "__email_templates";
 export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
   slug: EMAIL_TEMPLATES_COLLECTION_SLUG,
   labels: { singular: "Email Template", plural: "Email Templates" },
+  detail: false,
   fields: [
     {
       name: "collectionSlug",
-      type: "text",
-      label: "Collection Slug",
+      type: "select",
+      label: "Applies To",
       required: true,
       defaultValue: "*",
+      options: [
+        { label: "Global (All Users & Collections)", value: "*" },
+      ],
       admin: {
-        description: "Collection slug to apply this template to, or '*' for global default.",
+        description: "Choose which user collection this template applies to, or 'Global' for all users.",
       },
     },
     {
@@ -187,6 +192,7 @@ export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
         { label: "Welcome", value: "welcome" },
         { label: "Password Changed", value: "passwordChanged" },
       ],
+      admin: { width: "50%" },
     },
     {
       name: "format",
@@ -198,6 +204,7 @@ export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
         { label: "HTML", value: "html" },
         { label: "External Template", value: "external_template" },
       ],
+      admin: { width: "50%" },
     },
     {
       name: "subject",
@@ -236,12 +243,30 @@ export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
   admin: {
     group: "Settings",
     icon: "Mail",
+    groupBy: "collectionSlug",
+    defaultColumns: ["purpose", "collectionSlug", "format", "active"],
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data }: any) => {
+        if (data && data.format === "html") {
+          const defaults = getDefaultEmailTemplate(data.purpose || "invite");
+          if (!data.subject) {
+            data.subject = defaults.subject;
+          }
+          if (!data.rawHtml) {
+            data.rawHtml = defaults.rawHtml;
+          }
+        }
+        return data;
+      },
+    ],
   },
   access: {
-    read: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
-    create: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
-    update: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
-    delete: ({ user }) => Boolean(user?.role === "admin" || (Array.isArray(user?.roles) && user.roles.includes("admin"))),
+    read: ({ user }) => isUserAdmin(user),
+    create: ({ user }) => isUserAdmin(user),
+    update: ({ user }) => isUserAdmin(user),
+    delete: ({ user }) => isUserAdmin(user),
   },
 };
 
@@ -527,7 +552,41 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   }
   const needsEmailTemplates = schemaAwareConfig.email?.adminEditable === true;
   if (needsEmailTemplates && !normalizedCollections.some((col) => col.slug === EMAIL_TEMPLATES_COLLECTION_SLUG)) {
-    systemCollections.push(EMAIL_TEMPLATES_COLLECTION_CONFIG);
+    const adminCol = getAdminAuthCollection(schemaAwareConfig);
+    const customAccess = (schemaAwareConfig.email as any)?.access;
+    const resolveOpAccess = (op: "read" | "create" | "update" | "delete") => {
+      if (typeof customAccess === "function") return customAccess;
+      if (customAccess && typeof customAccess === "object" && customAccess[op]) return customAccess[op];
+      return ({ user }: any) => isUserAdmin(user, adminCol);
+    };
+
+    const authCollections = normalizedCollections.filter((c) => Boolean(c.auth));
+    const audienceOptions = [
+      { label: "Global (All Users & Collections)", value: "*" },
+      ...authCollections.map((c) => ({
+        label: `${c.labels?.singular || c.labels?.plural || c.slug} (${c.slug})`,
+        value: c.slug,
+      })),
+    ];
+
+    systemCollections.push({
+      ...EMAIL_TEMPLATES_COLLECTION_CONFIG,
+      fields: EMAIL_TEMPLATES_COLLECTION_CONFIG.fields.map((f) => {
+        if (f.name === "collectionSlug") {
+          return {
+            ...f,
+            options: audienceOptions,
+          };
+        }
+        return f;
+      }),
+      access: {
+        read: resolveOpAccess("read"),
+        create: resolveOpAccess("create"),
+        update: resolveOpAccess("update"),
+        delete: resolveOpAccess("delete"),
+      },
+    });
   }
 
   return {

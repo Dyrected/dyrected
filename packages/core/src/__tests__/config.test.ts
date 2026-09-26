@@ -610,6 +610,12 @@ describe("Configuration Helpers", () => {
     expect(emailTemplatesCol?.fields.some((f) => f.name === "rawHtml")).toBe(true);
     expect(emailTemplatesCol?.fields.some((f) => f.name === "externalTemplateId")).toBe(true);
 
+    const readFn = emailTemplatesCol?.access?.read as any;
+    expect(readFn({ user: { role: "admin" } })).toBe(true);
+    expect(readFn({ user: { role: "super admin" } })).toBe(true);
+    expect(readFn({ user: { roles: ["owner"] } })).toBe(true);
+    expect(readFn({ user: { role: "editor" } })).toBe(false);
+
     const configWithoutTemplates = normalizeConfig({
       collections: [
         {
