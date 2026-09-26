@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import type { DyrectedContext } from "../app.js";
 import type { CollectionConfig } from "../types/index.js";
 import { getLockedUntilMs, resolveAuthLockoutConfig } from "../auth/lockout.js";
-import { hashPassword, verifyPassword } from "../auth/password.js";
+import { hashPassword, verifyPassword, hasUsablePassword } from "../auth/password.js";
 import { resolveSessionTokenExpiry, signCollectionToken, verifyCollectionToken } from "../auth/token.js";
 import {
   issueAuthSessionToken,
@@ -309,6 +309,18 @@ export class AuthController {
       return c.json(
         { error: true, message: "This invitation has not been accepted yet." },
         403,
+      );
+    }
+
+    if (!hasUsablePassword(user.password)) {
+      return c.json(
+        {
+          error: true,
+          code: "PASSWORD_NOT_SET",
+          message:
+            "This account does not have a password set. Please use the invite link or reset password.",
+        },
+        401,
       );
     }
 

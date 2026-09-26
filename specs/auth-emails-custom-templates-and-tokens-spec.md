@@ -139,7 +139,7 @@ export type EmailTemplateArgs<T> = T & {
 
 When an email must be built for collection `C` and purpose `P`:
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │ Level 1: Database Override in Admin UI (__email_templates)│
 │ (if configured and customized for collection C or *)   │
@@ -223,6 +223,8 @@ Before prompting an invited or reset user to enter a new password, the client fr
 ### 4.3. Delivery Transparency & Headless Tokens
 
 Dyrected eliminates silent email delivery failures by explicitly reporting delivery status in the API response:
+
+- Ensure the openapi docs generator is aware of the api changes we made.
 
 * **Endpoint:** `POST /api/collections/:slug/invite`
 
@@ -616,3 +618,5 @@ The implementation is broken down into 6 discrete, testable phases:
   * Update `operations.mdx` (unified `invite()`, headless tokens, `verifyToken()`).
   * Update `collections.mdx` (`auth` options).
   * Update `overview.mdx` (SDK reference).
+  * Add a changeset.
+  * Ensure the openapi docs generator is aware of the api changes we made.

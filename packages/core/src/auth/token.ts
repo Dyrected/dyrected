@@ -9,6 +9,7 @@ export interface CollectionTokenPayload extends JWTPayload {
   purpose?: 'invite' | 'reset';
   providerId?: string;
   authSource?: 'local' | 'external';
+  siteId?: string;
 }
 
 function getSecret(): Uint8Array {
@@ -25,6 +26,8 @@ function getSecret(): Uint8Array {
 const DEFAULT_EXPIRY = '7d';
 
 export const DEFAULT_SESSION_EXPIRY = DEFAULT_EXPIRY;
+export const DEFAULT_INVITE_EXPIRY = '48h';
+export const DEFAULT_RESET_PASSWORD_EXPIRY = '2h';
 
 /**
  * Resolve the session JWT lifetime for an auth collection.
@@ -39,6 +42,32 @@ export function resolveSessionTokenExpiry(collection: CollectionConfig): string 
     return auth.tokenExpiration;
   }
   return DEFAULT_SESSION_EXPIRY;
+}
+
+/**
+ * Resolve the invite JWT lifetime for an auth collection.
+ *
+ * Reads `auth.inviteExpiration` when configured, and falls back to `'48h'`.
+ */
+export function resolveInviteTokenExpiry(collection: CollectionConfig): string {
+  const auth = collection.auth;
+  if (auth && typeof auth === 'object' && typeof auth.inviteExpiration === 'string' && auth.inviteExpiration.length > 0) {
+    return auth.inviteExpiration;
+  }
+  return DEFAULT_INVITE_EXPIRY;
+}
+
+/**
+ * Resolve the reset password JWT lifetime for an auth collection.
+ *
+ * Reads `auth.resetPasswordExpiration` when configured, and falls back to `'2h'`.
+ */
+export function resolveResetPasswordTokenExpiry(collection: CollectionConfig): string {
+  const auth = collection.auth;
+  if (auth && typeof auth === 'object' && typeof auth.resetPasswordExpiration === 'string' && auth.resetPasswordExpiration.length > 0) {
+    return auth.resetPasswordExpiration;
+  }
+  return DEFAULT_RESET_PASSWORD_EXPIRY;
 }
 
 /**

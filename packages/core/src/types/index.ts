@@ -18,3 +18,4 @@ export * from "./ai.js";
 export * from "./ai-errors.js";
 export * from "./readonly-fix.js";
 export * from "./navigation.js";
+export * from "./email.js";

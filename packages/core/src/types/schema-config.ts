@@ -21,6 +21,7 @@ import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
 import type { DetailSchema } from "./detail.js";
 import type { ViewConfig, ViewMetric, ActionConfig } from "./views.js";
+import type { CollectionEmailConfig } from "./email.js";
 
 /**
  * Trash and retention configuration for a collection.
@@ -72,6 +73,43 @@ export interface AuthConfig {
    * Defaults to `'admin'`.
    */
   adminRole?: string;
+
+  /**
+   * How long invitation tokens remain valid for this collection.
+   *
+   * Accepts the same values as `jose`'s `setExpirationTime` (e.g. `'24h'`,
+   * `'48h'`, `'7d'`, `'14d'`).
+   *
+   * Defaults to `'7d'`.
+   */
+  inviteExpiration?: string;
+
+  /**
+   * How long password reset tokens remain valid for this collection.
+   *
+   * Accepts the same values as `jose`'s `setExpirationTime` (e.g. `'15m'`,
+   * `'30m'`, `'1h'`, `'2h'`).
+   *
+   * Defaults to `'1h'`.
+   */
+  resetPasswordExpiration?: string;
+
+  /**
+   * Dedicated action URLs for this auth collection.
+   *
+   * When configured, invite and password reset emails for this collection
+   * use these URLs instead of falling back to `admin.adminUrl` or `/admin`.
+   */
+  urls?: {
+    invite?: string;
+    resetPassword?: string;
+    login?: string;
+  };
+
+  /**
+   * Collection-specific email templates and sender overrides.
+   */
+  email?: CollectionEmailConfig;
 }
 
 /**

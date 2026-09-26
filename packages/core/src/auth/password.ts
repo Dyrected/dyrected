@@ -17,15 +17,33 @@ export async function hashPassword(plain: string): Promise<string> {
 }
 
 /**
+ * Check whether a stored password string represents a valid salt:hash format.
+ */
+export function hasUsablePassword(stored: unknown): boolean {
+  if (typeof stored !== 'string' || !stored) return false;
+  const parts = stored.split(':');
+  return parts.length === 2 && Boolean(parts[0]) && Boolean(parts[1]);
+}
+
+/**
  * Verify a plain-text password against a stored `salt:hash` string.
  */
-export async function verifyPassword(plain: string, stored: string): Promise<boolean> {
-  const [salt, storedHash] = stored.split(':');
+export async function verifyPassword(plain: string, stored: string | null | undefined): Promise<boolean> {
+  if (typeof plain !== 'string' || !plain || typeof stored !== 'string' || !stored) {
+    return false;
+  }
+  const parts = stored.split(':');
+  if (parts.length !== 2) return false;
+  const [salt, storedHash] = parts;
   if (!salt || !storedHash) return false;
 
-  const derivedKey = (await scryptAsync(plain, salt, KEY_LEN)) as Buffer;
-  const storedBuffer = Buffer.from(storedHash, 'hex');
+  try {
+    const derivedKey = (await scryptAsync(plain, salt, KEY_LEN)) as Buffer;
+    const storedBuffer = Buffer.from(storedHash, 'hex');
 
-  if (derivedKey.length !== storedBuffer.length) return false;
-  return timingSafeEqual(derivedKey, storedBuffer);
+    if (derivedKey.length !== storedBuffer.length) return false;
+    return timingSafeEqual(derivedKey, storedBuffer);
+  } catch {
+    return false;
+  }
 }

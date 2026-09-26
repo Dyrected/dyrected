@@ -15,6 +15,7 @@ import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 import type { DestinationStream, Logger, LoggerOptions } from "pino";
 import type { HookRequestContext } from "./request.js";
 import type { AIConfig } from "./ai.js";
+import type { EmailTemplateArgs, EmailTemplateResult, OutboundEmail } from "./email.js";
 
 export type DyrectedLoggerConfig =
   | {
@@ -230,28 +231,30 @@ export interface DyrectedConfig<
     /** The `From` address for all outbound emails. */
     from: string;
 
-    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: {
-      to: string;
-      subject: string;
-      html: string;
-    }) => Promise<void>;
+    /**
+     * Whether admins can edit email templates via the Admin UI.
+     * Defaults to true.
+     */
+    adminEditable?: boolean;
 
-    /** Override the default email templates. */
+    /** The send function. Wire in any email provider (Resend, SendGrid, SES, Seamailer, Postmark, etc.). */
+    send: (args: OutboundEmail) => Promise<void>;
+
+    /** Global default email templates. */
     templates?: {
-      welcome?: (args: { email: string }) => { subject?: string; html: string };
-      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {
-        subject?: string;
-        html: string;
-      };
-      resetPassword?: (args: { token: string; url?: string }) => {
-        subject?: string;
-        html: string;
-      };
-      passwordChanged?: (args: { email: string }) => {
-        subject?: string;
-        html: string;
-      };
+      welcome?: (args: EmailTemplateArgs<{ email: string }>) => EmailTemplateResult;
+      invite?: (args: EmailTemplateArgs<{
+        token: string;
+        invitedByEmail?: string;
+        url?: string;
+        data?: Record<string, unknown>;
+      }>) => EmailTemplateResult;
+      resetPassword?: (
+        args: EmailTemplateArgs<{ token: string; url?: string }>
+      ) => EmailTemplateResult;
+      passwordChanged?: (
+        args: EmailTemplateArgs<{ email: string }>
+      ) => EmailTemplateResult;
     };
   };
 
