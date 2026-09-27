@@ -27,7 +27,10 @@ export type EmailTemplateResult =
  */
 export type EmailTemplateArgs<T = Record<string, unknown>> = T & {
   collection?: string;
-  collectionLabel?: { singular: string; plural: string };
+  /** Readable singular name of the collection (falls back to plural, then a humanised slug). */
+  collectionLabel?: string;
+  /** The raw singular/plural labels configured on the collection. */
+  collectionLabels?: { singular?: string; plural?: string };
   siteName?: string;
   user?: Record<string, unknown>;
 };

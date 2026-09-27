@@ -5,6 +5,8 @@ export interface AccessFunctionArgs<
   TUser extends AuthenticatedUser = AuthenticatedUser,
 > {
   user: TUser | undefined;
+  /** ID of the document being accessed, when the operation targets one. */
+  id?: string;
   doc?: TDoc;
   data?: Partial<TDoc>;
   req: HookRequestContext;

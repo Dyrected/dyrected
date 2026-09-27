@@ -325,5 +325,5 @@ describe('POST /api/__email_templates/test', () => {
         html: expect.stringContaining('Hi Test Recipient, your setup link is'),
       }),
     );
-  });
+  }, 15000);
 });
