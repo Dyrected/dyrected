@@ -1,5 +1,18 @@
 # example-creator-next
 
+## 0.1.49
+
+### Patch Changes
+
+- Updated dependencies [282b113]
+  - @dyrected/core@2.20.0
+  - @dyrected/sdk@2.20.0
+  - @dyrected/admin@2.20.0
+  - @dyrected/db-postgres@2.20.0
+  - @dyrected/next@2.20.0
+  - @dyrected/react@2.20.0
+  - @dyrected/storage-cloudinary@2.20.0
+
 ## 0.1.48
 
 ### Patch Changes

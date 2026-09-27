@@ -1,5 +1,12 @@
 # @dyrected/db-postgres
 
+## 2.20.0
+
+### Patch Changes
+
+- Updated dependencies [282b113]
+  - @dyrected/core@2.20.0
+
 ## 2.19.0
 
 ### Patch Changes

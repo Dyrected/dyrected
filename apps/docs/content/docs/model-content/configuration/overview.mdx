@@ -381,6 +381,22 @@ export interface DyrectedConfig<
         args: EmailTemplateArgs<{ email: string }>
       ) => EmailTemplateResult;
     };
+
+    /**
+     * Additional transactional email purposes beyond the built-in auth lifecycle events.
+     * Each entry appears as a selectable option in the Admin UI email template editor,
+     * allowing admins to manage and test templates for business domain events
+     * (e.g. order confirmations, booking reminders, webhook notifications).
+     *
+     * @example
+     * email: {
+     *   purposes: [
+     *     { label: "Order Confirmation", value: "order_confirmation" },
+     *     { label: "Booking Reminder", value: "booking_reminder" },
+     *   ],
+     * }
+     */
+    purposes?: Array<{ label: string; value: string }>;
   };
 
   /**
