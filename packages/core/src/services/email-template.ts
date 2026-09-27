@@ -49,8 +49,8 @@ export function heading(content: string): string {
   return `<h1 style="margin:0;font-family:${emailTokens.font};font-size:24px;line-height:1.25;font-weight:700;color:${emailTokens.colors.text}">${escapeHtml(content)}</h1>`;
 }
 
-export function paragraph(content: string, margin = "0 0 16px"): string {
-  return `<p style="margin:${margin};font-family:${emailTokens.font};font-size:15px;line-height:1.6;color:${emailTokens.colors.muted}">${escapeHtml(content)}</p>`;
+export function paragraph(content: string, margin = "0 0 16px", size = "15px"): string {
+  return `<p style="margin:${margin};font-family:${emailTokens.font};font-size:${size};line-height:1.6;color:${emailTokens.colors.muted}">${escapeHtml(content)}</p>`;
 }
 
 export function sectionLabel(content: string): string {
@@ -125,15 +125,37 @@ export function alertBox(content: string): string {
   );
 }
 
-interface LayoutOptions {
+export type TemplateBlock = string | false | null | undefined;
+
+export interface LayoutOptions {
   preheader: string;
   title: string;
-  content: string;
-  footer: string;
+  content: string | (TemplateBlock | TemplateBlock[])[];
+  footer: string | (TemplateBlock | TemplateBlock[])[];
   siteName?: string;
 }
 
+export function resolveBlocks(input: string | (TemplateBlock | TemplateBlock[])[]): string {
+  if (Array.isArray(input)) {
+    const parts: string[] = [];
+    for (const item of input) {
+      if (Array.isArray(item)) {
+        for (const sub of item) {
+          if (typeof sub === "string" && sub.length > 0) parts.push(sub);
+        }
+      } else if (typeof item === "string" && item.length > 0) {
+        parts.push(item);
+      }
+    }
+    return parts.join("\n");
+  }
+  return typeof input === "string" ? input : "";
+}
+
 export function layout({ preheader, title, content, footer, siteName }: LayoutOptions): string {
+  const resolvedContent = resolveBlocks(content);
+  const resolvedFooter = resolveBlocks(footer);
+
   return `<!doctype html>
 <html lang="en" dir="ltr" xmlns="http://www.w3.org/1999/xhtml">
   <head>
@@ -156,9 +178,9 @@ export function layout({ preheader, title, content, footer, siteName }: LayoutOp
           table(
             row("&nbsp;", `height:5px;background:${emailTokens.colors.accent};font-size:0;line-height:0`) +
               row(`${sectionLabel(siteName ?? "Dyrected")}${heading(title)}`, "padding:30px 32px 24px") +
-              row(content, "padding:0 32px 32px") +
+              row(resolvedContent, "padding:0 32px 32px") +
               row(
-                `${divider()}${paragraph(footer, "20px 0 6px")}${paragraph("Privacy: this message contains account-related information; please avoid forwarding it.", "0")}`,
+                `${divider()}${paragraph(resolvedFooter, "20px 0 6px")}${paragraph("Privacy: this message contains account-related information; please avoid forwarding it.", "10px 0px 0px 0px", "12px")}`,
                 "padding:0 32px 28px",
               ),
             `width:100%;max-width:${emailTokens.width};background:${emailTokens.colors.surface};border:1px solid ${emailTokens.colors.border};border-radius:${emailTokens.radius.card};overflow:hidden`,
@@ -191,7 +213,13 @@ export function getDefaultEmailTemplate(
           siteName,
           preheader: `You've been invited to join ${siteName}.`,
           title: "You've been invited",
-          content: `${paragraph("Use the invitation link below to create your account. The link expires in 7 days.")}${ctaButton("Accept invitation", "{{url}}")}${sectionLabel("Invitation link")}${safeLinkDetailBox("{{url}}")}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`,
+          content: [
+            paragraph("Use the invitation link below to create your account. The link expires in 7 days."),
+            ctaButton("Accept invitation", "{{url}}"),
+            sectionLabel("Invitation link"),
+            safeLinkDetailBox("{{url}}"),
+            paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0"),
+          ],
           footer: "If you weren't expecting this invitation, you can safely ignore this email.",
         }),
       };
@@ -202,7 +230,13 @@ export function getDefaultEmailTemplate(
           siteName,
           preheader: `Reset your ${siteName} password.`,
           title: "Reset your password",
-          content: `${paragraph("We received a request to reset your password. The reset link expires in 1 hour.")}${ctaButton("Reset password", "{{url}}")}${sectionLabel("Reset link")}${safeLinkDetailBox("{{url}}")}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`,
+          content: [
+            paragraph("We received a request to reset your password. The reset link expires in 1 hour."),
+            ctaButton("Reset password", "{{url}}"),
+            sectionLabel("Reset link"),
+            safeLinkDetailBox("{{url}}"),
+            paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0"),
+          ],
           footer: "If you didn't request a password reset, you can safely ignore this email.",
         }),
       };
@@ -213,7 +247,7 @@ export function getDefaultEmailTemplate(
           siteName,
           preheader: `Your ${siteName} account is ready.`,
           title: "Welcome — your account is ready",
-          content: `${paragraph("Your account has been created. You can now log in with:")}${detailBox("{{email}}")}`,
+          content: [paragraph("Your account has been created. You can now log in with:"), detailBox("{{email}}")],
           footer: "If you didn't create this account, you can safely ignore this email.",
         }),
       };
@@ -224,7 +258,10 @@ export function getDefaultEmailTemplate(
           siteName,
           preheader: `Your ${siteName} password was changed.`,
           title: "Password changed",
-          content: `${paragraph("The password for your account has been changed.")}${alertBox("If you did not make this change, please contact support or reset your password immediately.")}`,
+          content: [
+            paragraph("The password for your account has been changed."),
+            alertBox("If you did not make this change, please contact support or reset your password immediately."),
+          ],
           footer: "Security notice: this confirms a recent credential change.",
         }),
       };
@@ -235,7 +272,7 @@ export function getDefaultEmailTemplate(
           siteName,
           preheader: `Account notification from ${siteName}.`,
           title: "Account Notification",
-          content: paragraph(`This is an account notification from ${siteName}.`),
+          content: [paragraph(`This is an account notification from ${siteName}.`)],
           footer: "If you have any questions, please reach out to our team.",
         }),
       };

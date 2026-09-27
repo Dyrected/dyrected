@@ -1,4 +1,5 @@
 import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
+import type { AccessFunction } from "../types/access.js";
 import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
 import { TASK_LOCKS_COLLECTION, TASK_LOCKS_COLLECTION_CONFIG } from "../tasks.js";
 import { TRASH_COLLECTION, TRASH_COLLECTION_CONFIG, assertValidTrashInConfig, resolveTrashConfig } from "../trash.js";
@@ -248,9 +249,10 @@ export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      async ({ data }: any) => {
+      async ({ data, req }: any) => {
         if (data && data.format === "html") {
-          const defaults = getDefaultEmailTemplate(data.purpose || "invite");
+          const siteName = req?.config?.admin?.branding?.logoText || "Dyrected";
+          const defaults = getDefaultEmailTemplate(data.purpose || "invite", { siteName });
           if (!data.subject) {
             data.subject = defaults.subject;
           }
@@ -291,10 +293,17 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   const needsTrash =
     schemaAwareConfig.trash?.enabled === true ||
     collections.some((col) => resolveTrashConfig(col, schemaAwareConfig).enabled);
-  const adminAuthCollectionSlug = getAdminAuthCollection({
+  const adminAuthCollection = getAdminAuthCollection({
     collections,
     adminAuth: schemaAwareConfig.adminAuth,
-  })?.slug;
+  });
+  const adminAuthCollectionSlug = adminAuthCollection?.slug;
+  // Field-level rules for auth-managed fields. These use isUserAdmin so they
+  // stay in parity with the route guards (super_admin, owner, custom adminRole).
+  const adminOnly: AccessFunction = ({ user }) => isUserAdmin(user, adminAuthCollection);
+  // Admins cannot edit their own roles/status (no self-elevation or self-lockout).
+  const adminOtherThanSelf: AccessFunction = ({ user, id }) =>
+    isUserAdmin(user, adminAuthCollection) && user?.id !== id;
 
   const normalizedCollections = collections.map((col) => {
     let fields = col.fields || [];
@@ -346,7 +355,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
               { value: "viewer", label: "Viewer" },
             ],
             access: {
-              update: "user.role == 'admin' || (user.roles != null && 'admin' in user.roles)",
+              update: adminOnly,
             },
           },
         ];
@@ -364,7 +373,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
               { value: "pending", label: "Pending" },
             ],
             access: {
-              update: "(user.role == 'admin' || (user.roles != null && 'admin' in user.roles)) && user.id != id",
+              update: adminOtherThanSelf,
             },
             admin: {
               condition: `!(data.roles && "admin" in data.roles) && data.role != "admin"`,
@@ -436,7 +445,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
             access: {
               ...(field.access || {}),
               // Must be an admin; cannot edit own roles (no self-elevation).
-              update: "(user.role == 'admin' || (user.roles != null && 'admin' in user.roles)) && user.id != id",
+              update: adminOtherThanSelf,
             },
           };
         }
@@ -445,7 +454,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
             ...field,
             access: {
               ...(field.access || {}),
-              update: "(user.role == 'admin' || (user.roles != null && 'admin' in user.roles)) && user.id != id",
+              update: adminOtherThanSelf,
             },
           };
         }
@@ -560,10 +569,23 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
       return ({ user }: any) => isUserAdmin(user, adminCol);
     };
 
-    const authCollections = normalizedCollections.filter((c) => Boolean(c.auth));
+    const customPurposes = (schemaAwareConfig.email as any)?.purposes ?? [];
+    const purposeOptions = [
+      { label: "Invite", value: "invite" },
+      { label: "Password Reset", value: "resetPassword" },
+      { label: "Welcome", value: "welcome" },
+      { label: "Password Changed", value: "passwordChanged" },
+      ...customPurposes,
+    ];
+
+    // Include all non-internal collections so admins can target any collection
+    // (e.g. orders, bookings) in addition to auth-managed user collections.
+    const targetableCollections = normalizedCollections.filter(
+      (c) => !c.slug.startsWith("__"),
+    );
     const audienceOptions = [
-      { label: "Global (All Users & Collections)", value: "*" },
-      ...authCollections.map((c) => ({
+      { label: "Global (All Collections)", value: "*" },
+      ...targetableCollections.map((c) => ({
         label: `${c.labels?.singular || c.labels?.plural || c.slug} (${c.slug})`,
         value: c.slug,
       })),
@@ -573,10 +595,10 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
       ...EMAIL_TEMPLATES_COLLECTION_CONFIG,
       fields: EMAIL_TEMPLATES_COLLECTION_CONFIG.fields.map((f) => {
         if (f.name === "collectionSlug") {
-          return {
-            ...f,
-            options: audienceOptions,
-          };
+          return { ...f, options: audienceOptions };
+        }
+        if (f.name === "purpose") {
+          return { ...f, options: purposeOptions };
         }
         return f;
       }),

@@ -1295,6 +1295,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.patch(path, (c) => controller.update(c));
   }
 
+  // In-memory rate-limiter for test email dispatch: 5 sends per user per 60 seconds.
+  // Keyed by user ID so it is scoped per admin and not shared globally.
+  const testEmailRateLimitMap = new Map<string, number[]>();
+  const TEST_EMAIL_MAX = 5;
+  const TEST_EMAIL_WINDOW_MS = 60_000;
+
   // Email Template Test Dispatch
   const handleTestEmailDispatch = async (c: any) => {
     const user = c.get("user");
@@ -1302,6 +1308,21 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     if (!isUserAdmin(user, adminCol)) {
       return c.json({ error: true, message: "Forbidden: Admin access required to dispatch test emails" }, 403);
     }
+
+    // Rate-limit check
+    const userId = String(user?.id ?? user?.sub ?? "unknown");
+    const now = Date.now();
+    const window = (testEmailRateLimitMap.get(userId) ?? []).filter(
+      (ts) => now - ts < TEST_EMAIL_WINDOW_MS,
+    );
+    if (window.length >= TEST_EMAIL_MAX) {
+      return c.json(
+        { error: true, message: `Rate limit exceeded: maximum ${TEST_EMAIL_MAX} test emails per minute.` },
+        429,
+      );
+    }
+    window.push(now);
+    testEmailRateLimitMap.set(userId, window);
 
     const body = await c.req.json().catch(() => ({}));
     const {
@@ -1319,7 +1340,14 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     }
 
     const siteName = config.admin?.branding?.logoText || "Dyrected";
-    const appUrl = config.admin?.siteUrl || new URL(c.req.url).origin || "http://localhost:3000";
+    let appUrl = config.admin?.siteUrl;
+    if (!appUrl) {
+      try {
+        appUrl = new URL(c.req.url).origin;
+      } catch {
+        appUrl = "http://localhost:3000";
+      }
+    }
     const targetCol = config.collections.find((x) => x.slug === collectionSlug);
     const resolvedCollectionLabel =
       collectionSlug === "*"

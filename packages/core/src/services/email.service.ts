@@ -9,6 +9,7 @@ import {
   alertBox,
   ctaButton,
   detailBox,
+  escapeHtml,
   layout,
   paragraph,
   safeLinkDetailBox,
@@ -133,10 +134,17 @@ export async function sendEmail(
 
 /**
  * Interpolate simple {{key}} or {{object.nestedKey}} placeholders inside template strings.
+ *
+ * @param escapeMode
+ *   - `"html"` (default): HTML-escapes every substituted value, preventing injection when
+ *     the output string is rendered as HTML in an email body or subject.
+ *   - `"none"`: Returns raw values as-is. Only use when the caller has already validated
+ *     or controlled every value in `args` (e.g. internal mock-data in the test endpoint).
  */
 export function interpolateVariables(
   str: string,
   args: Record<string, unknown>,
+  escapeMode: "html" | "none" = "html",
 ): string {
   if (!str || typeof str !== "string") return str;
   return str.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path) => {
@@ -146,7 +154,9 @@ export function interpolateVariables(
       if (val == null) break;
       val = val[part];
     }
-    return val !== undefined && val !== null ? String(val) : "";
+    if (val === undefined || val === null) return "";
+    const raw = String(val);
+    return escapeMode === "html" ? escapeHtml(raw) : raw;
   });
 }
 
@@ -233,10 +243,16 @@ function enrichArgs<T extends Record<string, unknown>>(
   collection: CollectionConfig | undefined,
   args: T,
 ): EmailTemplateArgs<T> {
+  const slug = collection?.slug;
+  const readableSlug = slug?.replace(/^__/, "");
+  const fallbackLabel = readableSlug
+    ? readableSlug.charAt(0).toUpperCase() + readableSlug.slice(1)
+    : "Account";
   return {
     ...args,
-    collection: collection?.slug,
-    collectionLabel: collection?.labels,
+    collection: slug,
+    collectionLabel: collection?.labels?.singular || collection?.labels?.plural || fallbackLabel,
+    collectionLabels: collection?.labels,
     siteName: config.admin?.branding?.logoText ?? "Dyrected",
   };
 }
@@ -307,7 +323,10 @@ export function buildWelcomeEmail(
       siteName: enriched.siteName,
       preheader: `Your ${enriched.siteName} account is ready.`,
       title: "Welcome — your account is ready",
-      content: `${paragraph("Your account has been created. You can now log in with:")}${detailBox(args.email)}`,
+      content: [
+        paragraph("Your account has been created. You can now log in with:"),
+        detailBox(args.email),
+      ],
       footer: "If you didn't create this account, you can safely ignore this email.",
     }),
   };
@@ -348,9 +367,22 @@ export function buildInviteEmail(
       siteName: enriched.siteName,
       preheader: `You've been invited to join ${enriched.siteName}.`,
       title: "You've been invited",
-      content: inviteLink
-        ? `${args.invitedByEmail ? paragraph(`You were invited by ${args.invitedByEmail}.`) : ""}${paragraph("Use the invitation link below to create your account. The link expires in 7 days.")}${ctaButton("Accept invitation", inviteLink)}${sectionLabel("Invitation link")}${inviteLinkBlock}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`
-        : `${args.invitedByEmail ? paragraph(`You were invited by ${args.invitedByEmail}.`) : ""}${paragraph("Use the invitation token below to accept your invitation. It expires in 7 days.")}${sectionLabel("Invitation token")}${detailBox(args.token, true)}`,
+      content: [
+        args.invitedByEmail && paragraph(`You were invited by ${args.invitedByEmail}.`),
+        inviteLink
+          ? [
+              paragraph("Use the invitation link below to create your account. The link expires in 7 days."),
+              ctaButton("Accept invitation", inviteLink),
+              sectionLabel("Invitation link"),
+              inviteLinkBlock,
+              paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0"),
+            ]
+          : [
+              paragraph("Use the invitation token below to accept your invitation. It expires in 7 days."),
+              sectionLabel("Invitation token"),
+              detailBox(args.token, true),
+            ],
+      ],
       footer: "If you weren't expecting this invitation, you can safely ignore this email.",
     }),
   };
@@ -386,9 +418,21 @@ export function buildResetPasswordEmail(
       siteName: enriched.siteName,
       preheader: `Reset your ${enriched.siteName} password.`,
       title: "Reset your password",
-      content: resetLink
-        ? `${paragraph("We received a request to reset your password. The reset link expires in 1 hour.")}${ctaButton("Reset password", resetLink)}${sectionLabel("Reset link")}${resetLinkBlock}${paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0")}`
-        : `${paragraph("We received a request to reset your password. The reset token expires in 1 hour.")}${sectionLabel("Reset token")}${detailBox(args.token, true)}`,
+      content: [
+        resetLink
+          ? [
+              paragraph("We received a request to reset your password. The reset link expires in 1 hour."),
+              ctaButton("Reset password", resetLink),
+              sectionLabel("Reset link"),
+              resetLinkBlock,
+              paragraph("If the button does not work, copy and paste the link above into your browser.", "12px 0 0"),
+            ]
+          : [
+              paragraph("We received a request to reset your password. The reset token expires in 1 hour."),
+              sectionLabel("Reset token"),
+              detailBox(args.token, true),
+            ],
+      ],
       footer: "If you didn't request a password reset, you can safely ignore this email.",
     }),
   };
@@ -422,7 +466,12 @@ export function buildPasswordChangedEmail(
       siteName: enriched.siteName,
       preheader: `Your ${enriched.siteName} password was changed.`,
       title: "Password changed",
-      content: `${paragraph("The password for this account was just changed:")}${detailBox(args.email)}${spacer()}${alertBox("If you did not make this change, please contact support immediately.")}`,
+      content: [
+        paragraph("The password for this account was just changed:"),
+        detailBox(args.email),
+        spacer(),
+        alertBox("If you did not make this change, please contact support immediately."),
+      ],
       footer: "This is an automated security notification.",
     }),
   };
