@@ -24,10 +24,6 @@
     "@dyrected/core": "workspace:^",
     "mysql2": "^3.22.3"
   },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
-  },
   "license": "BUSL-1.1",
   "homepage": "https://dyrected.com",
   "repository": {

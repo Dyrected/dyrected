@@ -34,8 +34,6 @@
   "dependencies": {},
   "devDependencies": {
     "@dyrected/core": "workspace:*",
-    "tsup": "^8.5.1",
-    "typescript": "^5.4.5",
     "vitest": "^1.0.0"
   },
   "license": "BSL-1.1",
