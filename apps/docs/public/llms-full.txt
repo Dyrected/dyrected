@@ -35397,7 +35397,6 @@ const Orders = defineCollection({
     }),
   ],
 })
-```
 export default defineConfig({
   collections: [Orders],
   globals: [],
