@@ -31,7 +31,7 @@
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "peerDependencies": {
-    "nuxt": "^3.0.0",
+    "nuxt": "^3.0.0 || ^4.0.0",
     "vue": "^3.0.0"
   },
   "devDependencies": {
