@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, generateText, createUIMessageStreamResponse, toUIMessageStream, stepCountIs, type LanguageModel } from "ai";
+import { streamText, generateText, createUIMessageStreamResponse, toUIMessageStream, stepCountIs, type LanguageModel, type GenerateTextEndEvent } from "ai";
 import type { DatabaseAdapter } from "../types/adapters.js";
 import type { DyrectedConfig, AuthenticatedUser } from "../types/index.js";
 import type { DyrectedAIContext, AIThread, AIMessage } from "../types/ai.js";
@@ -28,7 +28,7 @@ export function getAIModel(config?: DyrectedConfig): LanguageModel {
         'User-Agent': 'claude-cli/2.1.0 (external, cli)',
         'anthropic-version': '2023-06-01',
       },
-      fetch: async (url, init) => {
+      fetch: async (url: RequestInfo | URL, init?: RequestInit) => {
         const headers = new Headers(init?.headers);
         headers.set('User-Agent', 'claude-cli/2.1.0 (external, cli)');
         headers.set('anthropic-version', '2023-06-01');
@@ -634,7 +634,7 @@ export class AIAgent {
       maxRetries,
       temperature: 0.7,
       maxOutputTokens: 4096,
-      onFinish: async (event) => {
+      onFinish: async (event: GenerateTextEndEvent) => {
         const latencyMs = Date.now() - startTime;
         try {
           const parts: any[] = [];
@@ -756,7 +756,7 @@ export class AIAgent {
     return createUIMessageStreamResponse({
       stream: toUIMessageStream({
         stream: result.stream,
-        onError: (error) => formatAIErrorMessage(error),
+        onError: (error: unknown) => formatAIErrorMessage(error),
       }),
     });
   }
