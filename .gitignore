@@ -28,3 +28,4 @@ apps/public/uploads
 
 # Types
 dyrected-types.d.ts
+.vercel
