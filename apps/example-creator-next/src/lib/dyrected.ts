@@ -14,6 +14,8 @@ function getBaseUrl(): string {
 }
 
 const baseUrl = getBaseUrl();
+const apiKey = process.env.DYRECTED_API_KEY;
+const siteId = process.env.DYRECTED_SITE_ID;
 
 if (!apiKey) {
   throw new Error("DYRECTED_API_KEY is required for server-side Dyrected requests.");
