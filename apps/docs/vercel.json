@@ -1,0 +1,4 @@
+{
+  "installCommand": "pnpm install --filter @dyrected/docs... --ignore-scripts",
+  "buildCommand": "npx turbo run build --filter=@dyrected/docs"
+}
