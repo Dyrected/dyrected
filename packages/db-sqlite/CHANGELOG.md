@@ -1,5 +1,12 @@
 # @dyrected/db-sqlite
 
+## 2.20.1
+
+### Patch Changes
+
+- Updated dependencies [c63f9c9]
+  - @dyrected/core@2.20.1
+
 ## 2.20.0
 
 ### Patch Changes
@@ -159,6 +166,7 @@
 ### Minor Changes
 
 - 55d71f7: - **Aggregate Engine Expansion (`countDistinct`, `distinct`, `groupBy`)**:
+
   - Added support for `countDistinct` (`{ countDistinct: "fieldName" }`) to count unique non-null values in a single database query.
   - Added support for `distinct` (`{ distinct: "fieldName" }`) to extract unique non-null values without loading full documents.
   - Added grouped aggregation support via `groupBy` parameter (`?groupBy=<field>` or `{ groupBy: "field", aggregates: { ... } }`) returning per-group metric breakdowns with automatic `"__unassigned__"` sentinel handling for missing/null values.
@@ -213,7 +221,9 @@
 ### Minor Changes
 
 - ### Added
+
   - **Detail View System**:
+
     - Added read-only Detail View pages and configurable layout renderers for collections (`/collections/:slug/:id`) and globals (`/globals/:slug`).
     - Added layout configuration helpers in `@dyrected/core`: `defineDetailView`, `defineSection`, `defineFieldCard`, `defineRepeatCard`, `defineTab`, `defineTabs`, `defineComputedCard`, `defineDivider`, `defineInfoText`, and `defineFieldGrid`.
     - Added support for dynamic conditional visibility on detail cards, sections, and tabs using boolean values or JEXL expressions evaluated against `{ doc, user }`.
@@ -221,6 +231,7 @@
     - Added custom component slot support for detail views in both React and Vue runtimes.
 
   - **Collection Aggregations System**:
+
     - Added `POST /api/collections/:slug/aggregate` endpoint to `@dyrected/core` and integrated it into the OpenAPI specification generator.
     - Added collection `aggregate()` method to `@dyrected/sdk`.
     - Implemented database aggregation queries across all adapters: `@dyrected/db-postgres`, `@dyrected/db-mysql` (with `IF()` conditional aggregation), `@dyrected/db-mongodb`, and `@dyrected/db-sqlite`.
@@ -541,6 +552,7 @@
 ### Patch Changes
 
 - fd36dfd: **Add universal sort parsing, admin CSS isolation, initial token support, and updated branding theme**
+
   - Added universal sort parsing in `@dyrected/core`:
     - New `parseSort` utility
     - New regression test for `sort=-updatedAt`
@@ -584,6 +596,7 @@
 ### Patch Changes
 
 - 7db84cc: **UI/UX Improvement for Admin**
+
   1. Boolean field layout support
      Added a new `CheckboxField` and made boolean fields default to checkbox, with `admin.layout: "switch"` available when a switch UI is preferred.
   2. Array/object field renderer refactor
@@ -758,44 +771,54 @@
   ## 🛠️ Summary of Resolved Bugs
 
   ### 1. **Bug 1 (MySQL EADDRNOTAVAIL Socket Error)**
+
   - **Fix:** Handled and caught connection failures in `packages/db-mysql/src/index.ts`. If `EADDRNOTAVAIL` is detected on macOS loopback environments, we print a highly informative log advising the user to replace `localhost` with `127.0.0.1` in their `.env` file.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L105-L117)
 
   ### 2. **Bug 2 (MySQL Database Auto-Creation)**
+
   - **Fix:** Enhanced the adapter to check if the database exists prior to initializing the connection pool. It temporarily establishes a connection to the server without selecting a database, runs `CREATE DATABASE IF NOT EXISTS \`dbname\``, and gracefully closes the handshake.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L79-L93)
 
   ### 3. **Bug 3 (PostgreSQL Parameter Mismatch)**
+
   - **Fix:** Refactored the `find()` queries inside the pg adapter to construct plain SQL query strings, passing them directly to `this.sql.unsafe(queryStr, params)`. This prevents nested tagged template literals from stripping parameterized `$N` value bindings.
   - **Reference File:** [packages/db-postgres/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-postgres/src/index.ts#L65-L119)
 
   ### 4. **Bug 4 (Nuxt TS Configuration Import)**
+
   - **Fix:** Integrated dynamic loading of `"jiti"` (bundled natively with Nuxt/Nitro) inside `packages/nuxt/src/runtime/server/plugins/db.ts` to cleanly transpile and import `dyrected.config.ts` without raw ES Module "Unknown file extension" exceptions.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L11-L40)
 
   ### 5. **Bug 5 (Nitro Runtime Import Resolution)**
+
   - **Fix:** Standardized module imports in the Nuxt context by replacing the problematic `"nitro/runtime"` import with `"nitropack/runtime"`.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L2-L4)
 
   ### 6. **Bug 6 (Collapsible & Sortable Arrays)**
+
   - **Fix:** Redesigned array field lists into collapsible Cards utilizing draggable handle hooks, supporting both drag-and-drop reordering (`@dnd-kit/sortable`) and dynamic child attribute watch previews (displays key text values as a header preview).
   - **Reference File:** [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx#L182-L330)
 
   ### 7. **Bug 7 (Path Duplication)**
+
   - **Fix:** Prevented redundant folder prefixes (e.g. `/dyrected/dyrected/`) from being appended to logo media URLs.
   - **Reference File:** [packages/admin/src/lib/utils.ts](file:///Users/busola/Work/dyrected/packages/admin/src/lib/utils.ts#L14-L24)
 
   ### 8. **Bug 8 (Media Previews)**
+
   - **Fix:** Added a direct URL/path string fallback rendering in the admin dashboard `MediaPicker` to instantly load images when an empty relationship payload is returned.
   - **Reference File:** [packages/admin/src/components/forms/fields/media-picker.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/fields/media-picker.tsx#L45-L68)
 
   ### 9. **Bug 9 (Media Infinite Scroll)**
+
   - **Fix:** Upgraded the media library lists and selector modal dialog to use React Query's `useInfiniteQuery`, implementing an `IntersectionObserver` scroll listener to paginate assets.
   - **Reference Files:**
     - [packages/admin/src/pages/media/media-page.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/pages/media/media-page.tsx)
     - [packages/admin/src/components/media/media-library-dialog.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/media/media-library-dialog.tsx)
 
   ### 10. **Bug 10 (Slugs vs Labels / Dynamic Add Buttons)**
+
   - **Fix:** Swapped out hardcoded string actions with singularized schema collection labels (e.g. "Add Post", "Add Testimonial") and ensured singularized headers show everywhere.
   - **Reference Files:**
     - [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx)
@@ -859,6 +882,7 @@
 ### Patch Changes
 
 - This release introduces a suite of new features and architectural improvements:
+
   - **Admin UI Enhancements**:
     - Clickable primary column in collection lists for faster navigation.
     - New **Tabs Layout** and **Row Layout** for better form organization.
@@ -913,13 +937,16 @@
 ### Patch Changes
 
 - 220818c: ### @dyrected/core
+
   - **New Discovery Workflow**: Refined the AI setup prompt with a multi-step "Phase 0" discovery process to improve initial project scoping.
   - **Nomenclature Standardization**: Updated all system prompts to use "Nuxt.js" nomenclature and improved schema definition examples.
 
   ### @dyrected/db-postgres & @dyrected/db-sqlite
+
   - **Architecture Documentation**: Added source-level documentation explaining the use of raw SQL drivers (postgres.js/better-sqlite3) alongside Drizzle to support dynamic runtime schemas.
 
   ### @dyrected/admin
+
   - **Internal Maintenance**: Synchronized internal documentation and field renderer context to support the latest core setup workflows.
 
 - Updated dependencies [220818c]
@@ -1013,17 +1040,20 @@
   ### Breaking Changes
 
   **WHAT:**
+
   - Renamed `createApp` to `createDyrectedApp` across all core and framework packages.
   - Removed the hardcoded `/api` prefix from internal routing logic; API paths now default to the handler root or are controlled via `apiPrefix` config.
   - Administrative users are now isolated in a reserved `__admins` collection by default.
   - Standardized database adapter return types to ensure consistent ID handling across SQL and NoSQL providers.
 
   **WHY:**
+
   - The rename prevents naming collisions with native framework initializers (like Vue's `createApp`).
   - Decoupling the `/api` prefix provides better compatibility with Next.js/Nuxt server routes and custom proxy configurations.
   - The `__admins` separation ensures system-level security isolation from application-level user data.
 
   **HOW:**
+
   - Update your server entry points to use the new `createDyrectedApp` factory function.
   - If you have custom integrations targeting internal endpoints, ensure your base URL paths are updated to reflect the removal of the mandatory `/api` prefix.
   - If upgrading an existing installation, migrate your administrative users from the `users` collection to the new `__admins` collection.
