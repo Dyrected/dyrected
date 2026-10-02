@@ -65,11 +65,16 @@ export function sanitizeWhereClause(where: WhereClause, fields: Field[]): WhereC
 
     for (const [key, value] of Object.entries(node)) {
       const upperKey = key.toUpperCase();
-      if (upperKey === 'AND' || upperKey === 'OR') {
+      if (upperKey === 'AND' || upperKey === 'OR' || upperKey === 'NOT') {
         if (Array.isArray(value)) {
           const processed = value.map(v => walk(v)).filter(v => Object.keys(v).length > 0);
           if (processed.length > 0) {
-            result[upperKey as 'AND' | 'OR'] = processed;
+            result[upperKey as 'AND' | 'OR' | 'NOT'] = processed;
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          const processed = walk(value as WhereClause);
+          if (Object.keys(processed).length > 0) {
+            result[upperKey as 'NOT'] = processed;
           }
         }
         continue;

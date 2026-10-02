@@ -91,6 +91,52 @@ describe('parseSqlWhere', () => {
     );
     expect(res.params).toEqual([true, '']);
   });
+  it('translates "not" operator and aliases (ne, not_equal, notEquals) correctly', () => {
+    const res = parseSqlWhere(
+      {
+        status: { not: 'archived' },
+        deletedAt: { not: null },
+        category: { ne: 'news' },
+        type: { not_equal: 'promo' },
+        flag: { notEquals: 'spam' },
+      },
+      getJsonField,
+      'pg',
+    );
+    expect(res.sql).toBe(
+      "data->>'status' != $1 AND data->>'deletedAt' IS NOT NULL AND data->>'category' != $2 AND data->>'type' != $3 AND data->>'flag' != $4",
+    );
+    expect(res.params).toEqual(['archived', 'news', 'promo', 'spam']);
+  });
+
+  it('translates "not" with array (NOT IN) and nested operator (NOT (...)) in parseSqlWhere', () => {
+    const res = parseSqlWhere(
+      {
+        tag: { not: ['draft', 'archived'] },
+        score: { not: { gt: 10 } },
+      },
+      getJsonField,
+      'pg',
+    );
+    expect(res.sql).toBe(
+      "data->>'tag' NOT IN ($1, $2) AND NOT (data->>'score' > $3)",
+    );
+    expect(res.params).toEqual(['draft', 'archived', 10]);
+  });
+
+  it('translates top-level NOT clause in parseSqlWhere', () => {
+    const res = parseSqlWhere(
+      {
+        NOT: [{ status: { equals: 'archived' } }, { hidden: true }],
+      },
+      getJsonField,
+      'pg',
+    );
+    expect(res.sql).toBe(
+      "(NOT ((data->>'status' = $1) AND (data->>'hidden' = $2)))",
+    );
+    expect(res.params).toEqual(['archived', 'true']);
+  });
 });
 
 describe('parseMongoWhere', () => {
@@ -106,6 +152,30 @@ describe('parseMongoWhere', () => {
         { score: { $gte: 100 } },
         { title: { $regex: 'test', $options: 'i' } },
       ],
+    });
+  });
+
+  it('translates "not" operator and aliases correctly', () => {
+    const res = parseMongoWhere({
+      status: { not: 'archived' },
+      tag: { not: ['draft', 'archived'] },
+      title: { not: { contains: 'test' } },
+    });
+    expect(res).toEqual({
+      $and: [
+        { status: { $ne: 'archived' } },
+        { tag: { $nin: ['draft', 'archived'] } },
+        { title: { $not: { $regex: 'test', $options: 'i' } } },
+      ],
+    });
+  });
+
+  it('translates top-level NOT clause correctly in parseMongoWhere', () => {
+    const res = parseMongoWhere({
+      NOT: [{ status: { equals: 'archived' } }],
+    });
+    expect(res).toEqual({
+      $nor: [{ status: { $eq: 'archived' } }],
     });
   });
 });

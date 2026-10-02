@@ -37,6 +37,10 @@ const OPERATORS_BY_TYPE: Record<string, string[]> = {
 const OPERATOR_LABELS: Record<string, string> = {
   equals: 'Equals',
   not_equals: 'Not equals',
+  not: 'Not equals',
+  ne: 'Not equals',
+  not_equal: 'Not equals',
+  notEquals: 'Not equals',
   contains: 'Contains',
   starts_with: 'Starts with',
   gt: 'Greater than',
@@ -52,10 +56,10 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [draftRules, setDraftRules] = React.useState<FilterRule[]>(rules);
 
-  // Determine which fields are filterable
   const filterableFields = React.useMemo(() => {
     if (!schema?.fields) return [];
     return schema.fields.filter((f: Field) => {
+      if (!f.name) return false;
       if (NEVER_FILTERABLE.includes(f.type)) return false;
       if (f.admin?.filterable === false) return false;
       return true;
@@ -177,7 +181,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                       </SelectTrigger>
                       <SelectContent>
                         {filterableFields.map((f: Field) => (
-                          <SelectItem key={f.name} value={f.name} className="dy-text-xs">
+                          <SelectItem key={f.name} value={f.name!} className="dy-text-xs">
                             {f.label || f.name}
                           </SelectItem>
                         ))}

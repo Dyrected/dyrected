@@ -79,6 +79,8 @@ export function formatOperator(op: string): string {
     case "equals":
       return "is"
     case "not_equals":
+    case "not":
+    case "ne":
       return "is not"
     case "greater_than":
       return ">"

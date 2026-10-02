@@ -37,6 +37,12 @@ export class InMemoryAdapter implements DatabaseAdapter {
         continue;
       }
 
+      if ((field === 'NOT' || field === 'not') && (Array.isArray(condition) || typeof condition === 'object')) {
+        const items = Array.isArray(condition) ? condition : [condition];
+        if (items.some((sub) => this.matchesWhere(doc, sub))) return false;
+        continue;
+      }
+
       const docVal = this.getValue(doc, field);
       if (typeof condition !== 'object' || condition === null) {
         if (docVal !== condition) return false;
@@ -46,7 +52,35 @@ export class InMemoryAdapter implements DatabaseAdapter {
       for (const [op, operand] of Object.entries(condition as object)) {
       switch (op) {
         case 'equals':      if (docVal !== operand) return false; break;
-        case 'not_equals':  if (docVal === operand) return false; break;
+        case 'not_equals':
+        case 'not':
+        case 'ne':
+        case 'not_equal':
+        case 'notEquals':
+          if (Array.isArray(operand)) {
+            if (operand.includes(docVal)) return false;
+          } else if (typeof operand === 'object' && operand !== null) {
+            const innerMatches = Object.entries(operand).every(([innerOp, innerOperand]) => {
+              switch (innerOp) {
+                case 'equals': return docVal === innerOperand;
+                case 'not_equals': case 'not': return docVal !== innerOperand;
+                case 'in': return Array.isArray(innerOperand) && innerOperand.includes(docVal);
+                case 'not_in': return Array.isArray(innerOperand) && !innerOperand.includes(docVal);
+                case 'contains': case 'like': return typeof docVal === 'string' && docVal.includes(innerOperand as string);
+                case 'starts_with': return typeof docVal === 'string' && docVal.startsWith(innerOperand as string);
+                case 'gt': case 'greater_than': return docVal > (innerOperand as any);
+                case 'gte': case 'greater_than_equal': return docVal >= (innerOperand as any);
+                case 'lt': case 'less_than': return docVal < (innerOperand as any);
+                case 'lte': case 'less_than_equal': return docVal <= (innerOperand as any);
+                case 'exists': return innerOperand ? docVal != null : docVal == null;
+                default: return docVal === innerOperand;
+              }
+            });
+            if (innerMatches) return false;
+          } else {
+            if (docVal === operand) return false;
+          }
+          break;
         case 'in':          if (!Array.isArray(operand) || !operand.includes(docVal)) return false; break;
         case 'not_in':      if (Array.isArray(operand) && operand.includes(docVal)) return false; break;
         case 'gt': case 'greater_than': if (!(docVal > operand)) return false; break;

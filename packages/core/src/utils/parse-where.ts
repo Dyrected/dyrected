@@ -16,6 +16,10 @@
 export type WhereOperatorName =
   | 'equals'
   | 'not_equals'
+  | 'not'
+  | 'ne'
+  | 'not_equal'
+  | 'notEquals'
   | 'in'
   | 'not_in'
   | 'gt'
@@ -36,6 +40,10 @@ export type WhereOperatorName =
 export type WhereOperator =
   | { equals: any }
   | { not_equals: any }
+  | { not: any }
+  | { ne: any }
+  | { not_equal: any }
+  | { notEquals: any }
   | { in: any[] }
   | { not_in: any[] }
   | { gt: any }
@@ -60,6 +68,8 @@ export type WhereClause = {
   or?: WhereClause[] | readonly WhereClause[];
   AND?: WhereClause[] | readonly WhereClause[];
   and?: WhereClause[] | readonly WhereClause[];
+  NOT?: WhereClause[] | readonly WhereClause[] | WhereClause;
+  not?: WhereClause[] | readonly WhereClause[] | WhereClause;
 };
 
 /** Compile-time exhaustiveness guard. Any unhandled operator becomes a type error. */
@@ -173,6 +183,10 @@ export function parseSqlWhere(
         return `${c} = ${next()}`;
 
       case 'not_equals':
+      case 'not':
+      case 'ne':
+      case 'not_equal':
+      case 'notEquals':
         if (operand === null) {
           return `${c} IS NOT NULL`;
         }
@@ -188,9 +202,35 @@ export function parseSqlWhere(
           } else {
             params.push(operand);
           }
-        } else {
-          params.push(operand);
+          return `${c} != ${next()}`;
         }
+        if (Array.isArray(operand)) {
+          if (operand.length === 0) return '1=1';
+          const placeholders = operand.map((v) => {
+            if (typeof v === 'boolean') {
+              if (placeholder === '?') {
+                params.push(v ? 1 : 0);
+              } else if (isJsonExtract) {
+                params.push(String(v));
+              } else {
+                params.push(v);
+              }
+            } else {
+              params.push(v);
+            }
+            return next();
+          });
+          return `${c} NOT IN (${placeholders.join(', ')})`;
+        }
+        if (typeof operand === 'object') {
+          const innerEntries = Object.entries(operand);
+          if (innerEntries.length === 0) return '1=1';
+          const innerSql = innerEntries
+            .map(([innerOp, innerOperand]) => buildSingleOp(c, innerOp as WhereOperatorName, innerOperand))
+            .join(' AND ');
+          return `NOT (${innerSql})`;
+        }
+        params.push(operand);
         return `${c} != ${next()}`;
 
       case 'in': {
@@ -273,6 +313,19 @@ export function parseSqlWhere(
       } else if (upperField === 'AND' && Array.isArray(value)) {
         const sub = (value as WhereClause[]).map((v) => `(${buildClause(v)})`).join(' AND ');
         parts.push(`(${sub})`);
+      } else if (upperField === 'NOT') {
+        if (Array.isArray(value)) {
+          const sub = (value as WhereClause[]).map((v) => `(${buildClause(v)})`).join(' AND ');
+          parts.push(`(NOT (${sub}))`);
+        } else if (
+          typeof value === 'object' &&
+          value !== null &&
+          !('equals' in value || 'not_equals' in value || 'not' in value || 'ne' in value || 'not_equal' in value || 'notEquals' in value || 'in' in value || 'not_in' in value || 'gt' in value || 'gte' in value || 'lt' in value || 'lte' in value || 'contains' in value || 'like' in value || 'starts_with' in value || 'exists' in value)
+        ) {
+          parts.push(`(NOT (${buildClause(value)}))`);
+        } else {
+          parts.push(buildOperator(field, value));
+        }
       } else {
         parts.push(buildOperator(field, value));
       }
@@ -318,7 +371,28 @@ export function parseMongoWhere(where: WhereClause): Record<string, any> {
         return { [field]: { $eq: operand } };
 
       case 'not_equals':
+      case 'not':
+      case 'ne':
+      case 'not_equal':
+      case 'notEquals': {
+        if (Array.isArray(operand)) {
+          return { [field]: { $nin: operand } };
+        }
+        if (typeof operand === 'object' && operand !== null) {
+          const innerEntries = Object.entries(operand);
+          if (innerEntries.length === 1) {
+            const [innerOp, innerOperand] = innerEntries[0];
+            const inner = buildSingleOp(field, innerOp as WhereOperatorName, innerOperand)[field];
+            return { [field]: { $not: inner } };
+          }
+          const merged: Record<string, any> = {};
+          for (const [innerOp, innerOperand] of innerEntries) {
+            Object.assign(merged, buildSingleOp(field, innerOp as WhereOperatorName, innerOperand)[field]);
+          }
+          return { [field]: { $not: merged } };
+        }
         return { [field]: { $ne: operand } };
+      }
 
       case 'in':
         return { [field]: { $in: Array.isArray(operand) ? operand : [operand] } };
@@ -369,6 +443,18 @@ export function parseMongoWhere(where: WhereClause): Record<string, any> {
         conditions.push({ $or: (value as WhereClause[]).map(buildClause) });
       } else if (upperField === 'AND' && Array.isArray(value)) {
         conditions.push({ $and: (value as WhereClause[]).map(buildClause) });
+      } else if (upperField === 'NOT') {
+        if (Array.isArray(value)) {
+          conditions.push({ $nor: (value as WhereClause[]).map(buildClause) });
+        } else if (
+          typeof value === 'object' &&
+          value !== null &&
+          !('equals' in value || 'not_equals' in value || 'not' in value || 'ne' in value || 'not_equal' in value || 'notEquals' in value || 'in' in value || 'not_in' in value || 'gt' in value || 'gte' in value || 'lt' in value || 'lte' in value || 'contains' in value || 'like' in value || 'starts_with' in value || 'exists' in value)
+        ) {
+          conditions.push({ $nor: [buildClause(value)] });
+        } else {
+          conditions.push(buildOperator(field, value));
+        }
       } else {
         conditions.push(buildOperator(field, value));
       }
@@ -407,7 +493,7 @@ export function coerceBooleanWhere(
     if (!node || typeof node !== 'object') return node;
     const out: Record<string, any> = {};
     for (const [key, value] of Object.entries(node)) {
-      if (key.toUpperCase() === 'AND' || key.toUpperCase() === 'OR') {
+      if (key.toUpperCase() === 'AND' || key.toUpperCase() === 'OR' || key.toUpperCase() === 'NOT') {
         out[key] = walk(value);
       } else if (booleanFields.has(key)) {
         if (value && typeof value === 'object' && !Array.isArray(value)) {

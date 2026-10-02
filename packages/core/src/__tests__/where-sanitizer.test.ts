@@ -58,4 +58,17 @@ describe("sanitizeWhereClause", () => {
       createdAt: { greater_than: "2026-01-01" },
     });
   });
+
+  it("preserves NOT clauses and sanitizes fields inside them", () => {
+    const where = {
+      NOT: [
+        { leadName: { equals: "Adun" } },
+        { nonexistent: { equals: "bad" } },
+      ],
+    };
+    const sanitized = sanitizeWhereClause(where, fields);
+    expect(sanitized).toEqual({
+      NOT: [{ leadName: { equals: "Adun" } }],
+    });
+  });
 });
