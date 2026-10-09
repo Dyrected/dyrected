@@ -1,6 +1,7 @@
 import * as React from "react"
 import type { Column, Table } from "@tanstack/react-table"
-import { BadgeCheck, CalendarIcon, ListFilter, X } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { BadgeCheck, CalendarIcon, ListFilter, Loader2, X } from "lucide-react"
 
 import { Button } from "../../../../components/ui/button"
 import { Calendar } from "../../../../components/ui/calendar"
@@ -26,10 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../../components/ui/select"
+import { useDyrected } from "../../../../providers/dyrected-context"
 import { cn } from "../../../../lib/utils"
 import type { OperatorFilterValue } from "../build-view-columns"
 import type { ViewColumnMeta } from "../types"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
+import { DataTableRelationshipFilter } from "./data-table-relationship-filter"
 import { getDefaultFilterOperator, getFilterOperators, type FilterOperatorOption } from "./filter-operators"
 
 /**
@@ -85,7 +88,11 @@ export function DataTableFilterMenu<TData>({
   const onFilterAdd = (column: Column<TData>, rawValue: string) => {
     if (!rawValue.trim()) return
     const meta = column.columnDef.meta as ViewColumnMeta
-    if (meta?.variant === "multiSelect" || meta?.variant === "select") {
+    if (
+      meta?.variant === "multiSelect" ||
+      meta?.variant === "select" ||
+      meta?.variant === "relationship"
+    ) {
       column.setFilterValue([rawValue])
     } else {
       column.setFilterValue({
@@ -115,7 +122,19 @@ export function DataTableFilterMenu<TData>({
               column={col}
               title={meta?.label ?? col.id}
               options={meta?.options ?? []}
-              multiple={meta?.variant === "multiSelect"}
+              multiple={true}
+            />
+          )
+        }
+
+        if (meta?.variant === "relationship" && meta.relationTo) {
+          return (
+            <DataTableRelationshipFilter
+              key={entry.id}
+              column={col}
+              title={meta?.label ?? col.id}
+              relationTo={meta.relationTo}
+              multiple={true}
             />
           )
         }
@@ -448,6 +467,16 @@ function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSele
   const meta = column.columnDef.meta as (ViewColumnMeta & { options?: Array<{ label: string; value: string }> })
   const isEmpty = !value.trim()
 
+  if (meta?.variant === "relationship" && meta.relationTo) {
+    return (
+      <RelationshipValueSelector
+        relationTo={meta.relationTo}
+        searchValue={value}
+        onSelect={onSelect}
+      />
+    )
+  }
+
   if (meta?.options && meta.options.length > 0) {
     const filteredOptions = value.trim()
       ? meta.options.filter(
@@ -527,3 +556,62 @@ function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSele
     }
   }
 }
+
+function RelationshipValueSelector({
+  relationTo,
+  searchValue,
+  onSelect,
+}: {
+  relationTo: string
+  searchValue: string
+  onSelect: (value: string) => void
+}) {
+  const { client, schemas } = useDyrected()
+  const relatedCollection = (schemas?.collections as Array<any> | undefined)?.find(
+    (c) => c.slug === relationTo,
+  )
+  const displayField = relatedCollection?.admin?.useAsTitle || "title"
+
+  const { data: docs = [], isLoading } = useQuery<Array<Record<string, any>>>({
+    queryKey: ["filter-selector-relations", relationTo, searchValue],
+    queryFn: async (): Promise<Array<Record<string, any>>> => {
+      if (!client) return []
+      let qb = (client as any).collection(relationTo).find({ limit: 25 })
+      if (searchValue.trim()) {
+        qb = qb.where({ [displayField]: { like: `%${searchValue.trim()}%` } })
+      }
+      const res = await qb.exec()
+      return (res?.docs ?? []) as Array<Record<string, any>>
+    },
+    enabled: Boolean(client && relationTo),
+  })
+
+  if (isLoading && docs.length === 0) {
+    return (
+      <div className="dy-flex dy-items-center dy-justify-center dy-py-4 dy-text-xs dy-text-muted-foreground">
+        <Loader2 className="dy-mr-1.5 dy-h-3.5 dy-w-3.5 dy-animate-spin" />
+        Loading...
+      </div>
+    )
+  }
+
+  if (docs.length === 0) {
+    return <CommandEmpty>No matching records found.</CommandEmpty>
+  }
+
+  return (
+    <CommandGroup>
+      {docs.map((item) => {
+        const id = String(item.id ?? "")
+        const label = String(item[displayField] || item.name || item.slug || id)
+        return (
+          <CommandItem key={id} value={id} onSelect={() => onSelect(id)}>
+            <BadgeCheck className="dy-mr-1.5 dy-h-4 dy-w-4 dy-text-primary" />
+            <span className="dy-truncate">{label}</span>
+          </CommandItem>
+        )
+      })}
+    </CommandGroup>
+  )
+}
+

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { Button } from "../../ui/button"
 import { Badge } from "../../ui/badge"
@@ -86,15 +86,61 @@ export function RelationshipPicker({ id, value, onChange, label, relationTo, mul
 
   const allDocs = (data?.pages.flatMap((page) => (page as { docs?: unknown[] }).docs || []) ?? []) as Array<Record<string, unknown>>
 
+  const values = React.useMemo(
+    () => (Array.isArray(value) ? value.map(String) : value ? [String(value)] : []),
+    [value],
+  )
+
+  // Dedicated hydration query for selected items:
+  // Guarantees existing selected values ALWAYS resolve, even if they're on page 50 of the database
+  const { data: hydratedDocs = [] } = useQuery({
+    queryKey: ["collection", relationTo, "hydrated", values],
+    queryFn: async () => {
+      if (!client || !relationTo || values.length === 0) return []
+      try {
+        const res = await (client as any).collection(relationTo).find({
+          where: { id: { in: values } },
+          limit: Math.max(values.length, 10),
+        })
+        return (res?.docs ?? []) as Array<Record<string, unknown>>
+      } catch {
+        return []
+      }
+    },
+    enabled: Boolean(client && relationTo && values.length > 0),
+    staleTime: 60_000,
+  })
+
+  const docMap = React.useMemo(() => {
+    const map = new Map<string, Record<string, unknown>>()
+    for (const item of hydratedDocs) {
+      if (item?.id) map.set(String(item.id), item)
+    }
+    for (const item of allDocs) {
+      if (item?.id && !map.has(String(item.id))) map.set(String(item.id), item)
+    }
+    return map
+  }, [hydratedDocs, allDocs])
+
   const getDisplayLabel = (item: Record<string, unknown>) => {
     return String(item[displayField] || item.name || item.slug || item.id || "")
   }
 
-  const values = Array.isArray(value) ? value : value ? [value] : []
-  const selectedItems = values.map(v => allDocs.find((item) => String(item.id || "") === v)).filter(Boolean)
+  const selectedItems = values.map((v) => docMap.get(v) || { id: v, [displayField]: v })
+
+  const combinedDocs = React.useMemo(() => {
+    const map = new Map<string, Record<string, unknown>>()
+    for (const doc of hydratedDocs) {
+      if (doc?.id) map.set(String(doc.id), doc)
+    }
+    for (const doc of allDocs) {
+      if (doc?.id && !map.has(String(doc.id))) map.set(String(doc.id), doc)
+    }
+    return Array.from(map.values())
+  }, [hydratedDocs, allDocs])
 
   const trimmedSearch = search.trim()
-  const hasExactMatch = allDocs.some(
+  const hasExactMatch = combinedDocs.some(
     (item) => getDisplayLabel(item).toLowerCase() === trimmedSearch.toLowerCase()
   )
   const showCreateOption = trimmedSearch !== "" && !hasExactMatch && relatedCollection
@@ -171,7 +217,7 @@ export function RelationshipPicker({ id, value, onChange, label, relationTo, mul
               )}
               <CommandEmpty>{isLoading ? "Searching..." : "No item found."}</CommandEmpty>
               <CommandGroup>
-                {allDocs.map((item) => (
+                {combinedDocs.map((item) => (
                   <CommandItem
                     key={String(item.id || "")}
                     value={String(item.id || "")}

@@ -95,15 +95,17 @@ export function buildViewColumns({
       // literal string "auto" — an explicit undefined resolves through the
       // registry and comes back empty, so every filterable column declares
       // a concrete matcher.
-      ...(meta.variant === "multiSelect"
+      ...(meta.variant === "multiSelect" || meta.variant === "select"
         ? { filterFn: multiSelectFilter }
-        : meta.variant === "text"
-          ? { filterFn: operatorTextFilter }
-          : meta.variant === "number"
-            ? { filterFn: operatorNumberFilter }
-            : meta.variant === "date"
-              ? { filterFn: operatorDateFilter }
-              : {}),
+        : meta.variant === "relationship"
+          ? { filterFn: relationshipFilter }
+          : meta.variant === "text"
+            ? { filterFn: operatorTextFilter }
+            : meta.variant === "number"
+              ? { filterFn: operatorNumberFilter }
+              : meta.variant === "date"
+                ? { filterFn: operatorDateFilter }
+                : {}),
       cell: ({ row }: any) => {
         const rendered = (
           <RenderCell value={row.original[name]} field={field} client={client} schemas={schemas} row={row.original} />
@@ -279,9 +281,39 @@ export function multiSelectFilter(
   columnId: string,
   filterValue: string[],
 ): boolean {
+  if (!Array.isArray(filterValue) || filterValue.length === 0) return true
   const value = row.getValue(columnId)
   if (value === null || value === undefined || value === "") return false
+  if (Array.isArray(value)) {
+    return value.some((v) => filterValue.includes(String(v)))
+  }
   return filterValue.includes(String(value))
+}
+
+/**
+ * Multi-select relationship filter matching against raw IDs or populated document objects.
+ */
+export function relationshipFilter(
+  row: any,
+  columnId: string,
+  filterValue: string[],
+): boolean {
+  if (!Array.isArray(filterValue) || filterValue.length === 0) return true
+  const raw = row.getValue(columnId)
+  if (raw === null || raw === undefined || raw === "") return false
+
+  const extractId = (item: any): string => {
+    if (typeof item === "object" && item !== null && "id" in item) {
+      return String(item.id)
+    }
+    return String(item)
+  }
+
+  if (Array.isArray(raw)) {
+    return raw.some((item) => filterValue.includes(extractId(item)))
+  }
+
+  return filterValue.includes(extractId(raw))
 }
 
 /** Shape stored as a column's filter value by the command-based filter menu. */
@@ -454,7 +486,12 @@ function buildColumnMeta(field: any): ViewColumnMeta {
     label: field.label || field.name,
   }
 
-  if (field.type === "select" || field.type === "radio" || field.type === "boolean") {
+  if (
+    field.type === "select" ||
+    field.type === "multiSelect" ||
+    field.type === "radio" ||
+    field.type === "boolean"
+  ) {
     return {
       ...base,
       variant: "multiSelect",
@@ -469,6 +506,14 @@ function buildColumnMeta(field: any): ViewColumnMeta {
   }
   if (field.type === "text" || field.type === "email" || field.type === "textarea") {
     return { ...base, variant: "text" }
+  }
+  if (field.type === "relationship" && field.relationTo) {
+    return {
+      ...base,
+      variant: "relationship",
+      relationTo: field.relationTo,
+      hasMany: Boolean(field.hasMany),
+    }
   }
   return base
 }
