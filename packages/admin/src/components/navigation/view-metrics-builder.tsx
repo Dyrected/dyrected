@@ -1,5 +1,5 @@
 import * as React from "react"
-import { BarChart2, Calendar, ChevronDown, ChevronRight, Hash, Sparkles, X } from "lucide-react"
+import { BarChart2, Calendar, ChevronDown, ChevronRight, Hash, Pencil, Sparkles, X } from "lucide-react"
 import type { AggregateOperation, MetricColor, ViewMetric } from "@dyrected/core"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -97,6 +97,7 @@ export function ViewMetricsBuilder({
 }: ViewMetricsBuilderProps) {
   const [expanded, setExpanded] = React.useState(false)
   const [showCustomForm, setShowCustomForm] = React.useState(false)
+  const [editingIndex, setEditingIndex] = React.useState<number | null>(null)
 
   // Custom metric form state
   const [metricLabel, setMetricLabel] = React.useState("")
@@ -279,20 +280,68 @@ export function ViewMetricsBuilder({
     setExpanded(true)
   }
 
+  const handleStartEditMetric = (idx: number) => {
+    const m = metrics[idx]
+    if (!m) return
+    setEditingIndex(idx)
+    setMetricLabel(m.label || "")
+    const agg = (m.aggregate || (m.aggregates ? Object.values(m.aggregates)[0] : undefined)) as any
+    if (agg?.countDistinct) {
+      setOperation("countDistinct")
+      setField(agg.countDistinct)
+    } else if (agg?.sum) {
+      setOperation("sum")
+      setField(agg.sum)
+    } else if (agg?.avg) {
+      setOperation("avg")
+      setField(agg.avg)
+    } else if (agg?.min) {
+      setOperation("min")
+      setField(agg.min)
+    } else if (agg?.max) {
+      setOperation("max")
+      setField(agg.max)
+    } else {
+      setOperation("count")
+      setField("")
+    }
+    setColor(m.color || "blue")
+    setFormat((m.format as "number" | "currency" | "percent") || "number")
+    setCurrency(m.currency || "USD")
+    setScope(m.scope || "view")
+    const gb = typeof m.groupBy === "string" ? m.groupBy : m.groupBy?.field || ""
+    setGroupBy(gb)
+    setShowCustomForm(true)
+  }
+
+  const handleCancelCustomForm = () => {
+    setShowCustomForm(false)
+    setEditingIndex(null)
+    setMetricLabel("")
+    setField("")
+    setScope("view")
+    setGroupBy("")
+  }
+
   const handleAddCustomMetric = () => {
     if (!metricLabel.trim()) return
 
+    const isEditing = editingIndex !== null && editingIndex >= 0 && editingIndex < metrics.length
+    const existingMetric = isEditing ? metrics[editingIndex!] : undefined
+    const existingWhere = (existingMetric?.aggregate as any)?.where
+
     let agg: AggregateOperation
     if (operation === "count") {
-      agg = { count: "*", where: viewFilter || undefined }
+      agg = { count: "*", where: existingWhere || viewFilter || undefined }
     } else if (operation === "countDistinct") {
-      agg = { countDistinct: field, where: viewFilter || undefined }
+      agg = { countDistinct: field, where: existingWhere || viewFilter || undefined }
     } else {
       const isDate = isDateField(allFields.find((f: any) => f.name === field))
-      agg = { [operation]: field, cast: isDate ? "date" : "number", where: viewFilter || undefined } as any
+      agg = { [operation]: field, cast: isDate ? "date" : "number", where: existingWhere || viewFilter || undefined } as any
     }
 
     const newMetric: ViewMetric = {
+      ...(existingMetric || {}),
       label: metricLabel.trim(),
       aggregate: agg,
       color,
@@ -302,15 +351,28 @@ export function ViewMetricsBuilder({
       groupBy: groupBy.trim() || undefined,
     }
 
-    onChange([...metrics, newMetric])
+    if (isEditing) {
+      const updated = [...metrics]
+      updated[editingIndex!] = newMetric
+      onChange(updated)
+    } else {
+      onChange([...metrics, newMetric])
+    }
+
     setMetricLabel("")
     setField("")
     setScope("view")
     setGroupBy("")
+    setEditingIndex(null)
     setShowCustomForm(false)
   }
 
   const handleRemoveMetric = (index: number) => {
+    if (editingIndex === index) {
+      handleCancelCustomForm()
+    } else if (editingIndex !== null && editingIndex > index) {
+      setEditingIndex(editingIndex - 1)
+    }
     onChange(metrics.filter((_, i) => i !== index))
   }
 
@@ -373,30 +435,47 @@ export function ViewMetricsBuilder({
               {metrics.map((m, idx) => {
                 const colorObj = COLOR_OPTIONS.find((c) => c.value === m.color) || COLOR_OPTIONS[0]
                 const groupField = typeof m.groupBy === "string" ? m.groupBy : m.groupBy?.field
+                const isEditing = editingIndex === idx
                 return (
                   <div
                     key={idx}
-                    className="dy-group dy-flex dy-items-center dy-gap-1.5 dy-rounded-md dy-border dy-border-border dy-bg-muted/40 dy-px-2 dy-py-0.5 dy-text-[10px]"
+                    className={cn(
+                      "dy-group dy-flex dy-items-center dy-gap-1.5 dy-rounded-md dy-border dy-px-2 dy-py-0.5 dy-text-[10px] dy-transition-all",
+                      isEditing
+                        ? "dy-border-primary dy-bg-primary/10 dy-ring-1 dy-ring-primary"
+                        : "dy-border-border dy-bg-muted/40 hover:dy-border-primary/50"
+                    )}
                   >
-                    <span className={cn("dy-h-1.5 dy-w-1.5 dy-rounded-full", colorObj.bgClass)} />
-                    <span className="dy-font-medium dy-text-foreground">{m.label}</span>
-                    <span className="dy-text-[9px] dy-text-muted-foreground/70">
-                      ({formatSummary(m)})
-                    </span>
-                    {m.scope && m.scope !== "view" && (
-                      <span className="dy-rounded dy-bg-primary/10 dy-px-1 dy-text-[8px] dy-font-medium dy-text-primary">
-                        {m.scope}
-                      </span>
-                    )}
-                    {groupField && (
-                      <span className="dy-rounded dy-bg-purple-500/10 dy-px-1 dy-text-[8px] dy-font-medium dy-text-purple-600 dark:dy-text-purple-400">
-                        by: {groupField}
-                      </span>
-                    )}
                     <button
                       type="button"
-                      onClick={() => handleRemoveMetric(idx)}
-                      className="dy-text-muted-foreground hover:dy-text-destructive dy-transition-colors"
+                      onClick={() => handleStartEditMetric(idx)}
+                      className="dy-flex dy-items-center dy-gap-1.5 dy-text-left hover:dy-opacity-80"
+                      title="Click to edit KPI (scope, groupBy, format, color)"
+                    >
+                      <span className={cn("dy-h-1.5 dy-w-1.5 dy-rounded-full", colorObj.bgClass)} />
+                      <span className="dy-font-medium dy-text-foreground">{m.label}</span>
+                      <span className="dy-text-[9px] dy-text-muted-foreground/70">
+                        ({formatSummary(m)})
+                      </span>
+                      {m.scope && m.scope !== "view" && (
+                        <span className="dy-rounded dy-bg-primary/15 dy-px-1 dy-text-[8px] dy-font-semibold dy-text-primary">
+                          {m.scope}
+                        </span>
+                      )}
+                      {groupField && (
+                        <span className="dy-rounded dy-bg-purple-500/15 dy-px-1 dy-text-[8px] dy-font-semibold dy-text-purple-600 dark:dy-text-purple-400">
+                          by: {groupField}
+                        </span>
+                      )}
+                      <Pencil className="dy-h-2 dy-w-2 dy-text-muted-foreground/50 group-hover:dy-text-primary" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveMetric(idx)
+                      }}
+                      className="dy-text-muted-foreground hover:dy-text-destructive dy-transition-colors dy-ml-0.5"
                       title="Remove metric"
                     >
                       <X className="dy-h-2.5 dy-w-2.5" />
@@ -471,9 +550,16 @@ export function ViewMetricsBuilder({
                 variant="ghost"
                 size="sm"
                 className="dy-h-5 dy-px-1.5 dy-text-[10px] dy-text-primary hover:dy-bg-primary/10"
-                onClick={() => setShowCustomForm(!showCustomForm)}
+                onClick={() => {
+                  if (showCustomForm) {
+                    handleCancelCustomForm()
+                  } else {
+                    setEditingIndex(null)
+                    setShowCustomForm(true)
+                  }
+                }}
               >
-                {showCustomForm ? "Close Builder" : "+ Custom KPI"}
+                {showCustomForm && editingIndex === null ? "Close Builder" : "+ Custom KPI"}
               </Button>
             </div>
           </div>
@@ -481,7 +567,9 @@ export function ViewMetricsBuilder({
           {/* Custom Metric Builder Form */}
           {showCustomForm && (
             <div className="dy-rounded-md dy-border dy-border-border dy-bg-muted/30 dy-p-2 dy-space-y-1.5">
-              <div className="dy-text-[10px] dy-font-semibold dy-text-foreground">Custom KPI Card</div>
+              <div className="dy-text-[10px] dy-font-semibold dy-text-foreground">
+                {editingIndex !== null ? `Edit KPI: "${metrics[editingIndex]?.label || "Card"}"` : "Custom KPI Card"}
+              </div>
               <Input
                 size="sm"
                 placeholder="Metric Title (e.g. VIP Revenue)..."
@@ -623,7 +711,7 @@ export function ViewMetricsBuilder({
                   variant="ghost"
                   size="sm"
                   className="dy-h-5 dy-px-2 dy-text-[10px]"
-                  onClick={() => setShowCustomForm(false)}
+                  onClick={handleCancelCustomForm}
                 >
                   Cancel
                 </Button>
@@ -634,7 +722,7 @@ export function ViewMetricsBuilder({
                   onClick={handleAddCustomMetric}
                   disabled={!metricLabel.trim() || (operation !== "count" && !field)}
                 >
-                  Add KPI
+                  {editingIndex !== null ? "Update KPI" : "Add KPI"}
                 </Button>
               </div>
             </div>

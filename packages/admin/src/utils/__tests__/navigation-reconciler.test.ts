@@ -182,4 +182,71 @@ describe("Navigation Delta Reconciler", () => {
     const kycItem = res.groups[0].items.find((i) => i.slug === "kyc")
     expect(kycItem?.views).toHaveLength(1)
   })
+
+  it("inherits metricsScope and metric scope/groupBy from base views when user preferences are sparse", () => {
+    const customBaseTree: any = {
+      groups: [
+        {
+          id: "ops",
+          name: "Operations",
+          items: [
+            {
+              id: "workspace_guests",
+              slug: "guests",
+              label: "Guests",
+              type: "workspace",
+              views: [
+                {
+                  slug: "rsvp",
+                  label: "RSVP",
+                  layout: "table",
+                  metricsScope: "filtered",
+                  metrics: [
+                    {
+                      label: "Attending",
+                      aggregate: { count: "*" },
+                      scope: "filtered",
+                      groupBy: "tableNumber",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      ungrouped: [],
+    }
+
+    // User preference edited label but didn't touch metricsScope or metric scope
+    const prefs: UserNavigationPreferences = {
+      _version: 1,
+      items: [
+        {
+          slug: "guests",
+          label: "Guest Directory",
+          views: [
+            {
+              slug: "rsvp",
+              label: "RSVP Directory",
+              layout: "table",
+              metrics: [
+                {
+                  label: "Attending",
+                  aggregate: { count: "*" },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+
+    const res = reconcileNavigation(customBaseTree, prefs)
+    const view = res.groups[0].items[0].views?.[0]
+    expect(view?.label).toBe("RSVP Directory")
+    expect(view?.metricsScope).toBe("filtered")
+    expect(view?.metrics?.[0].scope).toBe("filtered")
+    expect(view?.metrics?.[0].groupBy).toBe("tableNumber")
+  })
 })

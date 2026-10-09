@@ -92,8 +92,22 @@ export function reconcileNavigation(
 
   // 2. Inject user-created nav items from preferences
   for (const itemOpt of effectivePrefs.items || []) {
-    const targetGroup = typeof itemOpt.group === "object" ? itemOpt.group?.name : itemOpt.group;
-    const groupKey = targetGroup || "Custom";
+    const itemId = itemOpt.slug ? `workspace_${itemOpt.slug}` : (itemOpt.collection ? `collection_${itemOpt.collection}` : `custom_${Math.random()}`);
+
+    // Find if this item already exists in any base group
+    let existingItem: CompiledNavItem | undefined;
+    let existingParentGroup: CompiledNavGroup | undefined;
+    for (const g of groupsList) {
+      const found = g.items.find((i) => i.id === itemId || i.slug === itemOpt.slug);
+      if (found) {
+        existingItem = found;
+        existingParentGroup = g;
+        break;
+      }
+    }
+
+    const targetGroup = typeof itemOpt.group === "object" ? itemOpt.group?.name : (itemOpt.group || existingParentGroup?.name || "Custom");
+    const groupKey = targetGroup;
 
     let group = findGroup(groupKey);
     if (!group) {
@@ -109,8 +123,6 @@ export function reconcileNavigation(
       groupsList.push(group);
     }
 
-    const itemId = itemOpt.slug ? `workspace_${itemOpt.slug}` : (itemOpt.collection ? `collection_${itemOpt.collection}` : `custom_${Math.random()}`);
-
     // Remove any existing instance of this item from other groups to avoid duplicates
     for (const otherGroup of groupsList) {
       if (otherGroup !== group) {
@@ -120,13 +132,46 @@ export function reconcileNavigation(
 
     // Check if item already exists in this group
     const existingIndex = group.items.findIndex((i) => i.id === itemId || i.slug === itemOpt.slug);
-    const existingItem = existingIndex >= 0 ? group.items[existingIndex] : undefined;
+    if (existingIndex >= 0) {
+      existingItem = group.items[existingIndex];
+    }
 
     const col = schemas?.collections?.find((c) => c.slug === itemOpt.collection);
     const colViews = (col as any)?.views || [];
 
     const baseViews = existingItem?.views || [];
-    const userViews = itemOpt.views || [];
+    const userViews = (itemOpt.views || []).map((uv) => {
+      const bv = baseViews.find((b) => b.slug === uv.slug);
+      if (!bv) return uv;
+
+      // Inherit metricsScope from base view if not explicitly set on user view
+      const metricsScope = uv.metricsScope ?? bv.metricsScope;
+
+      // If user kept matching metrics by label, inherit scope / groupBy / subMetrics if not set
+      let metrics = uv.metrics;
+      if (Array.isArray(uv.metrics) && Array.isArray(bv.metrics)) {
+        metrics = uv.metrics.map((um) => {
+          const bm = bv.metrics?.find((m) => m.label === um.label);
+          if (!bm) return um;
+          return {
+            ...bm,
+            ...um,
+            scope: um.scope ?? bm.scope,
+            groupBy: um.groupBy ?? bm.groupBy,
+            subMetrics: um.subMetrics ?? bm.subMetrics,
+          };
+        });
+      } else if (!uv.metrics && bv.metrics) {
+        metrics = bv.metrics;
+      }
+
+      return {
+        ...bv,
+        ...uv,
+        metricsScope,
+        metrics,
+      };
+    });
     const userViewSlugs = new Set(userViews.map((v) => v.slug));
 
     let mergedViews = [
