@@ -1279,6 +1279,7 @@ const attendingGuestsView = defineView({
       label: "Attending Guests",
       color: "purple",
       unit: "Headcount",
+      scope: "filtered",
       aggregates: {
         leads: { count: "*", where: { attending: { equals: true } } },
         plusOnes: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
@@ -1296,6 +1297,7 @@ const attendingGuestsView = defineView({
       label: "Door Check-In",
       color: "emerald",
       unit: "Checked In",
+      scope: "view",
       aggregate: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
       subMetrics: [
         {
@@ -1318,41 +1320,27 @@ const attendingGuestsView = defineView({
       ],
     },
     {
-      label: "Asoebi Orders",
+      label: "Asoebi Status",
       color: "amber",
-      unit: "Requests",
+      unit: "Orders",
       aggregate: { count: "*", where: { asoebi: { equals: true } } },
       subMetrics: [
-        { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
-        { label: "Unpaid", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+        {
+          groupBy: "asoebiStatus",
+          label: "{{group.label}}",
+          aggregate: { count: "*" },
+        },
       ],
     },
     {
-      label: "Total Asoebi Revenue",
-      color: "rose",
-      format: "currency",
-      currency: "NGN",
-      aggregate: {
-        sum: "asoebiQuantity",
-        cast: "number",
-        where: { asoebiStatus: { in: ["paid", "collected"] } },
-      },
-      transform: "value * 25000",
+      label: "All Database Responses",
+      color: "blue",
+      unit: "Total",
+      scope: "collection",
+      aggregate: { count: "*" },
       subMetrics: [
-        {
-          label: "Collected",
-          format: "currency",
-          currency: "NGN",
-          aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "collected" } } },
-          transform: "value * 25000",
-        },
-        {
-          label: "Pending",
-          format: "currency",
-          currency: "NGN",
-          aggregate: { sum: "asoebiQuantity", cast: "number", where: { asoebiStatus: { equals: "paid" } } },
-          transform: "value * 25000",
-        },
+        { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
+        { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
       ],
     },
   ],
@@ -1440,6 +1428,17 @@ const guestDirectoryView = defineView({
   actions: [checkInAction],
   metrics: [
     {
+      groupBy: "asoebiSize",
+      label: "Size {{group.label}}",
+      color: "purple",
+      unit: "Guests",
+      aggregate: { count: "*", where: { asoebi: { equals: true } } },
+      subMetrics: [
+        { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
+        { label: "Pending", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
+      ],
+    },
+    {
       label: "All Responses",
       color: "blue",
       unit: "Submissions",
@@ -1447,26 +1446,6 @@ const guestDirectoryView = defineView({
       subMetrics: [
         { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
         { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
-      ],
-    },
-    {
-      label: "Confirmed Guests",
-      color: "emerald",
-      unit: "Attending",
-      aggregate: { count: "*", where: { attending: { equals: true } } },
-      subMetrics: [
-        { label: "Checked In", aggregate: { count: "*", where: { checkedIn: { equals: true } } } },
-        { label: "With Plus-Ones", aggregate: { count: "*", where: { guestCount: { greater_than: 0 } } } },
-      ],
-    },
-    {
-      label: "Asoebi Supporters",
-      color: "amber",
-      unit: "Orders",
-      aggregate: { count: "*", where: { asoebi: { equals: true } } },
-      subMetrics: [
-        { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
-        { label: "Pending", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
       ],
     },
   ],
