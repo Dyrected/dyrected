@@ -1,3 +1,4 @@
+import { Database, Filter, Layers } from "lucide-react"
 import { Skeleton } from "../../../components/ui/skeleton"
 import { Card, CardContent } from "../../../components/ui/card"
 import { cn } from "../../../lib/utils"
@@ -27,6 +28,49 @@ interface ColorTokens {
   subRow: string
   subLabel: string
   subValue: string
+}
+
+const SCOPE_CONFIGS = {
+  filtered: {
+    icon: Filter,
+    title: "Filtered scope: synced with active table filters and search",
+    label: "Filtered scope",
+  },
+  collection: {
+    icon: Database,
+    title: "Collection scope: aggregated across all records in collection",
+    label: "Collection scope",
+  },
+  view: {
+    icon: Layers,
+    title: "View scope: aggregated across saved view definition",
+    label: "View scope",
+  },
+} as const
+
+interface MetricScopeIconProps {
+  scope?: "view" | "filtered" | "collection"
+  className?: string
+  sizeClassName?: string
+}
+
+function MetricScopeIcon({ scope, className, sizeClassName = "dy-h-3 dy-w-3" }: MetricScopeIconProps) {
+  if (!scope || !(scope in SCOPE_CONFIGS)) return null
+  const config = SCOPE_CONFIGS[scope]
+  const Icon = config.icon
+
+  return (
+    <span
+      className={cn(
+        "dy-inline-flex dy-items-center dy-justify-center dy-opacity-50 hover:dy-opacity-90 dy-transition-opacity dy-cursor-help",
+        className
+      )}
+      title={config.title}
+      aria-label={config.label}
+    >
+      <Icon className={sizeClassName} />
+    </span>
+  )
 }
 
 function resolveMetricColor(color?: string): ColorTokens {
@@ -179,14 +223,7 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
                     <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
                       {metric.label}
                     </p>
-                    {metric.scope === "filtered" && (
-                      <span
-                        className="dy-text-[9px] dy-font-medium dy-lowercase dy-opacity-60 dy-border dy-border-current/30 dy-rounded dy-px-1 dy-leading-tight"
-                        title="Aggregated against active table filters and search"
-                      >
-                        filtered
-                      </span>
-                    )}
+                    <MetricScopeIcon scope={metric.scope} />
                   </div>
                   {isRefetching && (
                     <span className="dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-current dy-animate-ping dy-opacity-75" title="Updating..." />
@@ -214,6 +251,9 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
                       <div key={sub.label} className="dy-flex dy-items-center dy-gap-1">
                         <span className={colorStyles.subLabel}>{sub.label}:</span>
                         <span className={colorStyles.subValue}>{sub.formatted}</span>
+                        {sub.scope && sub.scope !== metric.scope && (
+                          <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
+                        )}
                       </div>
                     ))}
                   </div>
