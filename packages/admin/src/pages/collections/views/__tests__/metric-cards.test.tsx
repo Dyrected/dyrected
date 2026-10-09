@@ -113,4 +113,41 @@ describe("MetricCards Component", () => {
       operator: "eq",
     })
   })
+
+  it("renders segmented distribution bar and allows clicking segments", () => {
+    const handleToggle = vi.fn()
+    render(<MetricCards metrics={sampleMetrics} onToggleFilter={handleToggle} />)
+
+    const bar = screen.getByRole("group", { name: "Sub-metric distribution breakdown" })
+    expect(bar).not.toBeNull()
+
+    const urgentSegment = screen.getByTestId("distribution-segment-Urgent")
+    expect(urgentSegment).not.toBeNull()
+    expect(urgentSegment.style.width).toMatch(/23\.8/)
+
+    // Clicking segment toggles filter
+    fireEvent.click(urgentSegment)
+    expect(handleToggle).toHaveBeenCalledWith({
+      columnId: "priority",
+      value: "urgent",
+      operator: "eq",
+    })
+
+    // Percentages are shown alongside submetric rows
+    expect(screen.getByText("(24%)")).toBeDefined()
+    expect(screen.getByText("(76%)")).toBeDefined()
+  })
+
+  it("omits distribution bar when showDistribution is false", () => {
+    const metricsWithoutDistribution: ResolvedMetric[] = [
+      {
+        ...sampleMetrics[0],
+        showDistribution: false,
+      },
+    ]
+
+    render(<MetricCards metrics={metricsWithoutDistribution} />)
+    expect(screen.queryByRole("group", { name: "Sub-metric distribution breakdown" })).toBeNull()
+    expect(screen.queryByText("(24%)")).toBeNull()
+  })
 })

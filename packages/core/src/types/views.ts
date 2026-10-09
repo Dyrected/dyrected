@@ -103,6 +103,8 @@ export interface ViewSubMetric {
   transform?: string;
   /** JEXL math formula evaluated over `aggregates` (e.g. `"aggregates.a - aggregates.b"`). */
   expression?: string;
+  /** Optional accent color for this sub-metric item and its distribution bar segment. */
+  color?: MetricColor;
   /** Display formatter: `'currency' | 'number' | 'percent'`. */
   format?: 'currency' | 'number' | 'percent' | string;
   /** 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. */
@@ -154,6 +156,11 @@ export interface ViewMetric {
   format?: 'currency' | 'number' | 'percent' | string;
   /** 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string;
+  /**
+   * Controls the horizontal segmented distribution bar for sub-metrics.
+   * Defaults to `true` when 2 or more sub-metrics have numerical values. Set to `false` to disable.
+   */
+  showDistribution?: boolean;
   /** Optional secondary breakdown items shown in the card footer. */
   subMetrics?: ViewSubMetric[];
 }

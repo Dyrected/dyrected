@@ -17,6 +17,7 @@ export interface ResolvedSubMetric {
   label: string
   value: number | string | null
   formatted: string
+  color?: string
   scope?: "view" | "filtered" | "collection"
   filterTarget?: MetricFilterTarget
 }
@@ -28,6 +29,7 @@ export interface ResolvedMetric {
   color?: string
   unit?: string
   scope?: "view" | "filtered" | "collection"
+  showDistribution?: boolean
   subMetrics?: ResolvedSubMetric[]
   filterTarget?: MetricFilterTarget
 }
@@ -376,6 +378,7 @@ export function useViewMetrics({
             label: subMetric.label,
             value: subValue,
             formatted: formatMetricValue(subValue, subMetric.format, subMetric.currency),
+            color: subMetric.color,
             scope: subMetric.scope ?? effectiveScope,
             filterTarget: (subMetric as any)._filterTarget || inferFilterTargetFromWhere(subMetric.aggregate?.where),
           }
@@ -397,6 +400,7 @@ export function useViewMetrics({
           color: metric.color,
           unit: metric.unit,
           scope: effectiveScope,
+          showDistribution: metric.showDistribution,
           subMetrics: resolvedSubMetrics.length > 0 ? resolvedSubMetrics : undefined,
           filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
         }
@@ -453,11 +457,13 @@ function emptyMetric(metric: SerializedViewMetric, defaultScope?: "view" | "filt
     color: metric.color,
     unit: metric.unit,
     scope: effectiveScope,
+    showDistribution: metric.showDistribution,
     filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
     subMetrics: metric.subMetrics?.map((sub) => ({
       label: sub.label,
       value: null,
       formatted: "—",
+      color: sub.color,
       scope: sub.scope ?? effectiveScope,
       filterTarget: (sub as any)._filterTarget || inferFilterTargetFromWhere(sub.aggregate?.where),
     })),

@@ -135,6 +135,8 @@ export interface SerializedViewSubMetric {
   transform?: string
   /** Mathematical or JEXL expression combining multiple aggregates (e.g. `"received / total * 100"`). */
   expression?: string
+  /** Optional accent color for this sub-metric item and its distribution bar segment. */
+  color?: string
   /** Display format specifier for the resulting number (e.g. `"number"`, `"percent"`, `"currency"`). */
   format?: string
   /** ISO currency code (e.g. `"NGN"`, `"USD"`, `"EUR"`) used when `format: "currency"`. */
@@ -190,6 +192,8 @@ export interface SerializedViewMetric {
   format?: string
   /** ISO currency code (e.g. `"NGN"`, `"USD"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string
+  /** Controls horizontal segmented distribution bar for sub-metrics. Defaults to true when 2+ sub-metrics have numbers. */
+  showDistribution?: boolean
   /** List of secondary sub-metrics rendered inside this KPI card. */
   subMetrics?: SerializedViewSubMetric[]
 }

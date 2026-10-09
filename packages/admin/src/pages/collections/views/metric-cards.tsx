@@ -198,6 +198,43 @@ function resolveMetricColor(color?: string): ColorTokens {
   }
 }
 
+const COLOR_MAP: Record<string, { bg: string; hoverBg: string; dot: string }> = {
+  emerald: { bg: "dy-bg-emerald-500", hoverBg: "hover:dy-bg-emerald-400", dot: "dy-bg-emerald-500" },
+  green: { bg: "dy-bg-emerald-500", hoverBg: "hover:dy-bg-emerald-400", dot: "dy-bg-emerald-500" },
+  sky: { bg: "dy-bg-sky-500", hoverBg: "hover:dy-bg-sky-400", dot: "dy-bg-sky-500" },
+  blue: { bg: "dy-bg-blue-500", hoverBg: "hover:dy-bg-blue-400", dot: "dy-bg-blue-500" },
+  amber: { bg: "dy-bg-amber-500", hoverBg: "hover:dy-bg-amber-400", dot: "dy-bg-amber-500" },
+  yellow: { bg: "dy-bg-amber-500", hoverBg: "hover:dy-bg-amber-400", dot: "dy-bg-amber-500" },
+  violet: { bg: "dy-bg-violet-500", hoverBg: "hover:dy-bg-violet-400", dot: "dy-bg-violet-500" },
+  purple: { bg: "dy-bg-purple-500", hoverBg: "hover:dy-bg-purple-400", dot: "dy-bg-purple-500" },
+  rose: { bg: "dy-bg-rose-500", hoverBg: "hover:dy-bg-rose-400", dot: "dy-bg-rose-500" },
+  red: { bg: "dy-bg-rose-500", hoverBg: "hover:dy-bg-rose-400", dot: "dy-bg-rose-500" },
+  pink: { bg: "dy-bg-rose-500", hoverBg: "hover:dy-bg-rose-400", dot: "dy-bg-rose-500" },
+  cyan: { bg: "dy-bg-cyan-500", hoverBg: "hover:dy-bg-cyan-400", dot: "dy-bg-cyan-500" },
+  indigo: { bg: "dy-bg-indigo-500", hoverBg: "hover:dy-bg-indigo-400", dot: "dy-bg-indigo-500" },
+  orange: { bg: "dy-bg-orange-500", hoverBg: "hover:dy-bg-orange-400", dot: "dy-bg-orange-500" },
+  teal: { bg: "dy-bg-teal-500", hoverBg: "hover:dy-bg-teal-400", dot: "dy-bg-teal-500" },
+}
+
+const DEFAULT_PALETTE_ORDER = [
+  COLOR_MAP.emerald,
+  COLOR_MAP.sky,
+  COLOR_MAP.amber,
+  COLOR_MAP.violet,
+  COLOR_MAP.rose,
+  COLOR_MAP.cyan,
+  COLOR_MAP.indigo,
+  COLOR_MAP.orange,
+  COLOR_MAP.teal,
+]
+
+function getSubMetricPalette(sub: ResolvedSubMetric, index: number) {
+  if (sub.color && COLOR_MAP[sub.color.toLowerCase()]) {
+    return COLOR_MAP[sub.color.toLowerCase()]
+  }
+  return DEFAULT_PALETTE_ORDER[index % DEFAULT_PALETTE_ORDER.length]
+}
+
 export function MetricCards({
   metrics,
   isLoading = false,
@@ -238,6 +275,16 @@ export function MetricCards({
 
           const isCardClickable = Boolean(metric.filterTarget && onToggleFilter)
           const isCardActive = isFilterActive(metric.filterTarget, activeFilters)
+
+          const numericSubItems = (metric.subMetrics ?? []).map((sub, idx) => {
+            const num = typeof sub.value === "number" && !isNaN(sub.value) && sub.value > 0 ? sub.value : 0
+            return { sub, idx, num }
+          })
+          const totalSubSum = numericSubItems.reduce((acc, curr) => acc + curr.num, 0)
+          const shouldShowDistribution =
+            metric.showDistribution !== false &&
+            (metric.subMetrics?.length ?? 0) >= 2 &&
+            totalSubSum > 0
 
           return (
             <Card
@@ -299,6 +346,47 @@ export function MetricCards({
                   )}
                 </div>
 
+                {shouldShowDistribution && (
+                  <div
+                    role="group"
+                    aria-label="Sub-metric distribution breakdown"
+                    className="dy-w-full dy-h-1.5 dy-rounded-full dy-bg-muted/40 dy-overflow-hidden dy-flex dy-gap-0.5 dy-my-2.5 select-none"
+                  >
+                    {numericSubItems.map(({ sub, idx, num }) => {
+                      if (num <= 0) return null
+                      const pct = (num / totalSubSum) * 100
+                      const pctDisplay = pct >= 1 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`
+                      const palette = getSubMetricPalette(sub, idx)
+                      const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
+                      const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
+
+                      return (
+                        <div
+                          key={sub.label}
+                          data-testid={`distribution-segment-${sub.label}`}
+                          style={{ width: `${pct}%` }}
+                          onClick={
+                            isSubClickable
+                              ? (e) => {
+                                  e.stopPropagation()
+                                  onToggleFilter?.(sub.filterTarget!)
+                                }
+                              : undefined
+                          }
+                          title={`${sub.label}: ${sub.formatted} (${pctDisplay})${isSubClickable ? " • Click to filter" : ""}`}
+                          className={cn(
+                            "dy-h-full dy-transition-all dy-duration-200",
+                            palette.bg,
+                            isSubClickable && "dy-cursor-pointer",
+                            isSubClickable && palette.hoverBg,
+                            isSubActive && "dy-ring-2 dy-ring-primary dy-scale-y-125 z-10"
+                          )}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
+
                 {hasSubMetrics && (
                   <div
                     className={cn(
@@ -306,9 +394,13 @@ export function MetricCards({
                       colorStyles.subRow
                     )}
                   >
-                    {metric.subMetrics!.map((sub) => {
+                    {metric.subMetrics!.map((sub, idx) => {
                       const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
                       const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
+                      const palette = getSubMetricPalette(sub, idx)
+                      const itemNum = typeof sub.value === "number" && !isNaN(sub.value) && sub.value > 0 ? sub.value : 0
+                      const pct = totalSubSum > 0 && itemNum > 0 ? (itemNum / totalSubSum) * 100 : 0
+                      const pctDisplay = pct >= 1 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`
 
                       if (isSubClickable) {
                         return (
@@ -320,14 +412,20 @@ export function MetricCards({
                               onToggleFilter?.(sub.filterTarget!)
                             }}
                             className={cn(
-                              "dy-flex dy-items-center dy-gap-1 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-colors",
+                              "dy-flex dy-items-center dy-gap-1.5 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-colors",
                               "hover:dy-bg-black/5 dark:hover:dy-bg-white/10",
                               isSubActive && "dy-bg-primary/15 dy-text-primary dy-font-semibold"
                             )}
                             title={isSubActive ? `Active filter: click to clear ${sub.label}` : `Click to filter view by ${sub.label}`}
                           >
+                            {shouldShowDistribution && (
+                              <span className={cn("dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-shrink-0", palette.dot)} />
+                            )}
                             <span className={colorStyles.subLabel}>{sub.label}:</span>
                             <span className={colorStyles.subValue}>{sub.formatted}</span>
+                            {shouldShowDistribution && itemNum > 0 && (
+                              <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
+                            )}
                             {sub.scope && sub.scope !== metric.scope && (
                               <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
                             )}
@@ -336,9 +434,15 @@ export function MetricCards({
                       }
 
                       return (
-                        <div key={sub.label} className="dy-flex dy-items-center dy-gap-1">
+                        <div key={sub.label} className="dy-flex dy-items-center dy-gap-1.5">
+                          {shouldShowDistribution && (
+                            <span className={cn("dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-shrink-0", palette.dot)} />
+                          )}
                           <span className={colorStyles.subLabel}>{sub.label}:</span>
                           <span className={colorStyles.subValue}>{sub.formatted}</span>
+                          {shouldShowDistribution && itemNum > 0 && (
+                            <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
+                          )}
                           {sub.scope && sub.scope !== metric.scope && (
                             <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
                           )}

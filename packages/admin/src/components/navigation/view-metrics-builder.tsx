@@ -110,6 +110,7 @@ export function ViewMetricsBuilder({
   const [groupBy, setGroupBy] = React.useState<string>("")
   const [groupLimit, setGroupLimit] = React.useState<number | undefined>(undefined)
   const [groupOrderBy, setGroupOrderBy] = React.useState<"count" | "asc" | "desc">("count")
+  const [showDistribution, setShowDistribution] = React.useState<boolean>(true)
 
   // Resolve target collection schema
   const targetCol = React.useMemo(() => {
@@ -324,6 +325,7 @@ export function ViewMetricsBuilder({
       setGroupLimit(undefined)
       setGroupOrderBy("count")
     }
+    setShowDistribution(m.showDistribution !== false)
     setShowCustomForm(true)
   }
 
@@ -336,6 +338,7 @@ export function ViewMetricsBuilder({
     setGroupBy("")
     setGroupLimit(undefined)
     setGroupOrderBy("count")
+    setShowDistribution(true)
   }
 
   const handleAddCustomMetric = () => {
@@ -377,6 +380,7 @@ export function ViewMetricsBuilder({
       currency: format === "currency" ? currency || "USD" : undefined,
       scope: scope !== "view" ? scope : undefined,
       groupBy: finalGroupBy,
+      showDistribution: existingMetric?.subMetrics?.length ? showDistribution : existingMetric?.showDistribution,
     }
 
     if (isEditing) {
@@ -766,6 +770,21 @@ export function ViewMetricsBuilder({
                     onChange={(e) => setCurrency(e.target.value.toUpperCase())}
                     className="dy-h-6 dy-w-16 dy-px-1.5 dy-text-[11px] dy-bg-background"
                   />
+                </div>
+              )}
+
+              {editingIndex !== null && Boolean(metrics[editingIndex]?.subMetrics?.length) && (
+                <div className="dy-flex dy-items-center dy-justify-between dy-pt-1">
+                  <span className="dy-text-[11px] dy-text-muted-foreground">Distribution bar:</span>
+                  <label className="dy-flex dy-items-center dy-gap-1.5 dy-cursor-pointer dy-text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={showDistribution}
+                      onChange={(e) => setShowDistribution(e.target.checked)}
+                      className="dy-rounded dy-border-input dy-h-3.5 dy-w-3.5"
+                    />
+                    <span>Show visual breakdown</span>
+                  </label>
                 </div>
               )}
 
