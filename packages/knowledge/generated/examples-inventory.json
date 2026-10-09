@@ -6751,6 +6751,41 @@
     "id": "/model-content/operational-views/metrics#example-6",
     "page": "/model-content/operational-views/metrics",
     "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-7",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-8",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-9",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-10",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-11",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
@@ -7066,27 +7101,6 @@
     "id": "/start-here/changelog#example-2",
     "page": "/start-here/changelog",
     "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/start-here/changelog#example-3",
-    "page": "/start-here/changelog",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/start-here/changelog#example-4",
-    "page": "/start-here/changelog",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/start-here/changelog#example-5",
-    "page": "/start-here/changelog",
-    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },

@@ -1,5 +1,13 @@
 # dyrected
 
+## 2.21.0
+
+### Patch Changes
+
+- Updated dependencies [cfc9cf9]
+  - @dyrected/core@2.21.0
+  - @dyrected/sdk@2.21.0
+
 ## 2.20.1
 
 ### Patch Changes
