@@ -75,11 +75,26 @@ export type MetricColor = 'purple' | 'emerald' | 'amber' | 'rose' | 'blue' | 'in
  * }
  * ```
  */
+export interface ViewMetricGroupByConfig {
+  /** Field or relationship name to group by. */
+  field: string;
+  /** Maximum number of groups to evaluate (defaults to 12). */
+  limit?: number;
+  /** Optional explicit ordering: `'count'` (descending) or `'asc'` / `'desc'`. */
+  orderBy?: 'count' | 'asc' | 'desc';
+  /** Optional where filter when discovering groups. */
+  where?: Record<string, unknown>;
+}
+
+export type ViewMetricGroupBy = string | ViewMetricGroupByConfig;
+
 export interface ViewSubMetric {
-  /** Short label for the sub-metric (e.g. "Pending", "Collected"). */
+  /** Short label for the sub-metric (e.g. "Pending", "Collected"). Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string;
   /** Filter scope override for this sub-metric: `'view' | 'filtered' | 'collection'`. Defaults to parent metric's scope. */
   scope?: 'view' | 'filtered' | 'collection';
+  /** Dynamic breakdown: groups this sub-metric by a field or relationship, expanding into multiple sub-metric rows in the card footer. */
+  groupBy?: ViewMetricGroupBy;
   /** Single database aggregate operation. */
   aggregate?: AggregateOperation;
   /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */
@@ -111,7 +126,7 @@ export interface ViewSubMetric {
  * ```
  */
 export interface ViewMetric {
-  /** Title displayed on the metric card header. */
+  /** Title displayed on the metric card header. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string;
   /** Accent color for the card's visual indicator. */
   color?: MetricColor;
@@ -125,6 +140,8 @@ export interface ViewMetric {
    * Defaults to view's `metricsScope` (or `'view'`).
    */
   scope?: 'view' | 'filtered' | 'collection';
+  /** Dynamic breakdown: groups this metric by a field or relationship, expanding into 1 card per group. */
+  groupBy?: ViewMetricGroupBy;
   /** Single database aggregate operation (`count`, `distinctCount`, `sum`, `avg`, `min`, `max`). */
   aggregate?: AggregateOperation;
   /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */

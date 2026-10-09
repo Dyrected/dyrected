@@ -1,9 +1,11 @@
+import * as React from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { evaluateJexlSync } from "@dyrected/core"
 import { useDyrected } from "../../../providers/dyrected-context"
 import type { SerializedViewMetric, SerializedViewSubMetric } from "./types"
 import { resolveViewFilter } from "./resolve-view-filter"
 import { formatMetricValue } from "./format-metric"
+import { normalizeGroupBy, useMetricGroups, type MetricGroupOption } from "./use-metric-groups"
 
 export interface ResolvedSubMetric {
   label: string
@@ -29,6 +31,7 @@ export interface UseViewMetricsOptions {
   metricsScope?: "view" | "filtered" | "collection"
   viewFilter?: Record<string, any> | string
   filteredWhere?: Record<string, any>
+  schema?: any
 }
 
 interface SubMetricPlanEntry {
@@ -54,6 +57,119 @@ function mergeWhereConstraints(a?: Record<string, any>, b?: Record<string, any>)
   return { AND: [a, b] }
 }
 
+export function interpolateLabel(template: string | undefined, group: { value: any; label: string }): string {
+  if (!template || !template.trim()) {
+    return group.label
+  }
+  let str = template
+  if (str.includes("{{group.label}}")) {
+    str = str.replaceAll("{{group.label}}", group.label)
+  }
+  if (str.includes("{{group.value}}")) {
+    str = str.replaceAll("{{group.value}}", String(group.value))
+  }
+  if (!template.includes("{{group.label}}") && !template.includes("{{group.value}}")) {
+    return `${group.label} - ${template}`
+  }
+  return str
+}
+
+function mergeGroupWhere(
+  op: NonNullable<SerializedViewMetric["aggregate"]> | undefined,
+  groupWhere: Record<string, any>,
+) {
+  if (!op) return undefined
+  const mergedWhere = mergeWhereConstraints(op.where, groupWhere)
+  return {
+    ...op,
+    where: mergedWhere,
+  }
+}
+
+function mergeGroupWhereMap(
+  aggregates: Record<string, NonNullable<SerializedViewMetric["aggregate"]>> | undefined,
+  groupWhere: Record<string, any>,
+) {
+  if (!aggregates) return undefined
+  const res: Record<string, NonNullable<SerializedViewMetric["aggregate"]>> = {}
+  for (const [k, v] of Object.entries(aggregates)) {
+    res[k] = mergeGroupWhere(v, groupWhere)!
+  }
+  return res
+}
+
+export function expandMetrics(
+  metrics: SerializedViewMetric[] | undefined,
+  groupsByField: Record<string, MetricGroupOption[]>,
+): SerializedViewMetric[] {
+  if (!metrics?.length) return []
+
+  const expanded: SerializedViewMetric[] = []
+
+  for (const metric of metrics) {
+    const cardGb = normalizeGroupBy(metric.groupBy)
+    const cardGroups = cardGb ? groupsByField[cardGb.field] : undefined
+
+    if (cardGb && cardGroups) {
+      // Expand metric into 1 card per group
+      for (const group of cardGroups) {
+        const groupWhere = { [cardGb.field]: { equals: group.value } }
+
+        const expandedSubMetrics = metric.subMetrics?.map((sub) => {
+          return {
+            ...sub,
+            aggregate: mergeGroupWhere(sub.aggregate, groupWhere),
+            aggregates: mergeGroupWhereMap(sub.aggregates, groupWhere),
+          }
+        })
+
+        expanded.push({
+          ...metric,
+          label: interpolateLabel(metric.label, group),
+          groupBy: undefined,
+          aggregate: mergeGroupWhere(metric.aggregate, groupWhere),
+          aggregates: mergeGroupWhereMap(metric.aggregates, groupWhere),
+          subMetrics: expandedSubMetrics,
+        })
+      }
+    } else {
+      // Single card: check if any sub-metrics specify groupBy
+      let hasGroupedSub = false
+      const expandedSubMetrics: SerializedViewSubMetric[] = []
+
+      if (metric.subMetrics?.length) {
+        for (const sub of metric.subMetrics) {
+          const subGb = normalizeGroupBy(sub.groupBy)
+          const subGroups = subGb ? groupsByField[subGb.field] : undefined
+
+          if (subGb && subGroups) {
+            hasGroupedSub = true
+            for (const group of subGroups) {
+              const groupWhere = { [subGb.field]: { equals: group.value } }
+              expandedSubMetrics.push({
+                ...sub,
+                label: interpolateLabel(sub.label, group),
+                groupBy: undefined,
+                aggregate: mergeGroupWhere(sub.aggregate, groupWhere),
+                aggregates: mergeGroupWhereMap(sub.aggregates, groupWhere),
+              })
+            }
+          } else {
+            expandedSubMetrics.push(sub)
+          }
+        }
+      }
+
+      expanded.push({
+        ...metric,
+        subMetrics: hasGroupedSub ? expandedSubMetrics : metric.subMetrics,
+      })
+    }
+  }
+
+  return expanded
+}
+
 /**
  * Resolves a view's summary metrics through the collection aggregation engine.
  *
@@ -69,15 +185,30 @@ export function useViewMetrics({
   metricsScope = "view",
   viewFilter,
   filteredWhere,
+  schema,
 }: UseViewMetricsOptions) {
   const { client } = useDyrected()
   const resolvedViewFilter = resolveViewFilter(viewFilter)
   const resolvedFilteredWhere = filteredWhere ? resolveViewFilter(filteredWhere) : undefined
 
+  const { groupsByField, isLoading: isGroupsLoading } = useMetricGroups({ slug, metrics, schema })
+
+  const hasAnyGroupBy = React.useMemo(() => {
+    return (
+      metrics?.some(
+        (m) => Boolean(m.groupBy) || m.subMetrics?.some((s) => Boolean(s.groupBy)),
+      ) ?? false
+    )
+  }, [metrics])
+
+  const expandedMetrics = React.useMemo(() => {
+    return expandMetrics(metrics, groupsByField)
+  }, [metrics, groupsByField])
+
   // Determine if any metric relies on the active filtered scope
   const hasFilteredMetrics =
-    (metricsScope === "filtered" && metrics?.some((m) => m.scope !== "view" && m.scope !== "collection")) ||
-    metrics?.some(
+    (metricsScope === "filtered" && expandedMetrics?.some((m) => m.scope !== "view" && m.scope !== "collection")) ||
+    expandedMetrics?.some(
       (m) =>
         m.scope === "filtered" ||
         m.subMetrics?.some((s) => s.scope === "filtered"),
@@ -85,6 +216,7 @@ export function useViewMetrics({
 
   const activeFilteredHash = hasFilteredMetrics ? JSON.stringify(resolvedFilteredWhere ?? null) : null
   const viewFilterHash = JSON.stringify(resolvedViewFilter ?? null)
+  const groupsHash = React.useMemo(() => JSON.stringify(groupsByField), [groupsByField])
 
   const getScopeWhere = (scope?: "view" | "filtered" | "collection"): Record<string, any> | undefined => {
     const effectiveScope = scope ?? metricsScope ?? "view"
@@ -108,14 +240,15 @@ export function useViewMetrics({
       metricsScope,
       viewFilterHash,
       activeFilteredHash,
+      groupsHash,
     ],
     queryFn: async (): Promise<ResolvedMetric[]> => {
-      if (!client || !metrics?.length) return []
+      if (!client || !expandedMetrics?.length) return []
 
       // Fan every requested operation into one aggregate call.
       const input: Record<string, Record<string, unknown>> = {}
       const plan: MetricPlanEntry[] = []
-      metrics.forEach((metric, index) => {
+      expandedMetrics.forEach((metric, index) => {
         const metricBaseWhere = getScopeWhere(metric.scope)
         let single: string | undefined
         let named: Record<string, string> | undefined
@@ -157,13 +290,13 @@ export function useViewMetrics({
 
         plan.push({ index, metric, single, named, subPlans })
       })
-      if (!Object.keys(input).length) return metrics.map((m) => emptyMetric(m, metricsScope))
+      if (!Object.keys(input).length) return expandedMetrics.map((m) => emptyMetric(m, metricsScope))
 
       let raw: Record<string, number | string | null>
       try {
         raw = await (client as any).collection(slug).aggregate(input)
       } catch {
-        return metrics.map((m) => emptyMetric(m, metricsScope))
+        return expandedMetrics.map((m) => emptyMetric(m, metricsScope))
       }
 
       return plan.map(({ metric, single, named, subPlans }) => {
@@ -219,7 +352,7 @@ export function useViewMetrics({
         }
       })
     },
-    enabled: Boolean(metrics?.length && client),
+    enabled: Boolean(metrics?.length && client && (!hasAnyGroupBy || !isGroupsLoading)),
     placeholderData: keepPreviousData,
     staleTime: 15_000,
   })

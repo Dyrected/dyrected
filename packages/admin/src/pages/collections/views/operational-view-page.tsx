@@ -116,6 +116,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     metricsScope: view.metricsScope,
     viewFilter: view.filter,
     filteredWhere,
+    schema,
   })
   const isViewFetching = useIsFetching({ queryKey: ["operational-view", slug] }) > 0
   const isMetricsFetching = useIsFetching({ queryKey: ["operational-view-metrics", slug] }) > 0
@@ -126,6 +127,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["operational-view", slug] }),
       queryClient.invalidateQueries({ queryKey: ["operational-view-metrics", slug] }),
+      queryClient.invalidateQueries({ queryKey: ["metric-group-options", slug] }),
       queryClient.invalidateQueries({ queryKey: ["table-group", slug] }),
       queryClient.invalidateQueries({ queryKey: ["table-group-distinct", slug] }),
       queryClient.invalidateQueries({ queryKey: ["table-group-relations"] }),

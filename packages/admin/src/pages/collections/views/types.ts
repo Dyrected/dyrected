@@ -82,13 +82,26 @@ export interface SerializedAction {
   destructive?: boolean
 }
 
+export interface SerializedViewMetricGroupByConfig {
+  /** Field or relationship name to group by. */
+  field: string
+  /** Maximum number of groups to evaluate (defaults to 12). */
+  limit?: number
+  /** Optional explicit ordering: `'count'` (descending) or `'asc'` / `'desc'`. */
+  orderBy?: "count" | "asc" | "desc"
+  /** Optional where filter when discovering groups. */
+  where?: Record<string, unknown>
+}
+
+export type SerializedViewMetricGroupBy = string | SerializedViewMetricGroupByConfig
+
 /**
  * Secondary or supporting aggregation metric displayed beneath a primary KPI card.
  *
  * Useful for showing related breakdown counts (e.g. "Pending: 15", "Overdue: 3").
  */
 export interface SerializedViewSubMetric {
-  /** Label describing the sub-metric value. */
+  /** Label describing the sub-metric value. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string
   /**
    * Filter scope override for this sub-metric:
@@ -97,6 +110,8 @@ export interface SerializedViewSubMetric {
    * - `"collection"`: global collection totals ignoring view filters
    */
   scope?: "view" | "filtered" | "collection"
+  /** Dynamic breakdown: groups this sub-metric by a field or relationship, expanding into multiple sub-metric rows in the card footer. */
+  groupBy?: SerializedViewMetricGroupBy
   /** Primary database aggregate definition. */
   aggregate?: {
     /** Counts all matching rows (`"*"`). */
@@ -132,7 +147,7 @@ export interface SerializedViewSubMetric {
  * Metrics compute live database aggregations (sums, counts, averages, and formulas) across the view's records.
  */
 export interface SerializedViewMetric {
-  /** Title displayed at the top of the KPI card. */
+  /** Title displayed at the top of the KPI card. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string
   /** Visual accent color for the metric card (e.g. `"blue"`, `"emerald"`, `"amber"`, `"rose"`). */
   color?: string
@@ -146,6 +161,8 @@ export interface SerializedViewMetric {
    * Defaults to view's `metricsScope` (or `"view"`).
    */
   scope?: "view" | "filtered" | "collection"
+  /** Dynamic breakdown: groups this metric by a field or relationship, expanding into 1 card per group. */
+  groupBy?: SerializedViewMetricGroupBy
   /** Primary database aggregation configuration. */
   aggregate?: {
     /** Counts all matching rows (`"*"`). */

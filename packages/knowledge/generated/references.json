@@ -3613,12 +3613,12 @@
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
     "description": "Configuration for a KPI summary card rendered at the top of an operational view.\n\nAll aggregations run directly on the database engine for maximum performance.",
-    "signature": "export interface ViewMetric {\n  /** Title displayed on the metric card header. */\n  label: string;\n  /** Accent color for the card's visual indicator. */\n  color?: MetricColor;\n  /** Unit badge shown alongside the numeric value (e.g. `\"Guests\"`, `\"Orders\"`, `\"Tables\"`). */\n  unit?: string;\n  /** Single database aggregate operation (`count`, `distinctCount`, `sum`, `avg`, `min`, `max`). */\n  aggregate?: AggregateOperation;\n  /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */\n  aggregates?: Record<string, AggregateOperation>;\n  /** JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 25000\"`). */\n  transform?: string;\n  /** JEXL math formula evaluated over `aggregates` (e.g. `\"(aggregates.paid / aggregates.total) * 100\"`). */\n  expression?: string;\n  /** Display formatter: `'currency' | 'number' | 'percent'`. */\n  format?: 'currency' | 'number' | 'percent' | string;\n  /** 3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`. */\n  currency?: string;\n  /** Optional secondary breakdown items shown in the card footer. */\n  subMetrics?: ViewSubMetric[];\n}",
+    "signature": "export interface ViewMetric {\n  /** Title displayed on the metric card header. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */\n  label: string;\n  /** Accent color for the card's visual indicator. */\n  color?: MetricColor;\n  /** Unit badge shown alongside the numeric value (e.g. `\"Guests\"`, `\"Orders\"`, `\"Tables\"`). */\n  unit?: string;\n  /**\n   * Filter scope for this metric card:\n   * - `'view'`: evaluates within the view's base filter (default)\n   * - `'filtered'`: live summary reflecting active table/toolbar filters & search\n   * - `'collection'`: global collection totals ignoring view filters\n   * Defaults to view's `metricsScope` (or `'view'`).\n   */\n  scope?: 'view' | 'filtered' | 'collection';\n  /** Dynamic breakdown: groups this metric by a field or relationship, expanding into 1 card per group. */\n  groupBy?: ViewMetricGroupBy;\n  /** Single database aggregate operation (`count`, `distinctCount`, `sum`, `avg`, `min`, `max`). */\n  aggregate?: AggregateOperation;\n  /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */\n  aggregates?: Record<string, AggregateOperation>;\n  /** JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 25000\"`). */\n  transform?: string;\n  /** JEXL math formula evaluated over `aggregates` (e.g. `\"(aggregates.paid / aggregates.total) * 100\"`). */\n  expression?: string;\n  /** Display formatter: `'currency' | 'number' | 'percent'`. */\n  format?: 'currency' | 'number' | 'percent' | string;\n  /** 3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`. */\n  currency?: string;\n  /** Optional secondary breakdown items shown in the card footer. */\n  subMetrics?: ViewSubMetric[];\n}",
     "members": [
       {
         "name": "label",
         "signature": "label: string",
-        "description": "Title displayed on the metric card header."
+        "description": "Title displayed on the metric card header. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used."
       },
       {
         "name": "color",
@@ -3629,6 +3629,16 @@
         "name": "unit",
         "signature": "unit?: string",
         "description": "Unit badge shown alongside the numeric value (e.g. `\"Guests\"`, `\"Orders\"`, `\"Tables\"`)."
+      },
+      {
+        "name": "scope",
+        "signature": "scope?: 'view' | 'filtered' | 'collection'",
+        "description": "Filter scope for this metric card:\n- `'view'`: evaluates within the view's base filter (default)\n- `'filtered'`: live summary reflecting active table/toolbar filters & search\n- `'collection'`: global collection totals ignoring view filters\nDefaults to view's `metricsScope` (or `'view'`)."
+      },
+      {
+        "name": "groupBy",
+        "signature": "groupBy?: ViewMetricGroupBy",
+        "description": "Dynamic breakdown: groups this metric by a field or relationship, expanding into 1 card per group."
       },
       {
         "name": "aggregate",
@@ -3673,13 +3683,23 @@
     "kind": "interface",
     "category": "operational-views",
     "sourcePackage": "@dyrected/core",
-    "description": "A sub-metric breakdown item displayed in the compact footer of a metric card.",
-    "signature": "export interface ViewSubMetric {\n  /** Short label for the sub-metric (e.g. \"Pending\", \"Collected\"). */\n  label: string;\n  /** Single database aggregate operation. */\n  aggregate?: AggregateOperation;\n  /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */\n  aggregates?: Record<string, AggregateOperation>;\n  /** JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 100\"`). */\n  transform?: string;\n  /** JEXL math formula evaluated over `aggregates` (e.g. `\"aggregates.a - aggregates.b\"`). */\n  expression?: string;\n  /** Display formatter: `'currency' | 'number' | 'percent'`. */\n  format?: 'currency' | 'number' | 'percent' | string;\n  /** 3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`. */\n  currency?: string;\n}",
+    "description": "",
+    "signature": "export interface ViewSubMetric {\n  /** Short label for the sub-metric (e.g. \"Pending\", \"Collected\"). Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */\n  label: string;\n  /** Filter scope override for this sub-metric: `'view' | 'filtered' | 'collection'`. Defaults to parent metric's scope. */\n  scope?: 'view' | 'filtered' | 'collection';\n  /** Dynamic breakdown: groups this sub-metric by a field or relationship, expanding into multiple sub-metric rows in the card footer. */\n  groupBy?: ViewMetricGroupBy;\n  /** Single database aggregate operation. */\n  aggregate?: AggregateOperation;\n  /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */\n  aggregates?: Record<string, AggregateOperation>;\n  /** JEXL math formula evaluated over `value` for a single aggregate (e.g. `\"value * 100\"`). */\n  transform?: string;\n  /** JEXL math formula evaluated over `aggregates` (e.g. `\"aggregates.a - aggregates.b\"`). */\n  expression?: string;\n  /** Display formatter: `'currency' | 'number' | 'percent'`. */\n  format?: 'currency' | 'number' | 'percent' | string;\n  /** 3-letter currency code (e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`) used when `format: \"currency\"`. */\n  currency?: string;\n}",
     "members": [
       {
         "name": "label",
         "signature": "label: string",
-        "description": "Short label for the sub-metric (e.g. \"Pending\", \"Collected\")."
+        "description": "Short label for the sub-metric (e.g. \"Pending\", \"Collected\"). Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used."
+      },
+      {
+        "name": "scope",
+        "signature": "scope?: 'view' | 'filtered' | 'collection'",
+        "description": "Filter scope override for this sub-metric: `'view' | 'filtered' | 'collection'`. Defaults to parent metric's scope."
+      },
+      {
+        "name": "groupBy",
+        "signature": "groupBy?: ViewMetricGroupBy",
+        "description": "Dynamic breakdown: groups this sub-metric by a field or relationship, expanding into multiple sub-metric rows in the card footer."
       },
       {
         "name": "aggregate",
