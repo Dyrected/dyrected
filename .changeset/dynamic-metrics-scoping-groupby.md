@@ -14,4 +14,9 @@
   - **Dynamic Sub-Metrics**: Setting `groupBy: "field"` on a sub-metric dynamically expands into $N$ breakdown rows in the footer of a single metric card.
   - **Automatic Group Discovery**: Automatically resolves group options for relationship fields (fetching related document titles and IDs), select/radio options, boolean fields, and scalar distinct values.
   - **Single Batched Aggregation**: Fans all dynamically expanded operations across cards, sub-metrics, and groups into a single batched database aggregation query (`client.collection(slug).aggregate(input)`), completely eliminating N+1 queries.
+- **Navigation Editor & Interactive KPI Builder**:
+  - Full support in the Navigation Customizer (`ViewMetricsBuilder`) for configuring default view `metricsScope` (`"view" | "filtered" | "collection"`), card `scope`, and `groupBy` (supporting relationship, select, radio, boolean, and scalar fields).
+  - Interactive click-to-edit on active KPI chips allowing live reconfiguration of metric labels, operations, target fields, format, colors, scope, and groupBy.
+  - Added "Revert View" action in the Navigation Customizer to seamlessly discard personal overrides and restore codebase view definitions.
+  - Enhanced `reconcileNavigation` in `@dyrected/core` to intelligently inherit new `metricsScope`, `scope`, `groupBy`, and `subMetrics` from codebase view definitions when sparse user preferences are present.
 - **Native Search Parameter in Operational Views**: Operational views (Table, Cards, Spreadsheet, Kanban) now forward toolbar search directly to the backend pagination endpoint via the `search` query parameter, ensuring performant full-text searches.

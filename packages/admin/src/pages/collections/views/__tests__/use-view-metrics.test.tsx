@@ -486,5 +486,69 @@ describe("useViewMetrics Dynamic Grouping (groupBy)", () => {
     expect(cards[1].label).toBe("Closed Issues")
     expect(cards[1].formatted).toBe("3")
   })
+
+  it("resolves relationship titles using target collection admin.useAsTitle", async () => {
+    findMock.mockResolvedValue({
+      docs: [
+        { id: "comm_1", communityName: "Lekki Phase 1" },
+        { id: "comm_2", communityName: "Victoria Island" },
+      ],
+    })
+
+    aggregateMock.mockResolvedValue({
+      m0: 50,
+      m1: 80,
+    })
+
+    useDyrectedMock.mockReturnValue({
+      client: {
+        collection: (_target: string) => ({
+          find: findMock,
+          aggregate: aggregateMock,
+        }),
+      },
+      schemas: {
+        collections: [
+          {
+            slug: "communities",
+            admin: { useAsTitle: "communityName" },
+            fields: [{ name: "communityName", type: "text" }],
+          },
+        ],
+      },
+    })
+
+    const schema = {
+      fields: [
+        { name: "community", type: "relationship", relationTo: "communities" },
+      ],
+    }
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "ipo_reservations",
+          viewSlug: "by-community",
+          schema,
+          metrics: [
+            {
+              groupBy: "community",
+              label: "{{group.label}} IPO",
+              aggregate: { count: "*" },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const cards = result.current.data ?? []
+    expect(cards).toHaveLength(2)
+    expect(cards[0].label).toBe("Lekki Phase 1 IPO")
+    expect(cards[1].label).toBe("Victoria Island IPO")
+  })
 })
 

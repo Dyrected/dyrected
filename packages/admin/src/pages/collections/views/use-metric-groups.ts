@@ -2,6 +2,7 @@ import * as React from "react"
 import { useQueries } from "@tanstack/react-query"
 
 import { useDyrected } from "../../../providers/dyrected-context"
+import { resolveCollectionTitleFieldName } from "../../../lib/document-title"
 import type { SerializedViewMetric, SerializedViewMetricGroupBy } from "./types"
 
 export interface MetricGroupOption {
@@ -73,13 +74,14 @@ export interface UseMetricGroupsResult {
  * Supports relationships (queries related collection), select/radio options, booleans, and scalar distinct aggregates.
  */
 export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOptions): UseMetricGroupsResult {
-  const { client } = useDyrected()
+  const { client, schemas } = useDyrected()
   const configs = React.useMemo(() => extractGroupByConfigs(metrics), [metrics])
 
   const queries = useQueries({
     queries: configs.map((cfg) => {
       const fieldDef = (schema?.fields ?? []).find((f: any) => f.name === cfg.field)
-      const relationTo = fieldDef?.type === "relationship" ? fieldDef.relationTo : undefined
+      const rawRelationTo = fieldDef?.type === "relationship" ? fieldDef.relationTo : undefined
+      const relationTo = Array.isArray(rawRelationTo) ? rawRelationTo[0] : rawRelationTo
       const hasPredefinedOptions = Array.isArray(fieldDef?.options) && fieldDef.options.length > 0
 
       return {
@@ -95,10 +97,16 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
                 where: cfg.where,
               })
               const docs = (res?.docs ?? []) as Record<string, any>[]
-              const options = docs.map((doc) => ({
-                value: doc.id,
-                label: String(doc.title || doc.name || doc.label || doc.slug || doc.id),
-              }))
+              const relatedCol = (schemas as any)?.collections?.find((c: any) => c.slug === relationTo)
+              const titleField = relatedCol?.admin?.useAsTitle || resolveCollectionTitleFieldName(relatedCol)
+              const options = docs.map((doc) => {
+                const titleVal = titleField ? doc[titleField] : undefined
+                const label = titleVal ?? (doc.title || doc.name || doc.label || doc.slug || doc.id)
+                return {
+                  value: doc.id,
+                  label: String(label),
+                }
+              })
               return { field: cfg.field, options }
             } catch {
               return { field: cfg.field, options: [] }
