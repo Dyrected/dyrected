@@ -550,5 +550,163 @@ describe("useViewMetrics Dynamic Grouping (groupBy)", () => {
     expect(cards[0].label).toBe("Lekki Phase 1 IPO")
     expect(cards[1].label).toBe("Victoria Island IPO")
   })
+
+  it("attaches filterTarget to grouped cards and single cards with simple where clause", async () => {
+    findMock.mockResolvedValue({
+      docs: [
+        { id: "comm_1", name: "Lagos Community" },
+      ],
+    })
+
+    aggregateMock.mockResolvedValue({
+      m0: 10,
+      m1: 5,
+    })
+
+    const schema = {
+      fields: [
+        { name: "community", type: "relationship", relationTo: "communities" },
+        { name: "status", type: "select" },
+      ],
+    }
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "ipo_reservations",
+          viewSlug: "overview",
+          schema,
+          metrics: [
+            {
+              groupBy: "community",
+              label: "{{group.label}}",
+              aggregate: { count: "*" },
+            },
+            {
+              label: "Pending Reservations",
+              aggregate: { count: "*", where: { status: { equals: "pending" } } },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const cards = result.current.data ?? []
+    expect(cards).toHaveLength(2)
+    // Grouped card filterTarget:
+    expect(cards[0].filterTarget).toEqual({
+      columnId: "community",
+      value: "comm_1",
+      operator: "eq",
+    })
+    // Single aggregate card filterTarget inferred from where clause:
+    expect(cards[1].filterTarget).toEqual({
+      columnId: "status",
+      value: "pending",
+      operator: "eq",
+    })
+  })
+
+  it("supports orderBy: 'count' to sort grouped cards descending by aggregate value", async () => {
+    findMock.mockResolvedValue({
+      docs: [
+        { id: "comm_1", name: "Small Community" },
+        { id: "comm_2", name: "Huge Community" },
+      ],
+    })
+
+    // Notice comm_1 has 5, comm_2 has 500
+    aggregateMock.mockResolvedValue({
+      m0: 5,
+      m1: 500,
+    })
+
+    const schema = {
+      fields: [
+        { name: "community", type: "relationship", relationTo: "communities" },
+      ],
+    }
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "ipo_reservations",
+          viewSlug: "overview",
+          schema,
+          metrics: [
+            {
+              groupBy: { field: "community", orderBy: "count" },
+              label: "{{group.label}}",
+              aggregate: { count: "*" },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const cards = result.current.data ?? []
+    expect(cards).toHaveLength(2)
+    // comm_2 (Huge Community, value: 500) should be first
+    expect(cards[0].label).toBe("Huge Community")
+    expect(cards[0].formatted).toBe("500")
+    expect(cards[1].label).toBe("Small Community")
+    expect(cards[1].formatted).toBe("5")
+  })
+
+  it("applies Top-N limit to groupBy options query", async () => {
+    findMock.mockResolvedValue({
+      docs: [
+        { id: "comm_1", name: "Comm 1" },
+        { id: "comm_2", name: "Comm 2" },
+        { id: "comm_3", name: "Comm 3" },
+      ],
+    })
+
+    aggregateMock.mockResolvedValue({
+      m0: 1,
+      m1: 2,
+      m2: 3,
+    })
+
+    const schema = {
+      fields: [
+        { name: "community", type: "relationship", relationTo: "communities" },
+      ],
+    }
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "ipo_reservations",
+          viewSlug: "top-3",
+          schema,
+          metrics: [
+            {
+              groupBy: { field: "community", limit: 3 },
+              label: "{{group.label}}",
+              aggregate: { count: "*" },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    expect(findMock).toHaveBeenCalledWith({
+      limit: 3,
+      where: undefined,
+    })
+  })
 })
 

@@ -108,6 +108,8 @@ export function ViewMetricsBuilder({
   const [currency, setCurrency] = React.useState("USD")
   const [scope, setScope] = React.useState<"view" | "filtered" | "collection">("view")
   const [groupBy, setGroupBy] = React.useState<string>("")
+  const [groupLimit, setGroupLimit] = React.useState<number | undefined>(undefined)
+  const [groupOrderBy, setGroupOrderBy] = React.useState<"count" | "asc" | "desc">("count")
 
   // Resolve target collection schema
   const targetCol = React.useMemo(() => {
@@ -309,8 +311,19 @@ export function ViewMetricsBuilder({
     setFormat((m.format as "number" | "currency" | "percent") || "number")
     setCurrency(m.currency || "USD")
     setScope(m.scope || "view")
-    const gb = typeof m.groupBy === "string" ? m.groupBy : m.groupBy?.field || ""
-    setGroupBy(gb)
+    if (typeof m.groupBy === "string") {
+      setGroupBy(m.groupBy)
+      setGroupLimit(undefined)
+      setGroupOrderBy("count")
+    } else if (m.groupBy && typeof m.groupBy === "object" && m.groupBy.field) {
+      setGroupBy(m.groupBy.field)
+      setGroupLimit(m.groupBy.limit)
+      setGroupOrderBy(m.groupBy.orderBy || "count")
+    } else {
+      setGroupBy("")
+      setGroupLimit(undefined)
+      setGroupOrderBy("count")
+    }
     setShowCustomForm(true)
   }
 
@@ -321,6 +334,8 @@ export function ViewMetricsBuilder({
     setField("")
     setScope("view")
     setGroupBy("")
+    setGroupLimit(undefined)
+    setGroupOrderBy("count")
   }
 
   const handleAddCustomMetric = () => {
@@ -340,6 +355,19 @@ export function ViewMetricsBuilder({
       agg = { [operation]: field, cast: isDate ? "date" : "number", where: existingWhere || viewFilter || undefined } as any
     }
 
+    let finalGroupBy: ViewMetric["groupBy"] = undefined
+    if (groupBy.trim()) {
+      if (groupLimit !== undefined || (groupOrderBy && groupOrderBy !== "count")) {
+        finalGroupBy = {
+          field: groupBy.trim(),
+          limit: groupLimit,
+          orderBy: groupOrderBy,
+        }
+      } else {
+        finalGroupBy = groupBy.trim()
+      }
+    }
+
     const newMetric: ViewMetric = {
       ...(existingMetric || {}),
       label: metricLabel.trim(),
@@ -348,7 +376,7 @@ export function ViewMetricsBuilder({
       format,
       currency: format === "currency" ? currency || "USD" : undefined,
       scope: scope !== "view" ? scope : undefined,
-      groupBy: groupBy.trim() || undefined,
+      groupBy: finalGroupBy,
     }
 
     if (isEditing) {
@@ -363,6 +391,8 @@ export function ViewMetricsBuilder({
     setField("")
     setScope("view")
     setGroupBy("")
+    setGroupLimit(undefined)
+    setGroupOrderBy("count")
     setEditingIndex(null)
     setShowCustomForm(false)
   }
@@ -691,6 +721,40 @@ export function ViewMetricsBuilder({
                   </SelectContent>
                 </Select>
               </div>
+
+              {groupBy && (
+                <div className="dy-grid dy-grid-cols-2 dy-gap-1 dy-pt-0.5">
+                  <Select
+                    value={groupLimit !== undefined ? String(groupLimit) : "__all__"}
+                    onValueChange={(v) => setGroupLimit(v === "__all__" ? undefined : Number(v))}
+                  >
+                    <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                      <SelectValue placeholder="Limit..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__" className="dy-text-xs">Limit: Default (All)</SelectItem>
+                      <SelectItem value="3" className="dy-text-xs">Top 3 Groups</SelectItem>
+                      <SelectItem value="5" className="dy-text-xs">Top 5 Groups</SelectItem>
+                      <SelectItem value="10" className="dy-text-xs">Top 10 Groups</SelectItem>
+                      <SelectItem value="20" className="dy-text-xs">Top 20 Groups</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={groupOrderBy || "count"}
+                    onValueChange={(v: any) => setGroupOrderBy(v)}
+                  >
+                    <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                      <SelectValue placeholder="Order by..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="count" className="dy-text-xs">Order: Highest Count</SelectItem>
+                      <SelectItem value="asc" className="dy-text-xs">Order: Alphabetical (A–Z)</SelectItem>
+                      <SelectItem value="desc" className="dy-text-xs">Order: Alphabetical (Z–A)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {format === "currency" && (
                 <div className="dy-flex dy-items-center dy-gap-1">

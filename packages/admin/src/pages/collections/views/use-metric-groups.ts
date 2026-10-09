@@ -89,6 +89,15 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
         queryFn: async (): Promise<{ field: string; options: MetricGroupOption[] }> => {
           if (!client) return { field: cfg.field, options: [] }
 
+function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): MetricGroupOption[] {
+  if (cfg.orderBy === "asc") {
+    options.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }))
+  } else if (cfg.orderBy === "desc") {
+    options.sort((a, b) => b.label.localeCompare(a.label, undefined, { numeric: true, sensitivity: "base" }))
+  }
+  return options.slice(0, cfg.limit)
+}
+
           // 1. Relationship field: fetch related records to populate group options
           if (fieldDef?.type === "relationship" && relationTo) {
             try {
@@ -107,7 +116,7 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
                   label: String(label),
                 }
               })
-              return { field: cfg.field, options }
+              return { field: cfg.field, options: finalizeOptions(options, cfg) }
             } catch {
               return { field: cfg.field, options: [] }
             }
@@ -119,18 +128,18 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
               { value: true, label: fieldDef.label ? `${fieldDef.label}: Yes` : "Yes" },
               { value: false, label: fieldDef.label ? `${fieldDef.label}: No` : "No" },
             ]
-            return { field: cfg.field, options }
+            return { field: cfg.field, options: finalizeOptions(options, cfg) }
           }
 
           // 3. Predefined options (select / radio)
           if (hasPredefinedOptions) {
             const rawOptions = fieldDef.options as any[]
-            const options: MetricGroupOption[] = rawOptions.slice(0, cfg.limit).map((opt: any) =>
+            const options: MetricGroupOption[] = rawOptions.map((opt: any) =>
               typeof opt === "string"
                 ? { value: opt, label: opt }
                 : { value: opt.value, label: String(opt.label ?? opt.value) },
             )
-            return { field: cfg.field, options }
+            return { field: cfg.field, options: finalizeOptions(options, cfg) }
           }
 
           // 4. Scalar field (text / number): discover distinct values
@@ -141,11 +150,11 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
             if (aggRes && Array.isArray(aggRes.distinctValues)) {
               const raw = aggRes.distinctValues as any[]
               const filtered = raw.filter((v) => v !== undefined && v !== null && v !== "")
-              const options = filtered.slice(0, cfg.limit).map((val) => ({
+              const options = filtered.map((val) => ({
                 value: val,
                 label: fieldDef?.type === "number" && fieldDef?.label ? `${fieldDef.label}: ${val}` : String(val),
               }))
-              return { field: cfg.field, options }
+              return { field: cfg.field, options: finalizeOptions(options, cfg) }
             }
           } catch {
             // Fallback: fetch distinct values via find
@@ -168,10 +177,9 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
                   value: val,
                   label: fieldDef?.type === "number" && fieldDef?.label ? `${fieldDef.label}: ${val}` : String(val),
                 })
-                if (options.length >= cfg.limit) break
               }
             }
-            return { field: cfg.field, options }
+            return { field: cfg.field, options: finalizeOptions(options, cfg) }
           } catch {
             return { field: cfg.field, options: [] }
           }

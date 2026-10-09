@@ -10,7 +10,7 @@ import { resolvePreviewUrl } from "../../../lib/preview-url"
 import { AdminComponentSlot } from "../../../components/admin-component-slot"
 import { InviteDialog } from "../../../components/collections/invite-dialog"
 import type { CollectionViewSlotProps } from "../../../types/admin-components"
-import { useViewMetrics } from "./use-view-metrics"
+import { useViewMetrics, type MetricFilterTarget } from "./use-view-metrics"
 import { useViewActions } from "./use-view-actions"
 import { useSystemOps } from "./use-system-ops"
 import { useViewMode } from "./use-view-mode"
@@ -108,6 +108,62 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
       joinOperator: activeJoinOperator,
     })
   }, [view.filter, activeFilters, activeSearch, schema, activeJoinOperator])
+
+  const handleToggleMetricFilter = useCallback(
+    (target: MetricFilterTarget) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        const raw = next.get("filters")
+        let currentFilters: Array<{ id: string; value: unknown }> = []
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) currentFilters = parsed
+          } catch {
+            currentFilters = []
+          }
+        }
+
+        const isAlreadyActive = currentFilters.some((f) => {
+          if (f.id !== target.columnId) return false
+          if (f.value === target.value) return true
+          if (typeof f.value === "object" && f.value !== null) {
+            const opVal = f.value as any
+            if (opVal.value === target.value) return true
+            if (opVal.operator === target.operator && opVal.value === target.value) return true
+            if (Array.isArray(opVal.value) && Array.isArray(target.value)) {
+              return JSON.stringify(opVal.value) === JSON.stringify(target.value)
+            }
+          }
+          return false
+        })
+
+        let newFilters: Array<{ id: string; value: unknown }>
+        if (isAlreadyActive) {
+          newFilters = currentFilters.filter((f) => f.id !== target.columnId)
+        } else {
+          const filterValue =
+            target.operator && target.operator !== "eq"
+              ? { operator: target.operator, value: target.value }
+              : { operator: "eq", value: target.value }
+
+          newFilters = [
+            ...currentFilters.filter((f) => f.id !== target.columnId),
+            { id: target.columnId, value: filterValue },
+          ]
+        }
+
+        if (newFilters.length > 0) {
+          next.set("filters", JSON.stringify(newFilters))
+        } else {
+          next.delete("filters")
+        }
+        next.set("page", "1")
+        return next
+      })
+    },
+    [setSearchParams],
+  )
 
   const metrics = useViewMetrics({
     slug,
@@ -495,6 +551,8 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
             metrics={metricsList}
             isLoading={metrics.isLoading && metricsList.length === 0}
             isRefetching={isFetchingData && metricsList.length > 0}
+            activeFilters={activeFilters}
+            onToggleFilter={handleToggleMetricFilter}
           />
         )
       })()}

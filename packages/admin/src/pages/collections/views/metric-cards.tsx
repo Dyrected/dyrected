@@ -2,13 +2,35 @@ import { Database, Filter, Layers } from "lucide-react"
 import { Skeleton } from "../../../components/ui/skeleton"
 import { Card, CardContent } from "../../../components/ui/card"
 import { cn } from "../../../lib/utils"
-import type { ResolvedMetric } from "./use-view-metrics"
+import type { ResolvedMetric, MetricFilterTarget } from "./use-view-metrics"
 
-interface MetricCardsProps {
+export interface MetricCardsProps {
   metrics: ResolvedMetric[]
   isLoading?: boolean
   isRefetching?: boolean
   className?: string
+  activeFilters?: Array<{ id: string; value: unknown }>
+  onToggleFilter?: (target: MetricFilterTarget) => void
+}
+
+function isFilterActive(
+  target?: MetricFilterTarget,
+  activeFilters?: Array<{ id: string; value: unknown }>
+): boolean {
+  if (!target || !activeFilters?.length) return false
+  return activeFilters.some((f) => {
+    if (f.id !== target.columnId) return false
+    if (f.value === target.value) return true
+    if (typeof f.value === "object" && f.value !== null) {
+      const opVal = f.value as any
+      if (opVal.value === target.value) return true
+      if (opVal.operator === target.operator && opVal.value === target.value) return true
+      if (Array.isArray(opVal.value) && Array.isArray(target.value)) {
+        return JSON.stringify(opVal.value) === JSON.stringify(target.value)
+      }
+    }
+    return false
+  })
 }
 
 /**
@@ -176,7 +198,14 @@ function resolveMetricColor(color?: string): ColorTokens {
   }
 }
 
-export function MetricCards({ metrics, isLoading = false, isRefetching = false, className }: MetricCardsProps) {
+export function MetricCards({
+  metrics,
+  isLoading = false,
+  isRefetching = false,
+  className,
+  activeFilters,
+  onToggleFilter,
+}: MetricCardsProps) {
   if (!metrics.length && !isLoading) return null
 
   const count = isLoading ? Math.max(metrics.length, 3) : metrics.length
@@ -207,12 +236,37 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
           const hasSubMetrics = Boolean(metric.subMetrics?.length)
           const isFullWidthMobile = hasSubMetrics || isLastOdd
 
+          const isCardClickable = Boolean(metric.filterTarget && onToggleFilter)
+          const isCardActive = isFilterActive(metric.filterTarget, activeFilters)
+
           return (
             <Card
               key={metric.label}
+              role={isCardClickable ? "button" : undefined}
+              tabIndex={isCardClickable ? 0 : undefined}
+              onClick={isCardClickable ? () => onToggleFilter?.(metric.filterTarget!) : undefined}
+              onKeyDown={
+                isCardClickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        onToggleFilter?.(metric.filterTarget!)
+                      }
+                    }
+                  : undefined
+              }
+              title={
+                isCardClickable
+                  ? isCardActive
+                    ? `Active filter: click to clear ${metric.label}`
+                    : `Click to filter view by ${metric.label}`
+                  : undefined
+              }
               className={cn(
                 colorStyles.card,
-                "dy-shadow-xs dy-transition-opacity dy-duration-200",
+                "dy-shadow-xs dy-transition-all dy-duration-200",
+                isCardClickable && "dy-cursor-pointer hover:dy-shadow-md hover:dy-scale-[1.01] hover:dy-border-primary/50 select-none",
+                isCardActive && "dy-ring-2 dy-ring-primary/80 dy-border-primary dy-shadow-sm",
                 isRefetching && "dy-opacity-90",
                 isFullWidthMobile ? "dy-col-span-2 lg:dy-col-span-1" : "dy-col-span-1"
               )}
@@ -224,6 +278,11 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
                       {metric.label}
                     </p>
                     <MetricScopeIcon scope={metric.scope} />
+                    {isCardActive && (
+                      <span className="dy-inline-flex dy-items-center dy-text-[9px] dy-font-semibold dy-bg-primary/10 dy-text-primary dy-px-1.5 dy-py-0.5 dy-rounded-full">
+                        Active
+                      </span>
+                    )}
                   </div>
                   {isRefetching && (
                     <span className="dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-current dy-animate-ping dy-opacity-75" title="Updating..." />
@@ -247,15 +306,45 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
                       colorStyles.subRow
                     )}
                   >
-                    {metric.subMetrics!.map((sub) => (
-                      <div key={sub.label} className="dy-flex dy-items-center dy-gap-1">
-                        <span className={colorStyles.subLabel}>{sub.label}:</span>
-                        <span className={colorStyles.subValue}>{sub.formatted}</span>
-                        {sub.scope && sub.scope !== metric.scope && (
-                          <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
-                        )}
-                      </div>
-                    ))}
+                    {metric.subMetrics!.map((sub) => {
+                      const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
+                      const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
+
+                      if (isSubClickable) {
+                        return (
+                          <button
+                            key={sub.label}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onToggleFilter?.(sub.filterTarget!)
+                            }}
+                            className={cn(
+                              "dy-flex dy-items-center dy-gap-1 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-colors",
+                              "hover:dy-bg-black/5 dark:hover:dy-bg-white/10",
+                              isSubActive && "dy-bg-primary/15 dy-text-primary dy-font-semibold"
+                            )}
+                            title={isSubActive ? `Active filter: click to clear ${sub.label}` : `Click to filter view by ${sub.label}`}
+                          >
+                            <span className={colorStyles.subLabel}>{sub.label}:</span>
+                            <span className={colorStyles.subValue}>{sub.formatted}</span>
+                            {sub.scope && sub.scope !== metric.scope && (
+                              <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
+                            )}
+                          </button>
+                        )
+                      }
+
+                      return (
+                        <div key={sub.label} className="dy-flex dy-items-center dy-gap-1">
+                          <span className={colorStyles.subLabel}>{sub.label}:</span>
+                          <span className={colorStyles.subValue}>{sub.formatted}</span>
+                          {sub.scope && sub.scope !== metric.scope && (
+                            <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>

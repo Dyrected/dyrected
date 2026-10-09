@@ -7,11 +7,18 @@ import { resolveViewFilter } from "./resolve-view-filter"
 import { formatMetricValue } from "./format-metric"
 import { normalizeGroupBy, useMetricGroups, type MetricGroupOption } from "./use-metric-groups"
 
+export interface MetricFilterTarget {
+  columnId: string
+  value: unknown
+  operator?: string
+}
+
 export interface ResolvedSubMetric {
   label: string
   value: number | string | null
   formatted: string
   scope?: "view" | "filtered" | "collection"
+  filterTarget?: MetricFilterTarget
 }
 
 export interface ResolvedMetric {
@@ -22,6 +29,7 @@ export interface ResolvedMetric {
   unit?: string
   scope?: "view" | "filtered" | "collection"
   subMetrics?: ResolvedSubMetric[]
+  filterTarget?: MetricFilterTarget
 }
 
 export interface UseViewMetricsOptions {
@@ -98,6 +106,30 @@ function mergeGroupWhereMap(
   return res
 }
 
+export function inferFilterTargetFromWhere(where?: Record<string, any>): MetricFilterTarget | undefined {
+  if (!where || typeof where !== "object" || Array.isArray(where)) return undefined
+  const keys = Object.keys(where).filter((k) => k !== "AND" && k !== "OR")
+  if (keys.length !== 1) return undefined
+  const columnId = keys[0]
+  const condition = where[columnId]
+  if (condition === undefined || condition === null) return undefined
+
+  if (typeof condition === "object" && !Array.isArray(condition)) {
+    if ("equals" in condition) {
+      return { columnId, value: condition.equals, operator: "eq" }
+    }
+    if ("in" in condition && Array.isArray(condition.in)) {
+      return { columnId, value: condition.in, operator: "in" }
+    }
+    if ("not_equals" in condition) {
+      return { columnId, value: condition.not_equals, operator: "ne" }
+    }
+  } else {
+    return { columnId, value: condition, operator: "eq" }
+  }
+  return undefined
+}
+
 export function expandMetrics(
   metrics: SerializedViewMetric[] | undefined,
   groupsByField: Record<string, MetricGroupOption[]>,
@@ -123,14 +155,18 @@ export function expandMetrics(
           }
         })
 
+        const filterTarget: MetricFilterTarget = { columnId: cardGb.field, value: group.value, operator: "eq" }
+
         expanded.push({
           ...metric,
+          _filterTarget: filterTarget,
+          _groupOrder: cardGb.orderBy,
           label: interpolateLabel(metric.label, group),
           groupBy: undefined,
           aggregate: mergeGroupWhere(metric.aggregate, groupWhere),
           aggregates: mergeGroupWhereMap(metric.aggregates, groupWhere),
           subMetrics: expandedSubMetrics,
-        })
+        } as any)
       }
     } else {
       // Single card: check if any sub-metrics specify groupBy
@@ -146,13 +182,16 @@ export function expandMetrics(
             hasGroupedSub = true
             for (const group of subGroups) {
               const groupWhere = { [subGb.field]: { equals: group.value } }
+              const subFilterTarget: MetricFilterTarget = { columnId: subGb.field, value: group.value, operator: "eq" }
               expandedSubMetrics.push({
                 ...sub,
+                _filterTarget: subFilterTarget,
+                _groupOrder: subGb.orderBy,
                 label: interpolateLabel(sub.label, group),
                 groupBy: undefined,
                 aggregate: mergeGroupWhere(sub.aggregate, groupWhere),
                 aggregates: mergeGroupWhereMap(sub.aggregates, groupWhere),
-              })
+              } as any)
             }
           } else {
             expandedSubMetrics.push(sub)
@@ -299,7 +338,7 @@ export function useViewMetrics({
         return expandedMetrics.map((m) => emptyMetric(m, metricsScope))
       }
 
-      return plan.map(({ metric, single, named, subPlans }) => {
+      const resolved = plan.map(({ metric, single, named, subPlans }) => {
         let value: number | string | null = null
 
         if (metric.expression && named) {
@@ -338,8 +377,18 @@ export function useViewMetrics({
             value: subValue,
             formatted: formatMetricValue(subValue, subMetric.format, subMetric.currency),
             scope: subMetric.scope ?? effectiveScope,
+            filterTarget: (subMetric as any)._filterTarget || inferFilterTargetFromWhere(subMetric.aggregate?.where),
           }
         })
+
+        // Sort submetrics descending if orderBy is "count"
+        if ((subPlans?.[0]?.subMetric as any)?._groupOrder === "count") {
+          resolvedSubMetrics.sort((a, b) => {
+            const numA = typeof a.value === "number" ? a.value : -Infinity
+            const numB = typeof b.value === "number" ? b.value : -Infinity
+            return numB - numA
+          })
+        }
 
         return {
           label: metric.label,
@@ -349,8 +398,35 @@ export function useViewMetrics({
           unit: metric.unit,
           scope: effectiveScope,
           subMetrics: resolvedSubMetrics.length > 0 ? resolvedSubMetrics : undefined,
+          filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
         }
       })
+
+      // Sort consecutive cards that share a group field if orderBy is "count"
+      let i = 0
+      while (i < resolved.length) {
+        const itemPlan = plan[i]
+        const order = (itemPlan?.metric as any)?._groupOrder
+        const groupField = (itemPlan?.metric as any)?._filterTarget?.columnId
+        if (order === "count" && groupField) {
+          let j = i
+          while (j < resolved.length && (plan[j]?.metric as any)?._filterTarget?.columnId === groupField) {
+            j++
+          }
+          const slice = resolved.slice(i, j)
+          slice.sort((a, b) => {
+            const numA = typeof a.value === "number" ? a.value : -Infinity
+            const numB = typeof b.value === "number" ? b.value : -Infinity
+            return numB - numA
+          })
+          resolved.splice(i, slice.length, ...slice)
+          i = j
+        } else {
+          i++
+        }
+      }
+
+      return resolved
     },
     enabled: Boolean(metrics?.length && client && (!hasAnyGroupBy || !isGroupsLoading)),
     placeholderData: keepPreviousData,
@@ -377,11 +453,13 @@ function emptyMetric(metric: SerializedViewMetric, defaultScope?: "view" | "filt
     color: metric.color,
     unit: metric.unit,
     scope: effectiveScope,
+    filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
     subMetrics: metric.subMetrics?.map((sub) => ({
       label: sub.label,
       value: null,
       formatted: "—",
       scope: sub.scope ?? effectiveScope,
+      filterTarget: (sub as any)._filterTarget || inferFilterTargetFromWhere(sub.aggregate?.where),
     })),
   }
 }

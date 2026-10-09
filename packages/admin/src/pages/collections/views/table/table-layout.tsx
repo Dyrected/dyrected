@@ -135,6 +135,21 @@ export function TableLayout({
     }
   }, [view.groupBy, view.slug, searchParams])
 
+  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  React.useEffect(() => {
+    const raw = searchParams.get("filters")
+    let nextFilters: ColumnFiltersState = []
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) nextFilters = parsed
+      } catch {
+        // ignore invalid json filter param
+      }
+    }
+    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
+  }, [searchParams])
+
   const handleSortingChange = React.useCallback(
     (updater: SortingState | ((prev: SortingState) => SortingState)) => {
       setSorting((prev) => {
