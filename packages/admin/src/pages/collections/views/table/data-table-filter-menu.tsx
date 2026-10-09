@@ -1,6 +1,6 @@
 import * as React from "react"
 import type { Column, Table } from "@tanstack/react-table"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { BadgeCheck, CalendarIcon, ListFilter, Loader2, X } from "lucide-react"
 
 import { Button } from "../../../../components/ui/button"
@@ -567,6 +567,7 @@ function RelationshipValueSelector({
   onSelect: (value: string) => void
 }) {
   const { client, schemas } = useDyrected()
+  const queryClient = useQueryClient()
   const relatedCollection = (schemas?.collections as Array<any> | undefined)?.find(
     (c) => c.slug === relationTo,
   )
@@ -581,7 +582,13 @@ function RelationshipValueSelector({
         qb = qb.where({ [displayField]: { like: `%${searchValue.trim()}%` } })
       }
       const res = await qb.exec()
-      return (res?.docs ?? []) as Array<Record<string, any>>
+      const fetchedDocs = (res?.docs ?? []) as Array<Record<string, any>>
+      for (const item of fetchedDocs) {
+        if (item?.id) {
+          queryClient.setQueryData(["relationship-doc", relationTo, String(item.id)], item)
+        }
+      }
+      return fetchedDocs
     },
     enabled: Boolean(client && relationTo),
   })
@@ -605,7 +612,15 @@ function RelationshipValueSelector({
         const id = String(item.id ?? "")
         const label = String(item[displayField] || item.name || item.slug || id)
         return (
-          <CommandItem key={id} value={id} onSelect={() => onSelect(id)}>
+          <CommandItem
+            key={id}
+            value={`${label} ${id}`}
+            onSelect={() => {
+              queryClient.setQueryData(["relationship-doc", relationTo, id], item)
+              queryClient.setQueryData(["relationship-filter-hydrated", relationTo, [id]], [item])
+              onSelect(id)
+            }}
+          >
             <BadgeCheck className="dy-mr-1.5 dy-h-4 dy-w-4 dy-text-primary" />
             <span className="dy-truncate">{label}</span>
           </CommandItem>

@@ -1,6 +1,6 @@
 import * as React from "react"
 import type { Column } from "@tanstack/react-table"
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Check, Loader2, PlusCircle, XCircle } from "lucide-react"
 
 import { Badge } from "../../../../components/ui/badge"
@@ -46,9 +46,13 @@ export function DataTableRelationshipFilter<TData, TValue>({
   multiple = true,
 }: DataTableRelationshipFilterProps<TData, TValue>) {
   const { client, schemas } = useDyrected()
+  const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [debouncedSearch, setDebouncedSearch] = React.useState("")
+
+  // Local cache of known documents by ID to guarantee instant label rendering
+  const docCacheRef = React.useRef<Map<string, Record<string, any>>>(new Map())
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -91,10 +95,27 @@ export function DataTableRelationshipFilter<TData, TValue>({
           where: { id: { in: selectedIds } },
           limit: Math.max(selectedIds.length, 10),
         })
-        return (res?.docs ?? []) as Record<string, any>[]
+        const docs = (res?.docs ?? []) as Record<string, any>[]
+        for (const doc of docs) {
+          if (doc?.id) {
+            docCacheRef.current.set(String(doc.id), doc)
+            queryClient.setQueryData(["relationship-doc", relationTo, String(doc.id)], doc)
+          }
+        }
+        return docs
       } catch {
         return []
       }
+    },
+    initialData: () => {
+      const cached = selectedIds
+        .map(
+          (id) =>
+            docCacheRef.current.get(id) ??
+            queryClient.getQueryData<Record<string, any>>(["relationship-doc", relationTo, id]),
+        )
+        .filter(Boolean) as Record<string, any>[]
+      return cached.length > 0 ? cached : undefined
     },
     enabled: Boolean(client && relationTo && selectedIds.length > 0),
     staleTime: 60_000,
@@ -116,7 +137,14 @@ export function DataTableRelationshipFilter<TData, TValue>({
       if (debouncedSearch) {
         qb = qb.where({ [displayField]: { like: `%${debouncedSearch}%` } })
       }
-      return qb.exec()
+      const res = await qb.exec()
+      for (const doc of res?.docs ?? []) {
+        if (doc?.id) {
+          docCacheRef.current.set(String(doc.id), doc)
+          queryClient.setQueryData(["relationship-doc", relationTo, String(doc.id)], doc)
+        }
+      }
+      return res
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage: any, allPages: any[]) => {
@@ -139,37 +167,56 @@ export function DataTableRelationshipFilter<TData, TValue>({
 
   // Merge hydrated selected docs and browsed docs, removing duplicate IDs
   const combinedOptions = React.useMemo(() => {
-    const map = new Map<string, { id: string; label: string }>()
+    const map = new Map<string, { id: string; label: string; doc?: Record<string, any> }>()
 
-    // Add hydrated selected documents first
-    for (const doc of hydratedSelectedDocs) {
+    // 1. Add browsed / searched documents in view first
+    for (const doc of browsedDocs) {
       const id = String(doc.id ?? "")
       if (id) {
-        map.set(id, { id, label: getDocLabel(doc) })
+        docCacheRef.current.set(id, doc)
+        map.set(id, { id, label: getDocLabel(doc), doc })
       }
     }
 
-    // Add any remaining selected values even if query hasn't returned yet
+    // 2. Add hydrated selected documents
+    for (const doc of hydratedSelectedDocs) {
+      const id = String(doc.id ?? "")
+      if (id) {
+        docCacheRef.current.set(id, doc)
+        map.set(id, { id, label: getDocLabel(doc), doc })
+      }
+    }
+
+    // 3. Fallback to docCache / queryClient for any selected IDs before falling back to raw id
+    for (const id of selectedIds) {
+      if (!map.has(id)) {
+        const cached =
+          docCacheRef.current.get(id) ??
+          queryClient.getQueryData<Record<string, any>>(["relationship-doc", relationTo, id])
+        if (cached) {
+          map.set(id, { id, label: getDocLabel(cached), doc: cached })
+        }
+      }
+    }
+
+    // 4. Final fallback to raw ID ONLY if doc is completely unknown
     for (const id of selectedIds) {
       if (!map.has(id)) {
         map.set(id, { id, label: id })
       }
     }
 
-    // Add browsed / searched documents
-    for (const doc of browsedDocs) {
-      const id = String(doc.id ?? "")
-      if (id && !map.has(id)) {
-        map.set(id, { id, label: getDocLabel(doc) })
-      }
-    }
-
     return Array.from(map.values())
-  }, [hydratedSelectedDocs, browsedDocs, selectedIds, getDocLabel])
+  }, [hydratedSelectedDocs, browsedDocs, selectedIds, getDocLabel, queryClient, relationTo])
 
   const onItemSelect = React.useCallback(
-    (id: string, isSelected: boolean) => {
+    (id: string, isSelected: boolean, doc?: Record<string, any>) => {
       if (!column) return
+
+      if (doc) {
+        docCacheRef.current.set(id, doc)
+        queryClient.setQueryData(["relationship-doc", relationTo, id], doc)
+      }
 
       if (multiple) {
         const next = new Set(selectedValues)
@@ -185,7 +232,7 @@ export function DataTableRelationshipFilter<TData, TValue>({
         setOpen(false)
       }
     },
-    [column, multiple, selectedValues],
+    [column, multiple, selectedValues, relationTo, queryClient],
   )
 
   const onReset = React.useCallback(
@@ -276,7 +323,7 @@ export function DataTableRelationshipFilter<TData, TValue>({
                     <CommandItem
                       key={option.id}
                       className="[&>svg:last-child]:dy-hidden"
-                      onSelect={() => onItemSelect(option.id, isSelected)}
+                      onSelect={() => onItemSelect(option.id, isSelected, option.doc)}
                     >
                       <div
                         className={cn(
