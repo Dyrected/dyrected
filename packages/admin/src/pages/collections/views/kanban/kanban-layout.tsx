@@ -186,11 +186,9 @@ export function KanbanLayout({
     return buildServerWhere({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
-      search: globalFilter,
-      searchableFields: allFieldIds.length ? allFieldIds : undefined,
       schema,
     })
-  }, [view.filter, columnFilters, globalFilter, allFieldIds, schema])
+  }, [view.filter, columnFilters, schema])
 
   React.useEffect(() => {
     const next = new URLSearchParams(searchParams)
@@ -212,6 +210,7 @@ export function KanbanLayout({
     schema,
     groupField,
     filter: serverWhere,
+    search: globalFilter,
   })
   const isGrouped = grouped.mode === "grouped"
 

@@ -109,18 +109,21 @@ export function useKanbanGroups({
   schema,
   groupField,
   filter,
+  search,
 }: {
   slug: string
   view: SerializedView
   schema: any
   groupField: string
   filter?: Record<string, any> | string
+  search?: string
 }) {
   const { client } = useDyrected()
   const filterHash = React.useMemo(() => stableStringify(filter ?? view.filter ?? null), [filter, view.filter])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const base = React.useMemo(() => resolveViewFilter(filter ?? view.filter), [filterHash])
   const sortString = React.useMemo(() => resolveViewSort(view.sort), [view.sort])
+  const searchTrimmed = search?.trim() || undefined
   const groups = React.useMemo(() => deriveGroups(groupField, schema), [groupField, schema])
   const fieldDef = React.useMemo(
     () => (schema?.fields ?? []).find((candidate: any) => candidate.name === groupField),
@@ -139,6 +142,7 @@ export function useKanbanGroups({
       const where = groupWhere(base, condition)
       const result = await (client as any).collection(slug).find({
         where,
+        search: searchTrimmed,
         sort: sortString,
         limit: PAGE_SIZE,
         page,
@@ -150,20 +154,20 @@ export function useKanbanGroups({
         page: Number(result?.page ?? page),
       }
     },
-    [client, slug, groupField, fieldDef?.type, schema, base, sortString],
+    [client, slug, groupField, fieldDef?.type, schema, base, searchTrimmed, sortString],
   )
 
   const queries = React.useMemo(() => {
     const groupValues = [...groups.map((group) => group.value), UNASSIGNED]
     return groupValues.map((value) =>
       queryOptions({
-        queryKey: ["operational-view", slug, view.slug, "group", value, filterHash, sortString ?? null] as const,
+        queryKey: ["operational-view", slug, view.slug, "group", value, filterHash, searchTrimmed ?? null, sortString ?? null] as const,
         queryFn: () => fetchGroup(value, 1),
         enabled,
         staleTime: 15_000,
       }),
     )
-  }, [groups, slug, view.slug, filterHash, sortString, fetchGroup, enabled])
+  }, [groups, slug, view.slug, filterHash, searchTrimmed, sortString, fetchGroup, enabled])
 
   const grouped = useQueries({
     queries: queries as any,
@@ -200,11 +204,12 @@ export function useKanbanGroups({
 
   /** Single flat fetch when the field has too many options to fan out. */
   const fallback = useQuery({
-    queryKey: ["operational-view", slug, view.slug, "flat", filterHash, sortString ?? null],
+    queryKey: ["operational-view", slug, view.slug, "flat", filterHash, searchTrimmed ?? null, sortString ?? null],
     queryFn: async () => {
       if (!client) throw new Error("Dyrected client unavailable")
       const result = await (client as any).collection(slug).find({
         where: base,
+        search: searchTrimmed,
         sort: sortString,
         limit: PAGE_SIZE,
       })

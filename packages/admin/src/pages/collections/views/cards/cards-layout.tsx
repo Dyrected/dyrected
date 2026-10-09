@@ -179,12 +179,10 @@ export function CardsLayout({
     return buildServerWhere({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
-      search: globalFilter,
-      searchableFields: allFieldIds.length ? allFieldIds : undefined,
       schema,
       joinOperator,
     })
-  }, [view.filter, columnFilters, globalFilter, allFieldIds, schema, joinOperator])
+  }, [view.filter, columnFilters, schema, joinOperator])
 
   // URL ↔ sessionStorage sync (replace, not push).
   React.useEffect(() => {
@@ -217,6 +215,7 @@ export function CardsLayout({
     page,
     limit: pageSize,
     filter: serverWhere,
+    search: globalFilter,
     sort: resolveViewSort(view.sort),
   })
 
@@ -231,6 +230,7 @@ export function CardsLayout({
     schema,
     groupField: groupBy,
     filter: serverWhere,
+    search: globalFilter,
     sort: resolveViewSort(view.sort),
   })
 

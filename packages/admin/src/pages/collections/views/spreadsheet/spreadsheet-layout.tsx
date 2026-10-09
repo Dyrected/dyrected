@@ -297,11 +297,9 @@ export function SpreadsheetLayout({
     return buildServerWhere({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
-      search: globalFilter,
-      searchableFields: allColumnIds.length ? allColumnIds : undefined,
       schema,
     })
-  }, [view.filter, columnFilters, globalFilter, allColumnIds, schema])
+  }, [view.filter, columnFilters, schema])
 
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -317,6 +315,7 @@ export function SpreadsheetLayout({
     slug,
     viewSlug: view.slug,
     filter: serverWhere,
+    search: globalFilter,
     sort: serverSort,
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
@@ -331,6 +330,7 @@ export function SpreadsheetLayout({
     schema,
     groupField: groupBy,
     filter: serverWhere,
+    search: globalFilter,
     sort: serverSort,
   })
 

@@ -79,6 +79,7 @@ export interface UseTableGroupsOptions {
   schema: any
   groupField?: string
   filter?: Record<string, any> | string
+  search?: string
   sort?: string
 }
 
@@ -88,6 +89,7 @@ export function useTableGroups({
   schema,
   groupField,
   filter,
+  search,
   sort,
 }: UseTableGroupsOptions) {
   const { client } = useDyrected()
@@ -95,6 +97,7 @@ export function useTableGroups({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const base = React.useMemo(() => resolveViewFilter(filter ?? view.filter), [filterHash])
   const sortString = sort || (view.sort ? resolveViewSort(view.sort) : undefined)
+  const searchTrimmed = search?.trim() || undefined
 
   const fieldDef = React.useMemo(
     () => (schema?.fields ?? []).find((f: any) => f.name === groupField),
@@ -213,6 +216,7 @@ export function useTableGroups({
       const where = groupWhere(base, condition)
       const result = await (client as any).collection(slug).find({
         where,
+        search: searchTrimmed,
         sort: sortString,
         limit: PAGE_SIZE,
       })
@@ -222,7 +226,7 @@ export function useTableGroups({
         hasNextPage: Boolean(result?.hasNextPage),
       }
     },
-    [client, slug, groupField, fieldDef?.type, schema, base, sortString],
+    [client, slug, groupField, fieldDef?.type, schema, base, searchTrimmed, sortString],
   )
 
   const queries = React.useMemo(() => {
@@ -230,14 +234,14 @@ export function useTableGroups({
     const groupValues = [...groups.map((g) => g.value), UNASSIGNED_GROUP]
     return groupValues.map((value) =>
       queryOptions({
-        queryKey: ["table-group", slug, view.slug, groupField, value, filterHash, sortString ?? null] as const,
+        queryKey: ["table-group", slug, view.slug, groupField, value, filterHash, searchTrimmed ?? null, sortString ?? null] as const,
         queryFn: () => fetchGroup(value),
         enabled,
         placeholderData: keepPreviousData,
         staleTime: 15_000,
       }),
     )
-  }, [groups, slug, view.slug, groupField, filterHash, sortString, fetchGroup, enabled])
+  }, [groups, slug, view.slug, groupField, filterHash, searchTrimmed, sortString, fetchGroup, enabled])
 
   const grouped = useQueries({
     queries: queries as any,

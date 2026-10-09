@@ -7,6 +7,7 @@ export interface UseViewDataOptions {
   slug: string
   viewSlug?: string
   filter?: Record<string, any> | string
+  search?: string
   sort?: { field: string; direction: "asc" | "desc" } | string
   page?: number
   limit?: number
@@ -30,6 +31,7 @@ export function useViewData({
   slug,
   viewSlug = "default",
   filter,
+  search,
   sort,
   page = 1,
   limit = 20,
@@ -40,13 +42,15 @@ export function useViewData({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const where = useMemo(() => resolveViewFilter(filter), [filterHash])
   const sortString = typeof sort === "string" ? sort : resolveViewSort(sort)
+  const searchTrimmed = search?.trim() || undefined
 
   const query = useQuery({
-    queryKey: ["operational-view", slug, viewSlug, filterHash, sortString ?? null, page, limit],
+    queryKey: ["operational-view", slug, viewSlug, filterHash, searchTrimmed ?? null, sortString ?? null, page, limit],
     queryFn: async (): Promise<PaginatedFindResult> => {
       if (!client) throw new Error("Dyrected client unavailable")
       const result = await (client as any).collection(slug).find({
         where,
+        search: searchTrimmed,
         sort: sortString,
         page,
         limit,

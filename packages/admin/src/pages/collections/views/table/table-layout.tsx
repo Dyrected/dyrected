@@ -273,12 +273,10 @@ export function TableLayout({
     return buildServerWhere({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
-      search: globalFilter,
-      searchableFields: allColumnIds,
       schema,
       joinOperator,
     })
-  }, [view.filter, columnFilters, globalFilter, allColumnIds, schema, joinOperator])
+  }, [view.filter, columnFilters, schema, joinOperator])
 
   // Keep URL in sync with filter / sort / pagination / search / groupBy (replace, not push).
   React.useEffect(() => {
@@ -317,6 +315,7 @@ export function TableLayout({
     slug,
     viewSlug: view.slug,
     filter: serverWhere,
+    search: globalFilter,
     sort: serverSort,
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
@@ -333,6 +332,7 @@ export function TableLayout({
     schema,
     groupField: groupBy,
     filter: serverWhere,
+    search: globalFilter,
     sort: serverSort,
   })
 
