@@ -12,6 +12,8 @@ export interface ViewMetricsBuilderProps {
   collectionSlug?: string
   viewFilter?: any
   schemas?: any
+  metricsScope?: "view" | "filtered" | "collection"
+  onMetricsScopeChange?: (scope: "view" | "filtered" | "collection") => void
 }
 
 const COLOR_OPTIONS: { label: string; value: MetricColor; bgClass: string }[] = [
@@ -90,6 +92,8 @@ export function ViewMetricsBuilder({
   collectionSlug,
   viewFilter,
   schemas,
+  metricsScope,
+  onMetricsScopeChange,
 }: ViewMetricsBuilderProps) {
   const [expanded, setExpanded] = React.useState(false)
   const [showCustomForm, setShowCustomForm] = React.useState(false)
@@ -101,6 +105,8 @@ export function ViewMetricsBuilder({
   const [color, setColor] = React.useState<MetricColor>("blue")
   const [format, setFormat] = React.useState<"number" | "currency" | "percent">("number")
   const [currency, setCurrency] = React.useState("USD")
+  const [scope, setScope] = React.useState<"view" | "filtered" | "collection">("view")
+  const [groupBy, setGroupBy] = React.useState<string>("")
 
   // Resolve target collection schema
   const targetCol = React.useMemo(() => {
@@ -124,6 +130,14 @@ export function ViewMetricsBuilder({
 
   const distinctFields = React.useMemo(() => {
     return allFields.filter(isDistinctCandidateField)
+  }, [allFields])
+
+  const groupableFields = React.useMemo(() => {
+    return allFields.filter(
+      (f: any) =>
+        f?.type &&
+        ["select", "radio", "boolean", "relationship", "number", "text"].includes(f.type)
+    )
   }, [allFields])
 
   // Available fields based on current operation
@@ -208,6 +222,7 @@ export function ViewMetricsBuilder({
     const newMetric: ViewMetric = {
       label: `Total ${colName}`,
       aggregate: { count: "*" },
+      scope: "collection",
       color: "blue",
       format: "number",
     }
@@ -218,7 +233,8 @@ export function ViewMetricsBuilder({
   const handleAddPresetFilteredCount = () => {
     const newMetric: ViewMetric = {
       label: "Filtered Count",
-      aggregate: { count: "*", where: viewFilter || undefined },
+      aggregate: { count: "*" },
+      scope: "filtered",
       color: "emerald",
       format: "number",
     }
@@ -282,11 +298,15 @@ export function ViewMetricsBuilder({
       color,
       format,
       currency: format === "currency" ? currency || "USD" : undefined,
+      scope: scope !== "view" ? scope : undefined,
+      groupBy: groupBy.trim() || undefined,
     }
 
     onChange([...metrics, newMetric])
     setMetricLabel("")
     setField("")
+    setScope("view")
+    setGroupBy("")
     setShowCustomForm(false)
   }
 
@@ -327,11 +347,32 @@ export function ViewMetricsBuilder({
 
       {expanded && (
         <div className="dy-space-y-2 dy-pt-1">
+          {/* Optional Default Metrics Scope */}
+          {onMetricsScopeChange && (
+            <div className="dy-flex dy-items-center dy-justify-between dy-gap-2 dy-pb-1 dy-border-b dy-border-border/40">
+              <span className="dy-text-[10px] dy-font-medium dy-text-muted-foreground">Default Metrics Scope:</span>
+              <Select
+                value={metricsScope || "view"}
+                onValueChange={(v: any) => onMetricsScopeChange(v)}
+              >
+                <SelectTrigger className="dy-h-5 dy-w-36 dy-px-1.5 dy-text-[10px] dy-bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="view" className="dy-text-xs">View (Standard)</SelectItem>
+                  <SelectItem value="filtered" className="dy-text-xs">Filtered (Live Sync)</SelectItem>
+                  <SelectItem value="collection" className="dy-text-xs">Collection (Global)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Active Metrics Chips */}
           {metrics.length > 0 && (
             <div className="dy-flex dy-flex-wrap dy-gap-1">
               {metrics.map((m, idx) => {
                 const colorObj = COLOR_OPTIONS.find((c) => c.value === m.color) || COLOR_OPTIONS[0]
+                const groupField = typeof m.groupBy === "string" ? m.groupBy : m.groupBy?.field
                 return (
                   <div
                     key={idx}
@@ -342,6 +383,16 @@ export function ViewMetricsBuilder({
                     <span className="dy-text-[9px] dy-text-muted-foreground/70">
                       ({formatSummary(m)})
                     </span>
+                    {m.scope && m.scope !== "view" && (
+                      <span className="dy-rounded dy-bg-primary/10 dy-px-1 dy-text-[8px] dy-font-medium dy-text-primary">
+                        {m.scope}
+                      </span>
+                    )}
+                    {groupField && (
+                      <span className="dy-rounded dy-bg-purple-500/10 dy-px-1 dy-text-[8px] dy-font-medium dy-text-purple-600 dark:dy-text-purple-400">
+                        by: {groupField}
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveMetric(idx)}
@@ -521,6 +572,34 @@ export function ViewMetricsBuilder({
                     <SelectItem value="number" className="dy-text-xs">Number</SelectItem>
                     <SelectItem value="currency" className="dy-text-xs">Currency</SelectItem>
                     <SelectItem value="percent" className="dy-text-xs">Percentage</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Scope & GroupBy Row */}
+              <div className="dy-grid dy-grid-cols-2 dy-gap-1">
+                <Select value={scope} onValueChange={(v: any) => setScope(v)}>
+                  <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                    <SelectValue placeholder="Scope..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="view" className="dy-text-xs">View Scope (Default)</SelectItem>
+                    <SelectItem value="filtered" className="dy-text-xs">Filtered Scope (Live Sync)</SelectItem>
+                    <SelectItem value="collection" className="dy-text-xs">Collection Scope (All Records)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={groupBy || "__none__"} onValueChange={(v) => setGroupBy(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                    <SelectValue placeholder="Group by (optional)..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="dy-text-xs">No Grouping (Single Card)</SelectItem>
+                    {groupableFields.map((f: any) => (
+                      <SelectItem key={f.name} value={f.name} className="dy-text-xs">
+                        Group by: {f.label || f.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
