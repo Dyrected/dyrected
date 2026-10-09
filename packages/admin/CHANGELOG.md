@@ -1,5 +1,33 @@
 # @dyrected/admin
 
+## 2.21.0
+
+### Minor Changes
+
+- cfc9cf9: - **Metric Scoping Architecture (`metricsScope` & `scope`)**: Added comprehensive filter scoping to operational view metrics and sub-metrics with three evaluation modes:
+  - `"view"` (default): Evaluates against the view's persistent filter (`view.filter`), serving as a stable reference KPI unaffected by ephemeral table row filters.
+  - `"filtered"`: Dynamically live-syncs with active table toolbar filters, column filters, and search queries.
+  - `"collection"`: Evaluates across the entire collection, computing global lifetime totals regardless of view or table filters.
+  - Hierarchical inheritance allows views to set `metricsScope`, individual metric cards to specify `scope`, and sub-metric rows to optionally override.
+  - **Contextual Scope Icons on Metric Cards**: Added clean, subtle 12px status icons with tooltips (`Filter` for filtered, `Database` for collection, `Layers` for view) next to card headers and sub-metric rows, giving instant visual clarity on data boundaries.
+  - **Dynamic Grouped Metrics (`groupBy`)**: Introduced declarative `groupBy` support on `ViewMetric` and `ViewSubMetric`:
+    - **Dynamic Metric Cards**: Setting `groupBy: "field"` on a metric card dynamically expands into one metric card per distinct group (e.g. 10 communities $\rightarrow$ 10 cards) with templated labels (`{{group.label}}`, `{{group.value}}`) and group-scoped aggregations.
+    - **Dynamic Sub-Metrics**: Setting `groupBy: "field"` on a sub-metric dynamically expands into $N$ breakdown rows in the footer of a single metric card.
+    - **Automatic Group Discovery**: Automatically resolves group options for relationship fields (fetching related document titles and IDs), select/radio options, boolean fields, and scalar distinct values.
+    - **Single Batched Aggregation**: Fans all dynamically expanded operations across cards, sub-metrics, and groups into a single batched database aggregation query (`client.collection(slug).aggregate(input)`), completely eliminating N+1 queries.
+  - **Navigation Editor & Interactive KPI Builder**:
+    - Full support in the Navigation Customizer (`ViewMetricsBuilder`) for configuring default view `metricsScope` (`"view" | "filtered" | "collection"`), card `scope`, and `groupBy` (supporting relationship, select, radio, boolean, and scalar fields).
+    - Interactive click-to-edit on active KPI chips allowing live reconfiguration of metric labels, operations, target fields, format, colors, scope, and groupBy.
+    - Added "Revert View" action in the Navigation Customizer to seamlessly discard personal overrides and restore codebase view definitions.
+    - Enhanced `reconcileNavigation` in `@dyrected/core` to intelligently inherit new `metricsScope`, `scope`, `groupBy`, and `subMetrics` from codebase view definitions when sparse user preferences are present.
+  - **Native Search Parameter in Operational Views**: Operational views (Table, Cards, Spreadsheet, Kanban) now forward toolbar search directly to the backend pagination endpoint via the `search` query parameter, ensuring performant full-text searches.
+
+### Patch Changes
+
+- Updated dependencies [cfc9cf9]
+  - @dyrected/core@2.21.0
+  - @dyrected/sdk@2.21.0
+
 ## 2.20.1
 
 ### Patch Changes
@@ -196,6 +224,7 @@
   Added compile-time type safety for field configuration to catch configuration errors at build time instead of runtime:
 
   ### Field Type Improvements:
+
   - **JoinField**: `collection` and `on` are now required
   - **RelationshipField**: `relationTo` is now required
   - **ImageField**: `relationTo` is now required
@@ -204,6 +233,7 @@
   - **BlocksField**: Requires either `blocks` or `blockReferences`
 
   ### Action & Workflow Improvements:
+
   - **ActionConfig**: Now enforces that either `mutation` or `handler` (or both) is provided via union type
   - **ViewLayout Types**: Layout-specific types enforce required fields:
     - Kanban views require `groupBy`
@@ -211,9 +241,11 @@
     - Gantt views require `startDateField` and `endDateField`
 
   ### DefaultValue Type Safety:
+
   - `defaultValue` now matches the field's value type (e.g., multiSelect requires `string[]`, not `string`)
 
   ### Collection Slug Inference (NEW):
+
   - Added `ExtractCollectionSlugs<T>` helper type to extract valid collection slugs from config
   - Added `defineTypedRelationshipField<ValidSlugs>()` - type-safe relationship fields
   - Added `defineTypedImageField<ValidSlugs>()` - type-safe image fields
@@ -237,10 +269,12 @@
   ```
 
   ### Documentation:
+
   - Added guidance that workflow transition `from`/`to` fields should reference defined state names
   - Clarified that select/multiSelect/radio fields should include options configuration
 
   ### Bug Fixes:
+
   - Fixed `r.map is not a function` runtime error in admin collections by enforcing multiSelect defaultValue types
   - Fixed `admins` and `investors` collections to use correct array-typed defaultValues
 
@@ -289,6 +323,7 @@
 ### Patch Changes
 
 - 0b4d4cb: - **MySQL Adapter Feature Parity & Resilience (`@dyrected/db-mysql`)**:
+
   - **Concurrent Schema Migration Safety**: Added in-memory `tableLocks` mutex and lifecycle table cache to prevent concurrent requests from firing duplicate `ALTER TABLE` queries during initialization.
   - **Duplicate Field Tolerance**: Caught `ER_DUP_FIELDNAME` (errno `1060`) and duplicate column errors silently during concurrent column promotion.
   - **AI Chat Storage Provisioning**: Auto-created `_dyrected_ai_threads` and `_dyrected_ai_messages` internal tables with indexes and cascading foreign keys on boot, bringing MySQL to parity with Postgres.
@@ -298,17 +333,20 @@
   - **Column Inspection Caching**: Replaced repetitive `SHOW COLUMNS` queries on every CRUD/aggregate call with an in-memory `tableColumnsCache`.
 
   - **Configurable Superuser Role (`@dyrected/core`, `@dyrected/admin`)**:
+
     - Added `adminRole?: string` to `AuthConfig` interface.
     - Added `getAdminRoleForCollection` and `isUserAdmin` helper utilities in `@dyrected/core`.
     - Updated `/first-user` setup endpoint to inspect the collection's configured `adminRole` and `roles` field options, automatically selecting the appropriate superuser role instead of hardcoding `'admin'`.
     - Decoupled hardcoded `'admin'` checks across routes, controllers, and Admin UI to recognize configured admin roles alongside `'super_admin'` and `'admin'`.
 
   - **Nuxt Config Loading via `jiti` (`@dyrected/nuxt`)**:
+
     - Replaced the static top-level ESM `import` in the generated Nitro plugin with dynamic `loadDyrectedConfig` (via `jiti` with `esmResolve: true`), natively supporting extensionless TypeScript imports and path aliases at initial boot.
 
   - **Safe Package Publishing & Workspace Protocol Protection (`dyrected`, `scripts/publish-packages.mjs`)**:
     - Replaced native `npm publish` with `pnpm publish --no-git-checks` so internal `workspace:^` dependencies are automatically resolved into concrete published semver versions.
     - Added an automated pre-publish assertion (`assertNoRawWorkspaceDeps`) that verifies package tarballs before upload and immediately aborts if any raw `"workspace:"` string is present in the distribution manifest.
+
 - Updated dependencies [0b4d4cb]
   - @dyrected/core@2.13.1
   - @dyrected/sdk@2.13.1
@@ -318,12 +356,14 @@
 ### Minor Changes
 
 - e950c6e: - **Core Client/Server Clean Decoupling & Schema Serialization**:
+
   - Decoupled server-only AI services (`ai.service`, `ai-tools`, `rag.service`, `embedding.service`, `ai-rate-limit`, `observability`) strictly into `@dyrected/core/server`.
   - Cleaned the `@dyrected/core` root entry point to be 100% browser-safe, eliminating `pino` logger and Node.js built-ins (`os`, `fs`, `stream`) from client bundles and Next.js Turbopack applications.
   - Hardened `/api/schemas` serialization to forward `shared`, `siteId`, and collection-level `ai` configuration, plus field constraints (`unique`, `min`, `max`, `step`, `minLength`, `maxLength`, `pattern`, `allowedTypes`, `maxSize`, `virtual`, `promoted`, `ai`).
   - Added public AI readiness flags on the schema payload (`ai: { enabled: boolean, provider?: string, model?: string }`).
 
   - **First-Class Typed SDK AI Module (`@dyrected/sdk`)**:
+
     - Implemented typed `client.ai` namespace on `DyrectedClient`:
       - `client.ai.createThread(input?)`: Create a persistent conversation thread.
       - `client.ai.listThreads()`: Retrieve all conversation threads.
@@ -340,6 +380,7 @@
     - Replaced ad-hoc `qs` stringification with pure JSON payload transmission for delete-many and folder actions.
 
   - **Admin Sidebar Restructuring, Workspace Switcher & Dashboard AI (`@dyrected/admin`)**:
+
     - Moved the sidebar collapse toggle to the top-right of the logo row (`[Logo] Dyrected ... [collapse button]`).
     - Added a compact `WorkspaceSwitcher` (`h-8`, ~32px) directly underneath the logo row, with support for user-restricted site lists and dynamic switching.
     - Added `setSiteId` to `DyrectedContext` and `DyrectedProvider` with immediate TanStack Query cache invalidation and localStorage persistence.
@@ -348,23 +389,28 @@
     - Positioned **Setup** on the bottom-left and the **ThemeSelector** on the bottom-right of the sidebar footer.
 
   - **CLI Recursive Layout Flattening (`@dyrected/cli`)**:
+
     - Updated `packages/cli/src/utils/type-generator.ts` to recursively flatten `row` layout containers into generated TypeScript interfaces so child fields are never omitted.
 
   - **Documentation Updates (`apps/docs`)**:
     - Documented OpenRouter and custom OpenAI-compatible provider configuration in `ai.mdx`.
     - Added multi-tenant architecture docs: overview, header-scoped tenanting, row-level tenanting, and dynamic schemas.
     - Added AI privacy and field-level PII scrubber documentation in `ai-privacy.mdx`.
+
 - d96440d: - **OpenAPI & Swagger AI Surface**:
+
   - Integrated all `/api/ai/*` endpoints into the live OpenAPI 3.0 specification generator (`/api/openapi.json`) and Swagger UI documentation (`/api/docs`).
   - Added full request/response schemas for `/api/ai/chat`, `/api/ai/threads`, `/api/ai/threads/{threadId}`, `/api/ai/threads/{threadId}/messages`, `/api/ai/actions/{actionId}`, `/api/ai/actions/{actionId}/execute`, `/api/ai/actions/{actionId}/reject`, `/api/ai/rag/reindex`, and `/api/ai/rag/search`.
   - Added unit test coverage for AI OpenAPI route definitions in `packages/core/src/__tests__/openapi.test.ts`.
 
   - **AI Core Prompt Architecture & Safety**:
+
     - Streamlined `buildDyrectedSystemPrompt` with dual-mode communication (editorial partner by default, developer mode opt-in).
     - Enforced proactive mutation proposals (`proposeCreateDocument`, `proposeUpdateDocument`, `proposeUpdateGlobal`) without asking passive permission for content rewrites.
     - Added automatic provider auto-detection across `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, and `AGENTROUTER_API_KEY`.
 
   - **Admin Assistant UI & Streaming Enhancements**:
+
     - Added live animated streaming carets and streaming status banners with instant abort (`stop()`) support.
     - Upgraded `TypingDots` with contextual status states ("Thinking...", "Synthesizing data...", "Drafting response...").
     - Deduplicated tool execution parts and action proposal keys to eliminate React duplicate key warnings.
@@ -459,6 +505,7 @@
 ### Minor Changes
 
 - 55d71f7: - **Aggregate Engine Expansion (`countDistinct`, `distinct`, `groupBy`)**:
+
   - Added support for `countDistinct` (`{ countDistinct: "fieldName" }`) to count unique non-null values in a single database query.
   - Added support for `distinct` (`{ distinct: "fieldName" }`) to extract unique non-null values without loading full documents.
   - Added grouped aggregation support via `groupBy` parameter (`?groupBy=<field>` or `{ groupBy: "field", aggregates: { ... } }`) returning per-group metric breakdowns with automatic `"__unassigned__"` sentinel handling for missing/null values.
@@ -560,7 +607,9 @@
 ### Minor Changes
 
 - ### Added
+
   - **Detail View System**:
+
     - Added read-only Detail View pages and configurable layout renderers for collections (`/collections/:slug/:id`) and globals (`/globals/:slug`).
     - Added layout configuration helpers in `@dyrected/core`: `defineDetailView`, `defineSection`, `defineFieldCard`, `defineRepeatCard`, `defineTab`, `defineTabs`, `defineComputedCard`, `defineDivider`, `defineInfoText`, and `defineFieldGrid`.
     - Added support for dynamic conditional visibility on detail cards, sections, and tabs using boolean values or JEXL expressions evaluated against `{ doc, user }`.
@@ -568,6 +617,7 @@
     - Added custom component slot support for detail views in both React and Vue runtimes.
 
   - **Collection Aggregations System**:
+
     - Added `POST /api/collections/:slug/aggregate` endpoint to `@dyrected/core` and integrated it into the OpenAPI specification generator.
     - Added collection `aggregate()` method to `@dyrected/sdk`.
     - Implemented database aggregation queries across all adapters: `@dyrected/db-postgres`, `@dyrected/db-mysql` (with `IF()` conditional aggregation), `@dyrected/db-mongodb`, and `@dyrected/db-sqlite`.
@@ -1009,10 +1059,12 @@
 - ea1d99d: Block icons & variants, a cleaner admin loading state, dark-mode text fix, and OpenAPI/Swagger fixes.
 
   **Block schema (`@dyrected/core`)**
+
   - `Block` now supports `icon` (a Lucide `AdminIconName`) and `description` (a one-line summary), shown on block cards and in the block library.
   - New `Block.variants` (`BlockVariant[]`) — presentation variants over a shared field set. The chosen variant is stored on each block row under the reserved `variant` key and passed to the render component as a `variant` prop. Switching variant preserves the author's content.
 
   **Admin (`@dyrected/admin`)**
+
   - Redesigned block cards to match the visual editor: drag handle, icon tile, title, and a description/variant subtitle, with an accent selected state; duplicate/delete reveal on hover.
   - Added an in-block **variant switcher** (drill-in and inline modes) that writes the `variant` key and updates the live preview immediately; new blocks default to the first variant, and older rows backfill a variant on load.
   - Click-to-edit / error-summary navigation now switches to the tab that owns the target block, so drilling into a field on a non-active tab actually mounts its sub-form (previously showed only the breadcrumb).
@@ -1024,14 +1076,17 @@
   - Mobile: the edit page can toggle between the form and the live preview (single-pane) via an action-rail switch.
 
   **Render packages (`@dyrected/react`, `@dyrected/vue`)**
+
   - `BlocksItem` now types the optional `variant` field; it already flows to block components via prop spreading.
 
   **Backend (`@dyrected/core`)**
+
   - Swagger UI now resolves its OpenAPI spec **relative to the docs page**, so `/api/docs` works when the app is mounted under a prefix (e.g. a Nuxt `apiBase: "/dyrected"`) instead of 404-ing on an absolute `/api/openapi.json`.
 
 - 227449f: Nested block editor, live-preview click-to-edit, and a redesigned edit page.
 
   **Admin**
+
   - Redesigned the collection edit page: live preview on the left, form on the right, with a vertical action rail (Save, New, Preview, Workflow, View, Reset, Info) replacing the horizontal header icon cluster.
   - Nested block/array/object editing via drill-in navigation with breadcrumbs, backed by a new `NestedEditorContext` with stable-id path tracking (survives reorder/delete) and a shared `resolveContainerPath` utility.
   - Live-preview click-to-edit: clicking an annotated element in the preview iframe drills into the owning block and focuses the exact field. The global error summary now also drills in before scrolling.
@@ -1041,6 +1096,7 @@
   - Added a scalar `usePreference` hook.
 
   **Site packages (`@dyrected/vue`, `@dyrected/react`, `@dyrected/nuxt`, `@dyrected/next`)**
+
   - New `Blocks` component plus `useDyPath` / `provideDyPath` (`DyPathProvider` in React, `DyPathScope` in Vue) for low-effort `data-dy-path` annotation — authors pass only a field name and the ancestor supplies the base path.
   - `useLivePreview` now supports edit mode: on `dyrected-enter-edit-mode` it highlights and captures clicks on `[data-dy-path]` elements (via document-level event delegation) and reports them to the admin.
   - Nuxt module auto-imports `useDyPath`/`provideDyPath` and registers the `DyrectedBlocks` component.
@@ -1049,14 +1105,17 @@
 - ea1d99d: Upload MIME/size validation and add-media-from-URL.
 
   **Core (`@dyrected/core`)**
+
   - New `upload-validation` utility: `isMimeAllowed` (supports `*`, `type/*`, and exact `type/subtype` patterns, case-insensitive) and payload validation that returns a typed error with the correct HTTP status (`415 Unsupported Media Type` or `413 Payload Too Large`).
   - The media controller enforces a collection's `upload` config (`allowedMimeTypes`, `maxFileSize`) on upload and accepts external media references.
 
   **Admin (`@dyrected/admin`)**
+
   - Add media from a URL: `external-media` builder + `useAddMediaFromUrl` hook detect YouTube/Vimeo videos, direct image URLs, and generic files, and store them as reference-only media records (no file bytes). The media grid and preview components key off the resulting `mimeType` (`video/youtube`, `video/vimeo`, `image/external`, …) to render each asset correctly.
   - Media picker, media card, media library dialog, and media page updated to support external media and surface upload validation errors.
 
   **SDK (`@dyrected/sdk`)**
+
   - Support for external media references and upload validation feedback.
 
 - Updated dependencies [ea1d99d]
@@ -1097,6 +1156,7 @@
 ### Patch Changes
 
 - 38bfacb: Fix CSV importer: drag & drop, file validation, empty file rejection, invalid row handling, network failure retry, and full-page layout
+
   - Drag and drop now works on the upload zone (was advertised but never wired up) (CI-005)
   - Non-CSV files dropped or selected show a clear "Unsupported file type" error and stay on the upload screen (CI-005)
   - Empty CSV files (zero data rows) are rejected with an explicit message instead of advancing to a blank mapping step (CI-006)
@@ -1105,6 +1165,7 @@
   - CSV import now renders as a full-page layout instead of a constrained modal, giving the validation table sufficient room to display all columns and rows
 
 - 7cdfb01: Improve cloud admin auth collection resolution and delegated membership handling
+
   - Prefer the `__admins` collection for admin auth when present, then fall back to the configured `adminAuth.collectionSlug`, then the first auth collection
   - Return the resolved admin auth collection slug in public admin auth config so the admin UI and server agree on the active auth collection
   - Pass a normalized hook request context to delegated provider membership handlers so cloud-backed user management hooks can safely read query params and request headers
@@ -1174,6 +1235,7 @@
   Refactored the admin panel and core SDK interfaces to eliminate compiler errors and ESLint warnings (such as `any` usage, index signature mismatches, and regex escapes). This ensures full compatibility with the updated schema and SDK type definitions, allowing all 20 monorepo packages to build successfully.
 
   Detailed Changes:
+
   1. `@dyrected/admin` TypeScript & ESLint Fixes
      - components/media/media-library-dialog.tsx:
        - Replaced `any` in `MediaLibraryDialogProps` (`selectedValues`, `onSelect`, `onConfirm`) with proper typed interfaces (`string | Record<string, unknown>`).
@@ -1236,6 +1298,7 @@
 ### Patch Changes
 
 - 0b13e96: feat: add customizable field widths to collection edit layouts and unify list page view settings
+
   - Added customizable field widths (25%, 33%, 50%, 66%, 75%, 100%) to edit forms, enabling side-by-side field positioning.
   - Expanded the layout preferences API and SDK client to handle generic LayoutItem objects (`Array<{ name: string; width?: string }>`).
   - Consolidated the list view mode selector and column configure popovers into a unified "View Settings" panel.
@@ -1299,11 +1362,13 @@
 ### Patch Changes
 
 - 1a2e552: ### ✨ Features & Refactors
+
   - **Admin UI Customization**: Implemented the Admin UI component slot injection system along with Vue bridging support, allowing developers to inject custom components natively into the dashboard and lists.
   - **Onboarding & Setup**: Replaced prompt generation with an external guided setup flow, and added a new email template service.
   - **UI Refresh**: Updated admin CSS variables and layout container styling for improved aesthetics.
 
   ### 📚 Documentation
+
   - **Structural Changes**: Migrated feature documentation into dedicated guides.
   - **Cloud Rebrand**: Updated app dashboard documentation and references to point to the new `cloud.dyrected.com` domain.
   - **General Polish**: Expanded and updated documentation across multiple files (including fixing the YAML parser bugs in the new markdown format).
@@ -1326,6 +1391,7 @@
 ### Patch Changes
 
 - fd36dfd: **Add universal sort parsing, admin CSS isolation, initial token support, and updated branding theme**
+
   - Added universal sort parsing in `@dyrected/core`:
     - New `parseSort` utility
     - New regression test for `sort=-updatedAt`
@@ -1372,6 +1438,7 @@
 ### Patch Changes
 
 - 7db84cc: **UI/UX Improvement for Admin**
+
   1. Boolean field layout support
      Added a new `CheckboxField` and made boolean fields default to checkbox, with `admin.layout: "switch"` available when a switch UI is preferred.
   2. Array/object field renderer refactor
@@ -1404,18 +1471,21 @@
 - ed94c3a: feat: implement join field backend population and fix frontend display
 
   Backend:
+
   - Populate join fields in API responses (find/findOne) with related docs
   - Add configurable `limit` property to join field type (default 10)
   - Include `collection`, `on`, and `limit` in schema endpoint serialization
   - Skip join population at depth > 0 to prevent infinite recursion
 
   Frontend:
+
   - Read backend-populated join data via useWatch instead of separate API calls
   - Fix "Create new" button route from /create to /new
   - Pre-fill relationship fields from URL query params on new entry creation
   - Include join field data in form default values for display
 
   Other:
+
   - Add CSV export to collection list page
   - Add functional access control tests
   - Update collection/global controller hooks
@@ -1477,6 +1547,7 @@
 ### Patch Changes
 
 - 09d6e92: Minor improvements
+
   - move Admin UI to @dyrected/react, add DyrectedMedia components, and introduce withDyrected Next.js config for dependency resolution.
   - consolidate React components in @dyrected/react, re-export from @dyrected/next, and add Next.js config wrapper
   - remove restrictive vertical scroll constraints across block builder, edit page, and media components
@@ -1502,6 +1573,7 @@
 ### Patch Changes
 
 - 414b005: - feat: add generic typing to defineCollection and defineGlobal, introduce HookRequestContext, and enhance DynamicOptions interfaces.
+
   - feat: implement automatic document shape inference for collection and global definitions via field array analysis
   - feat: enhance rich text editor link management, add time support to date picker, and update radio field props
   - feat: add table support to rich text editor, introduce datetime field type, and improve form engine type safety.
@@ -1569,6 +1641,7 @@
 ### Patch Changes
 
 - 4a6881b: **`@dyrected/admin` — Patch**
+
   - **Media library**: Replaced the narrow Sheet sidebar with a spacious Dialog (60/40 split-view) for a WordPress-style media editing experience.
   - **Infinite scroll**: Replaced pagination with infinite scroll on the media library page.
   - **Media preview**: Added a dynamic media preview block (image/audio/video/file) at the top of the `EditEntryPage` for upload collections.
@@ -1581,6 +1654,7 @@
   - **URL validation**: Updated the `url` field Zod schema to support both simple strings and structured URL objects (external/internal link data) to resolve validation errors when saving URLs.
 
   **`@dyrected/core` — Patch**
+
   - **Default Query Depth**: Increased default API population depth for `findOne` and `global` endpoints to `10` to guarantee deep/full resolution of relationships and media by default.
   - **URL Field Population**: Enhanced the `PopulationService` to dynamically resolve internal `url` fields. It now populates the target document, recursively applies defaults, and rewrites the relative URL to use the target's slug (or falls back to ID).
   - **Nested Document Defaults**: The `PopulationService` now automatically applies default values to related documents during relationship population.
@@ -1638,44 +1712,54 @@
   ## 🛠️ Summary of Resolved Bugs
 
   ### 1. **Bug 1 (MySQL EADDRNOTAVAIL Socket Error)**
+
   - **Fix:** Handled and caught connection failures in `packages/db-mysql/src/index.ts`. If `EADDRNOTAVAIL` is detected on macOS loopback environments, we print a highly informative log advising the user to replace `localhost` with `127.0.0.1` in their `.env` file.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L105-L117)
 
   ### 2. **Bug 2 (MySQL Database Auto-Creation)**
+
   - **Fix:** Enhanced the adapter to check if the database exists prior to initializing the connection pool. It temporarily establishes a connection to the server without selecting a database, runs `CREATE DATABASE IF NOT EXISTS \`dbname\``, and gracefully closes the handshake.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L79-L93)
 
   ### 3. **Bug 3 (PostgreSQL Parameter Mismatch)**
+
   - **Fix:** Refactored the `find()` queries inside the pg adapter to construct plain SQL query strings, passing them directly to `this.sql.unsafe(queryStr, params)`. This prevents nested tagged template literals from stripping parameterized `$N` value bindings.
   - **Reference File:** [packages/db-postgres/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-postgres/src/index.ts#L65-L119)
 
   ### 4. **Bug 4 (Nuxt TS Configuration Import)**
+
   - **Fix:** Integrated dynamic loading of `"jiti"` (bundled natively with Nuxt/Nitro) inside `packages/nuxt/src/runtime/server/plugins/db.ts` to cleanly transpile and import `dyrected.config.ts` without raw ES Module "Unknown file extension" exceptions.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L11-L40)
 
   ### 5. **Bug 5 (Nitro Runtime Import Resolution)**
+
   - **Fix:** Standardized module imports in the Nuxt context by replacing the problematic `"nitro/runtime"` import with `"nitropack/runtime"`.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L2-L4)
 
   ### 6. **Bug 6 (Collapsible & Sortable Arrays)**
+
   - **Fix:** Redesigned array field lists into collapsible Cards utilizing draggable handle hooks, supporting both drag-and-drop reordering (`@dnd-kit/sortable`) and dynamic child attribute watch previews (displays key text values as a header preview).
   - **Reference File:** [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx#L182-L330)
 
   ### 7. **Bug 7 (Path Duplication)**
+
   - **Fix:** Prevented redundant folder prefixes (e.g. `/dyrected/dyrected/`) from being appended to logo media URLs.
   - **Reference File:** [packages/admin/src/lib/utils.ts](file:///Users/busola/Work/dyrected/packages/admin/src/lib/utils.ts#L14-L24)
 
   ### 8. **Bug 8 (Media Previews)**
+
   - **Fix:** Added a direct URL/path string fallback rendering in the admin dashboard `MediaPicker` to instantly load images when an empty relationship payload is returned.
   - **Reference File:** [packages/admin/src/components/forms/fields/media-picker.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/fields/media-picker.tsx#L45-L68)
 
   ### 9. **Bug 9 (Media Infinite Scroll)**
+
   - **Fix:** Upgraded the media library lists and selector modal dialog to use React Query's `useInfiniteQuery`, implementing an `IntersectionObserver` scroll listener to paginate assets.
   - **Reference Files:**
     - [packages/admin/src/pages/media/media-page.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/pages/media/media-page.tsx)
     - [packages/admin/src/components/media/media-library-dialog.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/media/media-library-dialog.tsx)
 
   ### 10. **Bug 10 (Slugs vs Labels / Dynamic Add Buttons)**
+
   - **Fix:** Swapped out hardcoded string actions with singularized schema collection labels (e.g. "Add Post", "Add Testimonial") and ensured singularized headers show everywhere.
   - **Reference Files:**
     - [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx)
@@ -1819,13 +1903,16 @@
 ### Patch Changes
 
 - 220818c: ### @dyrected/core
+
   - **New Discovery Workflow**: Refined the AI setup prompt with a multi-step "Phase 0" discovery process to improve initial project scoping.
   - **Nomenclature Standardization**: Updated all system prompts to use "Nuxt.js" nomenclature and improved schema definition examples.
 
   ### @dyrected/db-postgres & @dyrected/db-sqlite
+
   - **Architecture Documentation**: Added source-level documentation explaining the use of raw SQL drivers (postgres.js/better-sqlite3) alongside Drizzle to support dynamic runtime schemas.
 
   ### @dyrected/admin
+
   - **Internal Maintenance**: Synchronized internal documentation and field renderer context to support the latest core setup workflows.
 
 - Updated dependencies [220818c]
@@ -1916,17 +2003,20 @@
   ### Breaking Changes
 
   **WHAT:**
+
   - Renamed `createApp` to `createDyrectedApp` across all core and framework packages.
   - Removed the hardcoded `/api` prefix from internal routing logic; API paths now default to the handler root or are controlled via `apiPrefix` config.
   - Administrative users are now isolated in a reserved `__admins` collection by default.
   - Standardized database adapter return types to ensure consistent ID handling across SQL and NoSQL providers.
 
   **WHY:**
+
   - The rename prevents naming collisions with native framework initializers (like Vue's `createApp`).
   - Decoupling the `/api` prefix provides better compatibility with Next.js/Nuxt server routes and custom proxy configurations.
   - The `__admins` separation ensures system-level security isolation from application-level user data.
 
   **HOW:**
+
   - Update your server entry points to use the new `createDyrectedApp` factory function.
   - If you have custom integrations targeting internal endpoints, ensure your base URL paths are updated to reflect the removal of the mandatory `/api` prefix.
   - If upgrading an existing installation, migrate your administrative users from the `users` collection to the new `__admins` collection.
