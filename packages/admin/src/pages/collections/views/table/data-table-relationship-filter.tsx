@@ -116,14 +116,6 @@ export function DataTableRelationshipFilter<TData, TValue>({
   )
   const displayField = relatedCollection?.admin?.useAsTitle || "title"
 
-  // const candidateSearchFields = React.useMemo(() => {
-  //   const fields = (relatedCollection?.fields as Array<any> | undefined) ?? []
-  //   const fieldNames = new Set(fields.map((f) => f.name))
-  //   const potential = [displayField, "name", "title", "email", "slug", "username", "code"]
-  //   const matches = Array.from(new Set(potential.filter((name) => fieldNames.has(name))))
-  //   return matches.length > 0 ? matches : [displayField]
-  // }, [relatedCollection, displayField])
-
   const getDocLabel = React.useCallback(
     (item: Record<string, any>) => {
       return String(item[displayField] || item.name || item.slug || item.id || "")
