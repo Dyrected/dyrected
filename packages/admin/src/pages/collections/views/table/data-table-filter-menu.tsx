@@ -380,7 +380,77 @@ function FilterValueEditor<TData>({
   const stringValue = typeof state.value === "string" ? state.value : ""
 
   if (variant === "date") {
-    const dateValue = stringValue ? new Date(stringValue) : undefined
+    if (operator === "isBetween") {
+      const startVal =
+        typeof state.value === "string" && !Number.isNaN(new Date(state.value).getTime())
+          ? new Date(state.value)
+          : undefined
+      const endVal =
+        typeof state.value2 === "string" && !Number.isNaN(new Date(state.value2).getTime())
+          ? new Date(state.value2)
+          : undefined
+
+      return (
+        <div className="dy-flex dy-items-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "dy-h-full dy-rounded-none dy-border-y dy-border-l dy-border-border/50 dy-px-2 dy-font-normal",
+                  !startVal && "dy-text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="dy-mr-1 dy-h-3 dy-w-3" />
+                <span className="dy-truncate dy-text-xs">
+                  {startVal ? startVal.toLocaleDateString() : "Start date…"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="dy-w-auto dy-p-0">
+              <Calendar
+                mode="single"
+                selected={startVal}
+                defaultMonth={startVal}
+                onSelect={(date) => onUpdate({ value: date ? date.toISOString() : "" })}
+              />
+            </PopoverContent>
+          </Popover>
+          <span className="dy-px-1 dy-text-xs dy-text-muted-foreground">and</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "dy-h-full dy-rounded-none dy-border-y dy-border-border/50 dy-px-2 dy-font-normal",
+                  !endVal && "dy-text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="dy-mr-1 dy-h-3 dy-w-3" />
+                <span className="dy-truncate dy-text-xs">
+                  {endVal ? endVal.toLocaleDateString() : "End date…"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="dy-w-auto dy-p-0">
+              <Calendar
+                mode="single"
+                selected={endVal}
+                defaultMonth={endVal ?? startVal}
+                onSelect={(date) => onUpdate({ value2: date ? date.toISOString() : "" })}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )
+    }
+
+    const dateValue =
+      stringValue && !Number.isNaN(new Date(stringValue).getTime())
+        ? new Date(stringValue)
+        : undefined
     return (
       <Popover open={showOptions} onOpenChange={setShowOptions}>
         <PopoverTrigger asChild>
@@ -391,7 +461,7 @@ function FilterValueEditor<TData>({
               !stringValue && "dy-text-muted-foreground",
             )}
           >
-            <CalendarIcon />
+            <CalendarIcon className="dy-mr-1 dy-h-3 dy-w-3" />
             <span className="dy-truncate dy-text-xs">
               {dateValue ? dateValue.toLocaleDateString() : "Pick a date…"}
             </span>
@@ -402,7 +472,10 @@ function FilterValueEditor<TData>({
             mode="single"
             selected={dateValue}
             defaultMonth={dateValue}
-            onSelect={(date) => onUpdate({ value: date ? date.toISOString() : "" })}
+            onSelect={(date) => {
+              onUpdate({ value: date ? date.toISOString() : "" })
+              setShowOptions(false)
+            }}
           />
         </PopoverContent>
       </Popover>
@@ -532,11 +605,14 @@ function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSele
       )
     }
     case "date": {
+      const selectedDate =
+        value && !Number.isNaN(new Date(value).getTime()) ? new Date(value) : undefined
       return (
         <div className="dy-p-1">
           <Calendar
             mode="single"
-            selected={value ? new Date(value) : undefined}
+            selected={selectedDate}
+            defaultMonth={selectedDate}
             onSelect={(date) => onSelect(date ? date.toISOString() : "")}
           />
         </div>

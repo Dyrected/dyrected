@@ -439,29 +439,54 @@ export function operatorDateFilter(
 ): boolean {
   if (typeof filterValue !== "object" || filterValue === null) {
     const needle = toTime(filterValue)
-    return needle ? toTime(row.getValue(columnId)) === needle : true
+    if (!needle) return true
+    const cellTime = toTime(row.getValue(columnId))
+    if (cellTime === null) return false
+    const d = new Date(needle)
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime()
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime()
+    return cellTime >= start && cellTime <= end
   }
 
   const { operator, value, value2 } = filterValue as OperatorFilterValue
   const cellTime = toTime(row.getValue(columnId))
 
+  if (operator === "isEmpty") return cellTime === null
+  if (operator === "isNotEmpty") return cellTime !== null
+  if (cellTime === null) return false
+
+  const targetTime = toTime(value)
+  if (!targetTime) return true
+
+  const d = new Date(targetTime)
+  const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime()
+  const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime()
+
   switch (operator) {
-    case "isEmpty":
-      return cellTime === null
-    case "isNotEmpty":
-      return cellTime !== null
+    case "eq":
+      return cellTime >= startOfDay && cellTime <= endOfDay
+    case "ne":
+      return cellTime < startOfDay || cellTime > endOfDay
+    case "lt":
+      return cellTime < startOfDay
+    case "lte":
+      return cellTime <= endOfDay
+    case "gt":
+      return cellTime > endOfDay
+    case "gte":
+      return cellTime >= startOfDay
     case "isBetween": {
-      if (cellTime === null) return false
-      const start = toTime(value)
-      const end = toTime(value2)
-      if (!start || !end) return false
-      return cellTime >= Math.min(start, end) && cellTime <= Math.max(start, end)
+      const target2Time = toTime(value2)
+      if (!target2Time) return true
+      const d2 = new Date(target2Time)
+      const start2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate(), 0, 0, 0, 0).getTime()
+      const end2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate(), 23, 59, 59, 999).getTime()
+      const minStart = Math.min(startOfDay, start2)
+      const maxEnd = Math.max(endOfDay, end2)
+      return cellTime >= minStart && cellTime <= maxEnd
     }
-    default: {
-      const target = toTime(value)
-      if (cellTime === null || !target) return false
-      return compareNumbers(cellTime, target, operator)
-    }
+    default:
+      return cellTime >= startOfDay && cellTime <= endOfDay
   }
 }
 operatorDateFilter.autoRemove = (filterValue: any) =>
@@ -470,6 +495,14 @@ operatorDateFilter.autoRemove = (filterValue: any) =>
 /** Whether an operator expects an accompanying value. */
 export function operatorNeedsValue(operator: string, filterValue?: OperatorFilterValue): boolean {
   if (operator === "isEmpty" || operator === "isNotEmpty") return false
+  if (operator === "isBetween") {
+    return (
+      filterValue?.value === undefined ||
+      filterValue?.value === "" ||
+      filterValue?.value2 === undefined ||
+      filterValue?.value2 === ""
+    )
+  }
   return filterValue ? filterValue.value === undefined || filterValue.value === "" : true
 }
 
@@ -501,7 +534,12 @@ function buildColumnMeta(field: any): ViewColumnMeta {
   if (field.type === "number" || field.type === "money") {
     return { ...base, variant: "number" }
   }
-  if (field.type === "date" || field.type === "datetime") {
+  if (
+    field.type === "date" ||
+    field.type === "datetime" ||
+    field.name === "createdAt" ||
+    field.name === "updatedAt"
+  ) {
     return { ...base, variant: "date" }
   }
   if (field.type === "text" || field.type === "email" || field.type === "textarea") {

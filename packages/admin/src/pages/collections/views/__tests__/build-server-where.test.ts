@@ -63,6 +63,50 @@ describe("buildServerWhere", () => {
       })
     })
 
+    it("translates date filters with day bounds rather than exact millisecond equality", () => {
+      const dateStr = "2026-10-09T00:00:00.000Z"
+      const d = new Date(dateStr)
+      const expectedStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).toISOString()
+      const expectedEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).toISOString()
+
+      // 'eq' (Is) matches the entire day
+      const eq = translateColumnFilter("createdAt", { operator: "eq", value: dateStr }, schema)
+      expect(eq).toEqual({ createdAt: { gte: expectedStart, lte: expectedEnd } })
+
+      // 'ne' (Is not) excludes the day
+      const ne = translateColumnFilter("createdAt", { operator: "ne", value: dateStr }, schema)
+      expect(ne).toEqual({
+        OR: [{ createdAt: { lt: expectedStart } }, { createdAt: { gt: expectedEnd } }],
+      })
+
+      // 'lt' (Is before start of day)
+      const lt = translateColumnFilter("createdAt", { operator: "lt", value: dateStr }, schema)
+      expect(lt).toEqual({ createdAt: { lt: expectedStart } })
+
+      // 'lte' (Is on or before end of day)
+      const lte = translateColumnFilter("createdAt", { operator: "lte", value: dateStr }, schema)
+      expect(lte).toEqual({ createdAt: { lte: expectedEnd } })
+
+      // 'gt' (Is after end of day)
+      const gt = translateColumnFilter("createdAt", { operator: "gt", value: dateStr }, schema)
+      expect(gt).toEqual({ createdAt: { gt: expectedEnd } })
+
+      // 'gte' (Is on or after start of day)
+      const gte = translateColumnFilter("createdAt", { operator: "gte", value: dateStr }, schema)
+      expect(gte).toEqual({ createdAt: { gte: expectedStart } })
+
+      // 'isBetween' spans from start of day 1 to end of day 2
+      const dateStr2 = "2026-10-12T00:00:00.000Z"
+      const d2 = new Date(dateStr2)
+      const expectedEnd2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate(), 23, 59, 59, 999).toISOString()
+      const isBetween = translateColumnFilter(
+        "createdAt",
+        { operator: "isBetween", value: dateStr, value2: dateStr2 },
+        schema,
+      )
+      expect(isBetween).toEqual({ createdAt: { gte: expectedStart, lte: expectedEnd2 } })
+    })
+
     it("translates raw string search filter", () => {
       expect(translateColumnFilter("name", "John", schema)).toEqual({
         name: { contains: "John" },
@@ -73,6 +117,7 @@ describe("buildServerWhere", () => {
       expect(translateColumnFilter("name", undefined, schema)).toBeNull()
       expect(translateColumnFilter("name", "", schema)).toBeNull()
       expect(translateColumnFilter("status", [], schema)).toBeNull()
+      expect(translateColumnFilter("createdAt", { operator: "isBetween", value: "2026-10-09", value2: "" }, schema)).toBeNull()
     })
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { relationshipFilter, multiSelectFilter, buildViewColumns } from "../build-view-columns"
+import { relationshipFilter, multiSelectFilter, operatorDateFilter, buildViewColumns } from "../build-view-columns"
 import { translateColumnFilter, buildServerWhere } from "../build-server-where"
 
 describe("Relationship Filtering", () => {
@@ -122,6 +122,75 @@ describe("Relationship Filtering", () => {
       }
       expect(multiSelectFilter(row, "categories", ["ai", "design"])).toBe(true)
       expect(multiSelectFilter(row, "categories", ["sports"])).toBe(false)
+    })
+  })
+
+  describe("operatorDateFilter for date and datetime fields", () => {
+    // Record created on Oct 9, 2026 at 2:32 PM UTC
+    const rowOct9 = {
+      getValue: (id: string) => (id === "createdAt" ? "2026-10-09T14:32:00.000Z" : undefined),
+    }
+    // Record created on Oct 11, 2026 at 10:00 AM UTC
+    const rowOct11 = {
+      getValue: (id: string) => (id === "createdAt" ? "2026-10-11T10:00:00.000Z" : undefined),
+    }
+
+    it("matches full day for 'eq' (Is) regardless of record time-of-day", () => {
+      expect(
+        operatorDateFilter(rowOct9, "createdAt", {
+          operator: "eq",
+          value: "2026-10-09T00:00:00.000Z",
+        }),
+      ).toBe(true)
+
+      expect(
+        operatorDateFilter(rowOct11, "createdAt", {
+          operator: "eq",
+          value: "2026-10-09T00:00:00.000Z",
+        }),
+      ).toBe(false)
+    })
+
+    it("excludes the day for 'ne' (Is not)", () => {
+      expect(
+        operatorDateFilter(rowOct9, "createdAt", {
+          operator: "ne",
+          value: "2026-10-09T00:00:00.000Z",
+        }),
+      ).toBe(false)
+
+      expect(
+        operatorDateFilter(rowOct11, "createdAt", {
+          operator: "ne",
+          value: "2026-10-09T00:00:00.000Z",
+        }),
+      ).toBe(true)
+    })
+
+    it("correctly matches date ranges for 'isBetween' spanning two dates", () => {
+      const rangeFilter = {
+        operator: "isBetween",
+        value: "2026-10-09T00:00:00.000Z",
+        value2: "2026-10-11T00:00:00.000Z",
+      }
+
+      // Both Oct 9 and Oct 11 fall within the range [Oct 9 00:00:00 -> Oct 11 23:59:59]
+      expect(operatorDateFilter(rowOct9, "createdAt", rangeFilter)).toBe(true)
+      expect(operatorDateFilter(rowOct11, "createdAt", rangeFilter)).toBe(true)
+
+      // Oct 15 is outside the range
+      const rowOct15 = {
+        getValue: (id: string) => (id === "createdAt" ? "2026-10-15T09:00:00.000Z" : undefined),
+      }
+      expect(operatorDateFilter(rowOct15, "createdAt", rangeFilter)).toBe(false)
+    })
+
+    it("handles isEmpty and isNotEmpty", () => {
+      const emptyRow = { getValue: () => null }
+      expect(operatorDateFilter(emptyRow, "createdAt", { operator: "isEmpty" })).toBe(true)
+      expect(operatorDateFilter(emptyRow, "createdAt", { operator: "isNotEmpty" })).toBe(false)
+      expect(operatorDateFilter(rowOct9, "createdAt", { operator: "isEmpty" })).toBe(false)
+      expect(operatorDateFilter(rowOct9, "createdAt", { operator: "isNotEmpty" })).toBe(true)
     })
   })
 })

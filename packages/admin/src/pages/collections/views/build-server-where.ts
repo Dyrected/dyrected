@@ -78,6 +78,22 @@ function coerceFieldValue(value: unknown, fieldName: string, schema?: any): unkn
   return value
 }
 
+function isDateField(columnId: string, schema?: any): boolean {
+  if (columnId === "createdAt" || columnId === "updatedAt") return true
+  const field = (schema?.fields ?? []).find((candidate: any) => candidate.name === columnId)
+  return field?.type === "date" || field?.type === "datetime"
+}
+
+function getDateBounds(value: unknown): { start: string; end: string } | null {
+  if (!value) return null
+  const d = new Date(value as string | number | Date)
+  if (Number.isNaN(d.getTime())) return null
+
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).toISOString()
+  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).toISOString()
+  return { start, end }
+}
+
 /**
  * Translates a single TanStack ColumnFilter into a Dyrected Where clause.
  */
@@ -100,6 +116,54 @@ export function translateColumnFilter(
   // Operator-based filter object: { operator, value, value2? }
   if (typeof filterValue === "object" && "operator" in (filterValue as Record<string, unknown>)) {
     const { operator, value, value2 } = filterValue as OperatorFilterValue
+
+    // Date / Datetime fields need full-day ranges rather than exact millisecond equality
+    if (isDateField(columnId, schema)) {
+      if (operator === "isEmpty") {
+        return {
+          OR: [{ [columnId]: null }, { [columnId]: "" }, { [columnId]: { exists: false } }],
+        }
+      }
+      if (operator === "isNotEmpty") {
+        return {
+          AND: [{ [columnId]: { not_equals: null } }, { [columnId]: { not_equals: "" } }],
+        }
+      }
+
+      if (operator === "isBetween") {
+        if (!value || !value2) return null
+        const b1 = getDateBounds(value)
+        const b2 = getDateBounds(value2)
+        if (!b1 || !b2) return null
+        const t1 = new Date(b1.start).getTime()
+        const t2 = new Date(b2.start).getTime()
+        const start = t1 <= t2 ? b1.start : b2.start
+        const end = t1 <= t2 ? b2.end : b1.end
+        return { [columnId]: { gte: start, lte: end } }
+      }
+
+      const bounds = getDateBounds(value)
+      if (!bounds) return null
+
+      switch (operator) {
+        case "eq":
+          return { [columnId]: { gte: bounds.start, lte: bounds.end } }
+        case "ne":
+          return {
+            OR: [{ [columnId]: { lt: bounds.start } }, { [columnId]: { gt: bounds.end } }],
+          }
+        case "lt":
+          return { [columnId]: { lt: bounds.start } }
+        case "lte":
+          return { [columnId]: { lte: bounds.end } }
+        case "gt":
+          return { [columnId]: { gt: bounds.end } }
+        case "gte":
+          return { [columnId]: { gte: bounds.start } }
+        default:
+          return { [columnId]: { gte: bounds.start, lte: bounds.end } }
+      }
+    }
 
     switch (operator) {
       case "iLike":
