@@ -90,6 +90,13 @@ export interface SerializedAction {
 export interface SerializedViewSubMetric {
   /** Label describing the sub-metric value. */
   label: string
+  /**
+   * Filter scope override for this sub-metric:
+   * - `"view"`: evaluates within the view's base filter (default)
+   * - `"filtered"`: live summary reflecting active toolbar filters & search
+   * - `"collection"`: global collection totals ignoring view filters
+   */
+  scope?: "view" | "filtered" | "collection"
   /** Primary database aggregate definition. */
   aggregate?: {
     /** Counts all matching rows (`"*"`). */
@@ -131,6 +138,14 @@ export interface SerializedViewMetric {
   color?: string
   /** Unit suffix displayed after the primary value (e.g. `"guests"`, `"orders"`, `"hrs"`). */
   unit?: string
+  /**
+   * Filter scope for this metric card:
+   * - `"view"`: evaluates within the view's base filter (default)
+   * - `"filtered"`: live summary reflecting active toolbar filters & search
+   * - `"collection"`: global collection totals ignoring view filters
+   * Defaults to view's `metricsScope` (or `"view"`).
+   */
+  scope?: "view" | "filtered" | "collection"
   /** Primary database aggregation configuration. */
   aggregate?: {
     /** Counts all matching rows (`"*"`). */
@@ -218,6 +233,13 @@ export interface SerializedView {
   actionOrder?: string[]
   /** KPI summary cards rendered in the hero row above the records. */
   metrics?: SerializedViewMetric[]
+  /**
+   * Default filter scope for all metric cards in this view:
+   * - `"view"`: evaluates within the view's base filter (default)
+   * - `"filtered"`: live summary reflecting active toolbar filters & search
+   * - `"collection"`: global collection totals ignoring view filters
+   */
+  metricsScope?: "view" | "filtered" | "collection"
   /** Custom admin component slot overrides injected into the layout. */
   components?: {
     beforeViewHeader?: string[]

@@ -78,6 +78,8 @@ export type MetricColor = 'purple' | 'emerald' | 'amber' | 'rose' | 'blue' | 'in
 export interface ViewSubMetric {
   /** Short label for the sub-metric (e.g. "Pending", "Collected"). */
   label: string;
+  /** Filter scope override for this sub-metric: `'view' | 'filtered' | 'collection'`. Defaults to parent metric's scope. */
+  scope?: 'view' | 'filtered' | 'collection';
   /** Single database aggregate operation. */
   aggregate?: AggregateOperation;
   /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */
@@ -115,6 +117,14 @@ export interface ViewMetric {
   color?: MetricColor;
   /** Unit badge shown alongside the numeric value (e.g. `"Guests"`, `"Orders"`, `"Tables"`). */
   unit?: string;
+  /**
+   * Filter scope for this metric card:
+   * - `'view'`: evaluates within the view's base filter (default)
+   * - `'filtered'`: live summary reflecting active table/toolbar filters & search
+   * - `'collection'`: global collection totals ignoring view filters
+   * Defaults to view's `metricsScope` (or `'view'`).
+   */
+  scope?: 'view' | 'filtered' | 'collection';
   /** Single database aggregate operation (`count`, `distinctCount`, `sum`, `avg`, `min`, `max`). */
   aggregate?: AggregateOperation;
   /** Map of named aggregate operations referenced in `expression` as `aggregates.key`. */
@@ -240,6 +250,13 @@ export interface ViewConfigBase {
   actionOrder?: string[];
   /** KPI summary cards rendered in the hero row above the view. */
   metrics?: ViewMetric[];
+  /**
+   * Default filter scope for all metric cards in this view:
+   * - `'view'`: evaluates within the view's base filter (default)
+   * - `'filtered'`: live summary reflecting active table/toolbar filters & search
+   * - `'collection'`: global collection totals ignoring view filters
+   */
+  metricsScope?: 'view' | 'filtered' | 'collection';
   /** Optional real-time counter badge or status indicator displayed on this view in navigation and tabs. */
   badge?: NavBadgeConfig | string;
   /** Custom component slots rendered around this operational view. */

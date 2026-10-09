@@ -39,6 +39,7 @@ import {
   type SpreadsheetLayoutProps,
 } from "./spreadsheet/spreadsheet-layout"
 import { RecordPeekDrawer } from "./record-peek-drawer"
+import { buildServerWhere } from "./build-server-where"
 
 export interface OperationalViewPageProps {
   slug: string
@@ -84,7 +85,38 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
   const customActions = useMemo(() => (view.actions ?? []) as SerializedAction[], [view.actions])
 
-  const metrics = useViewMetrics({ slug, viewSlug: view.slug, metrics: view.metrics })
+  // Extract active toolbar filters and search query from URL search parameters
+  const activeFilters = useMemo(() => {
+    const raw = searchParams.get("filters")
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }, [searchParams])
+  const activeSearch = searchParams.get("search") ?? ""
+  const activeJoinOperator = (searchParams.get("joinOperator") as "and" | "or") || "and"
+
+  const filteredWhere = useMemo(() => {
+    return buildServerWhere({
+      baseFilter: resolveViewFilter(view.filter),
+      columnFilters: activeFilters,
+      search: activeSearch,
+      schema,
+      joinOperator: activeJoinOperator,
+    })
+  }, [view.filter, activeFilters, activeSearch, schema, activeJoinOperator])
+
+  const metrics = useViewMetrics({
+    slug,
+    viewSlug: view.slug,
+    metrics: view.metrics,
+    metricsScope: view.metricsScope,
+    viewFilter: view.filter,
+    filteredWhere,
+  })
   const isViewFetching = useIsFetching({ queryKey: ["operational-view", slug] }) > 0
   const isMetricsFetching = useIsFetching({ queryKey: ["operational-view-metrics", slug] }) > 0
   const isGroupsFetching = useIsFetching({ queryKey: ["table-group", slug] }) > 0

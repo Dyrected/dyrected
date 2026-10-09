@@ -175,9 +175,19 @@ export function MetricCards({ metrics, isLoading = false, isRefetching = false, 
             >
               <CardContent className="dy-space-y-2 !dy-p-4">
                 <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
-                  <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
-                    {metric.label}
-                  </p>
+                  <div className="dy-flex dy-items-center dy-gap-1.5">
+                    <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
+                      {metric.label}
+                    </p>
+                    {metric.scope === "filtered" && (
+                      <span
+                        className="dy-text-[9px] dy-font-medium dy-lowercase dy-opacity-60 dy-border dy-border-current/30 dy-rounded dy-px-1 dy-leading-tight"
+                        title="Aggregated against active table filters and search"
+                      >
+                        filtered
+                      </span>
+                    )}
+                  </div>
                   {isRefetching && (
                     <span className="dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-current dy-animate-ping dy-opacity-75" title="Updating..." />
                   )}
