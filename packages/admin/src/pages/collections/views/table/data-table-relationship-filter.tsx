@@ -25,6 +25,32 @@ import { cn } from "../../../../lib/utils"
 
 const PAGE_SIZE = 25
 
+// Module-level document cache by ID across renders
+const docCache = new Map<string, Record<string, any>>()
+
+function getDocImage(doc?: Record<string, any>): string | null {
+  if (!doc) return null
+  if (typeof doc.thumbnailURL === "string" && doc.thumbnailURL) return doc.thumbnailURL
+  if (
+    typeof doc.url === "string" &&
+    doc.url &&
+    (doc.mimeType?.startsWith("image/") ||
+      /\.(png|jpe?g|webp|gif|svg)$/i.test(doc.url) ||
+      doc.url.startsWith("http"))
+  ) {
+    return doc.url
+  }
+  if (typeof doc.avatar === "string" && (doc.avatar.startsWith("http") || doc.avatar.startsWith("/")))
+    return doc.avatar
+  if (typeof doc.avatar === "object" && doc.avatar?.url) return doc.avatar.url
+  if (typeof doc.image === "string" && (doc.image.startsWith("http") || doc.image.startsWith("/")))
+    return doc.image
+  if (typeof doc.image === "object" && doc.image?.url) return doc.image.url
+  if (typeof doc.photo === "string" && doc.photo.startsWith("http")) return doc.photo
+  if (typeof doc.logo === "string" && doc.logo.startsWith("http")) return doc.logo
+  return null
+}
+
 interface DataTableRelationshipFilterProps<TData, TValue> {
   column?: Column<TData, TValue>
   title?: string
@@ -34,10 +60,11 @@ interface DataTableRelationshipFilterProps<TData, TValue> {
 
 /**
  * Multi-select relationship filter popover with:
- * 1. Infinite scrolling pagination (list dynamically grows as you scroll or search).
- * 2. Guaranteed selected-value hydration (selected documents are fetched directly by ID so
- *    they never look empty or disappear when outside the first page).
- * 3. 100% visual consistency with DataTableFacetedFilter.
+ * 1. Pinned selected section at the top of the popover.
+ * 2. Human-readable descriptive trigger badges (shows title for 1-2 items).
+ * 3. Multi-field server search across common candidate identifiers.
+ * 4. Avatar and thumbnail rendering for media/visual records.
+ * 5. Inclusion and negation operator support (Is any of / Is not).
  */
 export function DataTableRelationshipFilter<TData, TValue>({
   column,
@@ -51,9 +78,6 @@ export function DataTableRelationshipFilter<TData, TValue>({
   const [search, setSearch] = React.useState("")
   const [debouncedSearch, setDebouncedSearch] = React.useState("")
 
-  // Local cache of known documents by ID to guarantee instant label rendering
-  const docCacheRef = React.useRef<Map<string, Record<string, any>>>(new Map())
-
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search.trim())
@@ -62,19 +86,43 @@ export function DataTableRelationshipFilter<TData, TValue>({
   }, [search])
 
   const columnFilterValue = column?.getFilterValue()
-  const selectedValues = React.useMemo(() => {
-    if (!columnFilterValue) return new Set<string>()
-    if (Array.isArray(columnFilterValue)) return new Set(columnFilterValue.map(String))
-    return new Set([String(columnFilterValue)])
+  const { currentOperator, selectedIds } = React.useMemo(() => {
+    if (!columnFilterValue) return { currentOperator: "in", selectedIds: [] as string[] }
+    if (
+      typeof columnFilterValue === "object" &&
+      !Array.isArray(columnFilterValue) &&
+      "operator" in (columnFilterValue as any)
+    ) {
+      const op = (columnFilterValue as any).operator || "in"
+      const val = (columnFilterValue as any).value
+      const ids = Array.isArray(val)
+        ? val.map(String)
+        : val !== undefined && val !== ""
+          ? [String(val)]
+          : []
+      return { currentOperator: op, selectedIds: ids }
+    }
+    if (Array.isArray(columnFilterValue)) {
+      return { currentOperator: "in", selectedIds: columnFilterValue.map(String) }
+    }
+    return { currentOperator: "in", selectedIds: [String(columnFilterValue)] }
   }, [columnFilterValue])
 
-  const selectedIds = React.useMemo(() => Array.from(selectedValues), [selectedValues])
+  const selectedValues = React.useMemo(() => new Set(selectedIds), [selectedIds])
 
-  // Resolve display title field for the related collection
+  // Resolve display title field and searchable fields for the related collection
   const relatedCollection = (schemas?.collections as Array<any> | undefined)?.find(
     (c) => c.slug === relationTo,
   )
   const displayField = relatedCollection?.admin?.useAsTitle || "title"
+
+  // const candidateSearchFields = React.useMemo(() => {
+  //   const fields = (relatedCollection?.fields as Array<any> | undefined) ?? []
+  //   const fieldNames = new Set(fields.map((f) => f.name))
+  //   const potential = [displayField, "name", "title", "email", "slug", "username", "code"]
+  //   const matches = Array.from(new Set(potential.filter((name) => fieldNames.has(name))))
+  //   return matches.length > 0 ? matches : [displayField]
+  // }, [relatedCollection, displayField])
 
   const getDocLabel = React.useCallback(
     (item: Record<string, any>) => {
@@ -84,8 +132,6 @@ export function DataTableRelationshipFilter<TData, TValue>({
   )
 
   // 1. Dedicated hydration query: fetches all currently selected documents directly by ID.
-  // Guarantees that selected items ALWAYS resolve to their human-readable title,
-  // regardless of which page they reside on or what the current search filter is.
   const { data: hydratedSelectedDocs = [] } = useQuery({
     queryKey: ["relationship-filter-hydrated", relationTo, selectedIds],
     queryFn: async () => {
@@ -98,7 +144,7 @@ export function DataTableRelationshipFilter<TData, TValue>({
         const docs = (res?.docs ?? []) as Record<string, any>[]
         for (const doc of docs) {
           if (doc?.id) {
-            docCacheRef.current.set(String(doc.id), doc)
+            docCache.set(String(doc.id), doc)
             queryClient.setQueryData(["relationship-doc", relationTo, String(doc.id)], doc)
           }
         }
@@ -111,7 +157,7 @@ export function DataTableRelationshipFilter<TData, TValue>({
       const cached = selectedIds
         .map(
           (id) =>
-            docCacheRef.current.get(id) ??
+            docCache.get(id) ??
             queryClient.getQueryData<Record<string, any>>(["relationship-doc", relationTo, id]),
         )
         .filter(Boolean) as Record<string, any>[]
@@ -121,8 +167,7 @@ export function DataTableRelationshipFilter<TData, TValue>({
     staleTime: 60_000,
   })
 
-  // 2. Infinite query for browsable / searchable options.
-  // Automatically loads more pages as the user scrolls, growing the list dynamically.
+  // 2. Infinite query for browsable / searchable options with multi-field search.
   const {
     data: infiniteData,
     isLoading: isSearchLoading,
@@ -133,14 +178,17 @@ export function DataTableRelationshipFilter<TData, TValue>({
     queryKey: ["relationship-filter-options", relationTo, debouncedSearch],
     queryFn: async ({ pageParam = 1 }) => {
       if (!client || !relationTo) return { docs: [], hasNextPage: false, page: 1 }
-      let qb = (client as any).collection(relationTo).find({ limit: PAGE_SIZE, page: pageParam })
-      if (debouncedSearch) {
-        qb = qb.where({ [displayField]: { like: `%${debouncedSearch}%` } })
-      }
-      const res = await qb.exec()
+      const res = await (client as any)
+        .collection(relationTo)
+        .find({
+          limit: PAGE_SIZE,
+          page: pageParam,
+          search: debouncedSearch || undefined,
+        })
+        .exec()
       for (const doc of res?.docs ?? []) {
         if (doc?.id) {
-          docCacheRef.current.set(String(doc.id), doc)
+          docCache.set(String(doc.id), doc)
           queryClient.setQueryData(["relationship-doc", relationTo, String(doc.id)], doc)
         }
       }
@@ -165,6 +213,16 @@ export function DataTableRelationshipFilter<TData, TValue>({
     )
   }, [infiniteData])
 
+  // Sync discovered docs into docCache in a side effect, not during render
+  React.useEffect(() => {
+    for (const doc of hydratedSelectedDocs) {
+      if (doc?.id) docCache.set(String(doc.id), doc)
+    }
+    for (const doc of browsedDocs) {
+      if (doc?.id) docCache.set(String(doc.id), doc)
+    }
+  }, [hydratedSelectedDocs, browsedDocs])
+
   // Merge hydrated selected docs and browsed docs, removing duplicate IDs
   const combinedOptions = React.useMemo(() => {
     const map = new Map<string, { id: string; label: string; doc?: Record<string, any> }>()
@@ -173,7 +231,6 @@ export function DataTableRelationshipFilter<TData, TValue>({
     for (const doc of browsedDocs) {
       const id = String(doc.id ?? "")
       if (id) {
-        docCacheRef.current.set(id, doc)
         map.set(id, { id, label: getDocLabel(doc), doc })
       }
     }
@@ -182,7 +239,6 @@ export function DataTableRelationshipFilter<TData, TValue>({
     for (const doc of hydratedSelectedDocs) {
       const id = String(doc.id ?? "")
       if (id) {
-        docCacheRef.current.set(id, doc)
         map.set(id, { id, label: getDocLabel(doc), doc })
       }
     }
@@ -191,7 +247,7 @@ export function DataTableRelationshipFilter<TData, TValue>({
     for (const id of selectedIds) {
       if (!map.has(id)) {
         const cached =
-          docCacheRef.current.get(id) ??
+          docCache.get(id) ??
           queryClient.getQueryData<Record<string, any>>(["relationship-doc", relationTo, id])
         if (cached) {
           map.set(id, { id, label: getDocLabel(cached), doc: cached })
@@ -209,12 +265,57 @@ export function DataTableRelationshipFilter<TData, TValue>({
     return Array.from(map.values())
   }, [hydratedSelectedDocs, browsedDocs, selectedIds, getDocLabel, queryClient, relationTo])
 
+  // Split options into pinned selected and remaining options
+  const { selectedOptions, unselectedOptions } = React.useMemo(() => {
+    const selected: Array<{ id: string; label: string; doc?: Record<string, any> }> = []
+    const unselected: Array<{ id: string; label: string; doc?: Record<string, any> }> = []
+
+    for (const opt of combinedOptions) {
+      if (selectedValues.has(opt.id)) {
+        selected.push(opt)
+      } else {
+        unselected.push(opt)
+      }
+    }
+
+    return { selectedOptions: selected, unselectedOptions: unselected }
+  }, [combinedOptions, selectedValues])
+
+  // Resolve human-readable labels for active trigger badges
+  const selectedLabels = React.useMemo(() => {
+    return selectedIds.map((id) => {
+      const match =
+        combinedOptions.find((o) => o.id === id) ??
+        docCache.get(id)
+      if (match) {
+        return (match as any).label || getDocLabel(match as any)
+      }
+      return id
+    })
+  }, [selectedIds, combinedOptions, getDocLabel])
+
+  const setFilterState = React.useCallback(
+    (newIds: string[], newOp: string = currentOperator) => {
+      if (!column) return
+      if (newIds.length === 0) {
+        column.setFilterValue(undefined)
+        return
+      }
+      if (newOp === "in") {
+        column.setFilterValue(newIds)
+      } else {
+        column.setFilterValue({ operator: newOp, value: newIds })
+      }
+    },
+    [column, currentOperator],
+  )
+
   const onItemSelect = React.useCallback(
     (id: string, isSelected: boolean, doc?: Record<string, any>) => {
       if (!column) return
 
       if (doc) {
-        docCacheRef.current.set(id, doc)
+        docCache.set(id, doc)
         queryClient.setQueryData(["relationship-doc", relationTo, id], doc)
       }
 
@@ -225,14 +326,17 @@ export function DataTableRelationshipFilter<TData, TValue>({
         } else {
           next.add(id)
         }
-        const filterValues = Array.from(next)
-        column.setFilterValue(filterValues.length ? filterValues : undefined)
+        setFilterState(Array.from(next))
       } else {
-        column.setFilterValue(isSelected ? undefined : [id])
-        setOpen(false)
+        if (isSelected) {
+          setFilterState([])
+        } else {
+          setFilterState([id])
+          setOpen(false)
+        }
       }
     },
-    [column, multiple, selectedValues, relationTo, queryClient],
+    [column, multiple, selectedValues, relationTo, queryClient, setFilterState],
   )
 
   const onReset = React.useCallback(
@@ -274,29 +378,75 @@ export function DataTableRelationshipFilter<TData, TValue>({
             <PlusCircle />
           )}
           {title}
+          {currentOperator === "not_in" && (
+            <span className="dy-text-[11px] dy-text-muted-foreground dy-lowercase">(not)</span>
+          )}
           {selectedValues.size > 0 && (
             <>
               <Separator
                 orientation="vertical"
                 className="dy-mx-0.5 data-[orientation=vertical]:dy-h-4"
               />
-              <Badge
-                variant="secondary"
-                className="dy-hidden dy-rounded-sm dy-px-1 dy-font-normal lg:dy-inline-flex"
-              >
-                {selectedValues.size}
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="dy-rounded-sm dy-px-1 dy-font-normal lg:dy-hidden"
-              >
-                {selectedValues.size} selected
-              </Badge>
+              {selectedValues.size === 1 ? (
+                <Badge
+                  variant="secondary"
+                  className="dy-max-w-[140px] dy-truncate dy-rounded-sm dy-px-1.5 dy-font-normal"
+                  title={selectedLabels[0]}
+                >
+                  {selectedLabels[0]}
+                </Badge>
+              ) : selectedValues.size === 2 ? (
+                <Badge
+                  variant="secondary"
+                  className="dy-max-w-[200px] dy-truncate dy-rounded-sm dy-px-1.5 dy-font-normal"
+                  title={selectedLabels.join(", ")}
+                >
+                  {selectedLabels.join(", ")}
+                </Badge>
+              ) : (
+                <Badge
+                  variant="secondary"
+                  className="dy-rounded-sm dy-px-1.5 dy-font-normal"
+                >
+                  {selectedValues.size} selected
+                </Badge>
+              )}
             </>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="dy-w-64 dy-p-0" align="start">
+        {/* Match mode header: Is any of / Is not */}
+        <div className="dy-flex dy-items-center dy-justify-between dy-border-b dy-border-border/40 dy-px-3 dy-py-1.5 dy-text-xs">
+          <span className="dy-font-medium dy-text-muted-foreground">Match:</span>
+          <div className="dy-flex dy-items-center dy-gap-1">
+            <button
+              type="button"
+              onClick={() => setFilterState(selectedIds, "in")}
+              className={cn(
+                "dy-rounded dy-px-1.5 dy-py-0.5 dy-text-xs dy-transition-colors",
+                currentOperator === "in"
+                  ? "dy-bg-primary dy-text-primary-foreground dy-font-medium"
+                  : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-accent-foreground",
+              )}
+            >
+              Is any of
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterState(selectedIds, "not_in")}
+              className={cn(
+                "dy-rounded dy-px-1.5 dy-py-0.5 dy-text-xs dy-transition-colors",
+                currentOperator === "not_in"
+                  ? "dy-bg-primary dy-text-primary-foreground dy-font-medium"
+                  : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-accent-foreground",
+              )}
+            >
+              Is not
+            </button>
+          </div>
+        </div>
+
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={title}
@@ -312,54 +462,90 @@ export function DataTableRelationshipFilter<TData, TValue>({
             ) : combinedOptions.length === 0 ? (
               <CommandEmpty>No results found.</CommandEmpty>
             ) : (
-              <CommandGroup
+              <div
                 className="dy-max-h-[300px] dy-scroll-py-1 dy-overflow-y-auto dy-overflow-x-hidden"
                 onScroll={handleScroll}
               >
-                {combinedOptions.map((option) => {
-                  const isSelected = selectedValues.has(option.id)
-
-                  return (
-                    <CommandItem
-                      key={option.id}
-                      className="[&>svg:last-child]:dy-hidden"
-                      onSelect={() => onItemSelect(option.id, isSelected, option.doc)}
-                    >
-                      <div
-                        className={cn(
-                          "dy-flex dy-size-4 dy-items-center dy-justify-center dy-rounded-sm dy-border dy-border-primary",
-                          isSelected
-                            ? "dy-bg-primary dy-text-primary-foreground"
-                            : "dy-opacity-50 [&_svg]:dy-invisible",
-                        )}
-                      >
-                        <Check className="dy-h-3 dy-w-3" />
-                      </div>
-                      <span className="dy-truncate">{option.label}</span>
-                    </CommandItem>
-                  )
-                })}
-
-                {hasNextPage && (
-                  <div className="dy-p-1 dy-text-center">
-                    <button
-                      type="button"
-                      disabled={isFetchingNextPage}
-                      onClick={() => fetchNextPage()}
-                      className="dy-w-full dy-rounded dy-py-1 dy-text-xs dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-accent-foreground"
-                    >
-                      {isFetchingNextPage ? (
-                        <span className="dy-inline-flex dy-items-center dy-gap-1">
-                          <Loader2 className="dy-h-3 dy-w-3 dy-animate-spin" />
-                          Loading more...
-                        </span>
-                      ) : (
-                        "Load more..."
-                      )}
-                    </button>
-                  </div>
+                {/* 1. Pinned Selected Section */}
+                {selectedOptions.length > 0 && (
+                  <CommandGroup heading={`Selected (${selectedOptions.length})`}>
+                    {selectedOptions.map((option) => {
+                      const imgUrl = getDocImage(option.doc)
+                      return (
+                        <CommandItem
+                          key={`selected-${option.id}`}
+                          className="[&>svg:last-child]:dy-hidden"
+                          onSelect={() => onItemSelect(option.id, true, option.doc)}
+                        >
+                          <div className="dy-flex dy-size-4 dy-items-center dy-justify-center dy-rounded-sm dy-border dy-border-primary dy-bg-primary dy-text-primary-foreground">
+                            <Check className="dy-h-3 dy-w-3" />
+                          </div>
+                          {imgUrl && (
+                            <img
+                              src={imgUrl}
+                              alt=""
+                              className="dy-mr-1.5 dy-size-4 dy-shrink-0 dy-rounded-full dy-object-cover dy-border dy-border-border/40"
+                            />
+                          )}
+                          <span className="dy-truncate">{option.label}</span>
+                        </CommandItem>
+                      )
+                    })}
+                  </CommandGroup>
                 )}
-              </CommandGroup>
+
+                {selectedOptions.length > 0 && unselectedOptions.length > 0 && (
+                  <CommandSeparator />
+                )}
+
+                {/* 2. Options Section */}
+                {unselectedOptions.length > 0 && (
+                  <CommandGroup heading={selectedOptions.length > 0 ? "Options" : undefined}>
+                    {unselectedOptions.map((option) => {
+                      const imgUrl = getDocImage(option.doc)
+                      return (
+                        <CommandItem
+                          key={`option-${option.id}`}
+                          className="[&>svg:last-child]:dy-hidden"
+                          onSelect={() => onItemSelect(option.id, false, option.doc)}
+                        >
+                          <div className="dy-flex dy-size-4 dy-items-center dy-justify-center dy-rounded-sm dy-border dy-border-primary dy-opacity-50 [&_svg]:dy-invisible">
+                            <Check className="dy-h-3 dy-w-3" />
+                          </div>
+                          {imgUrl && (
+                            <img
+                              src={imgUrl}
+                              alt=""
+                              className="dy-mr-1.5 dy-size-4 dy-shrink-0 dy-rounded-full dy-object-cover dy-border dy-border-border/40"
+                            />
+                          )}
+                          <span className="dy-truncate">{option.label}</span>
+                        </CommandItem>
+                      )
+                    })}
+
+                    {hasNextPage && (
+                      <div className="dy-p-1 dy-text-center">
+                        <button
+                          type="button"
+                          disabled={isFetchingNextPage}
+                          onClick={() => fetchNextPage()}
+                          className="dy-w-full dy-rounded dy-py-1 dy-text-xs dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-accent-foreground"
+                        >
+                          {isFetchingNextPage ? (
+                            <span className="dy-inline-flex dy-items-center dy-gap-1">
+                              <Loader2 className="dy-h-3 dy-w-3 dy-animate-spin" />
+                              Loading more...
+                            </span>
+                          ) : (
+                            "Load more..."
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </CommandGroup>
+                )}
+              </div>
             )}
 
             {selectedValues.size > 0 && (

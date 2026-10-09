@@ -1,7 +1,8 @@
 import * as React from "react"
+import { format } from "date-fns"
 import type { Column, Table } from "@tanstack/react-table"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { BadgeCheck, CalendarIcon, ListFilter, Loader2, X } from "lucide-react"
+import { BadgeCheck, ListFilter, Loader2, X } from "lucide-react"
 
 import { Button } from "../../../../components/ui/button"
 import { Calendar } from "../../../../components/ui/calendar"
@@ -346,6 +347,126 @@ function FilterPill<TData>({ filter, columns, onUpdate, onMoveTo, onRemove }: Fi
 
 const VALUELESS_OPERATORS = new Set(["isEmpty", "isNotEmpty"])
 
+function DateFilterInput({
+  value,
+  withTime,
+  placeholder,
+  onUpdate,
+}: {
+  value?: unknown
+  withTime?: boolean
+  placeholder: string
+  onUpdate: (isoString: string) => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  const [draftText, setDraftText] = React.useState<string | null>(null)
+
+  const dateValue = React.useMemo(() => {
+    return typeof value === "string" && !Number.isNaN(new Date(value).getTime())
+      ? new Date(value)
+      : undefined
+  }, [value])
+
+  const formattedValue = React.useMemo(() => {
+    if (!dateValue) return ""
+    return withTime ? format(dateValue, "yyyy-MM-dd HH:mm") : format(dateValue, "yyyy-MM-dd")
+  }, [dateValue, withTime])
+
+  const text = draftText !== null ? draftText : formattedValue
+
+  const commitText = React.useCallback(
+    (str: string) => {
+      const trimmed = str.trim()
+      if (!trimmed) {
+        onUpdate("")
+        setDraftText(null)
+        return
+      }
+      const parsed = new Date(trimmed)
+      if (!Number.isNaN(parsed.getTime())) {
+        onUpdate(parsed.toISOString())
+      }
+      setDraftText(null)
+    },
+    [onUpdate],
+  )
+
+  const timeStr = dateValue ? format(dateValue, "HH:mm") : "00:00"
+
+  const handleDateSelect = React.useCallback(
+    (d: Date | undefined) => {
+      if (!d) {
+        onUpdate("")
+        setDraftText(null)
+        return
+      }
+      if (withTime && dateValue) {
+        d.setHours(dateValue.getHours(), dateValue.getMinutes(), 0, 0)
+      }
+      onUpdate(d.toISOString())
+      setDraftText(null)
+      if (!withTime) setOpen(false)
+    },
+    [onUpdate, withTime, dateValue],
+  )
+
+  const handleTimeChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const d = dateValue ? new Date(dateValue) : new Date()
+      const [h, m] = e.target.value.split(":").map(Number)
+      d.setHours(h || 0, m || 0, 0, 0)
+      onUpdate(d.toISOString())
+      setDraftText(null)
+    },
+    [dateValue, onUpdate],
+  )
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Input
+          size="sm"
+          placeholder={placeholder}
+          value={text}
+          onChange={(e) => setDraftText(e.target.value)}
+          onBlur={() => {
+            if (draftText !== null) commitText(draftText)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (draftText !== null) commitText(draftText)
+              setOpen(false)
+            }
+          }}
+          className={cn(
+            "dy-h-full dy-w-32 dy-rounded-none dy-border-y dy-border-border/50 dy-px-2 dy-text-xs dy-font-normal",
+            !text && "dy-text-muted-foreground",
+          )}
+        />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="dy-w-auto dy-p-0">
+        <Calendar
+          mode="single"
+          selected={dateValue}
+          defaultMonth={dateValue}
+          onSelect={handleDateSelect}
+        />
+        {withTime && (
+          <div className="dy-p-2 dy-border-t dy-flex dy-items-center dy-justify-between dy-gap-2">
+            <span className="dy-text-xs dy-text-muted-foreground">Time:</span>
+            <Input
+              type="time"
+              value={timeStr}
+              onChange={handleTimeChange}
+              className="dy-h-7 dy-w-24 dy-text-xs"
+            />
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 interface FilterValueEditorProps<TData> {
   filter: FilterEntry
   column: Column<TData>
@@ -362,7 +483,6 @@ function FilterValueEditor<TData>({
   operator,
   onUpdate,
 }: FilterValueEditorProps<TData>) {
-  const [showOptions, setShowOptions] = React.useState(false)
   const inputId = `${filter.id}-filter-value`
 
   if (VALUELESS_OPERATORS.has(operator)) {
@@ -379,110 +499,39 @@ function FilterValueEditor<TData>({
   const state = (filter.value ?? {}) as OperatorFilterValue
   const stringValue = typeof state.value === "string" ? state.value : ""
 
-  if (variant === "date") {
-    if (operator === "isBetween") {
-      const startVal =
-        typeof state.value === "string" && !Number.isNaN(new Date(state.value).getTime())
-          ? new Date(state.value)
-          : undefined
-      const endVal =
-        typeof state.value2 === "string" && !Number.isNaN(new Date(state.value2).getTime())
-          ? new Date(state.value2)
-          : undefined
-
+  if (variant === "date" || variant === "datetime") {
+    const withTime = variant === "datetime"
+    if (operator === "isBetween" || operator === "between") {
       return (
         <div className="dy-flex dy-items-center">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "dy-h-full dy-rounded-none dy-border-y dy-border-l dy-border-border/50 dy-px-2 dy-font-normal",
-                  !startVal && "dy-text-muted-foreground",
-                )}
-              >
-                <CalendarIcon className="dy-mr-1 dy-h-3 dy-w-3" />
-                <span className="dy-truncate dy-text-xs">
-                  {startVal ? startVal.toLocaleDateString() : "Start date…"}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="dy-w-auto dy-p-0">
-              <Calendar
-                mode="single"
-                selected={startVal}
-                defaultMonth={startVal}
-                onSelect={(date) => onUpdate({ value: date ? date.toISOString() : "" })}
-              />
-            </PopoverContent>
-          </Popover>
+          <DateFilterInput
+            value={state.value}
+            withTime={withTime}
+            placeholder="Start date…"
+            onUpdate={(val) => onUpdate({ value: val })}
+          />
           <span className="dy-px-1 dy-text-xs dy-text-muted-foreground">and</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "dy-h-full dy-rounded-none dy-border-y dy-border-border/50 dy-px-2 dy-font-normal",
-                  !endVal && "dy-text-muted-foreground",
-                )}
-              >
-                <CalendarIcon className="dy-mr-1 dy-h-3 dy-w-3" />
-                <span className="dy-truncate dy-text-xs">
-                  {endVal ? endVal.toLocaleDateString() : "End date…"}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="dy-w-auto dy-p-0">
-              <Calendar
-                mode="single"
-                selected={endVal}
-                defaultMonth={endVal ?? startVal}
-                onSelect={(date) => onUpdate({ value2: date ? date.toISOString() : "" })}
-              />
-            </PopoverContent>
-          </Popover>
+          <DateFilterInput
+            value={state.value2}
+            withTime={withTime}
+            placeholder="End date…"
+            onUpdate={(val) => onUpdate({ value2: val })}
+          />
         </div>
       )
     }
 
-    const dateValue =
-      stringValue && !Number.isNaN(new Date(stringValue).getTime())
-        ? new Date(stringValue)
-        : undefined
     return (
-      <Popover open={showOptions} onOpenChange={setShowOptions}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            className={cn(
-              "dy-h-full dy-rounded-none dy-border dy-border-border/50 dy-px-2 dy-font-normal",
-              !stringValue && "dy-text-muted-foreground",
-            )}
-          >
-            <CalendarIcon className="dy-mr-1 dy-h-3 dy-w-3" />
-            <span className="dy-truncate dy-text-xs">
-              {dateValue ? dateValue.toLocaleDateString() : "Pick a date…"}
-            </span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="dy-w-auto dy-p-0">
-          <Calendar
-            mode="single"
-            selected={dateValue}
-            defaultMonth={dateValue}
-            onSelect={(date) => {
-              onUpdate({ value: date ? date.toISOString() : "" })
-              setShowOptions(false)
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+      <DateFilterInput
+        value={state.value}
+        withTime={withTime}
+        placeholder={withTime ? "Date & time…" : "Date…"}
+        onUpdate={(val) => onUpdate({ value: val })}
+      />
     )
   }
 
-  if (operator === "isBetween") {
+  if (operator === "isBetween" || operator === "between") {
     const second = typeof state.value2 === "string" ? state.value2 : ""
     return (
       <div className="dy-flex dy-items-center">
@@ -604,17 +653,28 @@ function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSele
         </CommandGroup>
       )
     }
+    case "datetime":
     case "date": {
       const selectedDate =
         value && !Number.isNaN(new Date(value).getTime()) ? new Date(value) : undefined
       return (
-        <div className="dy-p-1">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            defaultMonth={selectedDate}
-            onSelect={(date) => onSelect(date ? date.toISOString() : "")}
-          />
+        <div>
+          {value.trim() && (
+            <CommandGroup>
+              <CommandItem value={value} onSelect={() => onSelect(value)}>
+                <BadgeCheck className="dy-mr-1.5 dy-h-4 dy-w-4 dy-text-primary" />
+                <span className="dy-truncate">Filter by &quot;{value}&quot;</span>
+              </CommandItem>
+            </CommandGroup>
+          )}
+          <div className="dy-p-1">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              defaultMonth={selectedDate}
+              onSelect={(date) => onSelect(date ? date.toISOString() : "")}
+            />
+          </div>
         </div>
       )
     }
@@ -631,6 +691,29 @@ function FilterValueSelector<TData>({ column, value, onSelect }: FilterValueSele
       )
     }
   }
+}
+
+function getDocImage(doc?: Record<string, any>): string | null {
+  if (!doc) return null
+  if (typeof doc.thumbnailURL === "string" && doc.thumbnailURL) return doc.thumbnailURL
+  if (
+    typeof doc.url === "string" &&
+    doc.url &&
+    (doc.mimeType?.startsWith("image/") ||
+      /\.(png|jpe?g|webp|gif|svg)$/i.test(doc.url) ||
+      doc.url.startsWith("http"))
+  ) {
+    return doc.url
+  }
+  if (typeof doc.avatar === "string" && (doc.avatar.startsWith("http") || doc.avatar.startsWith("/")))
+    return doc.avatar
+  if (typeof doc.avatar === "object" && doc.avatar?.url) return doc.avatar.url
+  if (typeof doc.image === "string" && (doc.image.startsWith("http") || doc.image.startsWith("/")))
+    return doc.image
+  if (typeof doc.image === "object" && doc.image?.url) return doc.image.url
+  if (typeof doc.photo === "string" && doc.photo.startsWith("http")) return doc.photo
+  if (typeof doc.logo === "string" && doc.logo.startsWith("http")) return doc.logo
+  return null
 }
 
 function RelationshipValueSelector({
@@ -653,11 +736,13 @@ function RelationshipValueSelector({
     queryKey: ["filter-selector-relations", relationTo, searchValue],
     queryFn: async (): Promise<Array<Record<string, any>>> => {
       if (!client) return []
-      let qb = (client as any).collection(relationTo).find({ limit: 25 })
-      if (searchValue.trim()) {
-        qb = qb.where({ [displayField]: { like: `%${searchValue.trim()}%` } })
-      }
-      const res = await qb.exec()
+      const res = await (client as any)
+        .collection(relationTo)
+        .find({
+          limit: 25,
+          search: searchValue.trim() || undefined,
+        })
+        .exec()
       const fetchedDocs = (res?.docs ?? []) as Array<Record<string, any>>
       for (const item of fetchedDocs) {
         if (item?.id) {
@@ -687,6 +772,7 @@ function RelationshipValueSelector({
       {docs.map((item) => {
         const id = String(item.id ?? "")
         const label = String(item[displayField] || item.name || item.slug || id)
+        const imgUrl = getDocImage(item)
         return (
           <CommandItem
             key={id}
@@ -697,7 +783,15 @@ function RelationshipValueSelector({
               onSelect(id)
             }}
           >
-            <BadgeCheck className="dy-mr-1.5 dy-h-4 dy-w-4 dy-text-primary" />
+            {imgUrl ? (
+              <img
+                src={imgUrl}
+                alt=""
+                className="dy-mr-1.5 dy-size-4 dy-shrink-0 dy-rounded-full dy-object-cover dy-border dy-border-border/40"
+              />
+            ) : (
+              <BadgeCheck className="dy-mr-1.5 dy-h-4 dy-w-4 dy-text-primary" />
+            )}
             <span className="dy-truncate">{label}</span>
           </CommandItem>
         )

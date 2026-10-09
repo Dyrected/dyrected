@@ -1,7 +1,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import type { DateFormat } from "@dyrected/core"
-import { Calendar as CalendarIcon, Clock, X, ChevronDown } from "lucide-react"
+import { Clock, X, ChevronDown } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
 import { formatDate } from "../../../lib/format"
@@ -9,50 +9,7 @@ import { cn } from "../../../lib/utils"
 import { Button } from "../../ui/button"
 import { Calendar } from "../../ui/calendar"
 import { Input } from "../../ui/input"
-
-// ---------------------------------------------------------------------------
-// Shared inline wrapper — kept mounted so navigation state is preserved
-// ---------------------------------------------------------------------------
-function InlinePicker({
-  open,
-  setOpen,
-  triggerRef,
-  children,
-}: {
-  open: boolean
-  setOpen: (v: boolean) => void
-  triggerRef: React.RefObject<HTMLDivElement | null>
-  children: React.ReactNode
-}) {
-  React.useEffect(() => {
-    if (!open) return
-    const handle = (e: PointerEvent) => {
-      // If the element is no longer in the document, it was removed by a React re-render. Ignore it.
-      if (e.target && !document.contains(e.target as Node)) return;
-      if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("pointerdown", handle, { capture: true })
-    return () => document.removeEventListener("pointerdown", handle, { capture: true })
-  }, [open, setOpen, triggerRef])
-
-  return (
-    <div
-      // Use visibility:hidden + pointer-events:none instead of unmounting so
-      // react-day-picker keeps its internal month-navigation state alive.
-      className={cn(
-        "dy-absolute dy-left-0 dy-top-full dy-z-50 dy-mt-1 dy-rounded-lg dy-border dy-border-border/50 dy-bg-popover dy-shadow-2xl dy-transition-[opacity,transform] dy-duration-100 dy-origin-top-left",
-        open
-          ? "dy-opacity-100 dy-scale-100 dy-pointer-events-auto"
-          : "dy-opacity-0 dy-scale-95 dy-pointer-events-none dy-invisible"
-      )}
-      inert={!open ? true : undefined}
-    >
-      {children}
-    </div>
-  )
-}
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover"
 
 // ---------------------------------------------------------------------------
 // DatePicker (single date, optionally with time)
@@ -68,37 +25,74 @@ interface DatePickerProps {
   format?: DateFormat
 }
 
-export function DatePicker({ id, value, onChange, label, disabled, withTime, fieldType, format: valueFormat }: DatePickerProps) {
+export function DatePicker({
+  id,
+  value,
+  onChange,
+  label,
+  disabled,
+  withTime,
+  fieldType,
+  format: valueFormat,
+}: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
-  const wrapperRef = React.useRef<HTMLDivElement>(null)
-  const date = value ? new Date(value) : undefined
+  const [draftText, setDraftText] = React.useState<string | null>(null)
+
+  const date = React.useMemo(() => {
+    return value ? new Date(value) : undefined
+  }, [value])
+
+  const formattedDisplay = React.useMemo(() => {
+    if (!date) return ""
+    return withTime ? format(date, "yyyy-MM-dd HH:mm") : format(date, "yyyy-MM-dd")
+  }, [date, withTime])
+
+  const textValue = draftText !== null ? draftText : formattedDisplay
 
   const timeString = React.useMemo(() => {
     if (!withTime || !date) return "00:00"
     return format(date, "HH:mm")
   }, [withTime, date])
 
+  const commitText = React.useCallback(
+    (raw: string) => {
+      const trimmed = raw.trim()
+      if (!trimmed) {
+        onChange(undefined)
+        setDraftText(null)
+        return
+      }
+      const parsed = new Date(trimmed)
+      if (!Number.isNaN(parsed.getTime())) {
+        onChange(parsed.toISOString())
+      }
+      setDraftText(null)
+    },
+    [onChange],
+  )
+
   const handleDateSelect = (newDate: Date | undefined) => {
     if (!newDate) {
       onChange(undefined)
+      setDraftText(null)
       return
     }
     if (withTime && date) {
       newDate.setHours(date.getHours(), date.getMinutes(), 0, 0)
     }
     onChange(newDate.toISOString())
+    setDraftText(null)
     if (!withTime) setOpen(false)
   }
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!date) return
+    const baseDate = date ? new Date(date) : new Date()
     const [h, m] = e.target.value.split(":").map(Number)
-    const newDate = new Date(date)
-    newDate.setHours(h || 0, m || 0, 0, 0)
-    onChange(newDate.toISOString())
+    baseDate.setHours(h || 0, m || 0, 0, 0)
+    onChange(baseDate.toISOString())
+    setDraftText(null)
   }
 
-  const triggerLabelFormat = withTime ? "PPP p" : "PPP"
   const helperText = date ? formatDate(date.toISOString(), valueFormat, fieldType) : null
 
   return (
@@ -108,58 +102,88 @@ export function DatePicker({ id, value, onChange, label, disabled, withTime, fie
           {label}
         </span>
       )}
-      <div ref={wrapperRef} className="dy-relative">
-        <Button
-          id={id}
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          onClick={() => setOpen((v) => !v)}
-          className={cn(
-            "dy-w-full dy-justify-start dy-text-left dy-font-normal dy-h-11 dy-px-4 dy-bg-background hover:dy-bg-muted/50 dy-border-border/60 dy-shadow-sm dy-transition-all hover:dy-shadow-md",
-            !date && "dy-text-muted-foreground",
-            open && "dy-ring-2 dy-ring-primary/20 dy-border-primary/40"
-          )}
-        >
-          <CalendarIcon className="dy-mr-3 dy-h-4 dy-w-4 dy-text-primary dy-shrink-0" />
-          <span className="dy-flex-1 dy-truncate">
-            {date ? format(date, triggerLabelFormat) : withTime ? "Pick a date & time..." : "Pick a date..."}
-          </span>
-          {date ? (
-            <X
-              className="dy-ml-2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground hover:dy-text-foreground dy-shrink-0 dy-transition-colors"
-              onClick={(e) => {
-                e.stopPropagation()
-                onChange(undefined)
+      <div className="dy-relative">
+        <Popover open={open} onOpenChange={setOpen}>
+          <div className="dy-relative dy-flex dy-items-center">
+            <Input
+              id={id}
+              type="text"
+              disabled={disabled}
+              value={textValue}
+              placeholder={withTime ? "YYYY-MM-DD HH:mm (or click to pick)" : "YYYY-MM-DD (or click to pick)"}
+              onChange={(e) => setDraftText(e.target.value)}
+              onBlur={() => {
+                if (draftText !== null) commitText(draftText)
               }}
+              onFocus={() => {
+                if (!disabled) setOpen(true)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (draftText !== null) commitText(draftText)
+                  setOpen(false)
+                }
+              }}
+              className={cn(
+                "dy-w-full dy-h-11 dy-px-3.5 dy-bg-background dy-border-border/60 dy-shadow-sm dy-transition-all",
+                date && "dy-pr-16",
+                !date && "dy-pr-9",
+              )}
             />
-          ) : (
-            <ChevronDown className={cn("dy-ml-2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground dy-shrink-0 dy-transition-transform", open && "dy-rotate-180")} />
-          )}
-        </Button>
-
-        <InlinePicker open={open && !disabled} setOpen={setOpen} triggerRef={wrapperRef}>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={handleDateSelect}
-            initialFocus
-          />
-          {withTime && (
-            <div className="dy-p-3 dy-border-t dy-border-border/40 dy-bg-muted/10 dy-flex dy-items-center dy-justify-between dy-gap-2">
-              <div className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-text-muted-foreground">
-                <Clock className="dy-h-3.5 dy-w-3.5 dy-text-primary" />
-                <span>Time:</span>
-              </div>
-              <Input
-                type="time"
-                value={timeString}
-                onChange={handleTimeChange}
-                className="dy-h-8 dy-w-28 dy-text-xs dy-bg-background"
-              />
+            <div className="dy-absolute dy-right-2 dy-flex dy-items-center dy-gap-1">
+              {date && !disabled && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDraftText(null)
+                    onChange(undefined)
+                  }}
+                >
+                  <X className="dy-h-3.5 dy-w-3.5" />
+                </Button>
+              )}
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled}
+                  className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                >
+                  <ChevronDown className={cn("dy-h-3.5 dy-w-3.5 dy-transition-transform", open && "dy-rotate-180")} />
+                </Button>
+              </PopoverTrigger>
             </div>
-          )}
-        </InlinePicker>
+          </div>
+
+          <PopoverContent align="start" className="dy-w-auto dy-p-0">
+            <Calendar
+              mode="single"
+              selected={date}
+              defaultMonth={date}
+              onSelect={handleDateSelect}
+              initialFocus
+            />
+            {withTime && (
+              <div className="dy-p-3 dy-border-t dy-border-border/40 dy-bg-muted/10 dy-flex dy-items-center dy-justify-between dy-gap-2">
+                <div className="dy-flex dy-items-center dy-gap-2 dy-text-xs dy-text-muted-foreground">
+                  <Clock className="dy-h-3.5 dy-w-3.5 dy-text-primary" />
+                  <span>Time:</span>
+                </div>
+                <Input
+                  type="time"
+                  value={timeString}
+                  onChange={handleTimeChange}
+                  className="dy-h-8 dy-w-28 dy-text-xs dy-bg-background"
+                />
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
       </div>
       {helperText && (
         <span className="dy-text-xs dy-text-muted-foreground">Display: {helperText}</span>
@@ -181,7 +205,6 @@ interface DateRangePickerProps {
 
 export function DateRangePicker({ id, value, onChange, label, disabled }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false)
-  const wrapperRef = React.useRef<HTMLDivElement>(null)
 
   const range: DateRange | undefined = React.useMemo(() => {
     if (!value?.from && !value?.to) return undefined
@@ -204,9 +227,9 @@ export function DateRangePicker({ id, value, onChange, label, disabled }: DateRa
   }
 
   const displayLabel = React.useMemo(() => {
-    if (!range?.from) return "Pick a date range..."
-    if (!range.to) return format(range.from, "PPP") + " → ..."
-    return `${format(range.from, "PP")} – ${format(range.to, "PP")}`
+    if (!range?.from) return ""
+    if (!range.to) return `${format(range.from, "yyyy-MM-dd")} → ...`
+    return `${format(range.from, "yyyy-MM-dd")} – ${format(range.to, "yyyy-MM-dd")}`
   }, [range])
 
   return (
@@ -216,43 +239,64 @@ export function DateRangePicker({ id, value, onChange, label, disabled }: DateRa
           {label}
         </span>
       )}
-      <div ref={wrapperRef} className="dy-relative">
-        <Button
-          id={id}
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          onClick={() => setOpen((v) => !v)}
-          className={cn(
-            "dy-w-full dy-justify-start dy-text-left dy-font-normal dy-h-11 dy-px-4 dy-bg-background hover:dy-bg-muted/50 dy-border-border/60 dy-shadow-sm dy-transition-all hover:dy-shadow-md",
-            !range?.from && "dy-text-muted-foreground",
-            open && "dy-ring-2 dy-ring-primary/20 dy-border-primary/40"
-          )}
-        >
-          <CalendarIcon className="dy-mr-3 dy-h-4 dy-w-4 dy-text-primary dy-shrink-0" />
-          <span className="dy-flex-1 dy-truncate">{displayLabel}</span>
-          {range?.from ? (
-            <X
-              className="dy-ml-2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground hover:dy-text-foreground dy-shrink-0 dy-transition-colors"
-              onClick={(e) => {
-                e.stopPropagation()
-                onChange(undefined)
+      <div className="dy-relative">
+        <Popover open={open} onOpenChange={setOpen}>
+          <div className="dy-relative dy-flex dy-items-center">
+            <Input
+              id={id}
+              type="text"
+              readOnly
+              disabled={disabled}
+              value={displayLabel}
+              placeholder="Pick a date range…"
+              onClick={() => {
+                if (!disabled) setOpen(true)
               }}
+              className={cn(
+                "dy-w-full dy-h-11 dy-px-3.5 dy-bg-background dy-border-border/60 dy-shadow-sm dy-transition-all dy-cursor-pointer",
+                range?.from && "dy-pr-16",
+                !range?.from && "dy-pr-9",
+              )}
             />
-          ) : (
-            <ChevronDown className={cn("dy-ml-2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground dy-shrink-0 dy-transition-transform", open && "dy-rotate-180")} />
-          )}
-        </Button>
+            <div className="dy-absolute dy-right-2 dy-flex dy-items-center dy-gap-1">
+              {range?.from && !disabled && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onChange(undefined)
+                  }}
+                >
+                  <X className="dy-h-3.5 dy-w-3.5" />
+                </Button>
+              )}
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled}
+                  className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-foreground"
+                >
+                  <ChevronDown className={cn("dy-h-3.5 dy-w-3.5 dy-transition-transform", open && "dy-rotate-180")} />
+                </Button>
+              </PopoverTrigger>
+            </div>
+          </div>
 
-        <InlinePicker open={open && !disabled} setOpen={setOpen} triggerRef={wrapperRef}>
-          <Calendar
-            mode="range"
-            selected={range}
-            defaultMonth={range?.from}
-            onSelect={handleSelect}
-            numberOfMonths={2}
-          />
-        </InlinePicker>
+          <PopoverContent align="start" className="dy-w-auto dy-p-0">
+            <Calendar
+              mode="range"
+              selected={range}
+              defaultMonth={range?.from}
+              onSelect={handleSelect}
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   )

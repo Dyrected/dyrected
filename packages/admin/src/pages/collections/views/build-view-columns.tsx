@@ -103,7 +103,7 @@ export function buildViewColumns({
             ? { filterFn: operatorTextFilter }
             : meta.variant === "number"
               ? { filterFn: operatorNumberFilter }
-              : meta.variant === "date"
+              : meta.variant === "date" || meta.variant === "datetime"
                 ? { filterFn: operatorDateFilter }
                 : {}),
       cell: ({ row }: any) => {
@@ -275,19 +275,49 @@ function cnLinkClasses(destructive?: boolean): string {
     : `${base} dy-text-muted-foreground hover:dy-text-foreground`
 }
 
-/** Multi-select facet matching coerces raw values to strings. */
+/** Multi-select facet matching supporting raw arrays or { operator, value } with negation. */
 export function multiSelectFilter(
   row: any,
   columnId: string,
-  filterValue: string[],
+  filterValue: unknown,
 ): boolean {
-  if (!Array.isArray(filterValue) || filterValue.length === 0) return true
-  const value = row.getValue(columnId)
-  if (value === null || value === undefined || value === "") return false
-  if (Array.isArray(value)) {
-    return value.some((v) => filterValue.includes(String(v)))
+  let operator = "in"
+  let targetValues: string[] = []
+
+  if (
+    typeof filterValue === "object" &&
+    filterValue !== null &&
+    "operator" in (filterValue as Record<string, unknown>)
+  ) {
+    const opVal = filterValue as OperatorFilterValue
+    operator = opVal.operator || "in"
+    if (operator === "isEmpty") {
+      const raw = row.getValue(columnId)
+      return raw === null || raw === undefined || raw === "" || (Array.isArray(raw) && raw.length === 0)
+    }
+    if (operator === "isNotEmpty") {
+      const raw = row.getValue(columnId)
+      return raw !== null && raw !== undefined && raw !== "" && (!Array.isArray(raw) || raw.length > 0)
+    }
+    const val = opVal.value
+    targetValues = Array.isArray(val) ? val.map(String) : val !== undefined && val !== "" ? [String(val)] : []
+  } else if (Array.isArray(filterValue)) {
+    targetValues = filterValue.map(String)
+  } else if (filterValue) {
+    targetValues = [String(filterValue)]
   }
-  return filterValue.includes(String(value))
+
+  if (targetValues.length === 0) return true
+  const value = row.getValue(columnId)
+  if (value === null || value === undefined || value === "") {
+    return operator === "not_in" || operator === "notIn"
+  }
+
+  const isIncluded = Array.isArray(value)
+    ? value.some((v) => targetValues.includes(String(v)))
+    : targetValues.includes(String(value))
+
+  return operator === "not_in" || operator === "notIn" ? !isIncluded : isIncluded
 }
 
 /**
@@ -296,11 +326,35 @@ export function multiSelectFilter(
 export function relationshipFilter(
   row: any,
   columnId: string,
-  filterValue: string[],
+  filterValue: unknown,
 ): boolean {
-  if (!Array.isArray(filterValue) || filterValue.length === 0) return true
+  let operator = "in"
+  let targetIds: string[] = []
+
+  if (typeof filterValue === "object" && filterValue !== null && "operator" in (filterValue as Record<string, unknown>)) {
+    const opVal = filterValue as OperatorFilterValue
+    operator = opVal.operator || "in"
+    if (operator === "isEmpty") {
+      const raw = row.getValue(columnId)
+      return raw === null || raw === undefined || raw === "" || (Array.isArray(raw) && raw.length === 0)
+    }
+    if (operator === "isNotEmpty") {
+      const raw = row.getValue(columnId)
+      return raw !== null && raw !== undefined && raw !== "" && (!Array.isArray(raw) || raw.length > 0)
+    }
+    const val = opVal.value
+    targetIds = Array.isArray(val) ? val.map(String) : val !== undefined && val !== "" ? [String(val)] : []
+  } else if (Array.isArray(filterValue)) {
+    targetIds = filterValue.map(String)
+  } else if (filterValue) {
+    targetIds = [String(filterValue)]
+  }
+
+  if (targetIds.length === 0) return true
   const raw = row.getValue(columnId)
-  if (raw === null || raw === undefined || raw === "") return false
+  if (raw === null || raw === undefined || raw === "") {
+    return operator === "not_in" || operator === "notIn"
+  }
 
   const extractId = (item: any): string => {
     if (typeof item === "object" && item !== null && "id" in item) {
@@ -309,11 +363,12 @@ export function relationshipFilter(
     return String(item)
   }
 
-  if (Array.isArray(raw)) {
-    return raw.some((item) => filterValue.includes(extractId(item)))
-  }
+  const targetSet = new Set(targetIds)
+  const isMatch = Array.isArray(raw)
+    ? raw.some((item) => targetSet.has(extractId(item)))
+    : targetSet.has(extractId(raw))
 
-  return filterValue.includes(extractId(raw))
+  return operator === "not_in" || operator === "notIn" ? !isMatch : isMatch
 }
 
 /** Shape stored as a column's filter value by the command-based filter menu. */
@@ -475,7 +530,8 @@ export function operatorDateFilter(
       return cellTime > endOfDay
     case "gte":
       return cellTime >= startOfDay
-    case "isBetween": {
+    case "isBetween":
+    case "between": {
       const target2Time = toTime(value2)
       if (!target2Time) return true
       const d2 = new Date(target2Time)
@@ -495,7 +551,7 @@ operatorDateFilter.autoRemove = (filterValue: any) =>
 /** Whether an operator expects an accompanying value. */
 export function operatorNeedsValue(operator: string, filterValue?: OperatorFilterValue): boolean {
   if (operator === "isEmpty" || operator === "isNotEmpty") return false
-  if (operator === "isBetween") {
+  if (operator === "isBetween" || operator === "between") {
     return (
       filterValue?.value === undefined ||
       filterValue?.value === "" ||
@@ -535,11 +591,13 @@ function buildColumnMeta(field: any): ViewColumnMeta {
     return { ...base, variant: "number" }
   }
   if (
-    field.type === "date" ||
     field.type === "datetime" ||
     field.name === "createdAt" ||
     field.name === "updatedAt"
   ) {
+    return { ...base, variant: "datetime" }
+  }
+  if (field.type === "date") {
     return { ...base, variant: "date" }
   }
   if (field.type === "text" || field.type === "email" || field.type === "textarea") {

@@ -40,17 +40,28 @@ export const DATE_OPERATORS: FilterOperatorOption[] = [
   { label: "Is not empty", value: "isNotEmpty" },
 ]
 
+export const RELATIONSHIP_OPERATORS: FilterOperatorOption[] = [
+  { label: "Is any of", value: "in" },
+  { label: "Is not any of", value: "not_in" },
+  { label: "Is empty", value: "isEmpty" },
+  { label: "Is not empty", value: "isNotEmpty" },
+]
+
 export function getFilterOperators(variant: string): FilterOperatorOption[] {
   switch (variant) {
     case "number":
       return NUMERIC_OPERATORS
     case "date":
+    case "datetime":
       return DATE_OPERATORS
+    case "relationship":
+      return RELATIONSHIP_OPERATORS
     default:
       return TEXT_OPERATORS
   }
 }
 
 export function getDefaultFilterOperator(variant: string): string {
+  if (variant === "relationship") return "in"
   return getFilterOperators(variant)[0]?.value ?? "iLike"
 }

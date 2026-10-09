@@ -238,7 +238,7 @@ export interface ViewColumnMeta {
   /** Column header label displayed in the table. */
   label: string
   /** Data display variant controlling column alignment, formatting, and filter editors. */
-  variant?: "text" | "number" | "date" | "multiSelect" | "select" | "relationship"
+  variant?: "text" | "number" | "date" | "datetime" | "multiSelect" | "select" | "relationship"
   /** Target collection slug when `variant` is `"relationship"`. */
   relationTo?: string
   /** Whether this relationship field accepts multiple references. */

@@ -130,7 +130,7 @@ export function translateColumnFilter(
         }
       }
 
-      if (operator === "isBetween") {
+      if (operator === "isBetween" || operator === "between") {
         if (!value || !value2) return null
         const b1 = getDateBounds(value)
         const b2 = getDateBounds(value2)
@@ -166,6 +166,19 @@ export function translateColumnFilter(
     }
 
     switch (operator) {
+      case "in": {
+        const arr = Array.isArray(value) ? value : value !== undefined && value !== "" ? [value] : []
+        if (arr.length === 0) return null
+        const mapped = arr.map((v) => coerceFieldValue(v, columnId, schema))
+        return { [columnId]: { in: mapped } }
+      }
+      case "not_in":
+      case "notIn": {
+        const arr = Array.isArray(value) ? value : value !== undefined && value !== "" ? [value] : []
+        if (arr.length === 0) return null
+        const mapped = arr.map((v) => coerceFieldValue(v, columnId, schema))
+        return { [columnId]: { not_in: mapped } }
+      }
       case "iLike":
       case "contains": {
         if (!value) return null
@@ -195,7 +208,8 @@ export function translateColumnFilter(
         if (value === undefined || value === "") return null
         return { [columnId]: { lte: coerceFieldValue(value, columnId, schema) } }
       }
-      case "isBetween": {
+      case "isBetween":
+      case "between": {
         if (value === undefined || value2 === undefined || value === "" || value2 === "") return null
         const min = coerceFieldValue(value, columnId, schema)
         const max = coerceFieldValue(value2, columnId, schema)
