@@ -26879,13 +26879,84 @@ When you need to control limits, ordering, or filter which groups appear, pass a
   color: "emerald",
   groupBy: {
     field: "category",
-    limit: 5,            // Show only top 5 groups
-    orderBy: "count",    // Order groups descending by aggregate count
+    limit: 5,            // Show only top 5 groups (Top-N)
+    orderBy: "count",    // Order groups descending by aggregate count ("count", "asc", or "desc")
     where: { active: { equals: true } }, // Filter eligible groups
   },
   aggregate: { count: "*" },
 }
 ```
+
+In the Admin UI customizer, you can configure these options directly from dropdown selects under the **Group By** field without writing code.
+
+## Interactive quick-filters (drill-down on click)
+
+Metric cards are not just passive displays; they double as interactive navigation controls for your operational view.
+
+When an operator spots an interesting figure on a card or sub-metric row:
+- **Card click**: Clicking a grouped card or single-aggregate card immediately applies an active filter to the table toolbar (e.g. clicking "Lagos Guests" filters the table to records where `community` equals the Lagos ID).
+- **Sub-metric click**: Clicking a sub-metric row (e.g. "Pending") immediately filters the table to rows matching that specific condition (`status: "pending"`).
+- **Active state indicator**: Active cards and sub-metrics display an **Active** badge and a highlight ring, showing at a glance which metric is currently filtering the view.
+- **Click again to clear**: Clicking an active card or sub-metric toggles the filter off, restoring the view.
+
+Everything syncs directly with the browser URL (`filters`), so operators can bookmark or share filtered views with teammates.
+
+## Segmented distribution bars
+
+When a metric card includes two or more sub-metrics with positive numeric values, Dyrected automatically renders a sleek horizontal segmented distribution bar directly below the main hero value.
+
+```mermaid
+flowchart TD
+  CARD["Total Registrations (240)"]
+  CARD --> BAR["[ 65% Confirmed ■ | 25% Pending ■ | 10% Waitlist ■ ]"]
+  BAR --> ROWS["Confirmed: 156 (65%) | Pending: 60 (25%) | Waitlist: 24 (10%)"]
+```
+
+### Proportional breakdown
+- **Visual slices**: Each sub-metric receives a proportional slice of the bar (`value / total * 100%`) styled with harmonious color steps or custom sub-metric colors.
+- **Interactive tooltip & filter**: Hovering over any slice shows the label, formatted number, and calculated percentage. Clicking a slice instantly filters the table to matching records.
+- **Matching legend dots**: Each sub-metric row in the card footer renders a matching colored indicator dot and percentage badge (`(65%)`), making it effortless to map colors to labels.
+
+### Customizing or disabling distribution bars
+
+Distribution bars are enabled by default whenever a card has multiple sub-metrics. You can customize accent colors per sub-metric or opt out using `showDistribution: false`:
+
+```ts
+
+
+export const orderFulfillmentView = defineView({
+  slug: "fulfillment",
+  label: "Order Fulfillment",
+  layout: "table",
+  metrics: [
+    {
+      label: "Total Orders",
+      aggregate: { count: "*" },
+      // Optional: set to false to hide the distribution bar
+      showDistribution: true,
+      subMetrics: [
+        {
+          label: "Shipped",
+          color: "emerald", // Custom slice color
+          aggregate: { count: "*", where: { status: { equals: "shipped" } } },
+        },
+        {
+          label: "Processing",
+          color: "amber",
+          aggregate: { count: "*", where: { status: { equals: "processing" } } },
+        },
+        {
+          label: "Cancelled",
+          color: "rose",
+          aggregate: { count: "*", where: { status: { equals: "cancelled" } } },
+        },
+      ],
+    },
+  ],
+});
+```
+
+You can also toggle the distribution bar on or off directly inside the Admin UI customizer when editing metrics.
 
 ## Configuration patterns
 
@@ -27030,6 +27101,7 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | `expression` | `string` | JEXL formula evaluated over `aggregates` (e.g. `"aggregates.a + aggregates.b"`). |
 | `format` | `"currency"` \| `"number"` \| `"percent"` | Formatter applied to the final number. |
 | `currency` | `string` | 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. |
+| `showDistribution` | `boolean` | Controls the horizontal segmented distribution bar. Defaults to `true` when 2+ sub-metrics have numbers. |
 | `subMetrics` | `ViewSubMetric[]` | Array of sub-metrics displayed in a compact breakdown footer under the main card. |
 
 ### `ViewSubMetric` options
@@ -27037,6 +27109,7 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | Property | Type | Description |
 | --- | --- | --- |
 | `label` | `string` **required** | Label for the breakdown row. Supports `{{group.label}}` and `{{group.value}}`. |
+| `color` | `MetricColor` | Theme accent color for this sub-metric item and its distribution bar segment. |
 | `scope` | `'view' \| 'filtered' \| 'collection'` | Scoping override for this sub-metric row. Defaults to the parent card's scope. |
 | `groupBy` | `string \| ViewMetricGroupByConfig` | Groups this sub-metric by field or relationship, expanding into multiple footer rows. |
 | `aggregate` | `AggregateOperation` | Single database aggregate operation. |

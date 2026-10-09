@@ -6757,9 +6757,9 @@
   {
     "id": "/model-content/operational-views/metrics#example-7",
     "page": "/model-content/operational-views/metrics",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/model-content/operational-views/metrics#example-8",
@@ -6784,6 +6784,20 @@
   },
   {
     "id": "/model-content/operational-views/metrics#example-11",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-12",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-13",
     "page": "/model-content/operational-views/metrics",
     "language": "ts",
     "classification": "syntax-checked",

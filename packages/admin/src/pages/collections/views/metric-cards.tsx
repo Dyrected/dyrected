@@ -2,7 +2,7 @@ import { Database, Filter, Layers } from "lucide-react"
 import { Skeleton } from "../../../components/ui/skeleton"
 import { Card, CardContent } from "../../../components/ui/card"
 import { cn } from "../../../lib/utils"
-import type { ResolvedMetric, MetricFilterTarget } from "./use-view-metrics"
+import type { ResolvedMetric, ResolvedSubMetric, MetricFilterTarget } from "./use-view-metrics"
 
 export interface MetricCardsProps {
   metrics: ResolvedMetric[]
