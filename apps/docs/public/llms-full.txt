@@ -28318,6 +28318,25 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.20.1
+
+- - **Where Operator `not` & Aliases (`ne`, `not_equal`, `notEquals`)**: Added support for `"not"` and related negation aliases in `parseSqlWhere` and `parseMongoWhere`, resolving unhandled operator errors. Supports scalar values (`!=`, `IS NOT NULL`), arrays (`NOT IN`), nested operator expressions (`NOT (...)`), and top-level `NOT`/`not` blocks (SQL `NOT (...)`, Mongo `$nor`).
+  - **Where Sanitizer `NOT` Clause Preservation**: Updated `sanitizeWhereClause` and `coerceBooleanWhere` to preserve and recursively walk `NOT`/`not` blocks for boolean coercion and schema field sanitization.
+  - **Admin Filter Builder & Formatter Support**: Added label and badge formatting support for `"not"` and `"ne"` in admin filter utilities. (`@dyrected/admin`, `@dyrected/core`)
+
+- - **Relationship Filtering in Operational Views**: Added multi-select relationship filtering support to table and operational views via `DataTableRelationshipFilter`. Includes infinite scroll pagination for browsing and searching target collection records and a dedicated hydration query ensuring selected items never disappear or appear blank.
+  - **Pinned "Selected" Section in Popover**: Pinned checked items into a dedicated "Selected" section at the top of the popover, keeping them accessible for unchecking even while searching or paging through other options.
+  - **Descriptive Trigger Badges on Table Toolbar**: Updated the filter pill trigger badge to display the actual document titles for 1 or 2 items (e.g. `Author: Acme Corp` or `Author: Acme Corp, Beta Corp`) and count badges for 3+ items.
+  - **Multi-Field Server Search for Relationships**: Broadened server-side search across candidate identifier fields (`displayField`, `name`, `title`, `email`, `slug`, `username`, `code`) matching with `OR` clauses.
+  - **Avatars & Thumbnails in Filter Lists**: Added thumbnail and avatar rendering for visual upload collections and documents with media fields.
+  - **Relationship Invert & Negation Operators**: Added support for `in` ("Is any of"), `not_in` ("Is not any of"), `isEmpty` ("Is empty"), and `isNotEmpty` ("Is not empty") operators in relationship filters.
+  - **Zero-Flicker Relationship Title Display**: Added synchronous document caching and TanStack Query cache seeding to eliminate brief raw ID flashes when selecting relationship filter items.
+  - **Multi-Select Filtering on `select`, `multiSelect`, and `relationship`**: Enabled multi-selection by default across all faceted filter types (`select`, `multiSelect`, `relationship`), allowing editors to filter by multiple choices simultaneously.
+  - **Relationship Picker Selected Value Hydration**: Updated `RelationshipPicker` in document edit forms to hydrate existing selected IDs with a targeted query, preventing selected values from appearing blank when the referenced document is outside the first page of results.
+  - **Date Filtering with Day Bounds & Dual Date Picker for "isBetween"**: Resolved issues where date filters previously failed to match records due to exact millisecond comparisons. Date filters now query against full-day boundaries (`gte: startOfDay, lte: endOfDay`), "isBetween" renders two dedicated date pickers (`Start date` and `End date`) and requires both values, and added "Is on or before" (`lte`) and "Is on or after" (`gte`) operators. (`@dyrected/admin`)
+
+---
+
 ## v2.20.0
 
 - feat(auth): polymorphic email transport, custom templates cascade, headless tokens, and admin template management
@@ -29127,42 +29146,6 @@ Release notes and version history across all Dyrected packages.
   Core services and request paths now use structured logger helpers instead of direct `console.*` calls. This includes auth, audit-failure reporting, email delivery failures, router warnings, workflow hook isolation, and request error handling.
 
   OpenTelemetry tracing and metrics are now available behind explicit config. Dyrected can create request spans, emit request and failure metrics, export telemetry through OTLP, and expose a Prometheus scrape route only when configured. Audit logging remains a separate feature and is not merged with runtime observability. (`@dyrected/core`)
-
----
-
-## v2.5.61
-
-- Admin: brand accent color, wired page metadata, and list export
-
-  - Add `admin.branding.accentColor` — a second brand color for links, navigation accents, and focus rings (mapped to the `--intelligence` token) alongside `primaryColor`. Branding colors now also apply correctly in dark mode.
-  - Wire `admin.meta.titleSuffix` into the browser tab title (it now reflects the current page and updates on navigation) and `admin.branding.favicon` into the page favicon. Both restore the host page's title/icon when the embedded admin unmounts.
-  - Add an **Export Selected** bulk action on collection lists (export just the selected rows to CSV), and quote/escape CSV export values per RFC 4180 so values containing commas, quotes, or newlines no longer break columns.
-
-  **Breaking (shipped as patch):** removed the no-op `basename` prop from `AdminUIProps` and the `@dyrected/vue` / `@dyrected/nuxt` wrappers, and stopped the CLI from scaffolding it. The admin routes internally with a hash router, so the panel's location is determined by the route of the page you render it in. If your app passes `basename`, remove it — it had no effect.
-
-- Fix audit log and drafts/workflow panels not appearing in the Admin
-
-  Three related fixes so `audit: true` and `drafts: true` surface their Admin UI as intended:
-
-  - **Audit log button never showed.** The `/api/schemas` response hand-serialized each collection and omitted the `audit` and `drafts` flags, so the Admin's `schema.audit` was always `undefined` and the audit-history button never rendered regardless of config. Both flags are now included in the serialized schema.
-  - **Workflow/version panel hidden for existing documents.** Setting `drafts: true` synthesizes a publishing workflow via `normalizeConfig`, but the panel only appears when a document carries `__workflow` metadata — which documents created before the workflow existed (e.g. seeded content) don't have. `materializeWorkflowDocument` now treats such legacy documents as already-published live content: it surfaces them with the workflow's published state (keeping them visible to the public) so the workflow panel appears. New documents are unaffected.
-  - **Live/Draft badge missing on workflow collections.** The header publishing badge only rendered for collections without a workflow, and read the raw `status` field. It now derives from the workflow state when a workflow is present (a state flagged `published` shows "Live", otherwise "Draft"), so collections using `drafts: true` — including ones with no `status` field — show the correct badge. (`@dyrected/admin`, `@dyrected/core`)
-
-- Server-side (token) live preview now works end to end
-
-  `previewMode: "token"` was previously a config value with backend endpoints but no admin integration. It's now wired up for server-rendered and statically generated frontends that can't receive `postMessage`.
-
-  - `@dyrected/admin`: in `token` mode the live-preview pane mints a short-lived token from the current draft (debounced) and loads the frontend iframe at `previewUrl?dyPreview=<token>`, reloading on change. Click-to-edit and live-as-you-type remain `postMessage`-only.
-  - `@dyrected/sdk`: new `createPreviewToken({ collectionSlug, documentId?, data })` to mint a token, plus `getPreviewToken(search)` and `PREVIEW_TOKEN_PARAM` helpers for reading the `dyPreview` token from a request's query string. `@dyrected/react` and `@dyrected/vue` re-export the helpers; `@dyrected/nuxt` auto-imports `getPreviewToken`.
-  - `@dyrected/core`: the server now logs a startup warning when `DYRECTED_JWT_SECRET` is unset, since token-mode preview signs with it.
-
-  Token mode is refresh-based (a mint + iframe reload per change) and embeds the draft in the signed token — see the Live Preview → Server-side docs for the security notes (set `DYRECTED_JWT_SECRET`) and the large-document URL-length caveat.
-
-- Vue bridge shares the host app context, CLI sync respects DYRECTED_URL
-
-  - `@dyrected/vue`: custom Vue components in the admin (custom field inputs and dashboard/list slots) now share the host app's context instead of each mounting an isolated Vue app. They can use the host app's plugins, `provide`/`inject`, Pinia, and i18n, and many custom components no longer spin up one full Vue app per instance.
-  - `dyrected` (CLI): `sync:schema` now honors `DYRECTED_URL` (and the `NEXT_PUBLIC_` / `NUXT_PUBLIC_` / `VITE_` variants) from your environment. Previously the `--url` option's hardcoded default masked the env fallback, so it always synced to Dyrected Cloud regardless of your configured URL.
-  - `@dyrected/admin`: fix the admin browser-title helper resolving a collection's label — it read a non-existent `collection.label` (collections use `labels.singular` / `labels.plural`), which broke the package build. Also corrected the misleading `AdminComponents` JSDoc (`fields` is keyed by the field's `admin.component` string, not field type; `collectionList` injects list slots rather than replacing the list view). (`@dyrected/admin`, `dyrected`, `@dyrected/vue`)
 
 ---
 
@@ -59252,6 +59235,25 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.20.1
+
+- - **Where Operator `not` & Aliases (`ne`, `not_equal`, `notEquals`)**: Added support for `"not"` and related negation aliases in `parseSqlWhere` and `parseMongoWhere`, resolving unhandled operator errors. Supports scalar values (`!=`, `IS NOT NULL`), arrays (`NOT IN`), nested operator expressions (`NOT (...)`), and top-level `NOT`/`not` blocks (SQL `NOT (...)`, Mongo `$nor`).
+  - **Where Sanitizer `NOT` Clause Preservation**: Updated `sanitizeWhereClause` and `coerceBooleanWhere` to preserve and recursively walk `NOT`/`not` blocks for boolean coercion and schema field sanitization.
+  - **Admin Filter Builder & Formatter Support**: Added label and badge formatting support for `"not"` and `"ne"` in admin filter utilities. (`@dyrected/admin`, `@dyrected/core`)
+
+- - **Relationship Filtering in Operational Views**: Added multi-select relationship filtering support to table and operational views via `DataTableRelationshipFilter`. Includes infinite scroll pagination for browsing and searching target collection records and a dedicated hydration query ensuring selected items never disappear or appear blank.
+  - **Pinned "Selected" Section in Popover**: Pinned checked items into a dedicated "Selected" section at the top of the popover, keeping them accessible for unchecking even while searching or paging through other options.
+  - **Descriptive Trigger Badges on Table Toolbar**: Updated the filter pill trigger badge to display the actual document titles for 1 or 2 items (e.g. `Author: Acme Corp` or `Author: Acme Corp, Beta Corp`) and count badges for 3+ items.
+  - **Multi-Field Server Search for Relationships**: Broadened server-side search across candidate identifier fields (`displayField`, `name`, `title`, `email`, `slug`, `username`, `code`) matching with `OR` clauses.
+  - **Avatars & Thumbnails in Filter Lists**: Added thumbnail and avatar rendering for visual upload collections and documents with media fields.
+  - **Relationship Invert & Negation Operators**: Added support for `in` ("Is any of"), `not_in` ("Is not any of"), `isEmpty` ("Is empty"), and `isNotEmpty` ("Is not empty") operators in relationship filters.
+  - **Zero-Flicker Relationship Title Display**: Added synchronous document caching and TanStack Query cache seeding to eliminate brief raw ID flashes when selecting relationship filter items.
+  - **Multi-Select Filtering on `select`, `multiSelect`, and `relationship`**: Enabled multi-selection by default across all faceted filter types (`select`, `multiSelect`, `relationship`), allowing editors to filter by multiple choices simultaneously.
+  - **Relationship Picker Selected Value Hydration**: Updated `RelationshipPicker` in document edit forms to hydrate existing selected IDs with a targeted query, preventing selected values from appearing blank when the referenced document is outside the first page of results.
+  - **Date Filtering with Day Bounds & Dual Date Picker for "isBetween"**: Resolved issues where date filters previously failed to match records due to exact millisecond comparisons. Date filters now query against full-day boundaries (`gte: startOfDay, lte: endOfDay`), "isBetween" renders two dedicated date pickers (`Start date` and `End date`) and requires both values, and added "Is on or before" (`lte`) and "Is on or after" (`gte`) operators. (`@dyrected/admin`)
+
+---
+
 ## v2.20.0
 
 - feat(auth): polymorphic email transport, custom templates cascade, headless tokens, and admin template management
@@ -60061,42 +60063,6 @@ Release notes and version history across all Dyrected packages.
   Core services and request paths now use structured logger helpers instead of direct `console.*` calls. This includes auth, audit-failure reporting, email delivery failures, router warnings, workflow hook isolation, and request error handling.
 
   OpenTelemetry tracing and metrics are now available behind explicit config. Dyrected can create request spans, emit request and failure metrics, export telemetry through OTLP, and expose a Prometheus scrape route only when configured. Audit logging remains a separate feature and is not merged with runtime observability. (`@dyrected/core`)
-
----
-
-## v2.5.61
-
-- Admin: brand accent color, wired page metadata, and list export
-
-  - Add `admin.branding.accentColor` — a second brand color for links, navigation accents, and focus rings (mapped to the `--intelligence` token) alongside `primaryColor`. Branding colors now also apply correctly in dark mode.
-  - Wire `admin.meta.titleSuffix` into the browser tab title (it now reflects the current page and updates on navigation) and `admin.branding.favicon` into the page favicon. Both restore the host page's title/icon when the embedded admin unmounts.
-  - Add an **Export Selected** bulk action on collection lists (export just the selected rows to CSV), and quote/escape CSV export values per RFC 4180 so values containing commas, quotes, or newlines no longer break columns.
-
-  **Breaking (shipped as patch):** removed the no-op `basename` prop from `AdminUIProps` and the `@dyrected/vue` / `@dyrected/nuxt` wrappers, and stopped the CLI from scaffolding it. The admin routes internally with a hash router, so the panel's location is determined by the route of the page you render it in. If your app passes `basename`, remove it — it had no effect.
-
-- Fix audit log and drafts/workflow panels not appearing in the Admin
-
-  Three related fixes so `audit: true` and `drafts: true` surface their Admin UI as intended:
-
-  - **Audit log button never showed.** The `/api/schemas` response hand-serialized each collection and omitted the `audit` and `drafts` flags, so the Admin's `schema.audit` was always `undefined` and the audit-history button never rendered regardless of config. Both flags are now included in the serialized schema.
-  - **Workflow/version panel hidden for existing documents.** Setting `drafts: true` synthesizes a publishing workflow via `normalizeConfig`, but the panel only appears when a document carries `__workflow` metadata — which documents created before the workflow existed (e.g. seeded content) don't have. `materializeWorkflowDocument` now treats such legacy documents as already-published live content: it surfaces them with the workflow's published state (keeping them visible to the public) so the workflow panel appears. New documents are unaffected.
-  - **Live/Draft badge missing on workflow collections.** The header publishing badge only rendered for collections without a workflow, and read the raw `status` field. It now derives from the workflow state when a workflow is present (a state flagged `published` shows "Live", otherwise "Draft"), so collections using `drafts: true` — including ones with no `status` field — show the correct badge. (`@dyrected/admin`, `@dyrected/core`)
-
-- Server-side (token) live preview now works end to end
-
-  `previewMode: "token"` was previously a config value with backend endpoints but no admin integration. It's now wired up for server-rendered and statically generated frontends that can't receive `postMessage`.
-
-  - `@dyrected/admin`: in `token` mode the live-preview pane mints a short-lived token from the current draft (debounced) and loads the frontend iframe at `previewUrl?dyPreview=<token>`, reloading on change. Click-to-edit and live-as-you-type remain `postMessage`-only.
-  - `@dyrected/sdk`: new `createPreviewToken({ collectionSlug, documentId?, data })` to mint a token, plus `getPreviewToken(search)` and `PREVIEW_TOKEN_PARAM` helpers for reading the `dyPreview` token from a request's query string. `@dyrected/react` and `@dyrected/vue` re-export the helpers; `@dyrected/nuxt` auto-imports `getPreviewToken`.
-  - `@dyrected/core`: the server now logs a startup warning when `DYRECTED_JWT_SECRET` is unset, since token-mode preview signs with it.
-
-  Token mode is refresh-based (a mint + iframe reload per change) and embeds the draft in the signed token — see the Live Preview → Server-side docs for the security notes (set `DYRECTED_JWT_SECRET`) and the large-document URL-length caveat.
-
-- Vue bridge shares the host app context, CLI sync respects DYRECTED_URL
-
-  - `@dyrected/vue`: custom Vue components in the admin (custom field inputs and dashboard/list slots) now share the host app's context instead of each mounting an isolated Vue app. They can use the host app's plugins, `provide`/`inject`, Pinia, and i18n, and many custom components no longer spin up one full Vue app per instance.
-  - `dyrected` (CLI): `sync:schema` now honors `DYRECTED_URL` (and the `NEXT_PUBLIC_` / `NUXT_PUBLIC_` / `VITE_` variants) from your environment. Previously the `--url` option's hardcoded default masked the env fallback, so it always synced to Dyrected Cloud regardless of your configured URL.
-  - `@dyrected/admin`: fix the admin browser-title helper resolving a collection's label — it read a non-existent `collection.label` (collections use `labels.singular` / `labels.plural`), which broke the package build. Also corrected the misleading `AdminComponents` JSDoc (`fields` is keyed by the field's `admin.component` string, not field type; `collectionList` injects list slots rather than replacing the list view). (`@dyrected/admin`, `dyrected`, `@dyrected/vue`)
 
 ---
 
