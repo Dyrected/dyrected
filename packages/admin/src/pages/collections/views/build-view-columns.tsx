@@ -448,8 +448,7 @@ export function operatorTextFilter(
       return haystack.includes(needle)
   }
 }
-operatorTextFilter.autoRemove = (filterValue: any) =>
-  !filterValue?.operator || operatorNeedsValue(filterValue.operator, filterValue)
+operatorTextFilter.autoRemove = (filterValue: any) => !filterValue?.operator
 
 /**
  * Operator-based matcher for number columns ("is greater than", "is between", …).
@@ -476,15 +475,14 @@ export function operatorNumberFilter(
       if (typeof cell !== "number") return false
       const min = Number(value)
       const max = Number(value2)
-      if (Number.isNaN(min) || Number.isNaN(max)) return false
+      if (Number.isNaN(min) || Number.isNaN(max)) return true
       return cell >= Math.min(min, max) && cell <= Math.max(min, max)
     }
     default:
       return typeof cell === "number" && typeof value === "number" && compareNumbers(cell, value, operator)
   }
 }
-operatorNumberFilter.autoRemove = (filterValue: any) =>
-  !filterValue?.operator || operatorNeedsValue(filterValue.operator, filterValue)
+operatorNumberFilter.autoRemove = (filterValue: any) => !filterValue?.operator
 
 /** Operator-based matcher for date columns. Values are stored as ISO strings. */
 export function operatorDateFilter(
@@ -545,8 +543,7 @@ export function operatorDateFilter(
       return cellTime >= startOfDay && cellTime <= endOfDay
   }
 }
-operatorDateFilter.autoRemove = (filterValue: any) =>
-  !filterValue?.operator || operatorNeedsValue(filterValue.operator, filterValue)
+operatorDateFilter.autoRemove = (filterValue: any) => !filterValue?.operator
 
 /** Whether an operator expects an accompanying value. */
 export function operatorNeedsValue(operator: string, filterValue?: OperatorFilterValue): boolean {
