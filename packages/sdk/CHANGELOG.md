@@ -1,5 +1,7 @@
 # @dyrected/sdk
 
+## 2.21.0
+
 ## 2.20.1
 
 ## 2.20.0
@@ -86,12 +88,14 @@
 ### Minor Changes
 
 - e950c6e: - **Core Client/Server Clean Decoupling & Schema Serialization**:
+
   - Decoupled server-only AI services (`ai.service`, `ai-tools`, `rag.service`, `embedding.service`, `ai-rate-limit`, `observability`) strictly into `@dyrected/core/server`.
   - Cleaned the `@dyrected/core` root entry point to be 100% browser-safe, eliminating `pino` logger and Node.js built-ins (`os`, `fs`, `stream`) from client bundles and Next.js Turbopack applications.
   - Hardened `/api/schemas` serialization to forward `shared`, `siteId`, and collection-level `ai` configuration, plus field constraints (`unique`, `min`, `max`, `step`, `minLength`, `maxLength`, `pattern`, `allowedTypes`, `maxSize`, `virtual`, `promoted`, `ai`).
   - Added public AI readiness flags on the schema payload (`ai: { enabled: boolean, provider?: string, model?: string }`).
 
   - **First-Class Typed SDK AI Module (`@dyrected/sdk`)**:
+
     - Implemented typed `client.ai` namespace on `DyrectedClient`:
       - `client.ai.createThread(input?)`: Create a persistent conversation thread.
       - `client.ai.listThreads()`: Retrieve all conversation threads.
@@ -108,6 +112,7 @@
     - Replaced ad-hoc `qs` stringification with pure JSON payload transmission for delete-many and folder actions.
 
   - **Admin Sidebar Restructuring, Workspace Switcher & Dashboard AI (`@dyrected/admin`)**:
+
     - Moved the sidebar collapse toggle to the top-right of the logo row (`[Logo] Dyrected ... [collapse button]`).
     - Added a compact `WorkspaceSwitcher` (`h-8`, ~32px) directly underneath the logo row, with support for user-restricted site lists and dynamic switching.
     - Added `setSiteId` to `DyrectedContext` and `DyrectedProvider` with immediate TanStack Query cache invalidation and localStorage persistence.
@@ -116,6 +121,7 @@
     - Positioned **Setup** on the bottom-left and the **ThemeSelector** on the bottom-right of the sidebar footer.
 
   - **CLI Recursive Layout Flattening (`@dyrected/cli`)**:
+
     - Updated `packages/cli/src/utils/type-generator.ts` to recursively flatten `row` layout containers into generated TypeScript interfaces so child fields are never omitted.
 
   - **Documentation Updates (`apps/docs`)**:
@@ -183,7 +189,9 @@
 ### Minor Changes
 
 - ### Added
+
   - **Detail View System**:
+
     - Added read-only Detail View pages and configurable layout renderers for collections (`/collections/:slug/:id`) and globals (`/globals/:slug`).
     - Added layout configuration helpers in `@dyrected/core`: `defineDetailView`, `defineSection`, `defineFieldCard`, `defineRepeatCard`, `defineTab`, `defineTabs`, `defineComputedCard`, `defineDivider`, `defineInfoText`, and `defineFieldGrid`.
     - Added support for dynamic conditional visibility on detail cards, sections, and tabs using boolean values or JEXL expressions evaluated against `{ doc, user }`.
@@ -191,6 +199,7 @@
     - Added custom component slot support for detail views in both React and Vue runtimes.
 
   - **Collection Aggregations System**:
+
     - Added `POST /api/collections/:slug/aggregate` endpoint to `@dyrected/core` and integrated it into the OpenAPI specification generator.
     - Added collection `aggregate()` method to `@dyrected/sdk`.
     - Implemented database aggregation queries across all adapters: `@dyrected/db-postgres`, `@dyrected/db-mysql` (with `IF()` conditional aggregation), `@dyrected/db-mongodb`, and `@dyrected/db-sqlite`.
@@ -329,14 +338,17 @@
 - ea1d99d: Upload MIME/size validation and add-media-from-URL.
 
   **Core (`@dyrected/core`)**
+
   - New `upload-validation` utility: `isMimeAllowed` (supports `*`, `type/*`, and exact `type/subtype` patterns, case-insensitive) and payload validation that returns a typed error with the correct HTTP status (`415 Unsupported Media Type` or `413 Payload Too Large`).
   - The media controller enforces a collection's `upload` config (`allowedMimeTypes`, `maxFileSize`) on upload and accepts external media references.
 
   **Admin (`@dyrected/admin`)**
+
   - Add media from a URL: `external-media` builder + `useAddMediaFromUrl` hook detect YouTube/Vimeo videos, direct image URLs, and generic files, and store them as reference-only media records (no file bytes). The media grid and preview components key off the resulting `mimeType` (`video/youtube`, `video/vimeo`, `image/external`, …) to render each asset correctly.
   - Media picker, media card, media library dialog, and media page updated to support external media and surface upload validation errors.
 
   **SDK (`@dyrected/sdk`)**
+
   - Support for external media references and upload validation feedback.
 
 ## 2.5.51
@@ -376,6 +388,7 @@
   Refactored the admin panel and core SDK interfaces to eliminate compiler errors and ESLint warnings (such as `any` usage, index signature mismatches, and regex escapes). This ensures full compatibility with the updated schema and SDK type definitions, allowing all 20 monorepo packages to build successfully.
 
   Detailed Changes:
+
   1. `@dyrected/admin` TypeScript & ESLint Fixes
      - components/media/media-library-dialog.tsx:
        - Replaced `any` in `MediaLibraryDialogProps` (`selectedValues`, `onSelect`, `onConfirm`) with proper typed interfaces (`string | Record<string, unknown>`).
@@ -472,11 +485,13 @@
 ### Patch Changes
 
 - 1a2e552: ### ✨ Features & Refactors
+
   - **Admin UI Customization**: Implemented the Admin UI component slot injection system along with Vue bridging support, allowing developers to inject custom components natively into the dashboard and lists.
   - **Onboarding & Setup**: Replaced prompt generation with an external guided setup flow, and added a new email template service.
   - **UI Refresh**: Updated admin CSS variables and layout container styling for improved aesthetics.
 
   ### 📚 Documentation
+
   - **Structural Changes**: Migrated feature documentation into dedicated guides.
   - **Cloud Rebrand**: Updated app dashboard documentation and references to point to the new `cloud.dyrected.com` domain.
   - **General Polish**: Expanded and updated documentation across multiple files (including fixing the YAML parser bugs in the new markdown format).
@@ -633,44 +648,54 @@
   ## 🛠️ Summary of Resolved Bugs
 
   ### 1. **Bug 1 (MySQL EADDRNOTAVAIL Socket Error)**
+
   - **Fix:** Handled and caught connection failures in `packages/db-mysql/src/index.ts`. If `EADDRNOTAVAIL` is detected on macOS loopback environments, we print a highly informative log advising the user to replace `localhost` with `127.0.0.1` in their `.env` file.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L105-L117)
 
   ### 2. **Bug 2 (MySQL Database Auto-Creation)**
+
   - **Fix:** Enhanced the adapter to check if the database exists prior to initializing the connection pool. It temporarily establishes a connection to the server without selecting a database, runs `CREATE DATABASE IF NOT EXISTS \`dbname\``, and gracefully closes the handshake.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L79-L93)
 
   ### 3. **Bug 3 (PostgreSQL Parameter Mismatch)**
+
   - **Fix:** Refactored the `find()` queries inside the pg adapter to construct plain SQL query strings, passing them directly to `this.sql.unsafe(queryStr, params)`. This prevents nested tagged template literals from stripping parameterized `$N` value bindings.
   - **Reference File:** [packages/db-postgres/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-postgres/src/index.ts#L65-L119)
 
   ### 4. **Bug 4 (Nuxt TS Configuration Import)**
+
   - **Fix:** Integrated dynamic loading of `"jiti"` (bundled natively with Nuxt/Nitro) inside `packages/nuxt/src/runtime/server/plugins/db.ts` to cleanly transpile and import `dyrected.config.ts` without raw ES Module "Unknown file extension" exceptions.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L11-L40)
 
   ### 5. **Bug 5 (Nitro Runtime Import Resolution)**
+
   - **Fix:** Standardized module imports in the Nuxt context by replacing the problematic `"nitro/runtime"` import with `"nitropack/runtime"`.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L2-L4)
 
   ### 6. **Bug 6 (Collapsible & Sortable Arrays)**
+
   - **Fix:** Redesigned array field lists into collapsible Cards utilizing draggable handle hooks, supporting both drag-and-drop reordering (`@dnd-kit/sortable`) and dynamic child attribute watch previews (displays key text values as a header preview).
   - **Reference File:** [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx#L182-L330)
 
   ### 7. **Bug 7 (Path Duplication)**
+
   - **Fix:** Prevented redundant folder prefixes (e.g. `/dyrected/dyrected/`) from being appended to logo media URLs.
   - **Reference File:** [packages/admin/src/lib/utils.ts](file:///Users/busola/Work/dyrected/packages/admin/src/lib/utils.ts#L14-L24)
 
   ### 8. **Bug 8 (Media Previews)**
+
   - **Fix:** Added a direct URL/path string fallback rendering in the admin dashboard `MediaPicker` to instantly load images when an empty relationship payload is returned.
   - **Reference File:** [packages/admin/src/components/forms/fields/media-picker.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/fields/media-picker.tsx#L45-L68)
 
   ### 9. **Bug 9 (Media Infinite Scroll)**
+
   - **Fix:** Upgraded the media library lists and selector modal dialog to use React Query's `useInfiniteQuery`, implementing an `IntersectionObserver` scroll listener to paginate assets.
   - **Reference Files:**
     - [packages/admin/src/pages/media/media-page.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/pages/media/media-page.tsx)
     - [packages/admin/src/components/media/media-library-dialog.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/media/media-library-dialog.tsx)
 
   ### 10. **Bug 10 (Slugs vs Labels / Dynamic Add Buttons)**
+
   - **Fix:** Swapped out hardcoded string actions with singularized schema collection labels (e.g. "Add Post", "Add Testimonial") and ensured singularized headers show everywhere.
   - **Reference Files:**
     - [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx)
@@ -829,17 +854,20 @@
   ### Breaking Changes
 
   **WHAT:**
+
   - Renamed `createApp` to `createDyrectedApp` across all core and framework packages.
   - Removed the hardcoded `/api` prefix from internal routing logic; API paths now default to the handler root or are controlled via `apiPrefix` config.
   - Administrative users are now isolated in a reserved `__admins` collection by default.
   - Standardized database adapter return types to ensure consistent ID handling across SQL and NoSQL providers.
 
   **WHY:**
+
   - The rename prevents naming collisions with native framework initializers (like Vue's `createApp`).
   - Decoupling the `/api` prefix provides better compatibility with Next.js/Nuxt server routes and custom proxy configurations.
   - The `__admins` separation ensures system-level security isolation from application-level user data.
 
   **HOW:**
+
   - Update your server entry points to use the new `createDyrectedApp` factory function.
   - If you have custom integrations targeting internal endpoints, ensure your base URL paths are updated to reflect the removal of the mandatory `/api` prefix.
   - If upgrading an existing installation, migrate your administrative users from the `users` collection to the new `__admins` collection.
