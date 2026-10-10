@@ -282,4 +282,48 @@ describe("MetricCards Component", () => {
     expect(segment1.className).toContain("dy-bg-amber-500")
     expect(segment2.className).toContain("dy-bg-orange-500")
   })
+
+  it("renders trend badges on metric cards and submetrics", () => {
+    const trendMetrics: ResolvedMetric[] = [
+      {
+        label: "Monthly Revenue",
+        value: 50000,
+        formatted: "$50,000",
+        trend: {
+          deltaPct: 14.2,
+          direction: "up",
+          formatted: "+14.2%",
+          tone: "emerald",
+          previousValue: 43780,
+        },
+        subMetrics: [
+          {
+            label: "Subscriptions",
+            value: 35000,
+            formatted: "$35,000",
+            trend: {
+              deltaPct: -3.5,
+              direction: "down",
+              formatted: "-3.5%",
+              tone: "rose",
+              previousValue: 36250,
+            },
+          },
+        ],
+      },
+    ]
+
+    render(<MetricCards metrics={trendMetrics} />)
+
+    const cardTrend = screen.getByTestId("metric-trend-Monthly Revenue")
+    expect(cardTrend).toBeDefined()
+    expect(cardTrend.textContent).toContain("+14.2%")
+    expect(cardTrend.className).toContain("dy-bg-emerald-500/15")
+
+    const subTrend = screen.getByTestId("submetric-trend-Subscriptions")
+    expect(subTrend).toBeDefined()
+    expect(subTrend.textContent).toContain("-3.5%")
+    expect(subTrend.className).toContain("dy-text-rose-600")
+  })
 })
+

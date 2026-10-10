@@ -2,7 +2,7 @@ import * as React from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { evaluateJexlSync } from "@dyrected/core"
 import { useDyrected } from "../../../providers/dyrected-context"
-import type { SerializedViewMetric, SerializedViewSubMetric } from "./types"
+import type { SerializedViewMetric, SerializedViewSubMetric, SerializedViewMetricTrendConfig } from "./types"
 import { resolveViewFilter } from "./resolve-view-filter"
 import { formatMetricValue } from "./format-metric"
 import { normalizeGroupBy, useMetricGroups, type MetricGroupOption } from "./use-metric-groups"
@@ -11,6 +11,15 @@ export interface MetricFilterTarget {
   columnId: string
   value: unknown
   operator?: string
+  value2?: unknown
+}
+
+export interface ResolvedMetricTrend {
+  deltaPct: number
+  direction: "up" | "down" | "flat"
+  formatted: string
+  tone: "emerald" | "rose" | "muted"
+  previousValue: number | null
 }
 
 export interface ResolvedSubMetricGroup {
@@ -28,6 +37,7 @@ export interface ResolvedSubMetric {
   filterTarget?: MetricFilterTarget
   /** Present if this submetric is an "Other (N)" roll-up with drilldown items */
   overflowGroups?: ResolvedSubMetricGroup[]
+  trend?: ResolvedMetricTrend
 }
 
 export interface ResolvedMetric {
@@ -41,6 +51,7 @@ export interface ResolvedMetric {
   showDistribution?: boolean
   subMetrics?: ResolvedSubMetric[]
   filterTarget?: MetricFilterTarget
+  trend?: ResolvedMetricTrend
 }
 
 export interface UseViewMetricsOptions {
@@ -141,6 +152,177 @@ export function inferFilterTargetFromWhere(where?: Record<string, any>): MetricF
   return undefined
 }
 
+export function computePreviousPeriodWindow(
+  trend: SerializedViewMetricTrendConfig,
+  currentWhere?: Record<string, any>,
+  referenceDate = new Date()
+): { previousWhere: Record<string, any>; dateField: string } {
+  const dateField = trend.dateField || "createdAt"
+  const period = trend.period || "previous_period"
+
+  let explicitStart: Date | null = null
+  let explicitEnd: Date | null = null
+
+  if (currentWhere && typeof currentWhere === "object") {
+    const findField = (obj: any): any => {
+      if (!obj || typeof obj !== "object") return undefined
+      if (obj[dateField]) return obj[dateField]
+      if (Array.isArray(obj.AND)) {
+        for (const item of obj.AND) {
+          const res = findField(item)
+          if (res) return res
+        }
+      }
+      return undefined
+    }
+
+    const fieldCondition = findField(currentWhere)
+    if (fieldCondition && typeof fieldCondition === "object") {
+      const gteVal = fieldCondition.gte || fieldCondition.gt
+      const lteVal = fieldCondition.lte || fieldCondition.lt
+      if (gteVal) {
+        const d = new Date(gteVal)
+        if (!isNaN(d.getTime())) explicitStart = d
+      }
+      if (lteVal) {
+        const d = new Date(lteVal)
+        if (!isNaN(d.getTime())) explicitEnd = d
+      }
+    }
+  }
+
+  let prevStart: Date
+  let prevEnd: Date
+
+  if (explicitStart && explicitEnd) {
+    const durationMs = explicitEnd.getTime() - explicitStart.getTime()
+    if (period === "previous_year") {
+      prevStart = new Date(explicitStart)
+      prevStart.setFullYear(prevStart.getFullYear() - 1)
+      prevEnd = new Date(explicitEnd)
+      prevEnd.setFullYear(prevEnd.getFullYear() - 1)
+    } else if (period === "previous_month") {
+      prevStart = new Date(explicitStart)
+      prevStart.setMonth(prevStart.getMonth() - 1)
+      prevEnd = new Date(explicitEnd)
+      prevEnd.setMonth(prevEnd.getMonth() - 1)
+    } else if (period === "previous_week") {
+      prevStart = new Date(explicitStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+      prevEnd = new Date(explicitEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
+    } else if (period === "previous_day") {
+      prevStart = new Date(explicitStart.getTime() - 24 * 60 * 60 * 1000)
+      prevEnd = new Date(explicitEnd.getTime() - 24 * 60 * 60 * 1000)
+    } else {
+      prevStart = new Date(explicitStart.getTime() - durationMs)
+      prevEnd = new Date(explicitStart)
+    }
+  } else {
+    if (period === "previous_year") {
+      const curYear = referenceDate.getFullYear()
+      const prevYear = curYear - 1
+      prevStart = new Date(prevYear, 0, 1, 0, 0, 0, 0)
+      prevEnd = new Date(prevYear, referenceDate.getMonth(), referenceDate.getDate(), referenceDate.getHours(), referenceDate.getMinutes(), referenceDate.getSeconds(), referenceDate.getMilliseconds())
+    } else if (period === "previous_month") {
+      const curYear = referenceDate.getFullYear()
+      const curMonth = referenceDate.getMonth()
+      const prevMonthDate = new Date(curYear, curMonth - 1, 1, 0, 0, 0, 0)
+      prevStart = prevMonthDate
+      prevEnd = new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1, 0, 23, 59, 59, 999)
+    } else if (period === "previous_week") {
+      prevEnd = new Date(referenceDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+      prevStart = new Date(prevEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
+    } else if (period === "previous_day") {
+      const yesterday = new Date(referenceDate)
+      yesterday.setDate(yesterday.getDate() - 1)
+      prevStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0, 0)
+      prevEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999)
+    } else {
+      const windowMs = 30 * 24 * 60 * 60 * 1000
+      prevEnd = new Date(referenceDate.getTime() - windowMs)
+      prevStart = new Date(prevEnd.getTime() - windowMs)
+    }
+  }
+
+  const previousWhere = {
+    [dateField]: {
+      gte: prevStart.toISOString(),
+      lte: prevEnd.toISOString(),
+    },
+  }
+
+  return { previousWhere, dateField }
+}
+
+export function replaceOrMergeDateWhere(
+  where: Record<string, any> | undefined,
+  dateField: string,
+  newDateCondition: Record<string, any>
+): Record<string, any> {
+  if (!where || Object.keys(where).length === 0) {
+    return { [dateField]: newDateCondition }
+  }
+
+  const nextWhere: Record<string, any> = { ...where }
+
+  if (dateField in nextWhere) {
+    nextWhere[dateField] = newDateCondition
+    return nextWhere
+  }
+
+  if (Array.isArray(nextWhere.AND)) {
+    let replaced = false
+    const nextAnd = nextWhere.AND.map((clause: any) => {
+      if (typeof clause === "object" && clause !== null && dateField in clause) {
+        replaced = true
+        return { ...clause, [dateField]: newDateCondition }
+      }
+      return clause
+    })
+    if (!replaced) {
+      nextAnd.push({ [dateField]: newDateCondition })
+    }
+    return { ...nextWhere, AND: nextAnd }
+  }
+
+  return { ...nextWhere, [dateField]: newDateCondition }
+}
+
+export function calculateTrendDelta(
+  current: number | null,
+  previous: number | null,
+  config?: SerializedViewMetricTrendConfig
+): ResolvedMetricTrend | undefined {
+  if (current === null || previous === null || !config) return undefined
+  if (typeof current !== "number" || typeof previous !== "number" || isNaN(current) || isNaN(previous)) return undefined
+
+  let deltaPct: number
+  if (previous === 0) {
+    deltaPct = current > 0 ? 100 : current < 0 ? -100 : 0
+  } else {
+    deltaPct = ((current - previous) / Math.abs(previous)) * 100
+  }
+
+  const roundedPct = Math.round(deltaPct * 10) / 10
+  const direction: "up" | "down" | "flat" = roundedPct > 0 ? "up" : roundedPct < 0 ? "down" : "flat"
+  const formatted = `${roundedPct > 0 ? "+" : ""}${roundedPct}%`
+
+  const isPositiveGood = !config.invertColors
+  const tone: "emerald" | "rose" | "muted" =
+    direction === "flat"
+      ? "muted"
+      : (direction === "up" && isPositiveGood) || (direction === "down" && !isPositiveGood)
+      ? "emerald"
+      : "rose"
+
+  return {
+    deltaPct: roundedPct,
+    direction,
+    formatted,
+    tone,
+    previousValue: previous,
+  }
+}
+
 export function expandMetrics(
   metrics: SerializedViewMetric[] | undefined,
   groupsByField: Record<string, MetricGroupOption[]>,
@@ -157,7 +339,7 @@ export function expandMetrics(
     if (cardGb && cardGroups) {
       // Expand metric into 1 card per group
       for (const group of cardGroups) {
-        const groupWhere = { [cardGb.field]: { equals: group.value } }
+        const groupWhere = (group as any).where ?? { [cardGb.field]: { equals: group.value } }
 
         const expandedSubMetrics = metric.subMetrics?.map((sub) => {
           return {
@@ -167,7 +349,8 @@ export function expandMetrics(
           }
         })
 
-        const filterTarget: MetricFilterTarget = { columnId: cardGb.field, value: group.value, operator: "eq" }
+        const filterTarget: MetricFilterTarget =
+          (group as any).filterTarget ?? { columnId: cardGb.field, value: group.value, operator: "eq" }
 
         expanded.push({
           ...metric,
@@ -195,8 +378,9 @@ export function expandMetrics(
             hasGroupedSub = true
             const topGroups = subGroups
             for (const group of topGroups) {
-              const groupWhere = { [subGb.field]: { equals: group.value } }
-              const subFilterTarget: MetricFilterTarget = { columnId: subGb.field, value: group.value, operator: "eq" }
+              const groupWhere = (group as any).where ?? { [subGb.field]: { equals: group.value } }
+              const subFilterTarget: MetricFilterTarget =
+                (group as any).filterTarget ?? { columnId: subGb.field, value: group.value, operator: "eq" }
               expandedSubMetrics.push({
                 ...sub,
                 _filterTarget: subFilterTarget,
@@ -220,7 +404,7 @@ export function expandMetrics(
                 _overflowGroups: overflow.map((g) => ({
                   value: g.value,
                   label: g.label,
-                  filterTarget: { columnId: subGb.field, value: g.value, operator: "eq" },
+                  filterTarget: (g as any).filterTarget ?? { columnId: subGb.field, value: g.value, operator: "eq" },
                 })),
                 _groupOrder: subGb.orderBy,
                 label: `Other (${overflow.length})`,
@@ -332,12 +516,26 @@ export function useViewMetrics({
         if (metric.aggregate) {
           single = `m${index}`
           input[single] = sanitizeAggregate(metric.aggregate, metricBaseWhere)
+          if (metric.trend) {
+            const combined = mergeWhereConstraints(metricBaseWhere, metric.aggregate.where)
+            const { previousWhere, dateField } = computePreviousPeriodWindow(metric.trend, combined)
+            const prevBaseWhere = replaceOrMergeDateWhere(metricBaseWhere, dateField, previousWhere[dateField])
+            const prevOpWhere = replaceOrMergeDateWhere(metric.aggregate.where, dateField, previousWhere[dateField])
+            input[`${single}_prev`] = sanitizeAggregate({ ...metric.aggregate, where: prevOpWhere }, prevBaseWhere)
+          }
         } else if (metric.aggregates) {
           named = {}
           for (const [name, operation] of Object.entries(metric.aggregates)) {
             const key = `m${index}_${name}`
             input[key] = sanitizeAggregate(operation, metricBaseWhere)
             named[name] = key
+            if (metric.trend) {
+              const combined = mergeWhereConstraints(metricBaseWhere, operation.where)
+              const { previousWhere, dateField } = computePreviousPeriodWindow(metric.trend, combined)
+              const prevBaseWhere = replaceOrMergeDateWhere(metricBaseWhere, dateField, previousWhere[dateField])
+              const prevOpWhere = replaceOrMergeDateWhere(operation.where, dateField, previousWhere[dateField])
+              input[`${key}_prev`] = sanitizeAggregate({ ...operation, where: prevOpWhere }, prevBaseWhere)
+            }
           }
         }
 
@@ -351,12 +549,26 @@ export function useViewMetrics({
             if (sub.aggregate) {
               subSingle = `m${index}_s${subIndex}`
               input[subSingle] = sanitizeAggregate(sub.aggregate, subBaseWhere)
+              if (sub.trend) {
+                const combined = mergeWhereConstraints(subBaseWhere, sub.aggregate.where)
+                const { previousWhere, dateField } = computePreviousPeriodWindow(sub.trend, combined)
+                const prevBaseWhere = replaceOrMergeDateWhere(subBaseWhere, dateField, previousWhere[dateField])
+                const prevOpWhere = replaceOrMergeDateWhere(sub.aggregate.where, dateField, previousWhere[dateField])
+                input[`${subSingle}_prev`] = sanitizeAggregate({ ...sub.aggregate, where: prevOpWhere }, prevBaseWhere)
+              }
             } else if (sub.aggregates) {
               subNamed = {}
               for (const [name, operation] of Object.entries(sub.aggregates)) {
                 const key = `m${index}_s${subIndex}_${name}`
                 input[key] = sanitizeAggregate(operation, subBaseWhere)
                 subNamed[name] = key
+                if (sub.trend) {
+                  const combined = mergeWhereConstraints(subBaseWhere, operation.where)
+                  const { previousWhere, dateField } = computePreviousPeriodWindow(sub.trend, combined)
+                  const prevBaseWhere = replaceOrMergeDateWhere(subBaseWhere, dateField, previousWhere[dateField])
+                  const prevOpWhere = replaceOrMergeDateWhere(operation.where, dateField, previousWhere[dateField])
+                  input[`${key}_prev`] = sanitizeAggregate({ ...operation, where: prevOpWhere }, prevBaseWhere)
+                }
               }
             }
 
@@ -392,6 +604,29 @@ export function useViewMetrics({
           }
         }
 
+        let prevValue: number | string | null = null
+        if (metric.trend) {
+          if (metric.expression && named) {
+            const prevContext: Record<string, number | null> = {}
+            for (const name of Object.keys(metric.aggregates ?? {})) {
+              const prevKey = `${named[name]}_prev`
+              prevContext[name] = typeof raw[prevKey] === "number" ? (raw[prevKey] as number) : null
+            }
+            prevValue = evalJexl(metric.expression, { aggregates: prevContext })
+          } else if (!metric.expression && single !== undefined) {
+            const prevBase = raw[`${single}_prev`]
+            if (prevBase !== null && prevBase !== undefined) {
+              prevValue = metric.transform ? evalJexl(metric.transform, { value: prevBase }) : prevBase
+            }
+          }
+        }
+
+        const resolvedTrend = calculateTrendDelta(
+          typeof value === "number" ? value : null,
+          typeof prevValue === "number" ? prevValue : null,
+          metric.trend
+        )
+
         const effectiveScope = metric.scope ?? metricsScope ?? "view"
 
         const resolvedSubMetrics: ResolvedSubMetric[] = (subPlans ?? []).map(({ subMetric, single: subSingle, named: subNamed }) => {
@@ -409,6 +644,29 @@ export function useViewMetrics({
             }
           }
 
+          let subPrevValue: number | string | null = null
+          if (subMetric.trend) {
+            if (subMetric.expression && subNamed) {
+              const prevContext: Record<string, number | null> = {}
+              for (const name of Object.keys(subMetric.aggregates ?? {})) {
+                const prevKey = `${subNamed[name]}_prev`
+                prevContext[name] = typeof raw[prevKey] === "number" ? (raw[prevKey] as number) : null
+              }
+              subPrevValue = evalJexl(subMetric.expression, { aggregates: prevContext })
+            } else if (!subMetric.expression && subSingle !== undefined) {
+              const prevBase = raw[`${subSingle}_prev`]
+              if (prevBase !== null && prevBase !== undefined) {
+                subPrevValue = subMetric.transform ? evalJexl(subMetric.transform, { value: prevBase }) : prevBase
+              }
+            }
+          }
+
+          const subResolvedTrend = calculateTrendDelta(
+            typeof subValue === "number" ? subValue : null,
+            typeof subPrevValue === "number" ? subPrevValue : null,
+            subMetric.trend
+          )
+
           return {
             label: subMetric.label,
             value: subValue,
@@ -417,6 +675,7 @@ export function useViewMetrics({
             scope: subMetric.scope ?? effectiveScope,
             filterTarget: (subMetric as any)._filterTarget || inferFilterTargetFromWhere(subMetric.aggregate?.where),
             overflowGroups: (subMetric as any)._overflowGroups,
+            trend: subResolvedTrend,
           }
         })
 
@@ -442,6 +701,7 @@ export function useViewMetrics({
           showDistribution: metric.showDistribution,
           subMetrics: resolvedSubMetrics.length > 0 ? resolvedSubMetrics : undefined,
           filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
+          trend: resolvedTrend,
         }
       })
 

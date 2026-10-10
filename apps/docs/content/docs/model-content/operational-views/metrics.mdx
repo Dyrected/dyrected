@@ -237,6 +237,38 @@ export const communityBreakdownView = defineView({
 
 When an operator clicks the **"Other (30)"** item, Dyrected opens an interactive popover with a live search bar and a scrollable list of all 30 long-tail communities. Clicking any community in the popover immediately filters the view to records in that community.
 
+### Time-bucket grouping (`bucket`)
+
+When grouping by a date or datetime field (such as `createdAt` or `orderDate`), setting `bucket` groups records into chronological intervals rather than individual timestamps.
+
+You can bucket metrics across five time grains: `'day'`, `'week'`, `'month'`, `'quarter'`, or `'year'`.
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const monthlySignupsView = defineView({
+  slug: "monthly-signups",
+  label: "Monthly Signups",
+  layout: "table",
+  columns: ["name", "email", "createdAt"],
+  metrics: [
+    {
+      label: "{{group.label}} Registrations",
+      color: "blue",
+      groupBy: {
+        field: "createdAt",
+        bucket: "month",
+        limit: 6,
+        orderBy: "desc",
+      },
+      aggregate: { count: "*" },
+    },
+  ],
+});
+```
+
+Dyrected generates dynamic cards with human-readable labels (e.g. `"Oct 2026"`, `"Sep 2026"`, `"Aug 2026"`). When an operator clicks any time-bucket card, it applies an `isBetween` filter matching the exact beginning and end of that calendar interval, instantly focusing the view on rows created during that window.
+
 ## Card layout and column spanning
 
 By default, metric cards occupy a single responsive column in the top summary grid. For hero metrics, wide revenue summaries, or cards with detailed sub-metric distributions, you can specify `span` to give the card a wider footprint:
@@ -369,6 +401,100 @@ export const orderFulfillmentView = defineView({
 ```
 
 You can also toggle the distribution bar on or off directly inside the Admin UI customizer when editing metrics.
+
+## Period-over-period trend deltas (`trend`)
+
+KPI numbers are most meaningful in context. Instead of just seeing "142 Signups" in isolation, operators want to know if performance is accelerating or slowing down compared to last week or last month.
+
+Adding a `trend` configuration automatically computes the percentage delta against the preceding time window and renders a high-contrast trend badge next to the main figure:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const revenueTrendsView = defineView({
+  slug: "sales-performance",
+  label: "Sales Performance",
+  layout: "table",
+  columns: ["orderNumber", "customer", "totalAmount", "createdAt"],
+  metrics: [
+    {
+      label: "Monthly Net Revenue",
+      color: "emerald",
+      format: "currency",
+      currency: "USD",
+      aggregate: {
+        sum: "totalAmount",
+        where: {
+          createdAt: {
+            gte: "2026-10-01T00:00:00.000Z",
+            lte: "2026-10-31T23:59:59.999Z",
+          },
+        },
+      },
+      trend: {
+        dateField: "createdAt",
+        period: "previous_month",
+      },
+      subMetrics: [
+        {
+          label: "New Customer Orders",
+          aggregate: {
+            count: "*",
+            where: {
+              customerType: { equals: "new" },
+              createdAt: {
+                gte: "2026-10-01T00:00:00.000Z",
+                lte: "2026-10-31T23:59:59.999Z",
+              },
+            },
+          },
+          trend: {
+            period: "previous_month",
+          },
+        },
+      ],
+    },
+  ],
+});
+```
+
+If revenue grew by 14.2% over September, Dyrected displays `+14.2% ↑` in an emerald badge beside the headline number. On sub-metrics in the card footer, trend deltas appear as compact directional tags.
+
+### Comparison periods
+
+The `period` property determines the baseline comparison window:
+
+| Period | Comparison baseline | Typical use case |
+| --- | --- | --- |
+| `'previous_period'` *(default)* | Shifts the current evaluation window back by its exact duration. If viewing the last 7 days, compares against the preceding 7 days. | Default adaptive comparisons matching the active date filter. |
+| `'previous_day'` | Shifts the comparison baseline back by exactly 1 day. | Daily tracking, comparing today's volume against yesterday. |
+| `'previous_week'` | Shifts the comparison baseline back by exactly 7 days. | Weekly sprints and comparing day-of-week patterns. |
+| `'previous_month'` | Shifts the comparison baseline back by exactly 1 calendar month. | Monthly executive reviews and recurring billing cycles. |
+| `'previous_year'` | Shifts the comparison baseline back by exactly 1 calendar year. | Year-over-year (YoY) growth and seasonal tracking. |
+
+### Zero-N+1 batched execution
+
+To prevent performance degradation on high-traffic operational dashboards, Dyrected fans previous period queries directly into the primary database aggregation request. Current and historical numbers are computed in a single round-trip database query, ensuring instant dashboard rendering even across hundreds of thousands of records.
+
+### Inverting color polarity (`invertColors`)
+
+By default, an upward delta (`+14%`) renders in emerald and a downward delta (`-5%`) renders in rose.
+
+For metrics where increases are undesirable — such as customer churn, response times, bug reports, or error rates — set `invertColors: true`. An increase will display with a rose warning badge, while a reduction in churn or errors will render with an emerald success badge:
+
+```ts
+{
+  label: "Open Critical Bugs",
+  color: "rose",
+  aggregate: { count: "*", where: { status: { equals: "open" }, severity: { equals: "critical" } } },
+  trend: {
+    dateField: "createdAt",
+    period: "previous_week",
+    // Reductions in bug counts show in emerald, while increases show in rose
+    invertColors: true,
+  },
+}
+```
 
 ## Configuration patterns
 
@@ -507,11 +633,12 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | `span` | `1 \| 2 \| 3 \| 4 \| 'full'` | Responsive grid column span. Defaults to `1`. Set to `2`, `3`, `4`, or `'full'` for wide hero cards. |
 | `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`, `"Tables"`). |
 | `scope` | `'view' \| 'filtered' \| 'collection'` | Scoping override for this card. Defaults to the view's `metricsScope` (or `'view'`). |
-| `groupBy` | `string \| ViewMetricGroupByConfig` | Dynamic breakdown: generates 1 card per distinct group value or related document. |
+| `groupBy` | `string \| ViewMetricGroupByConfig` | Dynamic breakdown: generates 1 card per distinct group value, related document, or time bucket. |
 | `aggregate` | `AggregateOperation` | Single operation `{ count: "*", distinctCount: "field", sum: "field", avg: "field", min: "field", max: "field", where?, cast?: "number" }`. |
 | `aggregates` | `Record<string, AggregateOperation>` | Named map of operations referenced in `expression` as `aggregates.key`. |
 | `transform` | `string` | JEXL formula evaluated over `value` for single aggregates (e.g. `"value * 100"`). |
 | `expression` | `string` | JEXL formula evaluated over `aggregates` (e.g. `"aggregates.a + aggregates.b"`). |
+| `trend` | `ViewMetricTrendConfig` | Period-over-period trend delta comparison configuration. Renders a hero badge (e.g. `+14.2% ↑`). |
 | `format` | `"currency"` \| `"number"` \| `"percent"` | Formatter applied to the final number. |
 | `currency` | `string` | 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. |
 | `showDistribution` | `boolean` | Controls the horizontal segmented distribution bar. Defaults to `true` when 2+ sub-metrics have numbers. |
@@ -524,13 +651,32 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | `label` | `string` **required** | Label for the breakdown row. Supports `{{group.label}}` and `{{group.value}}`. |
 | `color` | `MetricColor` | Theme accent color for this sub-metric item and its distribution bar segment. |
 | `scope` | `'view' \| 'filtered' \| 'collection'` | Scoping override for this sub-metric row. Defaults to the parent card's scope. |
-| `groupBy` | `string \| ViewMetricGroupByConfig` | Groups this sub-metric by field or relationship, expanding into multiple footer rows. |
+| `groupBy` | `string \| ViewMetricGroupByConfig` | Groups this sub-metric by field, relationship, or time bucket, expanding into multiple footer rows. |
 | `aggregate` | `AggregateOperation` | Single database aggregate operation. |
 | `aggregates` | `Record<string, AggregateOperation>` | Named map of operations referenced in `expression`. |
 | `transform` | `string` | JEXL formula evaluated over `value`. |
 | `expression` | `string` | JEXL formula evaluated over `aggregates`. |
+| `trend` | `ViewMetricTrendConfig` | Period-over-period trend delta configuration. Renders a compact directional tag. |
 | `format` | `"currency"` \| `"number"` \| `"percent"` | Formatter applied to the number. |
 | `currency` | `string` | 3-letter currency code when `format: "currency"`. |
+
+### `ViewMetricGroupByConfig` options
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `field` | `string` **required** | — | Target field name or relationship field to group by. |
+| `bucket` | `'day' \| 'week' \| 'month' \| 'quarter' \| 'year'` | — | Chronological grouping intervals when `field` is a date or datetime. |
+| `limit` | `number` | — | Maximum number of top groups to display. Sibling sub-metrics rollup the rest into an interactive "Other (N)" popover. |
+| `orderBy` | `'count' \| 'asc' \| 'desc'` | `'count'` | Sort order for groups (`'count'` orders by highest frequency, `'asc'` / `'desc'` sorts by group value). |
+| `where` | `Filter` | — | Filter condition applied when discovering distinct groups. |
+
+### `ViewMetricTrendConfig` options
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `dateField` | `string` | `"createdAt"` | Date or datetime field used to partition the evaluation period. |
+| `period` | `'previous_period' \| 'previous_day' \| 'previous_week' \| 'previous_month' \| 'previous_year'` | `'previous_period'` | Comparison baseline period. |
+| `invertColors` | `boolean` | `false` | When `true`, flips color polarity so decreases display as emerald and increases display as rose (e.g. for churn or error counts). |
 
 ## UX guardrails
 

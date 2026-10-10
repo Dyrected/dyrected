@@ -130,7 +130,12 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
           if (typeof f.value === "object" && f.value !== null) {
             const opVal = f.value as any
             if (opVal.value === target.value) return true
-            if (opVal.operator === target.operator && opVal.value === target.value) return true
+            if (opVal.operator === target.operator && opVal.value === target.value) {
+              if (target.value2 !== undefined) {
+                return opVal.value2 === target.value2
+              }
+              return true
+            }
             if (Array.isArray(opVal.value) && Array.isArray(target.value)) {
               return JSON.stringify(opVal.value) === JSON.stringify(target.value)
             }
@@ -144,7 +149,11 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         } else {
           const filterValue =
             target.operator && target.operator !== "eq"
-              ? { operator: target.operator, value: target.value }
+              ? {
+                  operator: target.operator,
+                  value: target.value,
+                  ...(target.value2 !== undefined ? { value2: target.value2 } : {}),
+                }
               : { operator: "eq", value: target.value }
 
           newFilters = [

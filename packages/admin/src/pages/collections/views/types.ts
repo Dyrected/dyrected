@@ -91,9 +91,34 @@ export interface SerializedViewMetricGroupByConfig {
   orderBy?: "count" | "asc" | "desc"
   /** Optional where filter when discovering groups. */
   where?: Record<string, unknown>
+  /** Time interval bucket when grouping by a date or datetime field: `'day' | 'week' | 'month' | 'quarter' | 'year'`. */
+  bucket?: "day" | "week" | "month" | "quarter" | "year"
 }
 
 export type SerializedViewMetricGroupBy = string | SerializedViewMetricGroupByConfig
+
+/**
+ * Period-over-period trend delta configuration for KPI metrics.
+ */
+export interface SerializedViewMetricTrendConfig {
+  /** Date or datetime field used to partition the evaluation period. Defaults to "createdAt". */
+  dateField?: string
+  /**
+   * Comparison period:
+   * - "previous_period": compares the current evaluation window against the immediate preceding window of equal duration
+   * - "previous_day": compares against the same interval yesterday
+   * - "previous_month": compares against the same interval last month
+   * - "previous_week": compares against the same interval last week
+   * - "previous_year": compares against the same interval last year
+   * Defaults to "previous_period".
+   */
+  period?: "previous_period" | "previous_day" | "previous_week" | "previous_month" | "previous_year"
+  /**
+   * By default, positive growth is styled with emerald/up and reduction with rose/down.
+   * Set `invertColors: true` for inverted metrics where an increase is undesirable (e.g. churn, bounce rate, error counts).
+   */
+  invertColors?: boolean
+}
 
 /**
  * Secondary or supporting aggregation metric displayed beneath a primary KPI card.
@@ -141,6 +166,8 @@ export interface SerializedViewSubMetric {
   format?: string
   /** ISO currency code (e.g. `"NGN"`, `"USD"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string
+  /** Period-over-period trend delta comparison configuration. */
+  trend?: SerializedViewMetricTrendConfig
 }
 
 /**
@@ -192,6 +219,8 @@ export interface SerializedViewMetric {
   format?: string
   /** ISO currency code (e.g. `"NGN"`, `"USD"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string
+  /** Period-over-period trend delta comparison configuration. */
+  trend?: SerializedViewMetricTrendConfig
   /**
    * Responsive column span for this metric card in the metrics grid:
    * - `1`: standard single card width (default)

@@ -6757,9 +6757,9 @@
   {
     "id": "/model-content/operational-views/metrics#example-7",
     "page": "/model-content/operational-views/metrics",
-    "language": "mermaid",
-    "classification": "illustrative",
-    "validation": "Output, prose, or non-executable illustration"
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/model-content/operational-views/metrics#example-8",
@@ -6778,9 +6778,9 @@
   {
     "id": "/model-content/operational-views/metrics#example-10",
     "page": "/model-content/operational-views/metrics",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/model-content/operational-views/metrics#example-11",
@@ -6798,6 +6798,41 @@
   },
   {
     "id": "/model-content/operational-views/metrics#example-13",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-14",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-15",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-16",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-17",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-18",
     "page": "/model-content/operational-views/metrics",
     "language": "ts",
     "classification": "syntax-checked",

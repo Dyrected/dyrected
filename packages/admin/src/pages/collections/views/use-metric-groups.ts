@@ -8,6 +8,8 @@ import type { SerializedViewMetric, SerializedViewMetricGroupBy } from "./types"
 export interface MetricGroupOption {
   value: any
   label: string
+  where?: Record<string, unknown>
+  filterTarget?: { columnId: string; value: unknown; operator?: string; value2?: unknown }
 }
 
 export interface NormalizedGroupBy {
@@ -16,6 +18,7 @@ export interface NormalizedGroupBy {
   orderBy?: "count" | "asc" | "desc"
   where?: Record<string, unknown>
   isSubMetric?: boolean
+  bucket?: "day" | "week" | "month" | "quarter" | "year"
 }
 
 export function normalizeGroupBy(config?: SerializedViewMetricGroupBy): NormalizedGroupBy | undefined {
@@ -30,7 +33,146 @@ export function normalizeGroupBy(config?: SerializedViewMetricGroupBy): Normaliz
     limit: config.limit && config.limit > 0 ? config.limit : 12,
     orderBy: config.orderBy,
     where: config.where,
+    bucket: config.bucket,
   }
+}
+
+/**
+ * Generates discrete time intervals with ISO range filters and localized human labels.
+ */
+export function generateTimeBuckets(
+  cfg: NormalizedGroupBy,
+  referenceDate = new Date()
+): { options: MetricGroupOption[]; allOptions: MetricGroupOption[] } {
+  const bucketType = cfg.bucket || "month"
+  const limit = cfg.limit || 12
+  const isAsc = cfg.orderBy === "asc"
+  const options: MetricGroupOption[] = []
+
+  if (bucketType === "day") {
+    for (let i = 0; i < limit; i++) {
+      const offset = isAsc ? (limit - 1 - i) : i
+      const d = new Date(referenceDate)
+      d.setDate(d.getDate() - offset)
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0)
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999)
+      const startIso = start.toISOString()
+      const endIso = end.toISOString()
+      const val = startIso.slice(0, 10)
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+
+      options.push({
+        value: val,
+        label,
+        where: { [cfg.field]: { gte: startIso, lte: endIso } },
+        filterTarget: { columnId: cfg.field, operator: "isBetween", value: startIso, value2: endIso },
+      })
+    }
+  } else if (bucketType === "week") {
+    const currentDay = referenceDate.getDay()
+    const distToMonday = (currentDay + 6) % 7
+    const currentMonday = new Date(referenceDate)
+    currentMonday.setDate(currentMonday.getDate() - distToMonday)
+    currentMonday.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < limit; i++) {
+      const offsetWeeks = isAsc ? (limit - 1 - i) : i
+      const weekStart = new Date(currentMonday)
+      weekStart.setDate(weekStart.getDate() - offsetWeeks * 7)
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 6)
+      weekEnd.setHours(23, 59, 59, 999)
+
+      const startIso = weekStart.toISOString()
+      const endIso = weekEnd.toISOString()
+      const val = `${startIso.slice(0, 10)}_W`
+      const label = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+
+      options.push({
+        value: val,
+        label,
+        where: { [cfg.field]: { gte: startIso, lte: endIso } },
+        filterTarget: { columnId: cfg.field, operator: "isBetween", value: startIso, value2: endIso },
+      })
+    }
+  } else if (bucketType === "quarter") {
+    const curYear = referenceDate.getFullYear()
+    const curQuarter = Math.floor(referenceDate.getMonth() / 3) + 1
+
+    for (let i = 0; i < limit; i++) {
+      const offset = isAsc ? (limit - 1 - i) : i
+      let targetQ = curQuarter - offset
+      let targetY = curYear
+      while (targetQ < 1) {
+        targetQ += 4
+        targetY -= 1
+      }
+      while (targetQ > 4) {
+        targetQ -= 4
+        targetY += 1
+      }
+
+      const qStartMonth = (targetQ - 1) * 3
+      const start = new Date(targetY, qStartMonth, 1, 0, 0, 0, 0)
+      const end = new Date(targetY, qStartMonth + 3, 0, 23, 59, 59, 999)
+      const startIso = start.toISOString()
+      const endIso = end.toISOString()
+      const val = `${targetY}-Q${targetQ}`
+      const label = `Q${targetQ} ${targetY}`
+
+      options.push({
+        value: val,
+        label,
+        where: { [cfg.field]: { gte: startIso, lte: endIso } },
+        filterTarget: { columnId: cfg.field, operator: "isBetween", value: startIso, value2: endIso },
+      })
+    }
+  } else if (bucketType === "year") {
+    const curYear = referenceDate.getFullYear()
+    for (let i = 0; i < limit; i++) {
+      const offset = isAsc ? (limit - 1 - i) : i
+      const targetY = curYear - offset
+      const start = new Date(targetY, 0, 1, 0, 0, 0, 0)
+      const end = new Date(targetY, 11, 31, 23, 59, 59, 999)
+      const startIso = start.toISOString()
+      const endIso = end.toISOString()
+      const val = String(targetY)
+      const label = String(targetY)
+
+      options.push({
+        value: val,
+        label,
+        where: { [cfg.field]: { gte: startIso, lte: endIso } },
+        filterTarget: { columnId: cfg.field, operator: "isBetween", value: startIso, value2: endIso },
+      })
+    }
+  } else {
+    // Default: month
+    const curYear = referenceDate.getFullYear()
+    const curMonth = referenceDate.getMonth()
+
+    for (let i = 0; i < limit; i++) {
+      const offset = isAsc ? (limit - 1 - i) : i
+      const d = new Date(curYear, curMonth - offset, 1, 0, 0, 0, 0)
+      const targetYear = d.getFullYear()
+      const targetMonth = d.getMonth()
+      const start = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0)
+      const end = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999)
+      const startIso = start.toISOString()
+      const endIso = end.toISOString()
+      const val = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}`
+      const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+
+      options.push({
+        value: val,
+        label,
+        where: { [cfg.field]: { gte: startIso, lte: endIso } },
+        filterTarget: { columnId: cfg.field, operator: "isBetween", value: startIso, value2: endIso },
+      })
+    }
+  }
+
+  return { options, allOptions: options }
 }
 
 /**
@@ -85,10 +227,22 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
       const rawRelationTo = fieldDef?.type === "relationship" ? fieldDef.relationTo : undefined
       const relationTo = Array.isArray(rawRelationTo) ? rawRelationTo[0] : rawRelationTo
       const hasPredefinedOptions = Array.isArray(fieldDef?.options) && fieldDef.options.length > 0
+      const isDateField =
+        cfg.bucket !== undefined ||
+        fieldDef?.type === "date" ||
+        fieldDef?.type === "datetime" ||
+        cfg.field === "createdAt" ||
+        cfg.field === "updatedAt"
 
       return {
-        queryKey: ["metric-group-options", slug, cfg.field, relationTo, cfg.limit, cfg.where],
+        queryKey: ["metric-group-options", slug, cfg.field, relationTo, cfg.limit, cfg.where, cfg.bucket, cfg.orderBy],
         queryFn: async (): Promise<{ field: string; options: MetricGroupOption[]; allOptions: MetricGroupOption[] }> => {
+          // 0. Time-bucket grouping on date/datetime fields
+          if (isDateField) {
+            const timeBuckets = generateTimeBuckets(cfg)
+            return { field: cfg.field, options: timeBuckets.options, allOptions: timeBuckets.allOptions }
+          }
+
           if (!client) return { field: cfg.field, options: [], allOptions: [] }
 
           function finalizeOptions(rawOptions: MetricGroupOption[], cfg: NormalizedGroupBy): { options: MetricGroupOption[]; allOptions: MetricGroupOption[] } {

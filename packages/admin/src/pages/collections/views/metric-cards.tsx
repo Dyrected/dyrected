@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronDown, Database, Filter, Layers, Search } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, ChevronDown, Database, Filter, Layers, Minus, Search } from "lucide-react"
 import { Skeleton } from "../../../components/ui/skeleton"
 import { Card, CardContent } from "../../../components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover"
@@ -27,7 +27,12 @@ function isFilterActive(
     if (typeof f.value === "object" && f.value !== null) {
       const opVal = f.value as any
       if (opVal.value === target.value) return true
-      if (opVal.operator === target.operator && opVal.value === target.value) return true
+      if (opVal.operator === target.operator && opVal.value === target.value) {
+        if (target.value2 !== undefined) {
+          return opVal.value2 === target.value2
+        }
+        return true
+      }
       if (Array.isArray(opVal.value) && Array.isArray(target.value)) {
         return JSON.stringify(opVal.value) === JSON.stringify(target.value)
       }
@@ -599,9 +604,28 @@ function MetricCardItem({
           )}
         </div>
         <div className="dy-flex dy-items-baseline dy-justify-between dy-gap-2">
-          <p className={cn("dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
-            {metric.formatted}
-          </p>
+          <div className="dy-flex dy-items-baseline dy-gap-2">
+            <p className={cn("dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
+              {metric.formatted}
+            </p>
+            {metric.trend && (
+              <span
+                data-testid={`metric-trend-${metric.label}`}
+                className={cn(
+                  "dy-inline-flex dy-items-center dy-gap-0.5 dy-text-xs dy-font-semibold dy-px-1.5 dy-py-0.5 dy-rounded-full dy-tabular-nums dy-transition-colors select-none",
+                  metric.trend.tone === "emerald" && "dy-bg-emerald-500/15 dy-text-emerald-700 dark:dy-text-emerald-400 dark:dy-bg-emerald-500/20",
+                  metric.trend.tone === "rose" && "dy-bg-rose-500/15 dy-text-rose-700 dark:dy-text-rose-400 dark:dy-bg-rose-500/20",
+                  metric.trend.tone === "muted" && "dy-bg-muted dy-text-muted-foreground",
+                )}
+                title={metric.trend.previousValue !== null ? `Previous period: ${metric.trend.previousValue} (${metric.trend.formatted})` : `Trend: ${metric.trend.formatted}`}
+              >
+                {metric.trend.direction === "up" && <ArrowUpRight className="dy-h-3 dy-w-3" />}
+                {metric.trend.direction === "down" && <ArrowDownRight className="dy-h-3 dy-w-3" />}
+                {metric.trend.direction === "flat" && <Minus className="dy-h-3 dy-w-3" />}
+                <span>{metric.trend.formatted}</span>
+              </span>
+            )}
+          </div>
           {metric.unit && (
             <span className={cn("dy-text-xs dy-font-medium", colorStyles.unit)}>
               {metric.unit}
@@ -723,6 +747,22 @@ function MetricCardItem({
                     )}
                     <span className={colorStyles.subLabel}>{sub.label}:</span>
                     <span className={colorStyles.subValue}>{sub.formatted}</span>
+                    {sub.trend && (
+                      <span
+                        data-testid={`submetric-trend-${sub.label}`}
+                        className={cn(
+                          "dy-inline-flex dy-items-center dy-gap-0.5 dy-text-[10px] dy-font-semibold dy-px-1 dy-rounded dy-tabular-nums",
+                          sub.trend.tone === "emerald" && "dy-text-emerald-600 dark:dy-text-emerald-400",
+                          sub.trend.tone === "rose" && "dy-text-rose-600 dark:dy-text-rose-400",
+                          sub.trend.tone === "muted" && "dy-text-muted-foreground",
+                        )}
+                        title={sub.trend.previousValue !== null ? `Previous: ${sub.trend.previousValue} (${sub.trend.formatted})` : `Trend: ${sub.trend.formatted}`}
+                      >
+                        {sub.trend.direction === "up" && "↑"}
+                        {sub.trend.direction === "down" && "↓"}
+                        <span>{sub.trend.formatted}</span>
+                      </span>
+                    )}
                     {shouldShowDistribution && itemNum > 0 && (
                       <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
                     )}
@@ -754,6 +794,22 @@ function MetricCardItem({
                   )}
                   <span className={colorStyles.subLabel}>{sub.label}:</span>
                   <span className={colorStyles.subValue}>{sub.formatted}</span>
+                  {sub.trend && (
+                    <span
+                      data-testid={`submetric-trend-${sub.label}`}
+                      className={cn(
+                        "dy-inline-flex dy-items-center dy-gap-0.5 dy-text-[10px] dy-font-semibold dy-px-1 dy-rounded dy-tabular-nums",
+                        sub.trend.tone === "emerald" && "dy-text-emerald-600 dark:dy-text-emerald-400",
+                        sub.trend.tone === "rose" && "dy-text-rose-600 dark:dy-text-rose-400",
+                        sub.trend.tone === "muted" && "dy-text-muted-foreground",
+                      )}
+                      title={sub.trend.previousValue !== null ? `Previous: ${sub.trend.previousValue} (${sub.trend.formatted})` : `Trend: ${sub.trend.formatted}`}
+                    >
+                      {sub.trend.direction === "up" && "↑"}
+                      {sub.trend.direction === "down" && "↓"}
+                      <span>{sub.trend.formatted}</span>
+                    </span>
+                  )}
                   {shouldShowDistribution && itemNum > 0 && (
                     <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
                   )}

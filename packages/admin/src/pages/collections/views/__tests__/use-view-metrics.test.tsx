@@ -818,3 +818,297 @@ describe("useViewMetrics Dynamic Grouping (groupBy)", () => {
   })
 })
 
+describe("useViewMetrics Time-Bucket Grouping (bucket: 'day' | 'week' | 'month' | 'quarter' | 'year')", () => {
+  beforeEach(() => {
+    aggregateMock.mockReset()
+    vi.clearAllMocks()
+    useDyrectedMock.mockReturnValue({
+      client: {
+        collection: () => ({
+          aggregate: aggregateMock,
+        }),
+      },
+      schemas: { collections: [] },
+    })
+  })
+
+  it("generates discrete monthly time buckets with ISO range where filters and isBetween filter targets", async () => {
+    aggregateMock.mockResolvedValue({
+      m0: 15,
+      m1: 22,
+      m2: 30,
+    })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "signups",
+          viewSlug: "pipeline",
+          metrics: [
+            {
+              label: "Signups ({{group.label}})",
+              groupBy: {
+                field: "createdAt",
+                bucket: "month",
+                limit: 3,
+                orderBy: "asc",
+              },
+              aggregate: { count: "*" },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    expect(result.current.data?.length).toBe(3)
+    const cards = result.current.data!
+    expect(cards[0].label).toContain("Signups (")
+    expect(cards[0].value).toBe(15)
+    expect(cards[1].value).toBe(22)
+    expect(cards[2].value).toBe(30)
+
+    // Verify filter targets are configured with isBetween
+    expect(cards[0].filterTarget?.columnId).toBe("createdAt")
+    expect(cards[0].filterTarget?.operator).toBe("isBetween")
+    expect(cards[0].filterTarget?.value).toBeDefined()
+    expect(cards[0].filterTarget?.value2).toBeDefined()
+
+    // Verify aggregate was called with single batched request containing range filters
+    expect(aggregateMock).toHaveBeenCalledTimes(1)
+    const calledArg = aggregateMock.mock.calls[0][0]
+    expect(calledArg.m0.count).toBe("*")
+    expect(calledArg.m0.where.createdAt.gte).toBeDefined()
+    expect(calledArg.m0.where.createdAt.lte).toBeDefined()
+  })
+
+  it("supports daily time buckets inside submetrics", async () => {
+    aggregateMock.mockResolvedValue({
+      m0: 70,
+      m0_s0: 10,
+      m0_s1: 15,
+      m0_s2: 20,
+    })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "activity",
+          viewSlug: "daily",
+          metrics: [
+            {
+              label: "Weekly Total",
+              aggregate: { count: "*" },
+              subMetrics: [
+                {
+                  label: "{{group.label}}",
+                  groupBy: {
+                    field: "createdAt",
+                    bucket: "day",
+                    limit: 3,
+                    orderBy: "asc",
+                  },
+                  aggregate: { count: "*" },
+                },
+              ],
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const card = result.current.data?.[0]
+    expect(card).toBeDefined()
+    expect(card?.value).toBe(70)
+    expect(card?.subMetrics?.length).toBe(3)
+    expect(card?.subMetrics?.[0]?.value).toBe(10)
+    expect(card?.subMetrics?.[1]?.value).toBe(15)
+    expect(card?.subMetrics?.[2]?.value).toBe(20)
+    expect(card?.subMetrics?.[0]?.filterTarget?.operator).toBe("isBetween")
+  })
+})
+
+describe("useViewMetrics Period-over-Period Trend Deltas (trend)", () => {
+  beforeEach(() => {
+    aggregateMock.mockReset()
+    vi.clearAllMocks()
+    useDyrectedMock.mockReturnValue({
+      client: {
+        collection: () => ({
+          aggregate: aggregateMock,
+        }),
+      },
+      schemas: { collections: [] },
+    })
+  })
+
+  it("queries current and companion previous interval aggregate in a single batched query and computes positive trend", async () => {
+    // Current revenue = 120, Previous revenue = 100 -> +20%
+    aggregateMock.mockResolvedValue({
+      m0: 120,
+      m0_prev: 100,
+    })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "orders",
+          viewSlug: "overview",
+          metrics: [
+            {
+              label: "Revenue",
+              aggregate: { sum: "amount" },
+              trend: {
+                dateField: "createdAt",
+                period: "previous_month",
+              },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    // Verify batched aggregate call
+    expect(aggregateMock).toHaveBeenCalledTimes(1)
+    const arg = aggregateMock.mock.calls[0][0]
+    expect(arg.m0).toBeDefined()
+    expect(arg.m0_prev).toBeDefined()
+
+    const card = result.current.data?.[0]
+    expect(card?.value).toBe(120)
+    expect(card?.trend).toBeDefined()
+    expect(card?.trend?.deltaPct).toBe(20)
+    expect(card?.trend?.direction).toBe("up")
+    expect(card?.trend?.formatted).toBe("+20%")
+    expect(card?.trend?.tone).toBe("emerald")
+    expect(card?.trend?.previousValue).toBe(100)
+  })
+
+  it("computes negative trend and styles with rose tone", async () => {
+    // Current = 75, Previous = 100 -> -25%
+    aggregateMock.mockResolvedValue({
+      m0: 75,
+      m0_prev: 100,
+    })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "orders",
+          viewSlug: "overview",
+          metrics: [
+            {
+              label: "Orders",
+              aggregate: { count: "*" },
+              trend: {
+                dateField: "createdAt",
+                period: "previous_week",
+              },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const card = result.current.data?.[0]
+    expect(card?.trend?.deltaPct).toBe(-25)
+    expect(card?.trend?.direction).toBe("down")
+    expect(card?.trend?.formatted).toBe("-25%")
+    expect(card?.trend?.tone).toBe("rose")
+  })
+
+  it("supports invertColors for negative polarity metrics (e.g. churn or error count)", async () => {
+    // Decreased error count from 50 to 30 (-40%), which is GOOD -> should be emerald with invertColors
+    aggregateMock.mockResolvedValue({
+      m0: 30,
+      m0_prev: 50,
+    })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "errors",
+          viewSlug: "system",
+          metrics: [
+            {
+              label: "Error Count",
+              aggregate: { count: "*" },
+              trend: {
+                dateField: "createdAt",
+                period: "previous_day",
+                invertColors: true,
+              },
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const card = result.current.data?.[0]
+    expect(card?.trend?.direction).toBe("down")
+    expect(card?.trend?.formatted).toBe("-40%")
+    expect(card?.trend?.tone).toBe("emerald")
+  })
+
+  it("supports trend on submetrics", async () => {
+    aggregateMock.mockResolvedValue({
+      m0: 200,
+      m0_s0: 80,
+      m0_s0_prev: 60,
+    })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "events",
+          viewSlug: "rsvps",
+          metrics: [
+            {
+              label: "Total Guests",
+              aggregate: { count: "*" },
+              subMetrics: [
+                {
+                  label: "Confirmed",
+                  aggregate: { count: "*", where: { confirmed: { equals: true } } },
+                  trend: { period: "previous_week" },
+                },
+              ],
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const sub = result.current.data?.[0]?.subMetrics?.[0]
+    expect(sub?.trend).toBeDefined()
+    expect(sub?.trend?.deltaPct).toBe(33.3)
+    expect(sub?.trend?.direction).toBe("up")
+    expect(sub?.trend?.formatted).toBe("+33.3%")
+    expect(sub?.trend?.tone).toBe("emerald")
+  })
+})
+
+

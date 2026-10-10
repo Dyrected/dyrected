@@ -84,9 +84,34 @@ export interface ViewMetricGroupByConfig {
   orderBy?: 'count' | 'asc' | 'desc';
   /** Optional where filter when discovering groups. */
   where?: Record<string, unknown>;
+  /** Time interval bucket when grouping by a date or datetime field: `'day' | 'week' | 'month' | 'quarter' | 'year'`. */
+  bucket?: 'day' | 'week' | 'month' | 'quarter' | 'year';
 }
 
 export type ViewMetricGroupBy = string | ViewMetricGroupByConfig;
+
+/**
+ * Period-over-period trend delta configuration for KPI metrics.
+ */
+export interface ViewMetricTrendConfig {
+  /** Date or datetime field used to partition the evaluation period. Defaults to "createdAt". */
+  dateField?: string;
+  /**
+   * Comparison period:
+   * - "previous_period": compares the current evaluation window against the immediate preceding window of equal duration
+   * - "previous_day": compares against the same interval yesterday
+   * - "previous_month": compares against the same interval last month
+   * - "previous_week": compares against the same interval last week
+   * - "previous_year": compares against the same interval last year
+   * Defaults to "previous_period".
+   */
+  period?: 'previous_period' | 'previous_day' | 'previous_week' | 'previous_month' | 'previous_year';
+  /**
+   * By default, positive growth is styled with emerald/up and reduction with rose/down.
+   * Set `invertColors: true` for inverted metrics where an increase is undesirable (e.g. churn, bounce rate, error counts).
+   */
+  invertColors?: boolean;
+}
 
 export interface ViewSubMetric {
   /** Short label for the sub-metric (e.g. "Pending", "Collected"). Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
@@ -109,6 +134,8 @@ export interface ViewSubMetric {
   format?: 'currency' | 'number' | 'percent' | string;
   /** 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string;
+  /** Period-over-period trend delta comparison configuration. */
+  trend?: ViewMetricTrendConfig;
 }
 
 /**
@@ -156,6 +183,8 @@ export interface ViewMetric {
   format?: 'currency' | 'number' | 'percent' | string;
   /** 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string;
+  /** Period-over-period trend delta comparison configuration. */
+  trend?: ViewMetricTrendConfig;
   /**
    * Responsive column span for this metric card in the metrics grid:
    * - `1`: standard single card width (default)

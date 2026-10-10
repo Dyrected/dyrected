@@ -110,6 +110,10 @@ export function ViewMetricsBuilder({
   const [groupBy, setGroupBy] = React.useState<string>("")
   const [groupLimit, setGroupLimit] = React.useState<number | undefined>(undefined)
   const [groupOrderBy, setGroupOrderBy] = React.useState<"count" | "asc" | "desc">("count")
+  const [groupBucket, setGroupBucket] = React.useState<"day" | "week" | "month" | "quarter" | "year" | undefined>(undefined)
+  const [trendEnabled, setTrendEnabled] = React.useState<boolean>(false)
+  const [trendPeriod, setTrendPeriod] = React.useState<"previous_period" | "previous_day" | "previous_week" | "previous_month" | "previous_year">("previous_period")
+  const [trendDateField, setTrendDateField] = React.useState<string>("createdAt")
   const [showDistribution, setShowDistribution] = React.useState<boolean>(true)
   const [span, setSpan] = React.useState<1 | 2 | 3 | 4 | "full" | undefined>(undefined)
 
@@ -317,14 +321,26 @@ export function ViewMetricsBuilder({
       setGroupBy(m.groupBy)
       setGroupLimit(undefined)
       setGroupOrderBy("count")
+      setGroupBucket(undefined)
     } else if (m.groupBy && typeof m.groupBy === "object" && m.groupBy.field) {
       setGroupBy(m.groupBy.field)
       setGroupLimit(m.groupBy.limit)
       setGroupOrderBy(m.groupBy.orderBy || "count")
+      setGroupBucket(m.groupBy.bucket)
     } else {
       setGroupBy("")
       setGroupLimit(undefined)
       setGroupOrderBy("count")
+      setGroupBucket(undefined)
+    }
+    if (m.trend) {
+      setTrendEnabled(true)
+      setTrendPeriod(m.trend.period || "previous_period")
+      setTrendDateField(m.trend.dateField || "createdAt")
+    } else {
+      setTrendEnabled(false)
+      setTrendPeriod("previous_period")
+      setTrendDateField("createdAt")
     }
     setSpan(m.span)
     setShowDistribution(m.showDistribution !== false)
@@ -340,6 +356,10 @@ export function ViewMetricsBuilder({
     setGroupBy("")
     setGroupLimit(undefined)
     setGroupOrderBy("count")
+    setGroupBucket(undefined)
+    setTrendEnabled(false)
+    setTrendPeriod("previous_period")
+    setTrendDateField("createdAt")
     setSpan(undefined)
     setShowDistribution(true)
   }
@@ -363,11 +383,12 @@ export function ViewMetricsBuilder({
 
     let finalGroupBy: ViewMetric["groupBy"] = undefined
     if (groupBy.trim()) {
-      if (groupLimit !== undefined || (groupOrderBy && groupOrderBy !== "count")) {
+      if (groupLimit !== undefined || (groupOrderBy && groupOrderBy !== "count") || groupBucket) {
         finalGroupBy = {
           field: groupBy.trim(),
           limit: groupLimit,
           orderBy: groupOrderBy,
+          bucket: groupBucket,
         }
       } else {
         finalGroupBy = groupBy.trim()
@@ -384,6 +405,7 @@ export function ViewMetricsBuilder({
       scope: scope !== "view" ? scope : undefined,
       span: span !== 1 ? span : undefined,
       groupBy: finalGroupBy,
+      trend: trendEnabled ? { dateField: trendDateField || "createdAt", period: trendPeriod } : undefined,
       showDistribution: existingMetric?.subMetrics?.length ? showDistribution : existingMetric?.showDistribution,
     }
 
@@ -776,7 +798,7 @@ export function ViewMetricsBuilder({
               </div>
 
               {groupBy && (
-                <div className="dy-pt-0.5">
+                <div className="dy-grid dy-grid-cols-2 dy-gap-1 dy-pt-0.5">
                   <Select
                     value={groupOrderBy || "count"}
                     onValueChange={(v: any) => setGroupOrderBy(v)}
@@ -785,13 +807,85 @@ export function ViewMetricsBuilder({
                       <SelectValue placeholder="Order by..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="count" className="dy-text-xs">Order: Highest Count</SelectItem>
-                      <SelectItem value="asc" className="dy-text-xs">Order: Alphabetical (A–Z)</SelectItem>
-                      <SelectItem value="desc" className="dy-text-xs">Order: Alphabetical (Z–A)</SelectItem>
+                      <SelectItem value="count" className="dy-text-xs">Highest Count</SelectItem>
+                      <SelectItem value="asc" className="dy-text-xs">Order: A–Z</SelectItem>
+                      <SelectItem value="desc" className="dy-text-xs">Order: Z–A</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={groupBucket || "__none__"}
+                    onValueChange={(v: any) => setGroupBucket(v === "__none__" ? undefined : v)}
+                  >
+                    <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                      <SelectValue placeholder="Time Bucket" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" className="dy-text-xs">No Time Bucket</SelectItem>
+                      <SelectItem value="day" className="dy-text-xs">Bucket: Day</SelectItem>
+                      <SelectItem value="week" className="dy-text-xs">Bucket: Week</SelectItem>
+                      <SelectItem value="month" className="dy-text-xs">Bucket: Month</SelectItem>
+                      <SelectItem value="quarter" className="dy-text-xs">Bucket: Quarter</SelectItem>
+                      <SelectItem value="year" className="dy-text-xs">Bucket: Year</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
+
+              <div className="dy-space-y-1.5 dy-pt-1 dy-border-t dy-border-border/40">
+                <div className="dy-flex dy-items-center dy-justify-between">
+                  <span className="dy-text-[11px] dy-text-muted-foreground">Period Trend:</span>
+                  <label className="dy-flex dy-items-center dy-gap-1.5 dy-cursor-pointer dy-text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={trendEnabled}
+                      onChange={(e) => setTrendEnabled(e.target.checked)}
+                      className="dy-rounded dy-border-input dy-h-3.5 dy-w-3.5"
+                    />
+                    <span>Compare to previous</span>
+                  </label>
+                </div>
+
+                {trendEnabled && (
+                  <div className="dy-grid dy-grid-cols-2 dy-gap-1">
+                    <Select
+                      value={trendPeriod}
+                      onValueChange={(v: any) => setTrendPeriod(v)}
+                    >
+                      <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                        <SelectValue placeholder="Period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="previous_period" className="dy-text-xs">Previous Period</SelectItem>
+                        <SelectItem value="previous_day" className="dy-text-xs">Yesterday</SelectItem>
+                        <SelectItem value="previous_week" className="dy-text-xs">Last Week</SelectItem>
+                        <SelectItem value="previous_month" className="dy-text-xs">Last Month</SelectItem>
+                        <SelectItem value="previous_year" className="dy-text-xs">Last Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={trendDateField}
+                      onValueChange={(v: any) => setTrendDateField(v)}
+                    >
+                      <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                        <SelectValue placeholder="Date Field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dateFields.length > 0 ? (
+                          dateFields.map((df: any) => (
+                            <SelectItem key={df.name} value={df.name} className="dy-text-xs">
+                              {df.label || df.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="createdAt" className="dy-text-xs">Created At</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
 
               {format === "currency" && (
                 <div className="dy-flex dy-items-center dy-gap-1">
