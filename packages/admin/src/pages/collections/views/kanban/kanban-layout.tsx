@@ -144,29 +144,30 @@ export function KanbanLayout({
   const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
 
   // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  const urlFiltersParam = searchParams.get("filters")
+  const urlSearchParam = searchParams.get("search") ?? ""
+  const urlJoinOpParam = searchParams.get("joinOperator")
+
   React.useEffect(() => {
-    const raw = searchParams.get("filters")
     let nextFilters: ColumnFiltersState = []
-    if (raw) {
+    if (urlFiltersParam) {
       try {
-        const parsed = JSON.parse(raw)
+        const parsed = JSON.parse(urlFiltersParam)
         if (Array.isArray(parsed)) nextFilters = parsed
       } catch {
         // invalid URL filter JSON, fall through
       }
     }
     setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
-  }, [searchParams])
+  }, [urlFiltersParam])
 
   // Synchronize search and joinOperator when URL searchParams changes externally
   React.useEffect(() => {
-    const search = searchParams.get("search") ?? ""
-    setGlobalFilter((prev) => (prev === search ? prev : search))
-    const op = searchParams.get("joinOperator")
-    if (op === "and" || op === "or") {
-      setJoinOperator((prev) => (prev === op ? prev : op))
+    setGlobalFilter((prev) => (prev === urlSearchParam ? prev : urlSearchParam))
+    if (urlJoinOpParam === "and" || urlJoinOpParam === "or") {
+      setJoinOperator((prev) => (prev === urlJoinOpParam ? prev : urlJoinOpParam))
     }
-  }, [searchParams])
+  }, [urlSearchParam, urlJoinOpParam])
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -231,16 +232,22 @@ export function KanbanLayout({
   }, [view.filter, columnFilters, schema, joinOperator])
 
   React.useEffect(() => {
-    const next = new URLSearchParams(searchParams)
-    if (globalFilter) next.set("search", globalFilter)
-    else next.delete("search")
-    if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
-    else next.delete("filters")
-    if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
-    else next.delete("joinOperator")
-    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (globalFilter) next.set("search", globalFilter)
+        else next.delete("search")
+        if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
+        else next.delete("filters")
+        if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
+        else next.delete("joinOperator")
+        if (next.toString() === prev.toString()) return prev
+        return next
+      },
+      { replace: true },
+    )
     persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
-  }, [globalFilter, columnFilters, joinOperator, searchParams, setSearchParams, toolbarStateKey])
+  }, [globalFilter, columnFilters, joinOperator, setSearchParams, toolbarStateKey])
 
   /**
    * Grouped mode fetches each column independently (paginated, parallel) with

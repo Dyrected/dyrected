@@ -109,32 +109,33 @@ export function CardsLayout({
   }, [view.groupBy, view.slug, searchParams])
 
   // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  const urlFiltersParam = searchParams.get("filters")
+  const urlSearchParam = searchParams.get("search") ?? ""
+  const urlJoinOpParam = searchParams.get("joinOperator")
+  const urlPageParam = searchParams.get("page")
+
   React.useEffect(() => {
-    const raw = searchParams.get("filters")
     let nextFilters: ColumnFiltersState = []
-    if (raw) {
+    if (urlFiltersParam) {
       try {
-        const parsed = JSON.parse(raw)
+        const parsed = JSON.parse(urlFiltersParam)
         if (Array.isArray(parsed)) nextFilters = parsed
       } catch {
         // ignore invalid json filter param
       }
     }
     setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
-  }, [searchParams])
+  }, [urlFiltersParam])
 
   // Synchronize search and joinOperator when URL searchParams changes externally
   React.useEffect(() => {
-    const search = searchParams.get("search") ?? ""
-    setGlobalFilter((prev) => (prev === search ? prev : search))
-    const op = searchParams.get("joinOperator")
-    if (op === "and" || op === "or") {
-      setJoinOperator((prev) => (prev === op ? prev : op))
+    setGlobalFilter((prev) => (prev === urlSearchParam ? prev : urlSearchParam))
+    if (urlJoinOpParam === "and" || urlJoinOpParam === "or") {
+      setJoinOperator((prev) => (prev === urlJoinOpParam ? prev : urlJoinOpParam))
     }
-    const p = searchParams.get("page")
-    const pageNum = p ? Math.max(1, Number(p) || 1) : 1
+    const pageNum = urlPageParam ? Math.max(1, Number(urlPageParam) || 1) : 1
     setPage((prev) => (prev === pageNum ? prev : pageNum))
-  }, [searchParams])
+  }, [urlSearchParam, urlJoinOpParam, urlPageParam])
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -214,20 +215,26 @@ export function CardsLayout({
 
   // URL ↔ sessionStorage sync (replace, not push).
   React.useEffect(() => {
-    const next = new URLSearchParams(searchParams)
-    if (globalFilter) next.set("search", globalFilter)
-    else next.delete("search")
-    if (groupBy) next.set("groupBy", groupBy)
-    else next.delete("groupBy")
-    if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
-    else next.delete("filters")
-    if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
-    else next.delete("joinOperator")
-    if (page > 1) next.set("page", String(page))
-    else next.delete("page")
-    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (globalFilter) next.set("search", globalFilter)
+        else next.delete("search")
+        if (groupBy) next.set("groupBy", groupBy)
+        else next.delete("groupBy")
+        if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
+        else next.delete("filters")
+        if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
+        else next.delete("joinOperator")
+        if (page > 1) next.set("page", String(page))
+        else next.delete("page")
+        if (next.toString() === prev.toString()) return prev
+        return next
+      },
+      { replace: true },
+    )
     persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
-  }, [globalFilter, groupBy, columnFilters, joinOperator, page, searchParams, setSearchParams, toolbarStateKey])
+  }, [globalFilter, groupBy, columnFilters, joinOperator, page, setSearchParams, toolbarStateKey])
 
   const {
     data: docs,

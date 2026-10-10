@@ -158,7 +158,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         } else {
           next.delete("filters")
         }
-        next.set("page", "1")
+        next.delete("page")
         return next
       })
     },

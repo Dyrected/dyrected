@@ -136,19 +136,19 @@ export function TableLayout({
   }, [view.groupBy, view.slug, searchParams])
 
   // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  const urlFiltersParam = searchParams.get("filters")
   React.useEffect(() => {
-    const raw = searchParams.get("filters")
     let nextFilters: ColumnFiltersState = []
-    if (raw) {
+    if (urlFiltersParam) {
       try {
-        const parsed = JSON.parse(raw)
+        const parsed = JSON.parse(urlFiltersParam)
         if (Array.isArray(parsed)) nextFilters = parsed
       } catch {
         // ignore invalid json filter param
       }
     }
     setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
-  }, [searchParams])
+  }, [urlFiltersParam])
 
   const handleSortingChange = React.useCallback(
     (updater: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -295,30 +295,34 @@ export function TableLayout({
 
   // Keep URL in sync with filter / sort / pagination / search / groupBy (replace, not push).
   React.useEffect(() => {
-    const next = new URLSearchParams(searchParams)
-    const sortStr = sorting.map((s) => `${s.desc ? "-" : ""}${s.id}`).join(",")
-    if (sortStr) next.set("sort", sortStr)
-    else next.delete("sort")
-    if (globalFilter) next.set("search", globalFilter)
-    else next.delete("search")
-    if (groupBy) next.set("groupBy", groupBy)
-    else next.delete("groupBy")
-    if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
-    else next.delete("filters")
-    if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
-    else next.delete("joinOperator")
-    const pageStr = String(pagination.pageIndex + 1)
-    const limitStr = String(pagination.pageSize)
-    if (pagination.pageIndex > 0) next.set("page", pageStr)
-    else next.delete("page")
-    if (pagination.pageSize !== 20) next.set("limit", limitStr)
-    else next.delete("limit")
-    if (next.toString() !== searchParams.toString()) {
-      setSearchParams(next, { replace: true })
-    }
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        const sortStr = sorting.map((s) => `${s.desc ? "-" : ""}${s.id}`).join(",")
+        if (sortStr) next.set("sort", sortStr)
+        else next.delete("sort")
+        if (globalFilter) next.set("search", globalFilter)
+        else next.delete("search")
+        if (groupBy) next.set("groupBy", groupBy)
+        else next.delete("groupBy")
+        if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
+        else next.delete("filters")
+        if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
+        else next.delete("joinOperator")
+        const pageStr = String(pagination.pageIndex + 1)
+        const limitStr = String(pagination.pageSize)
+        if (pagination.pageIndex > 0) next.set("page", pageStr)
+        else next.delete("page")
+        if (pagination.pageSize !== 20) next.set("limit", limitStr)
+        else next.delete("limit")
+        if (next.toString() === prev.toString()) return prev
+        return next
+      },
+      { replace: true },
+    )
     // Mirror to sessionStorage as fallback when URL is shared without params.
     persistToolbarState(toolbarStateKey, { sorting, columnFilters, pageSize: pagination.pageSize, joinOperator })
-  }, [sorting, globalFilter, groupBy, columnFilters, joinOperator, pagination.pageIndex, pagination.pageSize, searchParams, setSearchParams, toolbarStateKey])
+  }, [sorting, globalFilter, groupBy, columnFilters, joinOperator, pagination.pageIndex, pagination.pageSize, setSearchParams, toolbarStateKey])
 
   const {
     data: serverDocs,
