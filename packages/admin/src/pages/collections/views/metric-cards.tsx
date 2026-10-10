@@ -124,57 +124,57 @@ const COLOR_MAP: Record<string, { bg: string; hoverBg: string; dot: string }> = 
 }
 
 const COOL_PURPLE_PALETTE = [
-  { bg: "dy-bg-violet-500", hoverBg: "hover:dy-bg-violet-400", dot: "dy-bg-violet-500" },
-  { bg: "dy-bg-indigo-500 dark:dy-bg-indigo-400", hoverBg: "hover:dy-bg-indigo-400", dot: "dy-bg-indigo-500" },
-  { bg: "dy-bg-fuchsia-500 dark:dy-bg-fuchsia-400", hoverBg: "hover:dy-bg-fuchsia-400", dot: "dy-bg-fuchsia-500" },
-  { bg: "dy-bg-purple-400 dark:dy-bg-purple-300", hoverBg: "hover:dy-bg-purple-300", dot: "dy-bg-purple-400" },
-  { bg: "dy-bg-pink-500 dark:dy-bg-pink-400", hoverBg: "hover:dy-bg-pink-400", dot: "dy-bg-pink-500" },
-  { bg: "dy-bg-cyan-500 dark:dy-bg-cyan-400", hoverBg: "hover:dy-bg-cyan-400", dot: "dy-bg-cyan-500" },
+  { bg: "dy-bg-violet-600 dark:dy-bg-violet-500", hoverBg: "hover:dy-bg-violet-500", dot: "dy-bg-violet-600 dark:dy-bg-violet-500" },
+  { bg: "dy-bg-fuchsia-400 dark:dy-bg-fuchsia-300", hoverBg: "hover:dy-bg-fuchsia-300", dot: "dy-bg-fuchsia-400 dark:dy-bg-fuchsia-300" },
+  { bg: "dy-bg-indigo-800 dark:dy-bg-indigo-700", hoverBg: "hover:dy-bg-indigo-700", dot: "dy-bg-indigo-800 dark:dy-bg-indigo-700" },
+  { bg: "dy-bg-purple-300 dark:dy-bg-purple-200", hoverBg: "hover:dy-bg-purple-200", dot: "dy-bg-purple-300 dark:dy-bg-purple-200" },
+  { bg: "dy-bg-violet-400 dark:dy-bg-violet-300", hoverBg: "hover:dy-bg-violet-300", dot: "dy-bg-violet-400 dark:dy-bg-violet-300" },
+  { bg: "dy-bg-pink-600 dark:dy-bg-pink-500", hoverBg: "hover:dy-bg-pink-500", dot: "dy-bg-pink-600 dark:dy-bg-pink-500" },
 ]
 
 const WARM_AMBER_PALETTE = [
   { bg: "dy-bg-amber-500 dark:dy-bg-amber-400", hoverBg: "hover:dy-bg-amber-400", dot: "dy-bg-amber-500" },
   { bg: "dy-bg-orange-500 dark:dy-bg-orange-400", hoverBg: "hover:dy-bg-orange-400", dot: "dy-bg-orange-500" },
-  { bg: "dy-bg-yellow-500 dark:dy-bg-yellow-400", hoverBg: "hover:dy-bg-yellow-400", dot: "dy-bg-yellow-500" },
-  { bg: "dy-bg-rose-400 dark:dy-bg-rose-400", hoverBg: "hover:dy-bg-rose-300", dot: "dy-bg-rose-400" },
-  { bg: "dy-bg-amber-600 dark:dy-bg-amber-500", hoverBg: "hover:dy-bg-amber-500", dot: "dy-bg-amber-600" },
-  { bg: "dy-bg-orange-600 dark:dy-bg-orange-500", hoverBg: "hover:dy-bg-orange-500", dot: "dy-bg-orange-600" },
+  { bg: "dy-bg-yellow-300 dark:dy-bg-yellow-200", hoverBg: "hover:dy-bg-yellow-200", dot: "dy-bg-yellow-300 dark:dy-bg-yellow-200" },
+  { bg: "dy-bg-rose-600 dark:dy-bg-rose-500", hoverBg: "hover:dy-bg-rose-500", dot: "dy-bg-rose-600 dark:dy-bg-rose-500" },
+  { bg: "dy-bg-amber-300 dark:dy-bg-amber-200", hoverBg: "hover:dy-bg-amber-200", dot: "dy-bg-amber-300 dark:dy-bg-amber-200" },
+  { bg: "dy-bg-orange-800 dark:dy-bg-orange-700", hoverBg: "hover:dy-bg-orange-700", dot: "dy-bg-orange-800 dark:dy-bg-orange-700" },
 ]
 
 const BOTANICAL_EMERALD_PALETTE = [
-  { bg: "dy-bg-emerald-500 dark:dy-bg-emerald-400", hoverBg: "hover:dy-bg-emerald-400", dot: "dy-bg-emerald-500" },
-  { bg: "dy-bg-teal-500 dark:dy-bg-teal-400", hoverBg: "hover:dy-bg-teal-400", dot: "dy-bg-teal-500" },
-  { bg: "dy-bg-green-500 dark:dy-bg-green-400", hoverBg: "hover:dy-bg-green-400", dot: "dy-bg-green-500" },
-  { bg: "dy-bg-cyan-500 dark:dy-bg-cyan-400", hoverBg: "hover:dy-bg-cyan-400", dot: "dy-bg-cyan-500" },
-  { bg: "dy-bg-emerald-600 dark:dy-bg-emerald-500", hoverBg: "hover:dy-bg-emerald-500", dot: "dy-bg-emerald-600" },
-  { bg: "dy-bg-lime-500 dark:dy-bg-lime-400", hoverBg: "hover:dy-bg-lime-400", dot: "dy-bg-lime-500" },
+  { bg: "dy-bg-emerald-600 dark:dy-bg-emerald-500", hoverBg: "hover:dy-bg-emerald-500", dot: "dy-bg-emerald-600 dark:dy-bg-emerald-500" },
+  { bg: "dy-bg-lime-400 dark:dy-bg-lime-300", hoverBg: "hover:dy-bg-lime-300", dot: "dy-bg-lime-400 dark:dy-bg-lime-300" },
+  { bg: "dy-bg-teal-800 dark:dy-bg-teal-700", hoverBg: "hover:dy-bg-teal-700", dot: "dy-bg-teal-800 dark:dy-bg-teal-700" },
+  { bg: "dy-bg-emerald-300 dark:dy-bg-emerald-200", hoverBg: "hover:dy-bg-emerald-200", dot: "dy-bg-emerald-300 dark:dy-bg-emerald-200" },
+  { bg: "dy-bg-teal-500 dark:dy-bg-teal-400", hoverBg: "hover:dy-bg-teal-400", dot: "dy-bg-teal-500 dark:dy-bg-teal-400" },
+  { bg: "dy-bg-lime-600 dark:dy-bg-lime-500", hoverBg: "hover:dy-bg-lime-500", dot: "dy-bg-lime-600 dark:dy-bg-lime-500" },
 ]
 
 const BERRY_ROSE_PALETTE = [
-  { bg: "dy-bg-rose-500 dark:dy-bg-rose-400", hoverBg: "hover:dy-bg-rose-400", dot: "dy-bg-rose-500" },
-  { bg: "dy-bg-pink-500 dark:dy-bg-pink-400", hoverBg: "hover:dy-bg-pink-400", dot: "dy-bg-pink-500" },
-  { bg: "dy-bg-fuchsia-500 dark:dy-bg-fuchsia-400", hoverBg: "hover:dy-bg-fuchsia-400", dot: "dy-bg-fuchsia-500" },
-  { bg: "dy-bg-red-500 dark:dy-bg-red-400", hoverBg: "hover:dy-bg-red-400", dot: "dy-bg-red-500" },
-  { bg: "dy-bg-orange-400 dark:dy-bg-orange-400", hoverBg: "hover:dy-bg-orange-300", dot: "dy-bg-orange-400" },
-  { bg: "dy-bg-purple-400 dark:dy-bg-purple-400", hoverBg: "hover:dy-bg-purple-300", dot: "dy-bg-purple-400" },
+  { bg: "dy-bg-rose-600 dark:dy-bg-rose-500", hoverBg: "hover:dy-bg-rose-500", dot: "dy-bg-rose-600 dark:dy-bg-rose-500" },
+  { bg: "dy-bg-pink-300 dark:dy-bg-pink-200", hoverBg: "hover:dy-bg-pink-200", dot: "dy-bg-pink-300 dark:dy-bg-pink-200" },
+  { bg: "dy-bg-fuchsia-800 dark:dy-bg-fuchsia-700", hoverBg: "hover:dy-bg-fuchsia-700", dot: "dy-bg-fuchsia-800 dark:dy-bg-fuchsia-700" },
+  { bg: "dy-bg-rose-400 dark:dy-bg-rose-300", hoverBg: "hover:dy-bg-rose-300", dot: "dy-bg-rose-400 dark:dy-bg-rose-300" },
+  { bg: "dy-bg-purple-700 dark:dy-bg-purple-600", hoverBg: "hover:dy-bg-purple-600", dot: "dy-bg-purple-700 dark:dy-bg-purple-600" },
+  { bg: "dy-bg-pink-500 dark:dy-bg-pink-400", hoverBg: "hover:dy-bg-pink-400", dot: "dy-bg-pink-500 dark:dy-bg-pink-400" },
 ]
 
 const OCEAN_BLUE_PALETTE = [
-  { bg: "dy-bg-blue-500 dark:dy-bg-blue-400", hoverBg: "hover:dy-bg-blue-400", dot: "dy-bg-blue-500" },
-  { bg: "dy-bg-sky-500 dark:dy-bg-sky-400", hoverBg: "hover:dy-bg-sky-400", dot: "dy-bg-sky-500" },
-  { bg: "dy-bg-indigo-500 dark:dy-bg-indigo-400", hoverBg: "hover:dy-bg-indigo-400", dot: "dy-bg-indigo-500" },
-  { bg: "dy-bg-cyan-500 dark:dy-bg-cyan-400", hoverBg: "hover:dy-bg-cyan-400", dot: "dy-bg-cyan-500" },
-  { bg: "dy-bg-teal-400 dark:dy-bg-teal-400", hoverBg: "hover:dy-bg-teal-300", dot: "dy-bg-teal-400" },
-  { bg: "dy-bg-blue-600 dark:dy-bg-blue-500", hoverBg: "hover:dy-bg-blue-500", dot: "dy-bg-blue-600" },
+  { bg: "dy-bg-blue-600 dark:dy-bg-blue-500", hoverBg: "hover:dy-bg-blue-500", dot: "dy-bg-blue-600 dark:dy-bg-blue-500" },
+  { bg: "dy-bg-cyan-300 dark:dy-bg-cyan-200", hoverBg: "hover:dy-bg-cyan-200", dot: "dy-bg-cyan-300 dark:dy-bg-cyan-200" },
+  { bg: "dy-bg-indigo-800 dark:dy-bg-indigo-700", hoverBg: "hover:dy-bg-indigo-700", dot: "dy-bg-indigo-800 dark:dy-bg-indigo-700" },
+  { bg: "dy-bg-sky-400 dark:dy-bg-sky-300", hoverBg: "hover:dy-bg-sky-300", dot: "dy-bg-sky-400 dark:dy-bg-sky-300" },
+  { bg: "dy-bg-teal-600 dark:dy-bg-teal-500", hoverBg: "hover:dy-bg-teal-500", dot: "dy-bg-teal-600 dark:dy-bg-teal-500" },
+  { bg: "dy-bg-blue-300 dark:dy-bg-blue-200", hoverBg: "hover:dy-bg-blue-200", dot: "dy-bg-blue-300 dark:dy-bg-blue-200" },
 ]
 
 const WARM_ORANGE_PALETTE = [
-  { bg: "dy-bg-orange-500 dark:dy-bg-orange-400", hoverBg: "hover:dy-bg-orange-400", dot: "dy-bg-orange-500" },
-  { bg: "dy-bg-amber-500 dark:dy-bg-amber-400", hoverBg: "hover:dy-bg-amber-400", dot: "dy-bg-amber-500" },
-  { bg: "dy-bg-rose-400 dark:dy-bg-rose-400", hoverBg: "hover:dy-bg-rose-300", dot: "dy-bg-rose-400" },
-  { bg: "dy-bg-yellow-500 dark:dy-bg-yellow-400", hoverBg: "hover:dy-bg-yellow-400", dot: "dy-bg-yellow-500" },
-  { bg: "dy-bg-orange-600 dark:dy-bg-orange-500", hoverBg: "hover:dy-bg-orange-500", dot: "dy-bg-orange-600" },
-  { bg: "dy-bg-red-500 dark:dy-bg-red-400", hoverBg: "hover:dy-bg-red-400", dot: "dy-bg-red-500" },
+  { bg: "dy-bg-orange-600 dark:dy-bg-orange-500", hoverBg: "hover:dy-bg-orange-500", dot: "dy-bg-orange-600 dark:dy-bg-orange-500" },
+  { bg: "dy-bg-amber-300 dark:dy-bg-amber-200", hoverBg: "hover:dy-bg-amber-200", dot: "dy-bg-amber-300 dark:dy-bg-amber-200" },
+  { bg: "dy-bg-red-700 dark:dy-bg-red-600", hoverBg: "hover:dy-bg-red-600", dot: "dy-bg-red-700 dark:dy-bg-red-600" },
+  { bg: "dy-bg-orange-400 dark:dy-bg-orange-300", hoverBg: "hover:dy-bg-orange-300", dot: "dy-bg-orange-400 dark:dy-bg-orange-300" },
+  { bg: "dy-bg-rose-800 dark:dy-bg-rose-700", hoverBg: "hover:dy-bg-rose-700", dot: "dy-bg-rose-800 dark:dy-bg-rose-700" },
+  { bg: "dy-bg-yellow-400 dark:dy-bg-yellow-300", hoverBg: "hover:dy-bg-yellow-300", dot: "dy-bg-yellow-400 dark:dy-bg-yellow-300" },
 ]
 
 const DEFAULT_PALETTE_ORDER = [
@@ -371,6 +371,8 @@ interface OtherGroupPopoverProps {
   totalSubSum: number
   activeFilters?: Array<{ id: string; value: unknown }>
   onToggleFilter?: (target: MetricFilterTarget) => void
+  isHovered?: boolean
+  onHoverChange?: (hovered: boolean) => void
 }
 
 function OtherGroupPopover({
@@ -381,6 +383,8 @@ function OtherGroupPopover({
   totalSubSum,
   activeFilters,
   onToggleFilter,
+  isHovered,
+  onHoverChange,
 }: OtherGroupPopoverProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
@@ -405,18 +409,27 @@ function OtherGroupPopover({
       <PopoverTrigger asChild>
         <button
           type="button"
+          onMouseEnter={() => onHoverChange?.(true)}
+          onMouseLeave={() => onHoverChange?.(false)}
           onClick={(e) => {
             e.stopPropagation()
           }}
           className={cn(
-            "dy-flex dy-items-center dy-gap-1 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-colors",
+            "dy-flex dy-items-center dy-gap-1 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-all",
             "hover:dy-bg-black/5 dark:hover:dy-bg-white/10",
+            isHovered && "dy-bg-black/5 dark:dy-bg-white/10 dy-font-semibold",
             isSubActive ? colorStyles.activePill : "dy-text-muted-foreground"
           )}
           title={`Click to browse all ${overflow.length} other items`}
         >
           {shouldShowDistribution && (
-            <span className={cn("dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-shrink-0", palette.dot)} />
+            <span
+              className={cn(
+                "dy-inline-block dy-h-2 dy-w-2 dy-rounded-full dy-shrink-0 dy-ring-1 dy-ring-black/15 dark:dy-ring-white/20 dy-transition-transform",
+                palette.dot,
+                isHovered && "dy-scale-125"
+              )}
+            />
           )}
           <span className={colorStyles.subLabel}>{sub.label}:</span>
           <span className={colorStyles.subValue}>{sub.formatted}</span>
@@ -500,6 +513,263 @@ function OtherGroupPopover({
   )
 }
 
+interface MetricCardItemProps {
+  metric: ResolvedMetric
+  count: number
+  index: number
+  isRefetching?: boolean
+  activeFilters?: Array<{ id: string; value: unknown }>
+  onToggleFilter?: (target: MetricFilterTarget) => void
+}
+
+function MetricCardItem({
+  metric,
+  count,
+  index,
+  isRefetching,
+  activeFilters,
+  onToggleFilter,
+}: MetricCardItemProps) {
+  const [hoveredSubLabel, setHoveredSubLabel] = React.useState<string | null>(null)
+  const isLastOdd = count % 2 === 1 && index === count - 1
+  const colorStyles = resolveMetricColor(metric.color)
+  const hasSubMetrics = Boolean(metric.subMetrics?.length)
+  const isFullWidthMobile = hasSubMetrics || isLastOdd
+
+  const isCardClickable = Boolean(metric.filterTarget && onToggleFilter)
+  const isCardActive = isFilterActive(metric.filterTarget, activeFilters)
+
+  const numericSubItems = (metric.subMetrics ?? []).map((sub, idx) => {
+    const num = typeof sub.value === "number" && !isNaN(sub.value) && sub.value > 0 ? sub.value : 0
+    return { sub, idx, num }
+  })
+  const totalSubSum = numericSubItems.reduce((acc, curr) => acc + curr.num, 0)
+  const shouldShowDistribution =
+    metric.showDistribution !== false &&
+    (metric.subMetrics?.length ?? 0) >= 2 &&
+    totalSubSum > 0
+
+  return (
+    <Card
+      key={metric.label}
+      role={isCardClickable ? "button" : undefined}
+      tabIndex={isCardClickable ? 0 : undefined}
+      onClick={isCardClickable ? () => onToggleFilter?.(metric.filterTarget!) : undefined}
+      onKeyDown={
+        isCardClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                onToggleFilter?.(metric.filterTarget!)
+              }
+            }
+          : undefined
+      }
+      title={
+        isCardClickable
+          ? isCardActive
+            ? `Active filter: click to clear ${metric.label}`
+            : `Click to filter view by ${metric.label}`
+          : undefined
+      }
+      className={cn(
+        colorStyles.card,
+        "dy-shadow-xs dy-transition-all dy-duration-200",
+        isCardClickable && "dy-cursor-pointer hover:dy-shadow-md hover:dy-scale-[1.01] hover:dy-border-current/40 select-none",
+        isCardActive && colorStyles.activeRing,
+        isRefetching && "dy-opacity-90",
+        getSpanClass(metric.span, isFullWidthMobile)
+      )}
+    >
+      <CardContent className="dy-space-y-2 !dy-p-4">
+        <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+          <div className="dy-flex dy-items-center dy-gap-1.5">
+            <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
+              {metric.label}
+            </p>
+            <MetricScopeIcon scope={metric.scope} />
+            {isCardActive && (
+              <span className={cn("dy-inline-flex dy-items-center dy-text-[9px] dy-font-semibold dy-px-1.5 dy-py-0.5 dy-rounded-full", colorStyles.activeBadge)}>
+                Active
+              </span>
+            )}
+          </div>
+          {isRefetching && (
+            <span className="dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-current dy-animate-ping dy-opacity-75" title="Updating..." />
+          )}
+        </div>
+        <div className="dy-flex dy-items-baseline dy-justify-between dy-gap-2">
+          <p className={cn("dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
+            {metric.formatted}
+          </p>
+          {metric.unit && (
+            <span className={cn("dy-text-xs dy-font-medium", colorStyles.unit)}>
+              {metric.unit}
+            </span>
+          )}
+        </div>
+
+        {shouldShowDistribution && (
+          <div
+            role="group"
+            aria-label="Sub-metric distribution breakdown"
+            className={cn(
+              "dy-w-full dy-h-2 dy-rounded-full dy-overflow-hidden dy-flex dy-gap-0.5 dy-my-2.5 dy-p-[1px] select-none",
+              colorStyles.trackBg
+            )}
+          >
+            {numericSubItems.map(({ sub, idx, num }) => {
+              if (num <= 0) return null
+              const pct = (num / totalSubSum) * 100
+              const pctDisplay = pct >= 1 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`
+              const palette = getSubMetricPalette(sub, idx, colorStyles)
+              const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
+              const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
+              const isHovered = hoveredSubLabel === sub.label
+              const hasAnyHover = hoveredSubLabel !== null
+
+              return (
+                <div
+                  key={sub.label}
+                  data-testid={`distribution-segment-${sub.label}`}
+                  style={{ width: `${pct}%` }}
+                  onMouseEnter={() => setHoveredSubLabel(sub.label)}
+                  onMouseLeave={() => setHoveredSubLabel(null)}
+                  onClick={
+                    isSubClickable
+                      ? (e) => {
+                          e.stopPropagation()
+                          onToggleFilter?.(sub.filterTarget!)
+                        }
+                      : undefined
+                  }
+                  title={`${sub.label}: ${sub.formatted} (${pctDisplay})${isSubClickable ? " • Click to filter" : ""}`}
+                  className={cn(
+                    "dy-h-full dy-rounded-[2px] dy-transition-all dy-duration-200 dy-ring-1 dy-ring-black/10 dark:dy-ring-white/15",
+                    palette.bg,
+                    isSubClickable && "dy-cursor-pointer",
+                    isSubClickable && palette.hoverBg,
+                    "hover:dy-brightness-125 hover:dy-scale-y-110",
+                    hasAnyHover && !isHovered && "dy-opacity-40",
+                    isHovered && "dy-scale-y-125 dy-brightness-125 dy-z-10 dy-shadow-xs",
+                    isSubActive && colorStyles.activeSegmentRing
+                  )}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {hasSubMetrics && (
+          <div
+            className={cn(
+              "dy-flex dy-flex-wrap dy-items-center dy-justify-between dy-gap-x-3 dy-gap-y-1 dy-pt-2.5 dy-border-t dy-text-xs",
+              colorStyles.subRow
+            )}
+          >
+            {metric.subMetrics!.map((sub, idx) => {
+              const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
+              const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
+              const palette = getSubMetricPalette(sub, idx, colorStyles)
+              const itemNum = typeof sub.value === "number" && !isNaN(sub.value) && sub.value > 0 ? sub.value : 0
+              const pct = totalSubSum > 0 && itemNum > 0 ? (itemNum / totalSubSum) * 100 : 0
+              const pctDisplay = pct >= 1 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`
+              const isHovered = hoveredSubLabel === sub.label
+
+              if (sub.overflowGroups?.length) {
+                return (
+                  <OtherGroupPopover
+                    key={sub.label}
+                    sub={sub}
+                    colorStyles={colorStyles}
+                    shouldShowDistribution={shouldShowDistribution}
+                    palette={palette}
+                    totalSubSum={totalSubSum}
+                    activeFilters={activeFilters}
+                    onToggleFilter={onToggleFilter}
+                    isHovered={isHovered}
+                    onHoverChange={(h) => setHoveredSubLabel(h ? sub.label : null)}
+                  />
+                )
+              }
+
+              if (isSubClickable) {
+                return (
+                  <button
+                    key={sub.label}
+                    type="button"
+                    onMouseEnter={() => setHoveredSubLabel(sub.label)}
+                    onMouseLeave={() => setHoveredSubLabel(null)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggleFilter?.(sub.filterTarget!)
+                    }}
+                    className={cn(
+                      "dy-flex dy-items-center dy-gap-1.5 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-all",
+                      "hover:dy-bg-black/5 dark:hover:dy-bg-white/10",
+                      isHovered && "dy-bg-black/5 dark:dy-bg-white/10 dy-font-semibold",
+                      isSubActive && colorStyles.activePill
+                    )}
+                    title={isSubActive ? `Active filter: click to clear ${sub.label}` : `Click to filter view by ${sub.label}`}
+                  >
+                    {shouldShowDistribution && (
+                      <span
+                        className={cn(
+                          "dy-inline-block dy-h-2 dy-w-2 dy-rounded-full dy-shrink-0 dy-ring-1 dy-ring-black/15 dark:dy-ring-white/20 dy-transition-transform",
+                          palette.dot,
+                          isHovered && "dy-scale-125"
+                        )}
+                      />
+                    )}
+                    <span className={colorStyles.subLabel}>{sub.label}:</span>
+                    <span className={colorStyles.subValue}>{sub.formatted}</span>
+                    {shouldShowDistribution && itemNum > 0 && (
+                      <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
+                    )}
+                    {sub.scope && sub.scope !== metric.scope && (
+                      <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
+                    )}
+                  </button>
+                )
+              }
+
+              return (
+                <div
+                  key={sub.label}
+                  onMouseEnter={() => setHoveredSubLabel(sub.label)}
+                  onMouseLeave={() => setHoveredSubLabel(null)}
+                  className={cn(
+                    "dy-flex dy-items-center dy-gap-1.5 dy-rounded dy-px-1 -dy-mx-1 dy-transition-all",
+                    isHovered && "dy-bg-black/5 dark:dy-bg-white/10"
+                  )}
+                >
+                  {shouldShowDistribution && (
+                    <span
+                      className={cn(
+                        "dy-inline-block dy-h-2 dy-w-2 dy-rounded-full dy-shrink-0 dy-ring-1 dy-ring-black/15 dark:dy-ring-white/20 dy-transition-transform",
+                        palette.dot,
+                        isHovered && "dy-scale-125"
+                      )}
+                    />
+                  )}
+                  <span className={colorStyles.subLabel}>{sub.label}:</span>
+                  <span className={colorStyles.subValue}>{sub.formatted}</span>
+                  {shouldShowDistribution && itemNum > 0 && (
+                    <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
+                  )}
+                  {sub.scope && sub.scope !== metric.scope && (
+                    <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function MetricCards({
   metrics,
   isLoading = false,
@@ -532,213 +802,17 @@ export function MetricCards({
             </Card>
           )
         })
-        : metrics.map((metric, i) => {
-          const isLastOdd = count % 2 === 1 && i === count - 1
-          const colorStyles = resolveMetricColor(metric.color)
-          const hasSubMetrics = Boolean(metric.subMetrics?.length)
-          const isFullWidthMobile = hasSubMetrics || isLastOdd
-
-          const isCardClickable = Boolean(metric.filterTarget && onToggleFilter)
-          const isCardActive = isFilterActive(metric.filterTarget, activeFilters)
-
-          const numericSubItems = (metric.subMetrics ?? []).map((sub, idx) => {
-            const num = typeof sub.value === "number" && !isNaN(sub.value) && sub.value > 0 ? sub.value : 0
-            return { sub, idx, num }
-          })
-          const totalSubSum = numericSubItems.reduce((acc, curr) => acc + curr.num, 0)
-          const shouldShowDistribution =
-            metric.showDistribution !== false &&
-            (metric.subMetrics?.length ?? 0) >= 2 &&
-            totalSubSum > 0
-
-          return (
-            <Card
-              key={metric.label}
-              role={isCardClickable ? "button" : undefined}
-              tabIndex={isCardClickable ? 0 : undefined}
-              onClick={isCardClickable ? () => onToggleFilter?.(metric.filterTarget!) : undefined}
-              onKeyDown={
-                isCardClickable
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault()
-                        onToggleFilter?.(metric.filterTarget!)
-                      }
-                    }
-                  : undefined
-              }
-              title={
-                isCardClickable
-                  ? isCardActive
-                    ? `Active filter: click to clear ${metric.label}`
-                    : `Click to filter view by ${metric.label}`
-                  : undefined
-              }
-              className={cn(
-                colorStyles.card,
-                "dy-shadow-xs dy-transition-all dy-duration-200",
-                isCardClickable && "dy-cursor-pointer hover:dy-shadow-md hover:dy-scale-[1.01] hover:dy-border-current/40 select-none",
-                isCardActive && colorStyles.activeRing,
-                isRefetching && "dy-opacity-90",
-                getSpanClass(metric.span, isFullWidthMobile)
-              )}
-            >
-              <CardContent className="dy-space-y-2 !dy-p-4">
-                <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
-                  <div className="dy-flex dy-items-center dy-gap-1.5">
-                    <p className={cn("dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider", colorStyles.header)}>
-                      {metric.label}
-                    </p>
-                    <MetricScopeIcon scope={metric.scope} />
-                    {isCardActive && (
-                      <span className={cn("dy-inline-flex dy-items-center dy-text-[9px] dy-font-semibold dy-px-1.5 dy-py-0.5 dy-rounded-full", colorStyles.activeBadge)}>
-                        Active
-                      </span>
-                    )}
-                  </div>
-                  {isRefetching && (
-                    <span className="dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-current dy-animate-ping dy-opacity-75" title="Updating..." />
-                  )}
-                </div>
-                <div className="dy-flex dy-items-baseline dy-justify-between dy-gap-2">
-                  <p className={cn("dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-tabular-nums", colorStyles.value)}>
-                    {metric.formatted}
-                  </p>
-                  {metric.unit && (
-                    <span className={cn("dy-text-xs dy-font-medium", colorStyles.unit)}>
-                      {metric.unit}
-                    </span>
-                  )}
-                </div>
-
-                {shouldShowDistribution && (
-                  <div
-                    role="group"
-                    aria-label="Sub-metric distribution breakdown"
-                    className={cn(
-                      "dy-w-full dy-h-1.5 dy-rounded-full dy-overflow-hidden dy-flex dy-gap-[1.5px] dy-my-2.5 select-none",
-                      colorStyles.trackBg
-                    )}
-                  >
-                    {numericSubItems.map(({ sub, idx, num }) => {
-                      if (num <= 0) return null
-                      const pct = (num / totalSubSum) * 100
-                      const pctDisplay = pct >= 1 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`
-                      const palette = getSubMetricPalette(sub, idx, colorStyles)
-                      const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
-                      const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
-
-                      return (
-                        <div
-                          key={sub.label}
-                          data-testid={`distribution-segment-${sub.label}`}
-                          style={{ width: `${pct}%` }}
-                          onClick={
-                            isSubClickable
-                              ? (e) => {
-                                  e.stopPropagation()
-                                  onToggleFilter?.(sub.filterTarget!)
-                                }
-                              : undefined
-                          }
-                          title={`${sub.label}: ${sub.formatted} (${pctDisplay})${isSubClickable ? " • Click to filter" : ""}`}
-                          className={cn(
-                            "dy-h-full dy-transition-all dy-duration-200",
-                            palette.bg,
-                            isSubClickable && "dy-cursor-pointer",
-                            isSubClickable && palette.hoverBg,
-                            "hover:dy-brightness-110",
-                            isSubActive && colorStyles.activeSegmentRing
-                          )}
-                        />
-                      )
-                    })}
-                  </div>
-                )}
-
-                {hasSubMetrics && (
-                  <div
-                    className={cn(
-                      "dy-flex dy-flex-wrap dy-items-center dy-justify-between dy-gap-x-3 dy-gap-y-1 dy-pt-2.5 dy-border-t dy-text-xs",
-                      colorStyles.subRow
-                    )}
-                  >
-                    {metric.subMetrics!.map((sub, idx) => {
-                      const isSubClickable = Boolean(sub.filterTarget && onToggleFilter)
-                      const isSubActive = isFilterActive(sub.filterTarget, activeFilters)
-                      const palette = getSubMetricPalette(sub, idx, colorStyles)
-                      const itemNum = typeof sub.value === "number" && !isNaN(sub.value) && sub.value > 0 ? sub.value : 0
-                      const pct = totalSubSum > 0 && itemNum > 0 ? (itemNum / totalSubSum) * 100 : 0
-                      const pctDisplay = pct >= 1 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`
-
-                      if (sub.overflowGroups?.length) {
-                        return (
-                          <OtherGroupPopover
-                            key={sub.label}
-                            sub={sub}
-                            colorStyles={colorStyles}
-                            shouldShowDistribution={shouldShowDistribution}
-                            palette={palette}
-                            totalSubSum={totalSubSum}
-                            activeFilters={activeFilters}
-                            onToggleFilter={onToggleFilter}
-                          />
-                        )
-                      }
-
-                      if (isSubClickable) {
-                        return (
-                          <button
-                            key={sub.label}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onToggleFilter?.(sub.filterTarget!)
-                            }}
-                            className={cn(
-                              "dy-flex dy-items-center dy-gap-1.5 dy-rounded dy-px-1.5 dy-py-0.5 -dy-mx-1 dy-transition-colors",
-                              "hover:dy-bg-black/5 dark:hover:dy-bg-white/10",
-                              isSubActive && colorStyles.activePill
-                            )}
-                            title={isSubActive ? `Active filter: click to clear ${sub.label}` : `Click to filter view by ${sub.label}`}
-                          >
-                            {shouldShowDistribution && (
-                              <span className={cn("dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-shrink-0", palette.dot)} />
-                            )}
-                            <span className={colorStyles.subLabel}>{sub.label}:</span>
-                            <span className={colorStyles.subValue}>{sub.formatted}</span>
-                            {shouldShowDistribution && itemNum > 0 && (
-                              <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
-                            )}
-                            {sub.scope && sub.scope !== metric.scope && (
-                              <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
-                            )}
-                          </button>
-                        )
-                      }
-
-                      return (
-                        <div key={sub.label} className="dy-flex dy-items-center dy-gap-1.5">
-                          {shouldShowDistribution && (
-                            <span className={cn("dy-inline-block dy-h-1.5 dy-w-1.5 dy-rounded-full dy-shrink-0", palette.dot)} />
-                          )}
-                          <span className={colorStyles.subLabel}>{sub.label}:</span>
-                          <span className={colorStyles.subValue}>{sub.formatted}</span>
-                          {shouldShowDistribution && itemNum > 0 && (
-                            <span className="dy-text-[10px] dy-opacity-50 dy-tabular-nums">({pctDisplay})</span>
-                          )}
-                          {sub.scope && sub.scope !== metric.scope && (
-                            <MetricScopeIcon scope={sub.scope} sizeClassName="dy-h-2.5 dy-w-2.5" />
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+        : metrics.map((metric, i) => (
+          <MetricCardItem
+            key={metric.label}
+            metric={metric}
+            count={count}
+            index={i}
+            isRefetching={isRefetching}
+            activeFilters={activeFilters}
+            onToggleFilter={onToggleFilter}
+          />
+        ))}
     </div>
   )
 }
