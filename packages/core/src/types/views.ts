@@ -157,6 +157,15 @@ export interface ViewMetric {
   /** 3-letter currency code (e.g. `"USD"`, `"NGN"`, `"EUR"`) used when `format: "currency"`. */
   currency?: string;
   /**
+   * Responsive column span for this metric card in the metrics grid:
+   * - `1`: standard single card width (default)
+   * - `2`: spans 2 columns on medium screens and up
+   * - `3`: spans 3 columns on large screens and up
+   * - `4`: spans 4 columns on extra large screens
+   * - `'full'`: spans the full width of the metrics grid
+   */
+  span?: 1 | 2 | 3 | 4 | 'full';
+  /**
    * Controls the horizontal segmented distribution bar for sub-metrics.
    * Defaults to `true` when 2 or more sub-metrics have numerical values. Set to `false` to disable.
    */

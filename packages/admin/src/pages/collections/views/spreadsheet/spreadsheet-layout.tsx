@@ -172,7 +172,6 @@ export function SpreadsheetLayout({
   const [sorting, setSorting] = React.useState<SortingState>(
     view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : [],
   )
-  const [globalFilter, setGlobalFilter] = React.useState("")
 
   const toolbarStateKey = getToolbarStateKey(slug, view.slug, "spreadsheet")
   const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug, "spreadsheet")
@@ -180,9 +179,41 @@ export function SpreadsheetLayout({
     () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
     [toolbarStateKey, legacyToolbarStateKey],
   )
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    (storedToolbarState?.columnFilters as ColumnFiltersState | undefined) ?? [],
-  )
+  const getInitialSpreadsheetFilters = (): ColumnFiltersState => {
+    const f = searchParams.get("filters")
+    if (f) {
+      try {
+        const parsed = JSON.parse(f)
+        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
+      } catch {
+        // ignore invalid json filter param
+      }
+    }
+    return (storedToolbarState?.columnFilters as ColumnFiltersState | undefined) ?? []
+  }
+  const [globalFilter, setGlobalFilter] = React.useState(() => searchParams.get("search") ?? "")
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialSpreadsheetFilters)
+
+  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  React.useEffect(() => {
+    const raw = searchParams.get("filters")
+    let nextFilters: ColumnFiltersState = []
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) nextFilters = parsed
+      } catch {
+        // ignore invalid json filter param
+      }
+    }
+    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
+  }, [searchParams])
+
+  // Synchronize search when URL searchParams changes externally
+  React.useEffect(() => {
+    const search = searchParams.get("search") ?? ""
+    setGlobalFilter((prev) => (prev === search ? prev : search))
+  }, [searchParams])
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {

@@ -195,17 +195,120 @@ When you need to control limits, ordering, or filter which groups appear, pass a
 
 In the Admin UI customizer, you can configure these options directly from dropdown selects under the **Group By** field without writing code.
 
+### High-cardinality groups and the "Other (N)" drilldown popover
+
+Real-world datasets often have fields with high cardinality — such as 35 customer communities, 40 sales territories, or 100 fulfillment hubs. Displaying 35 distinct cards or 35 footer rows would crowd the screen and defeat the purpose of an executive overview.
+
+When you specify a `limit` on a sub-metric `groupBy` (e.g. `limit: 5`), Dyrected automatically:
+
+1. Displays the top 5 groups based on your ordering rule.
+2. Rolls up all remaining 30 groups into a clean, interactive **"Other (30)"** item.
+3. Automatically computes the aggregate total and percentage share across those remaining groups.
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const communityBreakdownView = defineView({
+  slug: "community-summary",
+  label: "Community Summary",
+  layout: "table",
+  columns: ["name", "community", "status"],
+  metrics: [
+    {
+      label: "Total Guests",
+      color: "amber",
+      aggregate: { count: "*" },
+      subMetrics: [
+        {
+          label: "{{group.label}}",
+          // Out of 35 communities, top 5 display directly, and 30 roll into "Other (30)"
+          groupBy: {
+            field: "community",
+            limit: 5,
+            orderBy: "count",
+          },
+          aggregate: { count: "*" },
+        },
+      ],
+    },
+  ],
+});
+```
+
+When an operator clicks the **"Other (30)"** item, Dyrected opens an interactive popover with a live search bar and a scrollable list of all 30 long-tail communities. Clicking any community in the popover immediately filters the view to records in that community.
+
+## Card layout and column spanning
+
+By default, metric cards occupy a single responsive column in the top summary grid. For hero metrics, wide revenue summaries, or cards with detailed sub-metric distributions, you can specify `span` to give the card a wider footprint:
+
+```ts
+import { defineView } from "@dyrected/core";
+
+export const financialExecutiveView = defineView({
+  slug: "financial-summary",
+  label: "Financial Summary",
+  layout: "table",
+  metrics: [
+    {
+      label: "Gross Revenue Performance",
+      color: "emerald",
+      // Spans 2 grid columns on tablet/desktop displays
+      span: 2,
+      aggregate: { sum: "amount", where: { status: { equals: "paid" } } },
+      format: "currency",
+      currency: "USD",
+      subMetrics: [
+        { label: "Subscriptions", aggregate: { sum: "amount", where: { type: { equals: "subscription" } } } },
+        { label: "One-Time Sales", aggregate: { sum: "amount", where: { type: { equals: "one_time" } } } },
+        { label: "Add-Ons", aggregate: { sum: "amount", where: { type: { equals: "addon" } } } },
+      ],
+    },
+    {
+      label: "Refund Rate",
+      color: "rose",
+      // Standard single-column width
+      span: 1,
+      expression: "(aggregates.refunds / aggregates.total) * 100",
+      aggregates: {
+        refunds: { count: "*", where: { status: { equals: "refunded" } } },
+        total: { count: "*" },
+      },
+      format: "percent",
+    },
+  ],
+});
+```
+
+Supported span values:
+- `1` *(default)*: Standard single-column card width.
+- `2`: Spans 2 columns on medium (`md`) and desktop screens.
+- `3`: Spans 3 columns on desktop screens.
+- `4`: Spans 4 columns on large desktop screens.
+- `"full"`: Spans the full width of the view header across all desktop viewports.
+
+On mobile viewports, cards automatically adapt into single-column cards to ensure labels and touch targets remain legible.
+
 ## Interactive quick-filters (drill-down on click)
 
 Metric cards are not just passive displays; they double as interactive navigation controls for your operational view.
 
 When an operator spots an interesting figure on a card or sub-metric row:
-- **Card click**: Clicking a grouped card or single-aggregate card immediately applies an active filter to the table toolbar (e.g. clicking "Lagos Guests" filters the table to records where `community` equals the Lagos ID).
-- **Sub-metric click**: Clicking a sub-metric row (e.g. "Pending") immediately filters the table to rows matching that specific condition (`status: "pending"`).
-- **Active state indicator**: Active cards and sub-metrics display an **Active** badge and a highlight ring, showing at a glance which metric is currently filtering the view.
-- **Click again to clear**: Clicking an active card or sub-metric toggles the filter off, restoring the view.
+- **Card click**: Clicking a grouped card or single-aggregate card immediately applies an active filter (e.g. clicking "Lagos Guests" filters the view to records where `community` equals Lagos).
+- **Sub-metric click**: Clicking a sub-metric row (e.g. "Pending") immediately filters the view to rows matching that specific condition (`status: "pending"`).
+- **Distribution segment click**: Clicking a slice on the horizontal distribution bar applies the corresponding sub-metric filter.
+- **Active state indicator**: Active cards and sub-metrics display an **Active** badge and a high-contrast highlight ring, showing at a glance which metric is currently filtering the view.
+- **Click again to clear**: Clicking an active card or sub-metric toggles the filter off, restoring the full view.
 
-Everything syncs directly with the browser URL (`filters`), so operators can bookmark or share filtered views with teammates.
+### Cross-layout synchronization
+
+Quick-filters work seamlessly across every operational view layout:
+- **Table layout**: Filters table rows dynamically.
+- **Cards layout**: Filters the responsive card grid dynamically.
+- **Kanban layout**: Filters grouped kanban columns and cards dynamically.
+- **Spreadsheet layout**: Filters editable spreadsheet rows dynamically.
+- **Calendar layout**: Filters events within the active date window dynamically.
+
+All active filters synchronize with the browser URL (`?filters=...`), allowing operators to bookmark, refresh, or share filtered operational views with teammates.
 
 ## Segmented distribution bars
 
@@ -218,10 +321,13 @@ flowchart TD
   BAR --> ROWS["Confirmed: 156 (65%) | Pending: 60 (25%) | Waitlist: 24 (10%)"]
 ```
 
-### Proportional breakdown
-- **Visual slices**: Each sub-metric receives a proportional slice of the bar (`value / total * 100%`) styled with harmonious color steps or custom sub-metric colors.
-- **Interactive tooltip & filter**: Hovering over any slice shows the label, formatted number, and calculated percentage. Clicking a slice instantly filters the table to matching records.
-- **Matching legend dots**: Each sub-metric row in the card footer renders a matching colored indicator dot and percentage badge (`(65%)`), making it effortless to map colors to labels.
+### Proportional breakdown & color harmony
+
+- **Harmonic tonal palettes**: When sub-metrics don't define custom colors, Dyrected automatically picks shades from a curated tonal spectrum matching the card's color family (e.g., warm amber, orange, and gold tones on amber cards; cool violet, indigo, and fuchsia on purple cards; fresh botanical greens on emerald cards). This eliminates clashing multi-hue noise on colored cards.
+- **Ambient track background**: Rather than an alien grey trench, the track background automatically inherits a subtle ambient tint of the card's color family (`trackBg`), ensuring a premium, unified appearance in both light and dark modes.
+- **Visual slices & interactive tooltips**: Each sub-metric receives a proportional slice of the bar (`value / total * 100%`) with micro-hover scaling and active focus rings. Hovering over any slice reveals the label, formatted number, and calculated percentage. Clicking a slice instantly filters the operational view.
+- **Explicit color overrides**: If you specify explicit colors on individual sub-metrics (e.g. `color: "emerald"` for completed, `color: "rose"` for failed, `color: "amber"` for pending), Dyrected respects those semantic colors directly.
+- **Matching legend dots**: Each sub-metric row in the card footer displays a matching colored indicator dot and percentage badge (`(65%)`), creating effortless visual continuity between the bar and the summary text.
 
 ### Customizing or disabling distribution bars
 
@@ -398,6 +504,7 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | --- | --- | --- |
 | `label` | `string` **required** | Title displayed on the metric card. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is set. |
 | `color` | `MetricColor` | Theme palette accent (`"purple"`, `"emerald"`, `"amber"`, `"rose"`, `"blue"`, `"indigo"`, `"cyan"`, `"orange"`). |
+| `span` | `1 \| 2 \| 3 \| 4 \| 'full'` | Responsive grid column span. Defaults to `1`. Set to `2`, `3`, `4`, or `'full'` for wide hero cards. |
 | `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`, `"Tables"`). |
 | `scope` | `'view' \| 'filtered' \| 'collection'` | Scoping override for this card. Defaults to the view's `metricsScope` (or `'view'`). |
 | `groupBy` | `string \| ViewMetricGroupByConfig` | Dynamic breakdown: generates 1 card per distinct group value or related document. |

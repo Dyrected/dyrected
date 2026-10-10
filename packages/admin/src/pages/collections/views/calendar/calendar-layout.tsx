@@ -16,8 +16,10 @@ import type {
 import { EventCalendarContent } from "../../../../components/reui/event-calendar/event-calendar-content"
 import { EventCalendarNav } from "../../../../components/reui/event-calendar/event-calendar-nav"
 import { Card, CardContent } from "../../../../components/ui/card"
+import { useSearchParams } from "react-router-dom"
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
+import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
 import { EventDetailSheet } from "./event-detail-sheet"
 import { SkeletonCalendar } from "../view-skeletons"
@@ -163,20 +165,40 @@ export function CalendarLayout({
     }
   }, [currentDate])
 
+  const [searchParams] = useSearchParams()
+  const rawFilters = searchParams.get("filters")
+  const columnFilters = useMemo(() => {
+    if (!rawFilters) return []
+    try {
+      const parsed = JSON.parse(rawFilters)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }, [rawFilters])
+  const search = searchParams.get("search") ?? ""
+  const joinOperator = (searchParams.get("joinOperator") as "and" | "or") || "and"
+
   const serverWhere = useMemo(() => {
-    if (!dateField) return resolveViewFilter(view.filter)
+    const baseWhere = buildServerWhere({
+      baseFilter: resolveViewFilter(view.filter),
+      columnFilters,
+      search,
+      schema,
+      joinOperator,
+    })
+    if (!dateField) return baseWhere
     const dateCondition = {
       [dateField]: {
         gte: dateRange.startIso,
         lte: dateRange.endIso,
       },
     }
-    const base = resolveViewFilter(view.filter)
-    if (!base || Object.keys(base).length === 0) {
+    if (!baseWhere || Object.keys(baseWhere).length === 0) {
       return dateCondition
     }
-    return { AND: [base, dateCondition] }
-  }, [view.filter, dateField, dateRange.startIso, dateRange.endIso])
+    return { AND: [baseWhere, dateCondition] }
+  }, [view.filter, columnFilters, search, schema, joinOperator, dateField, dateRange.startIso, dateRange.endIso])
 
   const {
     data: docs,

@@ -134,8 +134,39 @@ export function KanbanLayout({
     }
     return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
   }
+  const getInitialJoinOperator = (): "and" | "or" => {
+    const op = searchParams.get("joinOperator")
+    if (op === "or" || op === "and") return op
+    return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
+  }
   const [globalFilter, setGlobalFilter] = React.useState(() => searchParams.get("search") ?? "")
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialKanbanFilters)
+  const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
+
+  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  React.useEffect(() => {
+    const raw = searchParams.get("filters")
+    let nextFilters: ColumnFiltersState = []
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) nextFilters = parsed
+      } catch {
+        // invalid URL filter JSON, fall through
+      }
+    }
+    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
+  }, [searchParams])
+
+  // Synchronize search and joinOperator when URL searchParams changes externally
+  React.useEffect(() => {
+    const search = searchParams.get("search") ?? ""
+    setGlobalFilter((prev) => (prev === search ? prev : search))
+    const op = searchParams.get("joinOperator")
+    if (op === "and" || op === "or") {
+      setJoinOperator((prev) => (prev === op ? prev : op))
+    }
+  }, [searchParams])
 
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -144,6 +175,14 @@ export function KanbanLayout({
         persistToolbarState(toolbarStateKey, { columnFilters: next })
         return next
       })
+    },
+    [toolbarStateKey],
+  )
+
+  const handleJoinOperatorChange = React.useCallback(
+    (op: "and" | "or") => {
+      setJoinOperator(op)
+      persistToolbarState(toolbarStateKey, { joinOperator: op })
     },
     [toolbarStateKey],
   )
@@ -187,8 +226,9 @@ export function KanbanLayout({
       baseFilter: resolveViewFilter(view.filter),
       columnFilters,
       schema,
+      joinOperator,
     })
-  }, [view.filter, columnFilters, schema])
+  }, [view.filter, columnFilters, schema, joinOperator])
 
   React.useEffect(() => {
     const next = new URLSearchParams(searchParams)
@@ -196,9 +236,11 @@ export function KanbanLayout({
     else next.delete("search")
     if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
     else next.delete("filters")
+    if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
+    else next.delete("joinOperator")
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true })
-    persistToolbarState(toolbarStateKey, { columnFilters })
-  }, [globalFilter, columnFilters, searchParams, setSearchParams, toolbarStateKey])
+    persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
+  }, [globalFilter, columnFilters, joinOperator, searchParams, setSearchParams, toolbarStateKey])
 
   /**
    * Grouped mode fetches each column independently (paginated, parallel) with
@@ -439,7 +481,11 @@ export function KanbanLayout({
             className={`dy-pl-10 ${FILTER_INPUT_CLASSES}`}
           />
         </div>
-        <DataTableToolbar table={table}>
+        <DataTableToolbar
+          table={table}
+          joinOperator={joinOperator}
+          onJoinOperatorChange={handleJoinOperatorChange}
+        >
           <ViewOptionsPanel
             label="Fields"
             managedIds={allFieldIds}

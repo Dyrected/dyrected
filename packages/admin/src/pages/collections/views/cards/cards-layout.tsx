@@ -108,6 +108,34 @@ export function CardsLayout({
     }
   }, [view.groupBy, view.slug, searchParams])
 
+  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
+  React.useEffect(() => {
+    const raw = searchParams.get("filters")
+    let nextFilters: ColumnFiltersState = []
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) nextFilters = parsed
+      } catch {
+        // ignore invalid json filter param
+      }
+    }
+    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
+  }, [searchParams])
+
+  // Synchronize search and joinOperator when URL searchParams changes externally
+  React.useEffect(() => {
+    const search = searchParams.get("search") ?? ""
+    setGlobalFilter((prev) => (prev === search ? prev : search))
+    const op = searchParams.get("joinOperator")
+    if (op === "and" || op === "or") {
+      setJoinOperator((prev) => (prev === op ? prev : op))
+    }
+    const p = searchParams.get("page")
+    const pageNum = p ? Math.max(1, Number(p) || 1) : 1
+    setPage((prev) => (prev === pageNum ? prev : pageNum))
+  }, [searchParams])
+
   const handleColumnFiltersChange = React.useCallback(
     (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
       setColumnFilters((prev) => {

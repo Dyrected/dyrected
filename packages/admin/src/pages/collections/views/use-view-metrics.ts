@@ -13,6 +13,12 @@ export interface MetricFilterTarget {
   operator?: string
 }
 
+export interface ResolvedSubMetricGroup {
+  value: unknown
+  label: string
+  filterTarget?: MetricFilterTarget
+}
+
 export interface ResolvedSubMetric {
   label: string
   value: number | string | null
@@ -20,6 +26,8 @@ export interface ResolvedSubMetric {
   color?: string
   scope?: "view" | "filtered" | "collection"
   filterTarget?: MetricFilterTarget
+  /** Present if this submetric is an "Other (N)" roll-up with drilldown items */
+  overflowGroups?: ResolvedSubMetricGroup[]
 }
 
 export interface ResolvedMetric {
@@ -29,6 +37,7 @@ export interface ResolvedMetric {
   color?: string
   unit?: string
   scope?: "view" | "filtered" | "collection"
+  span?: 1 | 2 | 3 | 4 | "full"
   showDistribution?: boolean
   subMetrics?: ResolvedSubMetric[]
   filterTarget?: MetricFilterTarget
@@ -135,6 +144,7 @@ export function inferFilterTargetFromWhere(where?: Record<string, any>): MetricF
 export function expandMetrics(
   metrics: SerializedViewMetric[] | undefined,
   groupsByField: Record<string, MetricGroupOption[]>,
+  allGroupsByField: Record<string, MetricGroupOption[]> = {},
 ): SerializedViewMetric[] {
   if (!metrics?.length) return []
 
@@ -179,10 +189,12 @@ export function expandMetrics(
         for (const sub of metric.subMetrics) {
           const subGb = normalizeGroupBy(sub.groupBy)
           const subGroups = subGb ? groupsByField[subGb.field] : undefined
+          const allSubGroups = subGb ? allGroupsByField[subGb.field] ?? subGroups : undefined
 
           if (subGb && subGroups) {
             hasGroupedSub = true
-            for (const group of subGroups) {
+            const topGroups = subGroups
+            for (const group of topGroups) {
               const groupWhere = { [subGb.field]: { equals: group.value } }
               const subFilterTarget: MetricFilterTarget = { columnId: subGb.field, value: group.value, operator: "eq" }
               expandedSubMetrics.push({
@@ -193,6 +205,29 @@ export function expandMetrics(
                 groupBy: undefined,
                 aggregate: mergeGroupWhere(sub.aggregate, groupWhere),
                 aggregates: mergeGroupWhereMap(sub.aggregates, groupWhere),
+              } as any)
+            }
+
+            // High cardinality roll-up: if total discovered groups exceed the Top-N limit, roll up into "Other (N)"
+            if (allSubGroups && allSubGroups.length > topGroups.length) {
+              const overflow = allSubGroups.slice(topGroups.length)
+              const topValues = topGroups.map((g) => g.value)
+              const otherWhere = { [subGb.field]: { not_in: topValues } }
+              const otherFilterTarget: MetricFilterTarget = { columnId: subGb.field, value: topValues, operator: "not_in" }
+              expandedSubMetrics.push({
+                ...sub,
+                _filterTarget: otherFilterTarget,
+                _overflowGroups: overflow.map((g) => ({
+                  value: g.value,
+                  label: g.label,
+                  filterTarget: { columnId: subGb.field, value: g.value, operator: "eq" },
+                })),
+                _groupOrder: subGb.orderBy,
+                label: `Other (${overflow.length})`,
+                color: "gray",
+                groupBy: undefined,
+                aggregate: mergeGroupWhere(sub.aggregate, otherWhere),
+                aggregates: mergeGroupWhereMap(sub.aggregates, otherWhere),
               } as any)
             }
           } else {
@@ -232,7 +267,7 @@ export function useViewMetrics({
   const resolvedViewFilter = resolveViewFilter(viewFilter)
   const resolvedFilteredWhere = filteredWhere ? resolveViewFilter(filteredWhere) : undefined
 
-  const { groupsByField, isLoading: isGroupsLoading } = useMetricGroups({ slug, metrics, schema })
+  const { groupsByField, allGroupsByField, isLoading: isGroupsLoading } = useMetricGroups({ slug, metrics, schema })
 
   const hasAnyGroupBy = React.useMemo(() => {
     return (
@@ -243,8 +278,8 @@ export function useViewMetrics({
   }, [metrics])
 
   const expandedMetrics = React.useMemo(() => {
-    return expandMetrics(metrics, groupsByField)
-  }, [metrics, groupsByField])
+    return expandMetrics(metrics, groupsByField, allGroupsByField)
+  }, [metrics, groupsByField, allGroupsByField])
 
   // Determine if any metric relies on the active filtered scope
   const hasFilteredMetrics =
@@ -381,12 +416,15 @@ export function useViewMetrics({
             color: subMetric.color,
             scope: subMetric.scope ?? effectiveScope,
             filterTarget: (subMetric as any)._filterTarget || inferFilterTargetFromWhere(subMetric.aggregate?.where),
+            overflowGroups: (subMetric as any)._overflowGroups,
           }
         })
 
-        // Sort submetrics descending if orderBy is "count"
+        // Sort submetrics descending if orderBy is "count", keeping overflow at the end
         if ((subPlans?.[0]?.subMetric as any)?._groupOrder === "count") {
           resolvedSubMetrics.sort((a, b) => {
+            if (a.overflowGroups) return 1
+            if (b.overflowGroups) return -1
             const numA = typeof a.value === "number" ? a.value : -Infinity
             const numB = typeof b.value === "number" ? b.value : -Infinity
             return numB - numA
@@ -400,6 +438,7 @@ export function useViewMetrics({
           color: metric.color,
           unit: metric.unit,
           scope: effectiveScope,
+          span: metric.span,
           showDistribution: metric.showDistribution,
           subMetrics: resolvedSubMetrics.length > 0 ? resolvedSubMetrics : undefined,
           filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
@@ -457,6 +496,7 @@ function emptyMetric(metric: SerializedViewMetric, defaultScope?: "view" | "filt
     color: metric.color,
     unit: metric.unit,
     scope: effectiveScope,
+    span: metric.span,
     showDistribution: metric.showDistribution,
     filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
     subMetrics: metric.subMetrics?.map((sub) => ({

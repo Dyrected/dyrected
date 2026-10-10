@@ -111,6 +111,7 @@ export function ViewMetricsBuilder({
   const [groupLimit, setGroupLimit] = React.useState<number | undefined>(undefined)
   const [groupOrderBy, setGroupOrderBy] = React.useState<"count" | "asc" | "desc">("count")
   const [showDistribution, setShowDistribution] = React.useState<boolean>(true)
+  const [span, setSpan] = React.useState<1 | 2 | 3 | 4 | "full" | undefined>(undefined)
 
   // Resolve target collection schema
   const targetCol = React.useMemo(() => {
@@ -325,6 +326,7 @@ export function ViewMetricsBuilder({
       setGroupLimit(undefined)
       setGroupOrderBy("count")
     }
+    setSpan(m.span)
     setShowDistribution(m.showDistribution !== false)
     setShowCustomForm(true)
   }
@@ -338,6 +340,7 @@ export function ViewMetricsBuilder({
     setGroupBy("")
     setGroupLimit(undefined)
     setGroupOrderBy("count")
+    setSpan(undefined)
     setShowDistribution(true)
   }
 
@@ -379,6 +382,7 @@ export function ViewMetricsBuilder({
       format,
       currency: format === "currency" ? currency || "USD" : undefined,
       scope: scope !== "view" ? scope : undefined,
+      span: span !== 1 ? span : undefined,
       groupBy: finalGroupBy,
       showDistribution: existingMetric?.subMetrics?.length ? showDistribution : existingMetric?.showDistribution,
     }
@@ -397,6 +401,7 @@ export function ViewMetricsBuilder({
     setGroupBy("")
     setGroupLimit(undefined)
     setGroupOrderBy("count")
+    setSpan(undefined)
     setEditingIndex(null)
     setShowCustomForm(false)
   }
@@ -499,6 +504,11 @@ export function ViewMetricsBuilder({
                       {groupField && (
                         <span className="dy-rounded dy-bg-purple-500/15 dy-px-1 dy-text-[8px] dy-font-semibold dy-text-purple-600 dark:dy-text-purple-400">
                           by: {groupField}
+                        </span>
+                      )}
+                      {m.span && m.span !== 1 && (
+                        <span className="dy-rounded dy-bg-blue-500/15 dy-px-1 dy-text-[8px] dy-font-semibold dy-text-blue-600 dark:dy-text-blue-400">
+                          span: {m.span}
                         </span>
                       )}
                       <Pencil className="dy-h-2 dy-w-2 dy-text-muted-foreground/50 group-hover:dy-text-primary" />
@@ -726,8 +736,25 @@ export function ViewMetricsBuilder({
                 </Select>
               </div>
 
-              {groupBy && (
-                <div className="dy-grid dy-grid-cols-2 dy-gap-1 dy-pt-0.5">
+              {/* Column Span & Limit Row */}
+              <div className="dy-grid dy-grid-cols-2 dy-gap-1">
+                <Select
+                  value={span !== undefined ? String(span) : "1"}
+                  onValueChange={(v) => setSpan(v === "1" ? undefined : (v === "full" ? "full" : (Number(v) as any)))}
+                >
+                  <SelectTrigger className="dy-h-6 dy-px-1.5 dy-text-[11px] dy-bg-background">
+                    <SelectValue placeholder="Card Width..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1" className="dy-text-xs">Width: 1 Column</SelectItem>
+                    <SelectItem value="2" className="dy-text-xs">Width: 2 Columns (Wide)</SelectItem>
+                    <SelectItem value="3" className="dy-text-xs">Width: 3 Columns</SelectItem>
+                    <SelectItem value="4" className="dy-text-xs">Width: 4 Columns</SelectItem>
+                    <SelectItem value="full" className="dy-text-xs">Width: Full Width</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {groupBy ? (
                   <Select
                     value={groupLimit !== undefined ? String(groupLimit) : "__all__"}
                     onValueChange={(v) => setGroupLimit(v === "__all__" ? undefined : Number(v))}
@@ -743,7 +770,13 @@ export function ViewMetricsBuilder({
                       <SelectItem value="20" className="dy-text-xs">Top 20 Groups</SelectItem>
                     </SelectContent>
                   </Select>
+                ) : (
+                  <div />
+                )}
+              </div>
 
+              {groupBy && (
+                <div className="dy-pt-0.5">
                   <Select
                     value={groupOrderBy || "count"}
                     onValueChange={(v: any) => setGroupOrderBy(v)}

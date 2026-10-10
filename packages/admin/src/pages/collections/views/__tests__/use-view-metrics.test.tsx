@@ -708,5 +708,113 @@ describe("useViewMetrics Dynamic Grouping (groupBy)", () => {
       where: undefined,
     })
   })
+
+  it("preserves span on resolved metric objects", async () => {
+    aggregateMock.mockResolvedValue({ m0: 42 })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "orders",
+          viewSlug: "wide",
+          metrics: [
+            {
+              label: "Revenue Overview",
+              aggregate: { count: "*" },
+              span: 2,
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    expect(result.current.data?.[0]?.span).toBe(2)
+  })
+
+  it("rolls up submetric groups exceeding limit into Other (N) with overflowGroups", async () => {
+    const findMock = vi.fn().mockResolvedValue({
+      docs: [
+        { id: "c1", title: "Community 1" },
+        { id: "c2", title: "Community 2" },
+        { id: "c3", title: "Community 3" },
+        { id: "c4", title: "Community 4" },
+      ],
+    })
+
+    useDyrectedMock.mockReturnValue({
+      client: {
+        collection: (slug: string) => {
+          if (slug === "communities") {
+            return { find: findMock }
+          }
+          return { aggregate: aggregateMock }
+        },
+      },
+      schemas: {
+        collections: [
+          {
+            slug: "communities",
+            admin: { useAsTitle: "title" },
+          },
+        ],
+      },
+    })
+
+    aggregateMock.mockResolvedValue({
+      m0: 50,
+      m0_s0: 20,
+      m0_s1: 15,
+      m0_s2: 15, // Other
+    })
+
+    const schema = {
+      fields: [
+        { name: "community", type: "relationship", relationTo: "communities" },
+      ],
+    }
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "ipo_reservations",
+          viewSlug: "top-2",
+          schema,
+          metrics: [
+            {
+              label: "Reservations",
+              aggregate: { count: "*" },
+              subMetrics: [
+                {
+                  label: "{{group.label}}",
+                  groupBy: { field: "community", limit: 2 },
+                  aggregate: { count: "*" },
+                },
+              ],
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const card = result.current.data?.[0]
+    expect(card).toBeDefined()
+    expect(card?.subMetrics?.length).toBe(3) // 2 top + 1 Other
+    expect(card?.subMetrics?.[0]?.label).toBe("Community 1")
+    expect(card?.subMetrics?.[1]?.label).toBe("Community 2")
+
+    const otherSub = card?.subMetrics?.[2]
+    expect(otherSub?.label).toBe("Other (2)")
+    expect(otherSub?.overflowGroups?.length).toBe(2)
+    expect(otherSub?.overflowGroups?.[0]?.label).toBe("Community 3")
+    expect(otherSub?.overflowGroups?.[1]?.label).toBe("Community 4")
+  })
 })
 

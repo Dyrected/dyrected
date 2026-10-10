@@ -15,6 +15,7 @@ export interface NormalizedGroupBy {
   limit: number
   orderBy?: "count" | "asc" | "desc"
   where?: Record<string, unknown>
+  isSubMetric?: boolean
 }
 
 export function normalizeGroupBy(config?: SerializedViewMetricGroupBy): NormalizedGroupBy | undefined {
@@ -42,14 +43,14 @@ export function extractGroupByConfigs(metrics?: SerializedViewMetric[]): Normali
   for (const m of metrics) {
     const cardGb = normalizeGroupBy(m.groupBy)
     if (cardGb && !map.has(cardGb.field)) {
-      map.set(cardGb.field, cardGb)
+      map.set(cardGb.field, { ...cardGb, isSubMetric: false })
     }
 
     if (m.subMetrics?.length) {
       for (const sub of m.subMetrics) {
         const subGb = normalizeGroupBy(sub.groupBy)
-        if (subGb && !map.has(subGb.field)) {
-          map.set(subGb.field, subGb)
+        if (subGb) {
+          map.set(subGb.field, { ...subGb, isSubMetric: true })
         }
       }
     }
@@ -66,6 +67,7 @@ export interface UseMetricGroupsOptions {
 
 export interface UseMetricGroupsResult {
   groupsByField: Record<string, MetricGroupOption[]>
+  allGroupsByField: Record<string, MetricGroupOption[]>
   isLoading: boolean
 }
 
@@ -86,23 +88,28 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
 
       return {
         queryKey: ["metric-group-options", slug, cfg.field, relationTo, cfg.limit, cfg.where],
-        queryFn: async (): Promise<{ field: string; options: MetricGroupOption[] }> => {
-          if (!client) return { field: cfg.field, options: [] }
+        queryFn: async (): Promise<{ field: string; options: MetricGroupOption[]; allOptions: MetricGroupOption[] }> => {
+          if (!client) return { field: cfg.field, options: [], allOptions: [] }
 
-function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): MetricGroupOption[] {
-  if (cfg.orderBy === "asc") {
-    options.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }))
-  } else if (cfg.orderBy === "desc") {
-    options.sort((a, b) => b.label.localeCompare(a.label, undefined, { numeric: true, sensitivity: "base" }))
-  }
-  return options.slice(0, cfg.limit)
-}
+          function finalizeOptions(rawOptions: MetricGroupOption[], cfg: NormalizedGroupBy): { options: MetricGroupOption[]; allOptions: MetricGroupOption[] } {
+            const sorted = [...rawOptions]
+            if (cfg.orderBy === "asc") {
+              sorted.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }))
+            } else if (cfg.orderBy === "desc") {
+              sorted.sort((a, b) => b.label.localeCompare(a.label, undefined, { numeric: true, sensitivity: "base" }))
+            }
+            return {
+              options: sorted.slice(0, cfg.limit),
+              allOptions: sorted,
+            }
+          }
 
           // 1. Relationship field: fetch related records to populate group options
           if (fieldDef?.type === "relationship" && relationTo) {
             try {
+              const queryLimit = cfg.isSubMetric ? Math.max(cfg.limit * 5, 100) : cfg.limit
               const res = await (client as any).collection(relationTo).find({
-                limit: cfg.limit,
+                limit: queryLimit,
                 where: cfg.where,
               })
               const docs = (res?.docs ?? []) as Record<string, any>[]
@@ -116,9 +123,10 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
                   label: String(label),
                 }
               })
-              return { field: cfg.field, options: finalizeOptions(options, cfg) }
+              const finalized = finalizeOptions(options, cfg)
+              return { field: cfg.field, options: finalized.options, allOptions: finalized.allOptions }
             } catch {
-              return { field: cfg.field, options: [] }
+              return { field: cfg.field, options: [], allOptions: [] }
             }
           }
 
@@ -128,7 +136,8 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
               { value: true, label: fieldDef.label ? `${fieldDef.label}: Yes` : "Yes" },
               { value: false, label: fieldDef.label ? `${fieldDef.label}: No` : "No" },
             ]
-            return { field: cfg.field, options: finalizeOptions(options, cfg) }
+            const finalized = finalizeOptions(options, cfg)
+            return { field: cfg.field, options: finalized.options, allOptions: finalized.allOptions }
           }
 
           // 3. Predefined options (select / radio)
@@ -139,7 +148,8 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
                 ? { value: opt, label: opt }
                 : { value: opt.value, label: String(opt.label ?? opt.value) },
             )
-            return { field: cfg.field, options: finalizeOptions(options, cfg) }
+            const finalized = finalizeOptions(options, cfg)
+            return { field: cfg.field, options: finalized.options, allOptions: finalized.allOptions }
           }
 
           // 4. Scalar field (text / number): discover distinct values
@@ -154,7 +164,8 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
                 value: val,
                 label: fieldDef?.type === "number" && fieldDef?.label ? `${fieldDef.label}: ${val}` : String(val),
               }))
-              return { field: cfg.field, options: finalizeOptions(options, cfg) }
+              const finalized = finalizeOptions(options, cfg)
+              return { field: cfg.field, options: finalized.options, allOptions: finalized.allOptions }
             }
           } catch {
             // Fallback: fetch distinct values via find
@@ -162,7 +173,7 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
 
           try {
             const res = await (client as any).collection(slug).find({
-              limit: Math.max(cfg.limit * 5, 50),
+              limit: Math.max(cfg.limit * 5, 100),
               where: cfg.where,
             })
             const rawDocs = (res?.docs ?? []) as Record<string, any>[]
@@ -179,9 +190,10 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
                 })
               }
             }
-            return { field: cfg.field, options: finalizeOptions(options, cfg) }
+            const finalized = finalizeOptions(options, cfg)
+            return { field: cfg.field, options: finalized.options, allOptions: finalized.allOptions }
           } catch {
-            return { field: cfg.field, options: [] }
+            return { field: cfg.field, options: [], allOptions: [] }
           }
         },
         enabled: Boolean(client && cfg.field),
@@ -191,15 +203,17 @@ function finalizeOptions(options: MetricGroupOption[], cfg: NormalizedGroupBy): 
   })
 
   const isLoading = queries.some((q) => q.isLoading)
-  const groupsByField = React.useMemo(() => {
+  const { groupsByField, allGroupsByField } = React.useMemo(() => {
     const map: Record<string, MetricGroupOption[]> = {}
+    const allMap: Record<string, MetricGroupOption[]> = {}
     for (const q of queries) {
       if (q.data) {
         map[q.data.field] = q.data.options
+        allMap[q.data.field] = q.data.allOptions
       }
     }
-    return map
+    return { groupsByField: map, allGroupsByField: allMap }
   }, [queries])
 
-  return { groupsByField, isLoading }
+  return { groupsByField, allGroupsByField, isLoading }
 }

@@ -150,4 +150,136 @@ describe("MetricCards Component", () => {
     expect(screen.queryByRole("group", { name: "Sub-metric distribution breakdown" })).toBeNull()
     expect(screen.queryByText("(24%)")).toBeNull()
   })
+
+  it("applies responsive column spanning classes based on metric.span", () => {
+    const spanningMetrics: ResolvedMetric[] = [
+      {
+        label: "Wide Summary",
+        value: 100,
+        formatted: "100",
+        span: 2,
+      },
+      {
+        label: "Full Width KPI",
+        value: 500,
+        formatted: "500",
+        span: "full",
+      },
+    ]
+
+    render(<MetricCards metrics={spanningMetrics} />)
+    const wideCard = screen.getByText("Wide Summary").closest(".dy-col-span-1")
+    expect(wideCard?.className).toContain("md:dy-col-span-2")
+
+    const fullCard = screen.getByText("Full Width KPI").closest(".dy-col-span-full")
+    expect(fullCard).not.toBeNull()
+  })
+
+  it("applies color-harmonized active ring and pill styles to prevent primary theme conflicts", () => {
+    const amberMetric: ResolvedMetric[] = [
+      {
+        label: "Asoebi Status",
+        value: 11,
+        formatted: "11",
+        color: "amber",
+        subMetrics: [
+          {
+            label: "Paid in Full",
+            value: 8,
+            formatted: "8",
+            filterTarget: { columnId: "status", value: "paid" },
+          },
+        ],
+      },
+    ]
+
+    render(
+      <MetricCards
+        metrics={amberMetric}
+        activeFilters={[{ id: "status", value: "paid" }]}
+        onToggleFilter={vi.fn()}
+      />
+    )
+
+    const paidButton = screen.getByText("Paid in Full:").closest("button")
+    expect(paidButton).not.toBeNull()
+    // Must use amber-specific active styling rather than generic dy-bg-primary
+    expect(paidButton?.className).toContain("dy-bg-amber-500")
+    expect(paidButton?.className).not.toContain("dy-bg-primary/15")
+  })
+
+  it("renders interactive Other popover drilldown when submetric has overflowGroups", () => {
+    const handleToggle = vi.fn()
+    const overflowMetrics: ResolvedMetric[] = [
+      {
+        label: "Community Breakdown",
+        value: 350,
+        formatted: "350",
+        subMetrics: [
+          {
+            label: "Lagos Island",
+            value: 120,
+            formatted: "120",
+            filterTarget: { columnId: "community", value: "lagos_island" },
+          },
+          {
+            label: "Other (30)",
+            value: 65,
+            formatted: "65",
+            filterTarget: { columnId: "community", value: ["lagos_island"], operator: "not_in" },
+            overflowGroups: [
+              { label: "Ikeja", value: "ikeja", filterTarget: { columnId: "community", value: "ikeja", operator: "eq" } },
+              { label: "Lekki", value: "lekki", filterTarget: { columnId: "lekki", value: "lekki", operator: "eq" } },
+            ],
+          },
+        ],
+      },
+    ]
+
+    render(<MetricCards metrics={overflowMetrics} onToggleFilter={handleToggle} />)
+
+    const otherTrigger = screen.getByText("Other (30):").closest("button")
+    expect(otherTrigger).not.toBeNull()
+
+    // Clicking trigger opens drilldown popover
+    fireEvent.click(otherTrigger!)
+
+    expect(screen.getByText("Other Breakdown (2)")).toBeDefined()
+    expect(screen.getByText("Ikeja")).toBeDefined()
+    expect(screen.getByText("Lekki")).toBeDefined()
+
+    // Clicking item in popover toggles its filter
+    fireEvent.click(screen.getByText("Ikeja"))
+    expect(handleToggle).toHaveBeenCalledWith({
+      columnId: "community",
+      value: "ikeja",
+      operator: "eq",
+    })
+  })
+
+  it("applies harmonic trackBg and segmented palette on colored cards", () => {
+    const amberMetric: ResolvedMetric[] = [
+      {
+        label: "Amber Stat",
+        value: 100,
+        formatted: "100",
+        color: "amber",
+        subMetrics: [
+          { label: "Phase 1", value: 60, formatted: "60" },
+          { label: "Phase 2", value: 40, formatted: "40" },
+        ],
+      },
+    ]
+
+    render(<MetricCards metrics={amberMetric} />)
+
+    const bar = screen.getByRole("group", { name: "Sub-metric distribution breakdown" })
+    expect(bar.className).toContain("dy-bg-amber-500/15")
+
+    const segment1 = screen.getByTestId("distribution-segment-Phase 1")
+    const segment2 = screen.getByTestId("distribution-segment-Phase 2")
+    // Should use warm amber/orange harmonic palette instead of default emerald/sky
+    expect(segment1.className).toContain("dy-bg-amber-500")
+    expect(segment2.className).toContain("dy-bg-orange-500")
+  })
 })
