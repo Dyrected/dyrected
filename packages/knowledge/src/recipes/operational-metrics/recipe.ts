@@ -4,6 +4,7 @@ import {
   defineBooleanField,
   defineNumberField,
   defineSelectField,
+  defineDateTimeField,
   defineView,
 } from "@dyrected/core";
 
@@ -11,12 +12,16 @@ export const rsvpMetricsView = defineView({
   slug: "rsvp-overview",
   label: "RSVP Overview",
   layout: "table",
-  columns: ["guestName", "attending", "outfitCount"],
+  columns: ["guestName", "attending", "outfitCount", "createdAt"],
   metrics: [
     {
       label: "Total Attending",
       color: "emerald",
       aggregate: { count: "*", where: { attending: { equals: true } } },
+      trend: {
+        dateField: "createdAt",
+        period: "previous_month",
+      },
     },
     {
       label: "Outfit Revenue",
@@ -29,10 +34,18 @@ export const rsvpMetricsView = defineView({
         where: { outfitStatus: { in: ["paid", "collected"] } },
       },
       transform: "value * 150",
+      trend: {
+        dateField: "createdAt",
+        period: "previous_month",
+      },
       subMetrics: [
         {
           label: "Paid Units",
           aggregate: { sum: "outfitCount", cast: "number", where: { outfitStatus: { equals: "paid" } } },
+        },
+        {
+          label: "Collected Units",
+          aggregate: { sum: "outfitCount", cast: "number", where: { outfitStatus: { equals: "collected" } } },
         },
       ],
     },
@@ -60,6 +73,7 @@ export const EventRsvps = defineCollection({
       options: ["requested", "paid", "collected"],
     }),
     defineNumberField({ name: "outfitCount", label: "Outfits", defaultValue: 1 }),
+    defineDateTimeField({ name: "createdAt", label: "Created At" }),
   ],
   views: [rsvpMetricsView],
 });

@@ -2043,7 +2043,7 @@
     "id": "examples-and-recipes--library--operational-metrics",
     "relativePath": "examples-and-recipes/library/operational-metrics",
     "title": "Add KPI metric cards above a view",
-    "description": "Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.",
+    "description": "Compute database counts, sums, revenue totals, period trends, and ratios displayed as hero metric cards above operational views.",
     "runtime": "shared",
     "runtimeGroup": "recipe-operational-metrics",
     "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",

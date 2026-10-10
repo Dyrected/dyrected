@@ -8,12 +8,14 @@ describe("operational-metrics recipe", () => {
 
     expect(attending.label).toBe("Total Attending");
     expect(attending.color).toBe("emerald");
+    expect(attending.trend?.period).toBe("previous_month");
 
     expect(revenue.label).toBe("Outfit Revenue");
     expect(revenue.format).toBe("currency");
     expect(revenue.currency).toBe("USD");
     expect(revenue.transform).toBe("value * 150");
-    expect(revenue.subMetrics).toHaveLength(1);
+    expect(revenue.subMetrics).toHaveLength(2);
+    expect(revenue.trend?.period).toBe("previous_month");
 
     expect(rate.label).toBe("Attendance Rate");
     expect(rate.format).toBe("percent");

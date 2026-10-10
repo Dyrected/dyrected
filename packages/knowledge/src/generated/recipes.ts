@@ -595,9 +595,9 @@ export const recipes: readonly Recipe[] = [
   {
     "id": "operational-metrics",
     "title": "Add KPI metric cards above a view",
-    "description": "Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.",
-    "problem": "Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning.",
-    "summary": "Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.",
+    "description": "Compute database counts, sums, revenue totals, period trends, and ratios displayed as hero metric cards above operational views.",
+    "problem": "Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue, and period-over-period growth) without manual counting or slow table scanning.",
+    "summary": "Attach metric cards to a view with native database aggregate queries, JEXL transform math, period-over-period trends, and sub-metric breakdowns.",
     "category": "admin-experience",
     "runtime": "cloud",
     "runtimeNotes": "Cloud-safe database aggregations and browser JEXL evaluation for real-time KPI metrics.",
@@ -605,7 +605,8 @@ export const recipes: readonly Recipe[] = [
       "add summary cards above a table view",
       "calculate total revenue from quantity and unit price",
       "display door check-in attendance percentage",
-      "configure aggregate and subMetrics on a view"
+      "track period-over-period trend deltas against previous intervals",
+      "configure aggregate, trend, and subMetrics on a view"
     ],
     "concepts": [
       "defineView",
@@ -614,6 +615,8 @@ export const recipes: readonly Recipe[] = [
       "aggregates",
       "transform",
       "expression",
+      "trend",
+      "groupBy",
       "subMetrics"
     ],
     "canonicalDocs": [
@@ -622,7 +625,7 @@ export const recipes: readonly Recipe[] = [
       "/docs/model-content/operational-views/define-view"
     ],
     "requires": [],
-    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineBooleanField,\n  defineNumberField,\n  defineSelectField,\n  defineView,\n} from \"@dyrected/core\";\n\nexport const rsvpMetricsView = defineView({\n  slug: \"rsvp-overview\",\n  label: \"RSVP Overview\",\n  layout: \"table\",\n  columns: [\"guestName\", \"attending\", \"outfitCount\"],\n  metrics: [\n    {\n      label: \"Total Attending\",\n      color: \"emerald\",\n      aggregate: { count: \"*\", where: { attending: { equals: true } } },\n    },\n    {\n      label: \"Outfit Revenue\",\n      color: \"rose\",\n      format: \"currency\",\n      currency: \"USD\",\n      aggregate: {\n        sum: \"outfitCount\",\n        cast: \"number\",\n        where: { outfitStatus: { in: [\"paid\", \"collected\"] } },\n      },\n      transform: \"value * 150\",\n      subMetrics: [\n        {\n          label: \"Paid Units\",\n          aggregate: { sum: \"outfitCount\", cast: \"number\", where: { outfitStatus: { equals: \"paid\" } } },\n        },\n      ],\n    },\n    {\n      label: \"Attendance Rate\",\n      color: \"purple\",\n      aggregates: {\n        totalGuests: { count: \"*\" },\n        confirmed: { count: \"*\", where: { attending: { equals: true } } },\n      },\n      expression: \"math.round((aggregates.confirmed / aggregates.totalGuests) * 100, 1)\",\n      format: \"percent\",\n    },\n  ],\n});\n\nexport const EventRsvps = defineCollection({\n  slug: \"event-rsvps\",\n  fields: [\n    defineTextField({ name: \"guestName\", label: \"Guest Name\", required: true }),\n    defineBooleanField({ name: \"attending\", label: \"Attending\" }),\n    defineSelectField({\n      name: \"outfitStatus\",\n      label: \"Outfit Status\",\n      options: [\"requested\", \"paid\", \"collected\"],\n    }),\n    defineNumberField({ name: \"outfitCount\", label: \"Outfits\", defaultValue: 1 }),\n  ],\n  views: [rsvpMetricsView],\n});",
+    "source": "import {\n  defineCollection,\n  defineTextField,\n  defineBooleanField,\n  defineNumberField,\n  defineSelectField,\n  defineDateTimeField,\n  defineView,\n} from \"@dyrected/core\";\n\nexport const rsvpMetricsView = defineView({\n  slug: \"rsvp-overview\",\n  label: \"RSVP Overview\",\n  layout: \"table\",\n  columns: [\"guestName\", \"attending\", \"outfitCount\", \"createdAt\"],\n  metrics: [\n    {\n      label: \"Total Attending\",\n      color: \"emerald\",\n      aggregate: { count: \"*\", where: { attending: { equals: true } } },\n      trend: {\n        dateField: \"createdAt\",\n        period: \"previous_month\",\n      },\n    },\n    {\n      label: \"Outfit Revenue\",\n      color: \"rose\",\n      format: \"currency\",\n      currency: \"USD\",\n      aggregate: {\n        sum: \"outfitCount\",\n        cast: \"number\",\n        where: { outfitStatus: { in: [\"paid\", \"collected\"] } },\n      },\n      transform: \"value * 150\",\n      trend: {\n        dateField: \"createdAt\",\n        period: \"previous_month\",\n      },\n      subMetrics: [\n        {\n          label: \"Paid Units\",\n          aggregate: { sum: \"outfitCount\", cast: \"number\", where: { outfitStatus: { equals: \"paid\" } } },\n        },\n        {\n          label: \"Collected Units\",\n          aggregate: { sum: \"outfitCount\", cast: \"number\", where: { outfitStatus: { equals: \"collected\" } } },\n        },\n      ],\n    },\n    {\n      label: \"Attendance Rate\",\n      color: \"purple\",\n      aggregates: {\n        totalGuests: { count: \"*\" },\n        confirmed: { count: \"*\", where: { attending: { equals: true } } },\n      },\n      expression: \"math.round((aggregates.confirmed / aggregates.totalGuests) * 100, 1)\",\n      format: \"percent\",\n    },\n  ],\n});\n\nexport const EventRsvps = defineCollection({\n  slug: \"event-rsvps\",\n  fields: [\n    defineTextField({ name: \"guestName\", label: \"Guest Name\", required: true }),\n    defineBooleanField({ name: \"attending\", label: \"Attending\" }),\n    defineSelectField({\n      name: \"outfitStatus\",\n      label: \"Outfit Status\",\n      options: [\"requested\", \"paid\", \"collected\"],\n    }),\n    defineNumberField({ name: \"outfitCount\", label: \"Outfits\", defaultValue: 1 }),\n    defineDateTimeField({ name: \"createdAt\", label: \"Created At\" }),\n  ],\n  views: [rsvpMetricsView],\n});",
     "docsPath": "/docs/examples-and-recipes/library/operational-metrics",
     "snippetStatus": "validated"
   },

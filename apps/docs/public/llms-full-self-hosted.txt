@@ -15673,7 +15673,7 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Build a Kanban pipeline board](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) — Problem: Fulfillment teams need to see orders progress across stages (Requested → Paid → Collected) and drag cards between columns to update status. Summary: Configure a Kanban operational view using defineView with layout: 'kanban', groupBy: 'statusField', and quick status actions.
 - [Build a KYC review workspace](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/kyc-review-workspace) — Problem: Compliance reviewers need a focused queue of investors awaiting identity verification, with a visible count of pending work and one-click decisions, instead of searching a full investors collection. Summary: Define a standalone workspace with defineWorkspace that groups pending, approved, and rejected views over one collection, shows a live pending badge, and restricts access to reviewer roles.
 - [Create a navigation global with nested links](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/navigation-global-links) — Problem: Editors need to manage shared site navigation without hardcoding links into the frontend. Summary: Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.
-- [Add KPI metric cards above a view](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/operational-metrics) — Problem: Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue) without manual counting or slow table scanning. Summary: Attach metric cards to a view with native database aggregate queries, JEXL transform math, and sub-metric breakdowns.
+- [Add KPI metric cards above a view](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/operational-metrics) — Problem: Event managers need real-time summary indicators (total attendees, check-in percentage, collected revenue, and period-over-period growth) without manual counting or slow table scanning. Summary: Attach metric cards to a view with native database aggregate queries, JEXL transform math, period-over-period trends, and sub-metric breakdowns.
 - [Configure an operational table view](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/operational-table-view) — Problem: Front-of-house staff need a fast list of confirmed attendees with a single-click check-in button, without wading through full collection fields. Summary: Define a dedicated table view using defineView, filtering confirmed records and attaching a declarative checkIn row action.
 - [Build an order fulfillment workspace](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/order-fulfillment-workspace) — Problem: A fulfillment team needs to move orders from requested to paid to shipped, see which orders still need payment, and watch revenue, without jumping between collection pages. Summary: Define a workspace with defineWorkspace that pairs a kanban pipeline with a filtered payment queue, metric cards, and a badge counting unpaid orders.
 - [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/owner-or-admin-access) — Problem: Records should belong to one user, but administrators still need a way to review or fix any entry. Summary: Scope writes to the owner by default and return `true` for admin users when they need broader access.
@@ -17093,18 +17093,19 @@ export const Navigation = defineGlobal({
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/operational-metrics
 
-Compute database counts, sums, revenue totals, and ratios displayed as hero metric cards above operational views.
+Compute database counts, sums, revenue totals, period trends, and ratios displayed as hero metric cards above operational views.
 
 ## Use this when
 
 - add summary cards above a table view
 - calculate total revenue from quantity and unit price
 - display door check-in attendance percentage
-- configure aggregate and subMetrics on a view
+- track period-over-period trend deltas against previous intervals
+- configure aggregate, trend, and subMetrics on a view
 
 ## Dyrected concepts
 
-`defineView`, `metrics`, `aggregate`, `aggregates`, `transform`, `expression`, `subMetrics`
+`defineView`, `metrics`, `aggregate`, `aggregates`, `transform`, `expression`, `trend`, `groupBy`, `subMetrics`
 
 **Additional packages:** No additional packages.
 
@@ -17123,6 +17124,7 @@ This is the canonical source compiled and behavior-tested by `@dyrected/knowledg
   defineBooleanField,
   defineNumberField,
   defineSelectField,
+  defineDateTimeField,
   defineView,
 } from "@dyrected/core";
 
@@ -17130,12 +17132,16 @@ export const rsvpMetricsView = defineView({
   slug: "rsvp-overview",
   label: "RSVP Overview",
   layout: "table",
-  columns: ["guestName", "attending", "outfitCount"],
+  columns: ["guestName", "attending", "outfitCount", "createdAt"],
   metrics: [
     {
       label: "Total Attending",
       color: "emerald",
       aggregate: { count: "*", where: { attending: { equals: true } } },
+      trend: {
+        dateField: "createdAt",
+        period: "previous_month",
+      },
     },
     {
       label: "Outfit Revenue",
@@ -17148,10 +17154,18 @@ export const rsvpMetricsView = defineView({
         where: { outfitStatus: { in: ["paid", "collected"] } },
       },
       transform: "value * 150",
+      trend: {
+        dateField: "createdAt",
+        period: "previous_month",
+      },
       subMetrics: [
         {
           label: "Paid Units",
           aggregate: { sum: "outfitCount", cast: "number", where: { outfitStatus: { equals: "paid" } } },
+        },
+        {
+          label: "Collected Units",
+          aggregate: { sum: "outfitCount", cast: "number", where: { outfitStatus: { equals: "collected" } } },
         },
       ],
     },
@@ -17179,6 +17193,7 @@ export const EventRsvps = defineCollection({
       options: ["requested", "paid", "collected"],
     }),
     defineNumberField({ name: "outfitCount", label: "Outfits", defaultValue: 1 }),
+    defineDateTimeField({ name: "createdAt", label: "Created At" }),
   ],
   views: [rsvpMetricsView],
 });
