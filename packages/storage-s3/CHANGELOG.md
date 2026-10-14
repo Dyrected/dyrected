@@ -1,5 +1,12 @@
 # @dyrected/storage-s3
 
+## 2.22.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@2.22.0
+
 ## 2.21.0
 
 ### Patch Changes

@@ -6,6 +6,28 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
+## v2.22.0
+
+- - **Time-Bucket Grouping on Metric Cards & Sub-Metrics (Phase 3)**:
+    - Added object-based `groupBy` support for date fields: `groupBy: { field: string, bucket: "day" | "week" | "month" | "year", limit?: number, orderBy?: "asc" | "desc" }`.
+    - Dynamically slices dates into discrete intervals and expands into formatted bucket cards (e.g. `{{group.label}} Tastings` -> `Oct 10, 2026`).
+    - Interactive drill-down: Clicking any time-bucket card applies an `isBetween` date interval filter to the active view layout.
+    - Zero-N+1 performance: All bucket aggregates and filter conditions resolve in a single batched aggregation request.
+  - **Period-over-Period Trend Deltas (Phase 4)**:
+    - Added declarative `trend` configuration to `ViewMetric` and `ViewSubMetric`: `trend: { dateField: string, period: "previous_day" | "previous_week" | "previous_month" | "previous_year", invertColors?: boolean }`.
+    - Calculates comparative period boundaries (`previous_day`, `previous_week`, `previous_month`, `previous_year`) and computes percentage changes with directional trend badges (`+X% ↑` / `-X% ↓`).
+    - Added `invertColors: true` option for metrics where increases indicate risk (e.g. pending tasks, disputes, error counts), displaying positive deltas in rose/alert and negative deltas in emerald.
+    - Supports trend deltas on both headline card metrics and individual sub-metric rows.
+    - Fan-out optimization: Base values and comparative period aggregates are evaluated together within the single batched query.
+  - **Interactive Quick-Filter Distribution Bars & Multi-Layout Compatibility**:
+    - Segmented distribution bars with high-contrast luminance stepped palettes and harmonic tonal shading for dark/light modes.
+    - Interactive sub-metric chips/tiles allowing click-to-filter drill downs across Table, Kanban, Cards, and Spreadsheet layouts.
+    - High-cardinality handling: Top-N groups with an `"Other (X)"` popover drill-down.
+  - **React State & Search Params Transition Fixes**:
+    - Fixed circular state-searchParams loop on Kanban and Cards layouts preventing "Maximum update depth exceeded" errors when metric cards are toggled as quick-filters. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.21.0
 
 - - **Metric Scoping Architecture (`metricsScope` & `scope`)**: Added comprehensive filter scoping to operational view metrics and sub-metrics with three evaluation modes:
@@ -739,18 +761,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/admin@2.5.64 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 - @dyrected/vue@2.5.64 (`@dyrected/nuxt`)
-
----
-
-## v2.5.63
-
-- Fix workflow and draft handling across the admin UI and core collection APIs.
-
-  - stop showing the admin publishing status column for collections that only define a user `status` field
-  - show workflow state labels and colors consistently in admin list and edit views
-  - return published workflow documents correctly in public reads, including legacy entries without a materialized published snapshot
-  - materialize workflow metadata on update responses so the admin can keep draft and transition state in sync
-  - improve the example auth roles setup and docs so custom auth `roles` fields use the expected array-backed shape (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
