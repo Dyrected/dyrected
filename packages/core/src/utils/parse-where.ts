@@ -86,6 +86,20 @@ export interface SqlWhereResult {
 }
 
 /**
+ * Escapes `!`, `%` and `_` so user input is matched literally by SQL `LIKE`.
+ * `!` is the ESCAPE char because a backslash literal differs between MySQL and
+ * standard-conforming dialects.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[!%_]/g, '!$&');
+}
+
+/** Escapes regex metacharacters so user input is matched literally by `$regex`. */
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Translates a WhereClause into a parameterized SQL WHERE fragment.
  *
  * @param where         The Dyrected where DSL object
@@ -115,6 +129,25 @@ export function parseSqlWhere(
 
   function col(field: string): string {
     return field === 'id' ? 'id' : getJsonField(field);
+  }
+
+  /**
+   * Case-insensitive pattern match. `ILIKE` is natively insensitive. For plain `LIKE`
+   * we lower both sides explicitly: MySQL's `JSON_UNQUOTE` yields a binary-collated
+   * string (case-sensitive) and SQLite's `LIKE` only folds ASCII-range case.
+   */
+  function buildLike(column: string, pattern: string, escaped = false): string {
+    const esc = escaped ? ` ESCAPE '!'` : '';
+    if (placeholder === 'pg') {
+      params.push(pattern);
+      return `(${column})::text ${likeOperator} ${next()}${esc}`;
+    }
+    if (likeOperator === 'ILIKE') {
+      params.push(pattern);
+      return `${column} ILIKE ${next()}${esc}`;
+    }
+    params.push(pattern.toLowerCase());
+    return `LOWER(${column}) LIKE ${next()}${esc}`;
   }
 
   function buildOperator(field: string, value: WhereOperator | any): string {
@@ -285,14 +318,14 @@ export function parseSqlWhere(
         params.push(operand);
         return `${c} <= ${next()}`;
 
-      case 'contains':
       case 'like':
-        params.push(`%${operand}%`);
-        return placeholder === 'pg' ? `(${c})::text ${likeOperator} ${next()}` : `${c} ${likeOperator} ${next()}`;
+        return buildLike(c, `%${String(operand)}%`);
+
+      case 'contains':
+        return buildLike(c, `%${escapeLike(String(operand))}%`, true);
 
       case 'starts_with':
-        params.push(`${operand}%`);
-        return placeholder === 'pg' ? `(${c})::text ${likeOperator} ${next()}` : `${c} ${likeOperator} ${next()}`;
+        return buildLike(c, `${escapeLike(String(operand))}%`, true);
 
       case 'exists':
         return operand ? `${c} IS NOT NULL` : `${c} IS NULL`;
@@ -420,10 +453,10 @@ export function parseMongoWhere(where: WhereClause): Record<string, any> {
 
       case 'contains':
       case 'like':
-        return { [field]: { $regex: operand, $options: 'i' } };
+        return { [field]: { $regex: escapeRegex(String(operand)), $options: 'i' } };
 
       case 'starts_with':
-        return { [field]: { $regex: `^${operand}`, $options: 'i' } };
+        return { [field]: { $regex: `^${escapeRegex(String(operand))}`, $options: 'i' } };
 
       case 'exists':
         return { [field]: { $exists: operand } };

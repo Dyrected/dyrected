@@ -5499,7 +5499,7 @@ By the end you should know how editors navigate the list, how to control what it
 
 The search box queries the backend, not the rows already loaded in the browser. That means pagination, access control, filters, and search all stay in sync.
 
-If you set `admin.searchableFields`, Dyrected searches those top-level fields. If you leave it unset, Dyrected falls back to a conservative inferred set: `admin.useAsTitle` first, then common text-like fields such as `title`, `name`, `label`, `slug`, `email`, `caption`, and `description`, plus rich text fields. The title column is a link, so clicking a record's title opens its edit form directly.
+If you set `admin.searchableFields`, Dyrected searches those top-level fields. If you leave it unset, Dyrected searches `admin.useAsTitle` first, then every visible `text`, `textarea`, `richText`, `email`, and `url` field, up to eight fields. Field names don't matter, only the field type does. Matching is case-insensitive, and characters like `%`, `_`, and `(` are matched literally. The title column is a link, so clicking a record's title opens its edit form directly.
 
 For narrowing rather than searching, the **filter builder** lets editors add rules against filterable fields. It uses a draft-then-apply flow: editors build up their filter rules first and apply them to the list when ready, so the table doesn't re-query on every keystroke.
 
@@ -18249,7 +18249,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 
     /**
      * Field names included in backend free-text search for this collection.
-     * When omitted, Dyrected infers a conservative default from common text-like fields.
+     * When omitted, Dyrected searches `useAsTitle` plus every visible `text`, `textarea`,
+     * `richText`, `email` and `url` field (up to eight), chosen by field type, not name.
+     * Relationship fields are searched only when listed here. Matching is case-insensitive.
      */
     searchableFields?: string[];
 
@@ -18503,7 +18505,7 @@ Use `admin` to control how this collection feels inside the dashboard. These opt
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`. This is type-checked at config authoring time against your real top-level field names. |
 | `defaultColumns` | Sets the columns shown in the collection list view before an editor customizes anything. Pick columns that help someone scan and make a decision quickly, such as `title`, `status`, `updatedAt`, `publishedAt`, or `author`.                                                                                                                        |
-| `searchableFields` | Sets which top-level fields backend list search should query for this collection. Use this when editors need search to cover more than the title, or when you want tighter control over query cost and match quality. This is type-checked at config authoring time against your real top-level field names.                                       |
+| `searchableFields` | Sets which top-level fields backend list search should query for this collection. When omitted, Dyrected searches `useAsTitle` plus every visible `text`, `textarea`, `richText`, `email`, and `url` field (up to eight), by field type rather than field name. Relationship fields are only searched when you list them here. Use this when editors need search to cover more than the title, or when you want tighter control over query cost and match quality. This is type-checked at config authoring time against your real top-level field names.                                       |
 | `description`    | Adds a short line of helper text under the collection title on the admin list page. Use it for context such as what the collection powers, what belongs there, or any quick editorial guidance.                                                                                                                                                   |
 | `group`          | Places the collection under a named section in the admin sidebar. Use it when several collections belong to one area of work, such as `Content`, `Commerce`, or `People`.                                                                                                                                                                            |
 | `icon`           | Adds a Lucide icon to the collection in the sidebar and related admin navigation. This is mostly a usability and visual organization option, but it helps large dashboards feel easier to scan.                                                                                                                                                      |
@@ -26686,7 +26688,7 @@ Editors can expand and collapse groups individually. Bulk actions apply to selec
 
 | Table Feature | Configuration Key | Description |
 | --- | --- | --- |
-| **Search Bar** | `admin.searchableFields` | Live debounced search querying text and email fields on the backend. |
+| **Search Bar** | `admin.searchableFields` | Live debounced, case-insensitive search across the collection's text-like fields (`text`, `textarea`, `richText`, `email`, `url`) on the backend. |
 | **Filter Menu & Pills** | Interactive toolbar | Searchable command menu supporting text, number, date, select, and boolean filters. Active filters display as removable pills with total count. |
 | **Filter Match Logic** | Toolbar toggle | When 2+ filters are active, switch between **`Match: All`** (AND logic) and **`Match: Any`** (OR logic). |
 | **Column Visibility & Order** | `columns` & `Fields` toolbar button | Sets initial visible fields; editors can show/hide and reorder columns per user. |
@@ -28865,6 +28867,28 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.22.0
+
+- - **Time-Bucket Grouping on Metric Cards & Sub-Metrics (Phase 3)**:
+    - Added object-based `groupBy` support for date fields: `groupBy: { field: string, bucket: "day" | "week" | "month" | "year", limit?: number, orderBy?: "asc" | "desc" }`.
+    - Dynamically slices dates into discrete intervals and expands into formatted bucket cards (e.g. `{{group.label}} Tastings` -> `Oct 10, 2026`).
+    - Interactive drill-down: Clicking any time-bucket card applies an `isBetween` date interval filter to the active view layout.
+    - Zero-N+1 performance: All bucket aggregates and filter conditions resolve in a single batched aggregation request.
+  - **Period-over-Period Trend Deltas (Phase 4)**:
+    - Added declarative `trend` configuration to `ViewMetric` and `ViewSubMetric`: `trend: { dateField: string, period: "previous_day" | "previous_week" | "previous_month" | "previous_year", invertColors?: boolean }`.
+    - Calculates comparative period boundaries (`previous_day`, `previous_week`, `previous_month`, `previous_year`) and computes percentage changes with directional trend badges (`+X% ↑` / `-X% ↓`).
+    - Added `invertColors: true` option for metrics where increases indicate risk (e.g. pending tasks, disputes, error counts), displaying positive deltas in rose/alert and negative deltas in emerald.
+    - Supports trend deltas on both headline card metrics and individual sub-metric rows.
+    - Fan-out optimization: Base values and comparative period aggregates are evaluated together within the single batched query.
+  - **Interactive Quick-Filter Distribution Bars & Multi-Layout Compatibility**:
+    - Segmented distribution bars with high-contrast luminance stepped palettes and harmonic tonal shading for dark/light modes.
+    - Interactive sub-metric chips/tiles allowing click-to-filter drill downs across Table, Kanban, Cards, and Spreadsheet layouts.
+    - High-cardinality handling: Top-N groups with an `"Other (X)"` popover drill-down.
+  - **React State & Search Params Transition Fixes**:
+    - Fixed circular state-searchParams loop on Kanban and Cards layouts preventing "Maximum update depth exceeded" errors when metric cards are toggled as quick-filters. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.21.0
 
 - - **Metric Scoping Architecture (`metricsScope` & `scope`)**: Added comprehensive filter scoping to operational view metrics and sub-metrics with three evaluation modes:
@@ -29598,18 +29622,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/admin@2.5.64 (`@dyrected/nuxt`, `@dyrected/react`, `@dyrected/vue`)
 
 - @dyrected/vue@2.5.64 (`@dyrected/nuxt`)
-
----
-
-## v2.5.63
-
-- Fix workflow and draft handling across the admin UI and core collection APIs.
-
-  - stop showing the admin publishing status column for collections that only define a user `status` field
-  - show workflow state labels and colors consistently in admin list and edit views
-  - return published workflow documents correctly in public reads, including legacy entries without a materialized published snapshot
-  - materialize workflow metadata on update responses so the admin can keep draft and transition state in sync
-  - improve the example auth roles setup and docs so custom auth `roles` fields use the expected array-backed shape (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 

@@ -1,17 +1,8 @@
 import type { CollectionConfig, Field, ReadonlyDatabaseAdapter } from "../types/index.js";
 import type { WhereClause } from "./parse-where.js";
 
-const DEFAULT_SEARCHABLE_NAMES = new Set([
-  "title",
-  "name",
-  "label",
-  "slug",
-  "email",
-  "caption",
-  "description",
-]);
-
 const MAX_RELATION_MATCHES = 50;
+const MAX_DEFAULT_SEARCH_FIELDS = 8;
 const MAX_RELATION_TITLE_DEPTH = 8;
 const TITLE_FALLBACK_NAMES = ["title", "name", "label", "heading", "email", "subject"] as const;
 
@@ -20,7 +11,8 @@ function isScalarSearchField(field: Field) {
     field.type === "text" ||
     field.type === "textarea" ||
     field.type === "richText" ||
-    field.type === "email"
+    field.type === "email" ||
+    field.type === "url"
   );
 }
 
@@ -41,12 +33,32 @@ export function resolveCollectionTitleField(collection: CollectionConfig): Field
   return collection.fields.find((field) => !!field.name && field.type !== "join" && field.type !== "row");
 }
 
+/**
+ * Flattens layout-only fields (`row`) so nested named fields are reachable.
+ */
+function flattenNamedFields(fields: Field[]): Field[] {
+  const result: Field[] = [];
+  for (const field of fields) {
+    if (field.type === "row" && field.fields) {
+      result.push(...flattenNamedFields(field.fields));
+      continue;
+    }
+    if (field.name) result.push(field);
+  }
+  return result;
+}
+
+/**
+ * Resolves which fields the admin search box matches against.
+ *
+ * 1. `admin.searchableFields`, when it names at least one existing field.
+ * 2. Otherwise the `useAsTitle` field plus every non-hidden text-like field
+ *    (see {@link isScalarSearchField}), chosen by field type, never by name.
+ *    Relationships are opt-in because each one costs an extra query.
+ */
 export function getCollectionSearchableFields(collection: CollectionConfig): Field[] {
-  const fieldByName = new Map(
-    collection.fields
-      .filter((field) => !!field.name)
-      .map((field) => [field.name as string, field]),
-  );
+  const namedFields = flattenNamedFields(collection.fields);
+  const fieldByName = new Map(namedFields.map((field) => [field.name as string, field]));
 
   const configured = collection.admin?.searchableFields
     ?.map((fieldName) => fieldByName.get(fieldName))
@@ -63,13 +75,15 @@ export function getCollectionSearchableFields(collection: CollectionConfig): Fie
     results.push(field);
   };
 
-  pushUnique(findFieldByName(collection, collection.admin?.useAsTitle));
+  const titleField = collection.admin?.useAsTitle
+    ? fieldByName.get(collection.admin.useAsTitle)
+    : undefined;
+  pushUnique(titleField);
 
-  for (const field of collection.fields) {
-    if (!field.name) continue;
-    if (isScalarSearchField(field) && DEFAULT_SEARCHABLE_NAMES.has(field.name)) {
-      pushUnique(field);
-    }
+  for (const field of namedFields) {
+    if (results.length >= MAX_DEFAULT_SEARCH_FIELDS) break;
+    if (field.admin?.hidden || !isScalarSearchField(field)) continue;
+    pushUnique(field);
   }
 
   return results;

@@ -517,7 +517,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 
     /**
      * Field names included in backend free-text search for this collection.
-     * When omitted, Dyrected infers a conservative default from common text-like fields.
+     * When omitted, Dyrected searches `useAsTitle` plus every visible `text`, `textarea`,
+     * `richText`, `email` and `url` field (up to eight), chosen by field type, not name.
+     * Relationship fields are searched only when listed here. Matching is case-insensitive.
      */
     searchableFields?: string[];
 
@@ -771,7 +773,7 @@ Use `admin` to control how this collection feels inside the dashboard. These opt
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`. This is type-checked at config authoring time against your real top-level field names. |
 | `defaultColumns` | Sets the columns shown in the collection list view before an editor customizes anything. Pick columns that help someone scan and make a decision quickly, such as `title`, `status`, `updatedAt`, `publishedAt`, or `author`.                                                                                                                        |
-| `searchableFields` | Sets which top-level fields backend list search should query for this collection. Use this when editors need search to cover more than the title, or when you want tighter control over query cost and match quality. This is type-checked at config authoring time against your real top-level field names.                                       |
+| `searchableFields` | Sets which top-level fields backend list search should query for this collection. When omitted, Dyrected searches `useAsTitle` plus every visible `text`, `textarea`, `richText`, `email`, and `url` field (up to eight), by field type rather than field name. Relationship fields are only searched when you list them here. Use this when editors need search to cover more than the title, or when you want tighter control over query cost and match quality. This is type-checked at config authoring time against your real top-level field names.                                       |
 | `description`    | Adds a short line of helper text under the collection title on the admin list page. Use it for context such as what the collection powers, what belongs there, or any quick editorial guidance.                                                                                                                                                   |
 | `group`          | Places the collection under a named section in the admin sidebar. Use it when several collections belong to one area of work, such as `Content`, `Commerce`, or `People`.                                                                                                                                                                            |
 | `icon`           | Adds a Lucide icon to the collection in the sidebar and related admin navigation. This is mostly a usability and visual organization option, but it helps large dashboards feel easier to scan.                                                                                                                                                      |

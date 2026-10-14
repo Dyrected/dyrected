@@ -13,7 +13,7 @@ By the end you should know how editors navigate the list, how to control what it
 
 The search box queries the backend, not the rows already loaded in the browser. That means pagination, access control, filters, and search all stay in sync.
 
-If you set `admin.searchableFields`, Dyrected searches those top-level fields. If you leave it unset, Dyrected falls back to a conservative inferred set: `admin.useAsTitle` first, then common text-like fields such as `title`, `name`, `label`, `slug`, `email`, `caption`, and `description`, plus rich text fields. The title column is a link, so clicking a record's title opens its edit form directly.
+If you set `admin.searchableFields`, Dyrected searches those top-level fields. If you leave it unset, Dyrected searches `admin.useAsTitle` first, then every visible `text`, `textarea`, `richText`, `email`, and `url` field, up to eight fields. Field names don't matter, only the field type does. Matching is case-insensitive, and characters like `%`, `_`, and `(` are matched literally. The title column is a link, so clicking a record's title opens its edit form directly.
 
 For narrowing rather than searching, the **filter builder** lets editors add rules against filterable fields. It uses a draft-then-apply flow: editors build up their filter rules first and apply them to the list when ready, so the table doesn't re-query on every keystroke.
 

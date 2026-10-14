@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { parseSqlWhere, parseMongoWhere } from '../utils/parse-where.js';
 
 describe('parseSqlWhere', () => {
+  it('treats % and _ in contains/starts_with as literals', () => {
+    const r = parseSqlWhere({ title: { contains: '50%_off!' } }, (f) => f, '?');
+    expect(r.params).toEqual(['%50!%!_off!!%']);
+    expect(r.sql).toContain("ESCAPE '!'");
+  });
+
+  it('matches contains case-insensitively on LIKE dialects', () => {
+    const r = parseSqlWhere({ title: { contains: 'HeLLo' } }, (f) => `json_extract(data, '$.${f}')`, '?');
+    expect(r.sql).toBe("LOWER(json_extract(data, '$.title')) LIKE ? ESCAPE '!'");
+    expect(r.params).toEqual(['%hello%']);
+  });
+
   const getJsonField = (field: string) => `data->>'${field}'`;
 
   it('translates shorthand operators correctly', () => {
@@ -140,6 +152,15 @@ describe('parseSqlWhere', () => {
 });
 
 describe('parseMongoWhere', () => {
+  it('escapes regex metacharacters in contains/starts_with', () => {
+    expect(parseMongoWhere({ title: { contains: 'a(b' } })).toEqual({
+      title: { $regex: 'a\\(b', $options: 'i' },
+    });
+    expect(parseMongoWhere({ title: { starts_with: '[x]' } })).toEqual({
+      title: { $regex: '^\\[x\\]', $options: 'i' },
+    });
+  });
+
   it('translates verbose operator aliases correctly', () => {
     const res = parseMongoWhere({
       createdAt: { less_than: '2026-08-19T00:00:00Z' },

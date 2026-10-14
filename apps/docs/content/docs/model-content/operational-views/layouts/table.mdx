@@ -85,7 +85,7 @@ Editors can expand and collapse groups individually. Bulk actions apply to selec
 
 | Table Feature | Configuration Key | Description |
 | --- | --- | --- |
-| **Search Bar** | `admin.searchableFields` | Live debounced search querying text and email fields on the backend. |
+| **Search Bar** | `admin.searchableFields` | Live debounced, case-insensitive search across the collection's text-like fields (`text`, `textarea`, `richText`, `email`, `url`) on the backend. |
 | **Filter Menu & Pills** | Interactive toolbar | Searchable command menu supporting text, number, date, select, and boolean filters. Active filters display as removable pills with total count. |
 | **Filter Match Logic** | Toolbar toggle | When 2+ filters are active, switch between **`Match: All`** (AND logic) and **`Match: Any`** (OR logic). |
 | **Column Visibility & Order** | `columns` & `Fields` toolbar button | Sets initial visible fields; editors can show/hide and reorder columns per user. |

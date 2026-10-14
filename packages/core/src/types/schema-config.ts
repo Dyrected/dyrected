@@ -495,7 +495,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 
     /**
      * Field names included in backend free-text search for this collection.
-     * When omitted, Dyrected infers a conservative default from common text-like fields.
+     * When omitted, Dyrected searches `useAsTitle` plus every visible `text`, `textarea`,
+     * `richText`, `email` and `url` field (up to eight), chosen by field type, not name.
+     * Relationship fields are searched only when listed here. Matching is case-insensitive.
      */
     searchableFields?: string[];
 
