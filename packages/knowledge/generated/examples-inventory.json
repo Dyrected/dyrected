@@ -2739,9 +2739,9 @@
   {
     "id": "/editor-experience/editor-accounts#example-2",
     "page": "/editor-experience/editor-accounts",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/editor-experience/editor-accounts#example-3",
@@ -2753,12 +2753,26 @@
   {
     "id": "/editor-experience/editor-accounts#example-4",
     "page": "/editor-experience/editor-accounts",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/editor-experience/editor-accounts#example-5",
+    "page": "/editor-experience/editor-accounts",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/editor-experience/editor-accounts#example-5",
+    "id": "/editor-experience/editor-accounts#example-6",
+    "page": "/editor-experience/editor-accounts",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/editor-accounts#example-7",
     "page": "/editor-experience/editor-accounts",
     "language": "ts",
     "classification": "syntax-checked",

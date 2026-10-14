@@ -3363,6 +3363,8 @@ Enabling `auth: true` on a collection mounts a fixed set of authentication endpo
 
 Throughout, `{slug}` is your collection's slug (for example `users` or `__admins`), and every path is prefixed with `/api/collections/`.
 
+These endpoints are available for application-user auth collections on both Dyrected Cloud and self-hosted Dyrected.
+
 ## The full list
 
 | Method | Path                           | Auth   | SDK method                              | Returns                |
@@ -3686,9 +3688,9 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/deployment-and-operati
 
 This page helps you put authentication in the right place before you build around it.
 
-In **Dyrected Cloud**, authentication is about who can enter the hosted content workspace: owners, teammates, clients, editors, and administrators. Your application still owns customer login, member accounts, checkout sessions, tenant membership, and product-specific identity.
+Dyrected has two kinds of login. **Editor login** controls who can enter the dashboard. **Application-user login** controls who can sign in to your product, and you add it with an `auth` collection. Both Dyrected Cloud and self-hosted Dyrected support both kinds.
 
-In **self-hosted Dyrected**, authentication can also be part of your application runtime. That is where collection auth, JWT sessions, password reset, invitations, and auth endpoints belong.
+In **self-hosted Dyrected**, you also manage editor login yourself. That is where JWT sessions, password reset, invitations, and the dashboard collection described below belong.
 
 
 ## Self-hosted collection auth
@@ -3822,6 +3824,20 @@ export const Orders = defineCollection({
 You can have more than one auth collection, and they are independent: separate endpoints, separate tokens, separate sessions. Someone logged into your storefront as a `customer` has no relationship to whoever can log into the CMS.
 
 Dyrected treats one slug specially: **`__admins`**. When a collection with that slug exists, it becomes the sole login gateway for the dashboard. Any other auth collection powers your application, not the CMS. This is how you keep customer accounts from reaching the admin panel.
+
+### How Dyrected picks the dashboard collection
+
+Dyrected checks these in order and uses the first match:
+
+1. A collection with the slug `__admins`.
+2. The collection named by `adminAuth.collectionSlug`, if it exists.
+3. The first collection that has `auth` enabled.
+
+Rule 3 is a fallback, not a recommendation. If your only auth collection is `customers`, Dyrected treats it as the dashboard collection, and your customers become dashboard users. Define `__admins` explicitly whenever you add an application-user auth collection.
+
+### What happens with no auth collection
+
+If your config has no collection with `auth` enabled, there is no dashboard login. The admin panel renders without asking anyone to sign in. That is convenient for a first local run, but do not deploy it that way. Add an `__admins` auth collection before you expose the admin to anyone you do not trust.
 
 The full walkthrough lives in [Handing Off to Editors](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
 
@@ -30609,7 +30625,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/choose-a-ru
 
 Use this page when you know you want Dyrected, but you are not sure whether to start with Cloud or self-hosted.
 
-For most websites and frontend apps, start with **Dyrected Cloud**. You get a managed content backend, and your app keeps owning the product parts it already owns: rendering, routing, customer login, checkout, payments, analytics, and business logic.
+For most websites and frontend apps, start with **Dyrected Cloud**. You get a managed content backend, and your app keeps owning the product parts it already owns: rendering, routing, checkout, payments, analytics, and business logic. If you want Dyrected to handle application-user login, Cloud supports auth collections for that too.
 
 Choose **self-hosted Dyrected** when the CMS backend needs to live inside your app backend.
 
@@ -30655,7 +30671,6 @@ Self-hosted Dyrected is for projects where the CMS cannot sit outside the applic
 
 Choose self-hosted when:
 
-- Dyrected should own application-user accounts through collection auth
 - content saves need to run code inside your app server
 - the CMS must use your database, storage, network, or compliance boundary
 - you need custom Dyrected API routes in the same backend
@@ -30673,17 +30688,17 @@ The success signal is different here: the Dyrected runtime deploys with your app
 | "My client needs a safe place to edit website content." | Cloud |
 | "My product already owns auth, billing, checkout, and user data." | Cloud |
 | "The CMS must run behind the same infrastructure boundary as my app." | Self-hosted |
-| "Dyrected should own app-user login, not only editor access." | Self-hosted |
+| "Dyrected should own app-user login, not only editor access." | Either. Both runtimes support auth collections. |
 | "Content writes need to call internal services or run custom server code." | Self-hosted |
 | "My deployment or compliance rules do not allow a managed CMS backend." | Self-hosted |
 
 ## Keep auth and hooks in the right place
 
-In Cloud projects, Dyrected manages access to the content workspace. Your app still owns customer login, member accounts, checkout sessions, subscriptions, and product-specific permissions.
+In Cloud projects, Dyrected manages access to the content workspace for your team. Application users, such as customers or members, can log in through your own auth collections, the same way they do in self-hosted projects. Define an explicit `__admins` collection first so Cloud knows which collection is the dashboard gateway. [Editor Accounts](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/overview) explains why.
 
 Cloud-safe hooks are hooks defined as content rules: serializable Jexl-style expressions Dyrected can sync and run in the hosted content backend.
 
-In self-hosted projects, Dyrected can own account collections because it is running inside your application backend. Self-hosted can also run function hooks, custom endpoints, plugins, and server-side integrations because your server is the runtime.
+Self-hosted projects can also run function hooks, custom endpoints, plugins, and server-side integrations because your server is the runtime.
 
 ## Where to go next
 
@@ -30709,7 +30724,7 @@ Both runtimes use the same code-first content model. Your schema still lives in 
 
 Choose **Dyrected Cloud** when your app needs content infrastructure but does not need to operate the CMS backend. This is the default path for custom websites, frontend apps, product marketing surfaces, docs, blogs, and client handoff.
 
-Choose **self-hosted Dyrected** when the CMS is part of your product backend. This is the path for application-user auth, custom endpoints, arbitrary TypeScript hooks, database control, server-side integrations, or infrastructure requirements that must live in your deployment.
+Choose **self-hosted Dyrected** when the CMS is part of your product backend. This is the path for custom endpoints, arbitrary TypeScript hooks, database control, server-side integrations, or infrastructure requirements that must live in your deployment.
 
 ## Cloud: managed content backend
 
@@ -30719,12 +30734,13 @@ In a Cloud-backed project, Dyrected owns the content backend:
 - media storage and delivery
 - content APIs
 - editor and team access
+- application-user login through auth collections
 - schema synchronization
 - drafts and publishing workflows
 - hooks defined as Cloud-safe content rules
 - content events and webhooks when that surface becomes public
 
-Your app still owns the frontend and the product behavior around it: routing, customer login, payments, checkout, subscriptions, analytics, tenant logic, and anything else that is not directly part of the content system.
+Your app still owns the frontend and the product behavior around it: routing, payments, checkout, subscriptions, analytics, tenant logic, and anything else that is not directly part of the content system.
 
 That split is useful when the app already has a backend, or when the site only needs a content backend.
 
@@ -30732,7 +30748,6 @@ That split is useful when the app already has a backend, or when the site only n
 
 In a self-hosted project, your application owns the Dyrected runtime. The CMS can participate directly in your server boundary:
 
-- application-user auth collections
 - custom endpoints
 - arbitrary TypeScript hooks
 - direct database adapter choice
@@ -30771,7 +30786,7 @@ When behavior differs, the runtime selector keeps you in the right version of th
 | Content events and webhooks | Coming soon | In-process handlers and dispatcher |
 | Arbitrary TypeScript hooks | No | Yes |
 | Custom server endpoints | No | Yes |
-| Application-user authentication | Keep it in your app | Supported with collection auth |
+| Application-user authentication | Supported with collection auth | Supported with collection auth |
 | General application backend logic | Keep it in your app | Supported inside your runtime |
 | Workspace plan limits | Sites, members, storage, and request limits by plan | Your infrastructure limits |
 
@@ -30779,9 +30794,9 @@ When behavior differs, the runtime selector keeps you in the right version of th
 
 If you are building a content-backed website, start with Cloud.
 
-If your sentence starts with "when content changes, run this code inside my backend," or "Dyrected should own these application accounts," choose self-hosted.
+If your sentence starts with "when content changes, run this code inside my backend," or "I need custom server endpoints next to the CMS," choose self-hosted.
 
-If your app already owns accounts, billing, orders, tenants, or product permissions, keep those systems where they are and use Cloud for the content around them.
+If your app already owns accounts, billing, orders, tenants, or product permissions, you can keep those systems where they are and use Cloud for the content around them. If you would rather have Dyrected own the accounts, Cloud supports auth collections for that too.
 
 If the project is Cloud-shaped but large, check plan fit separately on [Dyrected pricing](https://dyrected.com/pricing). Cloud currently enforces workspace limits for site count, invited members on limited plans, pooled media storage, and daily API requests where the plan defines a request cap.
 
@@ -31187,7 +31202,7 @@ Use Dyrected Cloud for the content side of a custom storefront:
 - lookbooks and editorial content
 - shared storefront media
 
-Do not treat Cloud as the commerce engine. Keep checkout, orders, payments, tax, inventory truth, carts, and customer accounts in the systems designed to own them. Dyrected can own the content and editorial workflow around the storefront.
+Do not treat Cloud as the commerce engine. Keep checkout, orders, payments, tax, inventory truth, and carts in the systems designed to own them. Customer accounts can live in a Dyrected auth collection or in your own identity system. Dyrected can own the content and editorial workflow around the storefront.
 
 ## When self-hosted is the better fit
 
@@ -31195,7 +31210,6 @@ Choose self-hosted Dyrected when the CMS is not just feeding content to a fronte
 
 Self-hosted is a better fit when you need:
 
-- application-user authentication collections
 - custom Dyrected API endpoints
 - arbitrary TypeScript hooks
 - database adapter control
@@ -31252,9 +31266,9 @@ Dyrected is for custom websites and frontend apps that need real content editing
 
 You define the content model in TypeScript. Dyrected turns that model into an admin, content API, SDK, media handling, and publishing workflow. Editors update approved content in a safe workspace. Your frontend decides how that content is rendered.
 
-For most projects, start with **Dyrected Cloud**. Cloud hosts the content backend for you: content storage, media, content APIs, editor access, publishing workflows, and hooks defined as Cloud-safe content rules. Your app keeps owning the frontend, routing, customer login, payments, checkout, and product-specific logic.
+For most projects, start with **Dyrected Cloud**. Cloud hosts the content backend for you: content storage, media, content APIs, editor access, application-user login through auth collections, publishing workflows, and hooks defined as Cloud-safe content rules. Your app keeps owning the frontend, routing, payments, checkout, and product-specific logic.
 
-Use **self-hosted Dyrected** when the CMS must run inside your application backend. That is the path for application-user auth, arbitrary TypeScript hooks, custom endpoints, database control, plugins, and server-side integrations.
+Use **self-hosted Dyrected** when the CMS must run inside your application backend. That is the path for arbitrary TypeScript hooks, custom endpoints, database control, plugins, and server-side integrations.
 
 The simple rule is: Cloud when you need a managed content backend, self-hosted when the CMS needs to be part of your backend.
 
