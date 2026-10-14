@@ -1,7 +1,7 @@
 ---
 title: Operations
 description: Every authentication endpoint an auth collection exposes — login, logout, the current user, token refresh, password reset, and invitations — with exact request and response shapes and the matching SDK methods.
-runtime: self-hosted
+runtime: shared
 ---
 
 This page is the endpoint guide for auth collections. Use it when you already understand what `auth` is and need the exact route, request shape, return shape, or SDK helper for a specific operation.
@@ -9,6 +9,8 @@ This page is the endpoint guide for auth collections. Use it when you already un
 Enabling `auth: true` on a collection mounts a fixed set of authentication endpoints under `/api/collections/{slug}/`. If you are new to the concept, start with the [Overview](/docs/editor-experience/editor-accounts) first — this page assumes you already know what an auth collection is.
 
 Throughout, `{slug}` is your collection's slug (for example `users` or `__admins`), and every path is prefixed with `/api/collections/`.
+
+These endpoints are available for application-user auth collections on both Dyrected Cloud and self-hosted Dyrected.
 
 ## The full list
 

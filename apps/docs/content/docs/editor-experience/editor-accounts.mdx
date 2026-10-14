@@ -3,31 +3,79 @@ title: Editor Accounts
 description: "Understand authentication in Dyrected Cloud and self-hosted Dyrected without mixing editor access with application-user login."
 runtime: cloud
 runtimeGroup: authentication-overview
-runtimeNotes: Cloud authentication covers workspace/editor/admin access only, not application-user identity.
+runtimeNotes: Cloud supports two kinds of login — Cloud-managed editor access to the dashboard, and application-user login through auth collections you define.
 ---
 
 This page helps you put authentication in the right place before you build around it.
 
-In **Dyrected Cloud**, authentication is about who can enter the hosted content workspace: owners, teammates, clients, editors, and administrators. Your application still owns customer login, member accounts, checkout sessions, tenant membership, and product-specific identity.
+Dyrected has two kinds of login, and they never mix:
 
-In **self-hosted Dyrected**, authentication can also be part of your application runtime. That is where collection auth, JWT sessions, password reset, invitations, and auth endpoints belong.
+- **Editor login** controls who can enter the dashboard: owners, teammates, clients, editors, and administrators.
+- **Application-user login** controls who can sign in to your product: customers, members, and anyone else your app authenticates. You add it with an `auth` collection.
+
+Both **Dyrected Cloud** and **self-hosted Dyrected** support both kinds. The difference is who manages editor login. On Cloud, Dyrected manages dashboard access for you. Self-hosted projects manage it themselves.
 
 <CloudOnly>
 
-## Cloud authentication is workspace access
+## Editor login is workspace access
 
 Think about Dyrected Cloud the way you would think about a managed content workspace. You invite the people who should edit content, publish changes, manage media, and work inside the CMS. Dyrected handles access to that workspace and the hosted content backend behind it.
 
-Use Cloud auth for:
+Use Cloud workspace access for:
 
 - site owners who manage the content workspace
 - clients and editors who update approved content
 - team members who need dashboard access
 - workspace access to the hosted content API and media library
 
-Keep your application auth in your application. If your product has customers, members, subscriptions, carts, orders, checkout sessions, dashboards, tenants, or account-specific business logic, use the auth system that owns that product surface: your app, your framework, or a dedicated identity provider.
+Editors sign in through Dyrected Cloud. You do not create passwords for them in your own schema.
 
-That boundary keeps the Cloud setup simple. Dyrected manages content. Your app manages product identity.
+## Application-user login on Cloud
+
+Mark any collection in your schema with `auth: true` and it becomes a login collection for your application, on Cloud as well as self-hosted. Cloud keeps that collection as you defined it, including its access rules, and does not mix it with the dashboard.
+
+```ts
+// dyrected.config.ts
+import { defineCollection } from "@dyrected/core";
+
+export const Customers = defineCollection({
+  slug: "customers",
+  auth: true,
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
+```
+
+Application-user login uses the same auth collection model, endpoints, and `user` object in access rules as self-hosted Dyrected. The collection auth endpoints, request shapes, and SDK methods are documented in [Operations](/docs/deployment-and-operations/authentication/operations).
+
+{/* NEEDS-HUMAN-VERIFY: Cloud-specific JWT secret handling and token expiry for application-user sessions. The self-hosted pages describe DYRECTED_JWT_SECRET; confirm whether Cloud manages it per site before documenting it here. */}
+
+## How Cloud picks the dashboard collection
+
+Cloud has to decide which collection in your schema represents dashboard accounts. It checks in this order and uses the first match:
+
+1. A collection with the slug **`__admins`**.
+2. The collection named by `adminAuth.collectionSlug`, if it exists in your schema.
+3. The first collection in your schema that has `auth` enabled.
+
+The collection Cloud picks is replaced with a Cloud-managed one. Its slug becomes `accounts`, its access becomes admin-only, and its `roles` options become `admin`, `editor`, `viewer`, and `owner`. Your other fields on it are kept.
+
+<Warning>
+
+**Define `__admins` before you add application-user auth collections.** If your schema has an auth collection such as `customers` and no `__admins`, rule 3 selects `customers` as the dashboard collection. Cloud then renames it and locks it to admins, and your customers can no longer log in through it.
+
+</Warning>
+
+Add an `__admins` collection with `auth: true`, and Cloud always uses it. Every other auth collection then stays an application-user collection:
+
+```ts
+export const Admins = defineCollection({
+  slug: "__admins",
+  auth: true,
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
+```
+
+Cloud still manages who can sign in to the dashboard. The `__admins` collection only tells Cloud which collection should carry that role and field shape.
 
 ## What a Cloud handoff should prove
 
@@ -43,20 +91,19 @@ The first handoff usually looks like this:
 
 Use [Handing Off to Editors](/docs/editor-experience/hand-off-to-editors) for the full onboarding checklist.
 
-## What Cloud auth is not
+## What stays in your application
 
-Dyrected Cloud should not be framed as a hosted customer-auth system for your app.
+Auth collections give you accounts and login. They do not replace the rest of your product. Keep these in your app or the system built for them:
 
-For example:
+- payments, checkout, carts, and orders
+- subscriptions and billing
+- tenant membership and product-specific permissions beyond what your access rules express
 
-- a membership site should keep member login in the app or identity provider
-- an ecommerce site should keep customer accounts, carts, orders, and payments outside Dyrected Cloud
-- a SaaS product should keep tenant membership and product permissions in the product backend
-
-Dyrected Cloud can still power the content around those products: landing pages, help content, pricing copy, docs, changelogs, media, and editorial workflow.
+If you already use an identity provider for your product, you can keep using it. Auth collections are an option, not a requirement.
 
 ## Where to go next
 
+- [Operations](/docs/deployment-and-operations/authentication/operations) — every auth endpoint with its request and response shape
 - [Handing Off to Editors](/docs/editor-experience/hand-off-to-editors) — invite people into the right editing path
 - [Cloud vs Self-hosted](/docs/start-here/cloud-vs-self-hosted) — compare runtime boundaries
 - [Cloud-safe access control](/docs/model-content/content-rules/access-control/cloud) — write content rules that run in Cloud

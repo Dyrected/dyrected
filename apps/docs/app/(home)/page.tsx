@@ -22,7 +22,7 @@ const quickstarts = [
     label: 'AI agents',
     descriptor: 'Set up with a coding agent',
     href: getRuntimePageUrl(
-      'ai-and-coding-agents/setting-up-your-cloud-site',
+      'guides/ai-and-coding-agents/setting-up-your-cloud-site',
       DOCS_PRODUCT_RUNTIME,
     ),
     badge: <Bot size={18} />,
@@ -30,25 +30,25 @@ const quickstarts = [
   {
     label: 'Next.js',
     descriptor: 'Cloud or self-hosted',
-    href: getRuntimePageUrl('framework-guides/nextjs/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('guides/nextjs/overview', DOCS_PRODUCT_RUNTIME),
     badge: <NextLogo />,
   },
   {
     label: 'Nuxt',
     descriptor: 'Cloud or self-hosted',
-    href: getRuntimePageUrl('framework-guides/nuxt/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('guides/nuxt/overview', DOCS_PRODUCT_RUNTIME),
     badge: <NuxtLogo />,
   },
   {
     label: 'React',
     descriptor: 'Cloud-backed setup',
-    href: getRuntimePageUrl('framework-guides/react/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('guides/react/overview', DOCS_PRODUCT_RUNTIME),
     badge: <ReactLogo />,
   },
   {
     label: 'Vue',
     descriptor: 'Cloud-backed setup',
-    href: getRuntimePageUrl('framework-guides/vue/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('guides/vue/overview', DOCS_PRODUCT_RUNTIME),
     badge: <VueLogo />,
   },
 ]
@@ -121,7 +121,7 @@ export default function HomePage() {
             </div>
             <a
               href={getRuntimePageUrl(
-                'ai-and-coding-agents/using-the-dyrected-prompt',
+                'guides/ai-and-coding-agents/using-the-dyrected-prompt',
                 DOCS_PRODUCT_RUNTIME,
               )}
               className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
@@ -196,7 +196,7 @@ export default function HomePage() {
           <Card
             title="Live preview"
             description="Let editors see content changes reflected in your real frontend as they type."
-            href={getRuntimePageUrl('publishing-and-workflows/live-preview/overview', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('editor-experience/publishing/live-preview/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Eye size={20} />}
           />
           <Card

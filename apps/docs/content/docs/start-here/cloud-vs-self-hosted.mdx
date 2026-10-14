@@ -17,7 +17,7 @@ Both runtimes use the same code-first content model. Your schema still lives in 
 
 Choose **Dyrected Cloud** when your app needs content infrastructure but does not need to operate the CMS backend. This is the default path for custom websites, frontend apps, product marketing surfaces, docs, blogs, and client handoff.
 
-Choose **self-hosted Dyrected** when the CMS is part of your product backend. This is the path for application-user auth, custom endpoints, arbitrary TypeScript hooks, database control, server-side integrations, or infrastructure requirements that must live in your deployment.
+Choose **self-hosted Dyrected** when the CMS is part of your product backend. This is the path for custom endpoints, arbitrary TypeScript hooks, database control, server-side integrations, or infrastructure requirements that must live in your deployment.
 
 ## Cloud: managed content backend
 
@@ -27,12 +27,13 @@ In a Cloud-backed project, Dyrected owns the content backend:
 - media storage and delivery
 - content APIs
 - editor and team access
+- application-user login through auth collections
 - schema synchronization
 - drafts and publishing workflows
 - hooks defined as Cloud-safe content rules
 - content events and webhooks when that surface becomes public
 
-Your app still owns the frontend and the product behavior around it: routing, customer login, payments, checkout, subscriptions, analytics, tenant logic, and anything else that is not directly part of the content system.
+Your app still owns the frontend and the product behavior around it: routing, payments, checkout, subscriptions, analytics, tenant logic, and anything else that is not directly part of the content system.
 
 That split is useful when the app already has a backend, or when the site only needs a content backend.
 
@@ -40,7 +41,6 @@ That split is useful when the app already has a backend, or when the site only n
 
 In a self-hosted project, your application owns the Dyrected runtime. The CMS can participate directly in your server boundary:
 
-- application-user auth collections
 - custom endpoints
 - arbitrary TypeScript hooks
 - direct database adapter choice
@@ -79,7 +79,7 @@ When behavior differs, the runtime selector keeps you in the right version of th
 | Content events and webhooks | Coming soon | In-process handlers and dispatcher |
 | Arbitrary TypeScript hooks | No | Yes |
 | Custom server endpoints | No | Yes |
-| Application-user authentication | Keep it in your app | Supported with collection auth |
+| Application-user authentication | Supported with collection auth | Supported with collection auth |
 | General application backend logic | Keep it in your app | Supported inside your runtime |
 | Workspace plan limits | Sites, members, storage, and request limits by plan | Your infrastructure limits |
 
@@ -87,9 +87,9 @@ When behavior differs, the runtime selector keeps you in the right version of th
 
 If you are building a content-backed website, start with Cloud.
 
-If your sentence starts with "when content changes, run this code inside my backend," or "Dyrected should own these application accounts," choose self-hosted.
+If your sentence starts with "when content changes, run this code inside my backend," or "I need custom server endpoints next to the CMS," choose self-hosted.
 
-If your app already owns accounts, billing, orders, tenants, or product permissions, keep those systems where they are and use Cloud for the content around them.
+If your app already owns accounts, billing, orders, tenants, or product permissions, you can keep those systems where they are and use Cloud for the content around them. If you would rather have Dyrected own the accounts, Cloud supports auth collections for that too.
 
 If the project is Cloud-shaped but large, check plan fit separately on [Dyrected pricing](https://dyrected.com/pricing). Cloud currently enforces workspace limits for site count, invited members on limited plans, pooled media storage, and daily API requests where the plan defines a request cap.
 

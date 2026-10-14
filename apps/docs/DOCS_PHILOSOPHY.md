@@ -178,7 +178,6 @@ Self-hosted guidance should help developers who think:
 
 - “The CMS must run in the same server as my app.”
 - “The CMS must live behind my network, database, compliance, or deployment boundary.”
-- “Dyrected should own application-user accounts.”
 - “Content writes need to run code inside my backend.”
 - “I need custom endpoints, local transactions, plugins, or direct infrastructure access.”
 
@@ -186,11 +185,14 @@ Self-hosted docs should keep the current full-control story, but avoid making th
 
 ### Auth boundary
 
-Cloud auth is content-workspace access: owners, team members, clients, editors, administrators, invitations, and dashboard access.
+Dyrected has two kinds of login, and both runtimes support both.
 
-Application-user auth stays in the application, a dedicated identity provider, or self-hosted Dyrected collection auth when Dyrected must own those accounts.
+- **Editor login** is content-workspace access: owners, team members, clients, editors, administrators, invitations, and dashboard access. On Cloud, Dyrected manages it.
+- **Application-user login** is collection auth (`auth: true`). It works on Cloud and self-hosted, and it is independent from editor login.
 
-Do not let Cloud auth copy sound like Dyrected Cloud is a hosted replacement for a product's customer identity system.
+Do not describe application-user auth as self-hosted-only, and do not describe it as something Cloud cannot do. A project can also keep application users in its own app or identity provider, so present auth collections as an option, not a requirement.
+
+Always tell Cloud readers to define an explicit `__admins` collection before adding application-user auth collections. Without it, Cloud selects the first auth collection as the dashboard collection and renames it to `accounts`.
 
 ### Conditional runtime blocks in shared pages
 
