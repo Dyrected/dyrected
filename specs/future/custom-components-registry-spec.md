@@ -1,7 +1,7 @@
 # Admin Component Registry & Framework Bridge Specification
 
-**Document Version:** 0.1.0 (Draft)
-**Status:** Proposed
+**Document Version:** 0.2.0 (Draft)
+**Status:** Partially implemented. See [Implementation Status](#12-implementation-status).
 **Scope:** `@dyrected/core`, `@dyrected/admin`, `@dyrected/react`, `@dyrected/vue`, `@dyrected/nuxt`, CLI type generation
 **Part of:** Custom Admin Surfaces (1 of 4)
 
@@ -195,3 +195,34 @@ Convention: `components/dyrected/<registry>/<key>.vue`, for example `components/
 1. Should `displayCustomComponent` (detail views) join the unified registry? It resolves by name today. Verify which registry it reads and fold it in if it has its own.
 2. Should `fields` keep its current per-field key scheme (`collection.field`) or also accept a global key? Keep as-is unless the generated union makes it awkward.
 3. Is one global `ContextProvider` per island enough for the bridge, or do slot components need per-slot contexts (a slot inside a view has the view context, one inside the dashboard does not)? Proposal: yes, per-mount `contexts` argument.
+
+## 12. Implementation Status
+
+Audited against the codebase on 2026-10-15.
+
+| Section | Item | Status | Evidence |
+|---|---|---|---|
+| 3 | Existing registries: `fields`, `dashboard`, `collectionList`, `collectionView` | **Done** | `AdminComponents` in `packages/admin/src/types/admin-components.ts` |
+| 3 | New registry slots `forms`, `viewLayouts`, `pages` | **Not started** | Absent from `AdminComponents` |
+| 4 | Forward bridge (React hosts a Vue island, shared host `appContext`) | **Done** | `wrapVueComponent` in `packages/vue/src/bridge/react-in-vue.ts` |
+| 4 | `ContextProvider` wrapper that `provide()`s ambient keys to the island | **Not started** | Island is mounted with `render(h(VueComp, props))` and no provider |
+| 4 | `DYRECTED_FORM_CONTROLLER_KEY`, `DYRECTED_FIELD_PATH_KEY` | **Done** (Vue side) | `packages/vue/src/composables/useDyrectedForm.ts`. Components still call `provideDyrectedForm` themselves |
+| 4 | `DYRECTED_DOCUMENT_KEY`, `DYRECTED_VIEW_KEY`, `DYRECTED_PAGE_KEY`, `DYRECTED_ADMIN_KEY` | **Not started** | Only `DYRECTED_CLIENT_KEY` exists besides the two form keys |
+| 4 | Reverse bridge (Vue renders React) for `DyrectedRichText`, `DyrectedIcon` | **Done** | `packages/vue/src/components/` |
+| 4 | Single React copy under Nuxt | **Done** | `vite.resolve.dedupe` in `packages/nuxt/src/module.ts` |
+| 5 | `useDyrected`, `useDyrectedAuth`, `useAdminSchemas` | **Done** | react and vue packages |
+| 5 | `useAdminTheme`, `useDyrectedForm`, `useField` | **Done** (beyond spec) | react re-exports from `@dyrected/admin/public`; vue has its own |
+| 5 | `useAdminNavigate`, `useAdminNotify`, `useAccess` | **Not started** | No matches in any package |
+| 6 | `Register` seam in the SDK | **Done** | `packages/sdk/src/index.ts` (`Register`) |
+| 6 | `componentKeys` generation, `defineAdminComponents`, `noUnusedKeys` | **Not started** | `cli/src/utils/type-generator.ts` emits `Register` for schema only |
+| 7 | Error boundary around slot components | **Partial** | `AdminComponentErrorBoundary` in `admin-component-slot.tsx` renders `null` on error, not an error card with retry. Field boundary exists in `error-boundary.tsx` |
+| 7 | Unresolved key warning | **Partial** | Dev-only console warning, de-duplicated per slot and key. No inline placeholder, no `component-unresolved` `ConfigDiagnostic` |
+| 7 | Unused-registration warning | **Not started** | |
+| 7 | Suspense / skeleton fallback for async components | **Not started** | |
+| 8 | Nuxt `components/dyrected/<registry>/<key>.vue` auto-registration | **Not started** | |
+
+### Spec updates implied by the audit
+
+- §1: the "four registries" table is accurate. Keep it.
+- §9 Phase 1: remove the error boundary from Phase 1 scope as a net-new item. It exists in a reduced form, so reword to "upgrade the slot boundary to render an error card with retry".
+- §11 Q1: `displayCustomComponent` is a `detail.ts` helper in `@dyrected/core` that wraps `displayCustom(name, options)`. It resolves by name in the detail DSL, not through `AdminComponents`. Confirm whether detail views read a registry at all before folding it in.
