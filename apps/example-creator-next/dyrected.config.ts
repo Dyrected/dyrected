@@ -1264,7 +1264,7 @@ const attendingGuestsView = defineView({
   layout: "table",
   groupBy: "tableNumber",
   filter: { attending: { equals: true } },
-  columns: ["name", "email", "guestCount", "tableNumber", "checkedIn"],
+  columns: ["name", "email", "guestCount", "tableNumber", "checkedIn", "appointmentDate"],
   sort: { field: "name", direction: "asc" },
   actions: [
     checkInAction,
@@ -1285,11 +1285,20 @@ const attendingGuestsView = defineView({
         plusOnes: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
       },
       expression: "aggregates.leads + aggregates.plusOnes",
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_week",
+      },
       subMetrics: [
-        { label: "Leads", aggregate: { count: "*", where: { attending: { equals: true } } } },
+        {
+          label: "Leads",
+          aggregate: { count: "*", where: { attending: { equals: true } } },
+          trend: { dateField: "appointmentDate", period: "previous_week" },
+        },
         {
           label: "Plus-Ones",
           aggregate: { sum: "guestCount", cast: "number", where: { attending: { equals: true } } },
+          trend: { dateField: "appointmentDate", period: "previous_week" },
         },
       ],
     },
@@ -1299,6 +1308,10 @@ const attendingGuestsView = defineView({
       unit: "Checked In",
       scope: "view",
       aggregate: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_day",
+      },
       subMetrics: [
         {
           label: "Pending",
@@ -1307,6 +1320,11 @@ const attendingGuestsView = defineView({
             totalCheckedIn: { count: "*", where: { attending: { equals: true }, checkedIn: { equals: true } } },
           },
           expression: "aggregates.totalAttending - aggregates.totalCheckedIn",
+          trend: {
+            dateField: "appointmentDate",
+            period: "previous_day",
+            invertColors: true,
+          },
         },
         {
           label: "Rate",
@@ -1320,6 +1338,18 @@ const attendingGuestsView = defineView({
       ],
     },
     {
+      label: "{{group.label}} Tastings",
+      color: "cyan",
+      unit: "Bookings",
+      groupBy: {
+        field: "appointmentDate",
+        bucket: "day",
+        limit: 5,
+        orderBy: "desc",
+      },
+      aggregate: { count: "*" },
+    },
+    {
       label: "Asoebi Status",
       color: "amber",
       unit: "Orders",
@@ -1330,17 +1360,6 @@ const attendingGuestsView = defineView({
           label: "{{group.label}}",
           aggregate: { count: "*" },
         },
-      ],
-    },
-    {
-      label: "All Database Responses",
-      color: "blue",
-      unit: "Total",
-      scope: "collection",
-      aggregate: { count: "*" },
-      subMetrics: [
-        { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
-        { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
       ],
     },
   ],
@@ -1363,10 +1382,25 @@ const asoebiPipelineView = defineKanbanView({
       color: "purple",
       unit: "Outfits",
       aggregate: { count: "*", where: { asoebi: { equals: true } } },
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_week",
+      },
       subMetrics: [
         { label: "Requested", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
         { label: "Ready", aggregate: { count: "*", where: { asoebiStatus: { equals: "ready" } } } },
       ],
+    },
+    {
+      label: "Weekly Orders ({{group.label}})",
+      color: "amber",
+      groupBy: {
+        field: "appointmentDate",
+        bucket: "week",
+        limit: 4,
+        orderBy: "desc",
+      },
+      aggregate: { count: "*" },
     },
     {
       label: "Paid & Collected",
@@ -1375,6 +1409,10 @@ const asoebiPipelineView = defineKanbanView({
       aggregate: {
         count: "*",
         where: { asoebiStatus: { in: ["paid", "collected"] } },
+      },
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_week",
       },
       subMetrics: [
         { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { equals: "paid" } } } },
@@ -1392,6 +1430,10 @@ const asoebiPipelineView = defineKanbanView({
         where: { asoebiStatus: { in: ["paid", "collected"] } },
       },
       transform: "value * 25000",
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_week",
+      },
       subMetrics: [
         {
           label: "Total Units",
@@ -1417,6 +1459,35 @@ const tastingScheduleView = defineView({
   dateField: "appointmentDate",
   columns: ["name", "guestCount", "asoebiSize"],
   actions: [assignTableAction],
+  metrics: [
+    {
+      label: "{{group.label}} Tastings",
+      color: "indigo",
+      groupBy: {
+        field: "appointmentDate",
+        bucket: "day",
+        limit: 5,
+        orderBy: "asc",
+      },
+      aggregate: { count: "*" },
+    },
+    {
+      label: "Total Bookings",
+      color: "emerald",
+      aggregate: { count: "*", where: { appointmentDate: { exists: true } } },
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_week",
+      },
+      subMetrics: [
+        {
+          label: "{{group.label}} Status",
+          groupBy: "asoebiStatus",
+          aggregate: { count: "*" },
+        },
+      ],
+    },
+  ],
 });
 
 const guestDirectoryView = defineView({
@@ -1424,15 +1495,20 @@ const guestDirectoryView = defineView({
   label: "Guest Directory",
   icon: "LayoutGrid",
   layout: "cards",
-  columns: ["name", "email", "attending", "asoebiSize", "tableNumber"],
+  columns: ["name", "email", "attending", "asoebiSize", "tableNumber", "appointmentDate"],
   actions: [checkInAction],
   metrics: [
     {
-      groupBy: "asoebiSize",
-      label: "Size {{group.label}}",
+      groupBy: {
+        field: "appointmentDate",
+        bucket: "day",
+        limit: 4,
+        orderBy: "desc",
+      },
+      label: "Tasting ({{group.label}})",
       color: "purple",
       unit: "Guests",
-      aggregate: { count: "*", where: { asoebi: { equals: true } } },
+      aggregate: { count: "*" },
       subMetrics: [
         { label: "Paid", aggregate: { count: "*", where: { asoebiStatus: { in: ["paid", "collected"] } } } },
         { label: "Pending", aggregate: { count: "*", where: { asoebiStatus: { equals: "requested" } } } },
@@ -1443,9 +1519,21 @@ const guestDirectoryView = defineView({
       color: "blue",
       unit: "Submissions",
       aggregate: { count: "*" },
+      trend: {
+        dateField: "appointmentDate",
+        period: "previous_month",
+      },
       subMetrics: [
-        { label: "Attending", aggregate: { count: "*", where: { attending: { equals: true } } } },
-        { label: "Declined", aggregate: { count: "*", where: { attending: { equals: false } } } },
+        {
+          label: "Attending",
+          aggregate: { count: "*", where: { attending: { equals: true } } },
+          trend: { dateField: "appointmentDate", period: "previous_month" },
+        },
+        {
+          label: "Declined",
+          aggregate: { count: "*", where: { attending: { equals: false } } },
+          trend: { dateField: "appointmentDate", period: "previous_month", invertColors: true },
+        },
       ],
     },
   ],
@@ -1549,7 +1637,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "requested",
       asoebiSize: "L",
       asoebiQuantity: 1,
-      appointmentDate: null,
+      appointmentDate: inDays(0, 10),
       wellWishes: "Congratulations!",
     },
     {
@@ -1563,7 +1651,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "paid",
       asoebiSize: "M",
       asoebiQuantity: 2,
-      appointmentDate: inDays(2),
+      appointmentDate: inDays(0, 14),
       wellWishes: "Wishing you both forever joy.",
     },
     {
@@ -1577,7 +1665,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "paid",
       asoebiSize: "S",
       asoebiQuantity: 1,
-      appointmentDate: inDays(4),
+      appointmentDate: inDays(-1, 11),
       wellWishes: "",
     },
     {
@@ -1585,12 +1673,12 @@ const GuestResponses = defineCollection({
       email: "femi@example.com",
       attending: true,
       guestCount: 3,
-      checkedIn: false,
+      checkedIn: true,
       asoebi: true,
       asoebiStatus: "collected",
       asoebiSize: "XL",
       asoebiQuantity: 1,
-      appointmentDate: inDays(-1, 11),
+      appointmentDate: inDays(-1, 15),
       wellWishes: "Two become one!",
     },
     {
@@ -1603,7 +1691,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: null,
       asoebiSize: null,
       asoebiQuantity: 0,
-      appointmentDate: inDays(6, 13),
+      appointmentDate: inDays(-2, 10),
       wellWishes: "",
     },
     {
@@ -1616,7 +1704,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "requested",
       asoebiSize: "XXL",
       asoebiQuantity: 1,
-      appointmentDate: null,
+      appointmentDate: inDays(-7, 10),
       wellWishes: "Sorry to miss it.",
     },
     {
@@ -1630,7 +1718,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "requested",
       asoebiSize: "M",
       asoebiQuantity: 2,
-      appointmentDate: inDays(9, 16),
+      appointmentDate: inDays(-7, 14),
       wellWishes: "",
     },
     {
@@ -1643,7 +1731,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: null,
       asoebiSize: null,
       asoebiQuantity: 0,
-      appointmentDate: null,
+      appointmentDate: inDays(-8, 11),
       wellWishes: "",
     },
     {
@@ -1656,7 +1744,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "requested",
       asoebiSize: "L",
       asoebiQuantity: 1,
-      appointmentDate: null,
+      appointmentDate: inDays(1, 11),
       wellWishes: "Congratulations!",
     },
     {
@@ -1670,7 +1758,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "paid",
       asoebiSize: "M",
       asoebiQuantity: 2,
-      appointmentDate: inDays(2),
+      appointmentDate: inDays(2, 14),
       wellWishes: "Wishing you both forever joy.",
     },
     {
@@ -1684,7 +1772,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "paid",
       asoebiSize: "S",
       asoebiQuantity: 1,
-      appointmentDate: inDays(4),
+      appointmentDate: inDays(4, 15),
       wellWishes: "",
     },
     {
@@ -1697,7 +1785,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "collected",
       asoebiSize: "XL",
       asoebiQuantity: 1,
-      appointmentDate: inDays(-1, 11),
+      appointmentDate: inDays(6, 13),
       wellWishes: "Two become one!",
     },
     {
@@ -1710,7 +1798,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: null,
       asoebiSize: null,
       asoebiQuantity: 0,
-      appointmentDate: inDays(6, 13),
+      appointmentDate: inDays(0, 16),
       wellWishes: "",
     },
     {
@@ -1723,7 +1811,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: "requested",
       asoebiSize: "XXL",
       asoebiQuantity: 1,
-      appointmentDate: null,
+      appointmentDate: inDays(-1, 16),
       wellWishes: "Sorry to miss it.",
     },
     {
@@ -1750,7 +1838,7 @@ const GuestResponses = defineCollection({
       asoebiStatus: null,
       asoebiSize: null,
       asoebiQuantity: 0,
-      appointmentDate: null,
+      appointmentDate: inDays(-15, 12),
       wellWishes: "",
     },
   ],

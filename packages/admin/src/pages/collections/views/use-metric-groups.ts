@@ -19,6 +19,7 @@ export interface NormalizedGroupBy {
   where?: Record<string, unknown>
   isSubMetric?: boolean
   bucket?: "day" | "week" | "month" | "quarter" | "year"
+  filterZero?: boolean
 }
 
 export function normalizeGroupBy(config?: SerializedViewMetricGroupBy): NormalizedGroupBy | undefined {
@@ -34,6 +35,7 @@ export function normalizeGroupBy(config?: SerializedViewMetricGroupBy): Normaliz
     orderBy: config.orderBy,
     where: config.where,
     bucket: config.bucket,
+    filterZero: config.filterZero,
   }
 }
 
@@ -261,10 +263,26 @@ export function useMetricGroups({ slug, metrics, schema }: UseMetricGroupsOption
           // 1. Relationship field: fetch related records to populate group options
           if (fieldDef?.type === "relationship" && relationTo) {
             try {
+              let queryWhere = cfg.where
+              try {
+                // First discover which relation IDs actually exist in this collection
+                const aggRes = await (client as any).collection(slug).aggregate({
+                  distinctValues: { distinct: cfg.field, where: cfg.where },
+                })
+                if (aggRes && Array.isArray(aggRes.distinctValues)) {
+                  const distinctIds = aggRes.distinctValues.filter((v: any) => v !== undefined && v !== null && v !== "")
+                  if (distinctIds.length > 0) {
+                    queryWhere = cfg.where ? { ...cfg.where, id: { in: distinctIds } } : { id: { in: distinctIds } }
+                  }
+                }
+              } catch {
+                // Fallback to querying relationTo directly
+              }
+
               const queryLimit = cfg.isSubMetric ? Math.max(cfg.limit * 5, 100) : cfg.limit
               const res = await (client as any).collection(relationTo).find({
                 limit: queryLimit,
-                where: cfg.where,
+                where: queryWhere,
               })
               const docs = (res?.docs ?? []) as Record<string, any>[]
               const relatedCol = (schemas as any)?.collections?.find((c: any) => c.slug === relationTo)

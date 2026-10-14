@@ -93,6 +93,7 @@ export interface SerializedViewMetricGroupByConfig {
   where?: Record<string, unknown>
   /** Time interval bucket when grouping by a date or datetime field: `'day' | 'week' | 'month' | 'quarter' | 'year'`. */
   bucket?: "day" | "week" | "month" | "quarter" | "year"
+  filterZero?: boolean
 }
 
 export type SerializedViewMetricGroupBy = string | SerializedViewMetricGroupByConfig

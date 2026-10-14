@@ -86,6 +86,8 @@ export interface ViewMetricGroupByConfig {
   where?: Record<string, unknown>;
   /** Time interval bucket when grouping by a date or datetime field: `'day' | 'week' | 'month' | 'quarter' | 'year'`. */
   bucket?: 'day' | 'week' | 'month' | 'quarter' | 'year';
+  /** When true (or by default for dynamic groupBy), omits groups with zero or null aggregate values from the breakdown. Set to `false` to retain zero-count groups. */
+  filterZero?: boolean;
 }
 
 export type ViewMetricGroupBy = string | ViewMetricGroupByConfig;

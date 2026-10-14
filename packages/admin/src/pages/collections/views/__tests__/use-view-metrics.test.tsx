@@ -735,6 +735,65 @@ describe("useViewMetrics Dynamic Grouping (groupBy)", () => {
     expect(result.current.data?.[0]?.span).toBe(2)
   })
 
+  it("filters out zero-count groups from groupBy submetrics unless filterZero is false", async () => {
+    findMock.mockResolvedValue({
+      docs: [
+        { id: "comm_1", name: "Active Comm" },
+        { id: "comm_2", name: "Zero Comm" },
+        { id: "comm_3", name: "Tiny Comm" },
+      ],
+    })
+
+    aggregateMock.mockResolvedValue({
+      m0: 15,
+      m0_s0: 12,
+      m0_s1: 0, // Zero Comm
+      m0_s2: 3,
+    })
+
+    const schema = {
+      fields: [
+        { name: "community", type: "relationship", relationTo: "communities" },
+      ],
+    }
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "ipo_reservations",
+          viewSlug: "overview",
+          schema,
+          metrics: [
+            {
+              label: "Top Communities",
+              aggregate: { count: "*" },
+              subMetrics: [
+                {
+                  label: "{{group.label}}",
+                  groupBy: { field: "community", limit: 5, orderBy: "count" },
+                  aggregate: { count: "*" },
+                },
+              ],
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const card = result.current.data?.[0]
+    expect(card).toBeDefined()
+    // Zero Comm (value: 0) must be filtered out!
+    expect(card?.subMetrics).toHaveLength(2)
+    expect(card?.subMetrics?.[0]?.label).toBe("Active Comm")
+    expect(card?.subMetrics?.[0]?.formatted).toBe("12")
+    expect(card?.subMetrics?.[1]?.label).toBe("Tiny Comm")
+    expect(card?.subMetrics?.[1]?.formatted).toBe("3")
+  })
+
   it("rolls up submetric groups exceeding limit into Other (N) with overflowGroups", async () => {
     const findMock = vi.fn().mockResolvedValue({
       docs: [
