@@ -18,7 +18,7 @@ A **custom page** is a screen whose content the developer fully controls, with n
 ### Page vs. custom form
 
 | Need | Use |
-|---|---|
+| --- | --- |
 | Create/edit a record, with a custom UI | [Custom Document Form](./custom-document-forms-spec.md) |
 | Show a set of records in a custom way | [Custom View Layout](./custom-view-layouts-spec.md) |
 | A screen that isn't a record or a set of records | **Custom Page** |
@@ -28,11 +28,13 @@ The `thesweetunion` scanner is a form (it creates `check_ins` records). A "today
 ## 2. Goals & Non-Goals
 
 **Goals**
+
 1. Declare a page in config. Reference a component by key. Get sidebar placement, access gating, badges, breadcrumbs and user nav customization for free.
 2. Pages can implement internal routing (`/pages/reports/2026-09`) without importing the admin's router.
 3. Identical hook/composable API for Vue and React.
 
 **Non-goals**
+
 - Server endpoints for pages. Pages call the SDK or the host's own API. Server API extension is covered in `server-api-architecture.md`.
 - A page builder or CMS-style page content. That is a separate content-modeling concern.
 - Enforcing security in the UI. See §5.
@@ -190,7 +192,7 @@ Registered as `pages: { arrivals: ArrivalsPage }`.
 ## 9. Edge Cases
 
 | Case | Behavior |
-|---|---|
+| --- | --- |
 | Unresolved `component` key | Inline placeholder plus `component-unresolved` diagnostic. Nav item stays visible (so the misconfiguration is discoverable). |
 | Component throws | Error boundary card in the page area, chrome intact. |
 | Slug collision (page vs workspace vs reserved) | Config diagnostic error at load. The offending page is omitted from nav. |

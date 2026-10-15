@@ -6,7 +6,7 @@
 **Part of:** Custom Admin Surfaces (1 of 4)
 
 | # | Spec | Depends on |
-|---|---|---|
+| --- | --- | --- |
 | **1** | **This spec: registry + bridge foundation** | none |
 | 2 | [Custom Document Forms](./custom-document-forms-spec.md) | 1 |
 | 3 | [Custom View Layouts](./custom-view-layouts-spec.md) | 1 |
@@ -23,7 +23,7 @@ Dyrected's admin is React (`@dyrected/admin`). Host apps register custom UI by p
 Today that pattern exists in four registries (see `packages/admin/src/types/admin-components.ts`):
 
 | Registry | Config key | Effect |
-|---|---|---|
+| --- | --- | --- |
 | `fields` | `field.admin.component` | replaces one field's input |
 | `dashboard` | `admin.components.before/afterDashboard` | injects around the dashboard |
 | `collectionList` | `collection.admin.components.beforeList…` | injects around the list |
@@ -38,12 +38,14 @@ Every existing registry is either a **field override** or a **slot that injects 
 ## 2. Goals & Non-Goals
 
 **Goals**
+
 1. One `AdminComponents` shape that new registries (`forms`, `viewLayouts`, `pages`) extend uniformly.
 2. Vue and React components receive the same ambient contexts through the same composable/hook names.
 3. Registry keys are type-checked at author time and diagnosed at runtime.
 4. A broken custom component degrades to a local error card, never a blank admin.
 
 **Non-goals**
+
 - Sandboxing. Custom components are first-party host code, not untrusted plugins.
 - Runtime-defined (non-code) components. Declarative form/layout builders are a separate concern.
 - Plugin discovery, manifests, marketplace.
@@ -93,7 +95,7 @@ React tree                       Vue island
 ### Ambient keys (initial set)
 
 | Key | Provided on | Consumed by |
-|---|---|---|
+| --- | --- | --- |
 | `DYRECTED_FORM_CONTROLLER_KEY` | field, form | `useDyrectedForm`, `useField` (exists) |
 | `DYRECTED_FIELD_PATH_KEY` | field | `useField` (exists) |
 | `DYRECTED_DOCUMENT_KEY` | forms (spec 2) | `useDocumentForm` |
@@ -112,7 +114,7 @@ Custom forms need to embed built-in React inputs (`<DyrectedField>`). The revers
 Identical names in `@dyrected/react` (hooks) and `@dyrected/vue` (composables; return shape follows the existing `VueStateify`).
 
 | API | Returns | Why it must exist |
-|---|---|---|
+| --- | --- | --- |
 | `useAdminNavigate()` | `navigate(to, opts?)` plus `to.collection(slug)`, `to.document(slug, id)`, `to.page(slug)`, `to.view(slug, viewSlug)` | Embedded mode uses `HashRouter`. A Nuxt or Next host has its own router. Components must not import `react-router` or guess URLs. |
 | `useAdminNotify()` | `success/error/info(message)` | Toasts without importing the admin's toast library. |
 | `useAccess()` | `can(operation, collection, doc?)` | UI gating that mirrors server access rules. |
@@ -169,16 +171,19 @@ Convention: `components/dyrected/<registry>/<key>.vue`, for example `components/
 ## 9. Implementation Plan
 
 **Phase 1 (bridge & contexts)**
+
 - `ContextProvider` in the Vue bridge, plus the `DYRECTED_ADMIN_KEY` provider.
 - `useAdminNavigate`, `useAdminNotify`, `useAccess` in admin `public`, re-exported by react and vue.
 - Error boundary and unresolved-key placeholder.
 
 **Phase 2 (typing & diagnostics)**
+
 - `AdminComponents` gains the new registry slots (typed, unused until specs 2–4).
 - Key generation and `defineAdminComponents`.
 - `component-unresolved` diagnostic.
 
 **Phase 3**
+
 - Nuxt auto-registration.
 - Docs and migration note for `admin.vue`-style maps.
 
@@ -201,7 +206,7 @@ Convention: `components/dyrected/<registry>/<key>.vue`, for example `components/
 Audited against the codebase on 2026-10-15.
 
 | Section | Item | Status | Evidence |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 3 | Existing registries: `fields`, `dashboard`, `collectionList`, `collectionView` | **Done** | `AdminComponents` in `packages/admin/src/types/admin-components.ts` |
 | 3 | New registry slots `forms`, `viewLayouts`, `pages` | **Not started** | Absent from `AdminComponents` |
 | 4 | Forward bridge (React hosts a Vue island, shared host `appContext`) | **Done** | `wrapVueComponent` in `packages/vue/src/bridge/react-in-vue.ts` |
@@ -226,3 +231,13 @@ Audited against the codebase on 2026-10-15.
 - §1: the "four registries" table is accurate. Keep it.
 - §9 Phase 1: remove the error boundary from Phase 1 scope as a net-new item. It exists in a reduced form, so reword to "upgrade the slot boundary to render an error card with retry".
 - §11 Q1: `displayCustomComponent` is a `detail.ts` helper in `@dyrected/core` that wraps `displayCustom(name, options)`. It resolves by name in the detail DSL, not through `AdminComponents`. Confirm whether detail views read a registry at all before folding it in.
+
+## 13. Deferred: Path-Based Component References
+
+**Decision (2026-10-15):** ship the typed `defineAdminComponents` map from §6 as the registration mechanism. Do not add per-component wrapper files.
+
+**Future direction.** Replace the hand-kept map with path-based references, in the style of Payload CMS: config names a module path and export (`"/components/dyrected/ScanForm#default"`), and a build step resolves it into an import and generates the registry. This removes the central map and gives "go to definition" from config. It requires build tooling for Vite, Nuxt and Next, so it is deferred until the typed map has settled.
+
+**Alternative under consideration.** Declaring metadata inside the component file itself (read by a build-time scan). It shares the same tooling cost, so it would be evaluated together with the path-based approach.
+
+**Constraint on today's design.** Components must remain plain framework components with no registration code inside them, so that moving from the map to path references changes only where the key is declared.
