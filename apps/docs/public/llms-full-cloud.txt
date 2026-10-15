@@ -1929,6 +1929,27 @@ export interface Register {}
 ```
 
 
+## RegisteredComponentKeys
+
+Component keys registered via CLI type generation on `Register['componentKeys']`.
+Falls back to loose string records when types have not been generated.
+
+```ts
+export type RegisteredComponentKeys = Register extends { componentKeys: infer K }
+  ? K
+  : {
+      fields?: string;
+      dashboard?: string;
+      collectionList?: string;
+      collectionView?: string;
+      forms?: string;
+      viewLayouts?: string;
+      pages?: string;
+      customComponents?: string;
+    };
+```
+
+
 ## RegisteredSchema
 
 Exported type from @dyrected/sdk.

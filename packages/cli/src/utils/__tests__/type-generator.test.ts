@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateTypes, flattenFields } from "../type-generator.js";
+import { generateTypes, flattenFields, collectComponentKeys } from "../type-generator.js";
 
 describe("type-generator: flattenFields and generateTypes", () => {
   it("flattens row layout fields into top-level fields", () => {
@@ -50,5 +50,74 @@ describe("type-generator: flattenFields and generateTypes", () => {
     expect(code).toContain("firstName: string;");
     expect(code).toContain("lastName?: string;");
     expect(code).toContain("company?: string;");
+  });
+
+  it("collects component keys from fields, slots, forms, layouts, and pages", () => {
+    const schema = {
+      admin: {
+        components: {
+          beforeDashboard: ["analytics-summary"],
+          afterDashboard: "feed-stream",
+        },
+        pages: [
+          { slug: "scanner", component: "door-scanner" },
+          { slug: "door-checkin" },
+        ],
+      },
+      collections: [
+        {
+          slug: "check_ins",
+          admin: {
+            form: "check_ins.scanForm",
+            components: {
+              beforeList: "checkin-banner",
+              collectionView: {
+                beforeViewHeader: "qr-button",
+              },
+            },
+            views: [
+              { slug: "chart", layout: "guests.seatingChart" },
+            ],
+            detail: {
+              layout: [
+                { type: "custom", name: "PassPreview" },
+              ],
+            },
+          },
+          fields: [
+            {
+              name: "scanner",
+              type: "text",
+              admin: { component: "check_ins.checkInScanner" },
+            },
+          ],
+        },
+      ],
+      globals: [],
+    };
+
+    const keys = collectComponentKeys(schema);
+
+    expect(Array.from(keys.fields)).toEqual(["check_ins.checkInScanner"]);
+    expect(Array.from(keys.dashboard)).toContain("analytics-summary");
+    expect(Array.from(keys.dashboard)).toContain("feed-stream");
+    expect(Array.from(keys.pages)).toContain("door-scanner");
+    expect(Array.from(keys.pages)).toContain("door-checkin");
+    expect(Array.from(keys.collectionList)).toContain("checkin-banner");
+    expect(Array.from(keys.collectionView)).toContain("qr-button");
+    expect(Array.from(keys.forms)).toContain("check_ins.scanForm");
+    expect(Array.from(keys.viewLayouts)).toContain("guests.seatingChart");
+    expect(Array.from(keys.customComponents)).toContain("PassPreview");
+
+    const code = generateTypes(schema);
+
+    expect(code).toContain("declare module \"@dyrected/sdk\" {");
+    expect(code).toContain("interface Register {");
+    expect(code).toContain("schema: DyrectedSchema;");
+    expect(code).toContain("componentKeys: {");
+    expect(code).toContain('fields: "check_ins.checkInScanner";');
+    expect(code).toContain('forms: "check_ins.scanForm";');
+    expect(code).toContain('viewLayouts: "guests.seatingChart";');
+    expect(code).toContain('customComponents: "PassPreview";');
   });
 });

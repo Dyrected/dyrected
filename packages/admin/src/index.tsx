@@ -54,6 +54,7 @@ import { AdminNotFound, AdminNotFoundSkeleton } from "./components/layout/admin-
 import { Toaster } from "./components/ui/sonner";
 import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provider";
 import type { AdminThemePreference, ResolvedAdminTheme } from "./hooks/admin-theme";
+import { AdminBridgeProvider } from "./providers/admin-bridge-provider";
 import { cn } from "./lib/utils";
 import { createAdminThemeController, type AdminThemeController } from "./controllers/theme";
 
@@ -465,8 +466,11 @@ export function AdminUI({
             <AdminThemeProvider controller={activeThemeController}>
               <AdminThemedRoot>
                 <HashRouter>
-                  <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
+                  <AdminBridgeProvider>
+                    <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
+                  </AdminBridgeProvider>
                 </HashRouter>
+
                 <Toaster position="top-center" expand={true} richColors />
               </AdminThemedRoot>
             </AdminThemeProvider>
@@ -572,8 +576,11 @@ export function AdminStandalone({
           <AdminThemeProvider controller={activeThemeController}>
             <AdminThemedRoot>
               <MemoryRouter>
-                <AdminRoutes />
+                <AdminBridgeProvider>
+                  <AdminRoutes />
+                </AdminBridgeProvider>
               </MemoryRouter>
+
               <Toaster position="top-center" expand={true} richColors />
             </AdminThemedRoot>
           </AdminThemeProvider>

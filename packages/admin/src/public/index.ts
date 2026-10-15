@@ -2,10 +2,17 @@ export type {
   AdminComponents,
   AdminFieldComponentContext,
   AdminFieldComponentProps,
+  AdminFormComponentProps,
+  AdminPageProps,
   AdminSchemas,
+  AdminViewLayoutProps,
   CollectionListSlotProps,
+  CollectionViewSlotProps,
   DashboardSlotProps,
+  TypedAdminComponents,
 } from "../types/admin-components";
+export { defineAdminComponents } from "../types/admin-components";
+
 export type {
   AdminSchemasResult,
   AdminThemeHookResult,
@@ -102,11 +109,22 @@ export {
 export {
   DyrectedFieldPathProvider,
   DyrectedFormProvider,
+  useDyrectedFieldPathContext,
+  useDyrectedFormControllerContext,
+  useOptionalDyrectedFormControllerContext,
 } from "../providers/dyrected-form-context";
 export type {
   DyrectedFieldPathProviderProps,
   DyrectedFormProviderProps,
 } from "../providers/dyrected-form-context";
+export {
+  useDyrected,
+  useOptionalDyrected,
+} from "../providers/dyrected-context";
+export type {
+  DyrectedContextType,
+} from "../providers/dyrected-context";
+
 export {
   AdminThemeProvider,
   AdminThemedRoot,
@@ -141,3 +159,40 @@ export type {
   BadgePresentation,
   ResolveBadgePresentationOptions,
 } from "../lib/badge-colors";
+
+// Cross-cutting admin component hooks (Phase 1)
+export { useAdminNavigate } from "../hooks/use-admin-navigate";
+export type { AdminNavigateResult } from "../hooks/use-admin-navigate";
+export { useAdminNotify } from "../hooks/use-admin-notify";
+export type { AdminNotifyHelpers, AdminNotifyOptions } from "../hooks/use-admin-notify";
+export { useAccess } from "../hooks/use-access";
+export type { AdminAccessHelpers, UseAccessResult } from "../hooks/use-access";
+
+// Admin bridge context and providers
+export {
+  AdminBridgeContext,
+  useAdminBridgeContext,
+  toUrlHelpers,
+  resolveAdminNavigateUrl,
+} from "../providers/admin-bridge-context";
+export {
+  AdminBridgeProvider,
+} from "../providers/admin-bridge-provider";
+export type {
+  AdminBridgeBundle,
+  AdminNavigateHelpers,
+  AdminNavigateTarget,
+} from "../providers/admin-bridge-context";
+
+// Slot error boundary and placeholders
+export {
+  AdminComponentSlot,
+  AdminComponentErrorBoundary,
+  AdminMissingComponentPlaceholder,
+  warnMissingComponent,
+} from "../components/admin-component-slot";
+export type {
+  AdminComponentErrorBoundaryProps,
+  AdminComponentErrorBoundaryState,
+} from "../components/admin-component-slot";
+

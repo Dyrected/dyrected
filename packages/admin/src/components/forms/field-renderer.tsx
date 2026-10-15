@@ -30,6 +30,7 @@ import { UrlField as UrlFieldComponent } from "./fields/url-field"
 import jexl from 'jexl'
 import { useDyrected } from "../../providers/dyrected-context"
 import { ErrorBoundary } from "../error-boundary"
+import { AdminMissingComponentPlaceholder, warnMissingComponent } from "../admin-component-slot"
 import { DyrectedFieldPathProvider } from "../../providers/dyrected-form-context"
 import type { AdminFieldComponentContext, AdminFieldComponentProps } from "../../types/admin-components"
 
@@ -106,29 +107,42 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
 
   const { components } = useDyrected()
   const customComponentKey = schema.admin?.component
-  if (customComponentKey && components?.fields?.[customComponentKey]) {
-    const CustomComponent = components.fields[customComponentKey]
-    const customProps: AdminFieldComponentProps & Record<string, unknown> = {
-      value: fieldWithId.value,
-      onChange: fieldWithId.onChange,
-      field: schema,
-      path: fieldWithId.name,
-      disabled,
-      collection,
-      context,
-      doc: context?.doc ?? (context?.siblingData as any),
-      data: (context?.data as any) ?? context?.doc ?? (context?.siblingData as any),
-      record: (context?.record as any) ?? context?.doc ?? (context?.siblingData as any),
-      row: (context?.row as any) ?? context?.doc ?? (context?.siblingData as any),
+  if (customComponentKey) {
+    if (components?.fields?.[customComponentKey]) {
+      const CustomComponent = components.fields[customComponentKey]
+      const customProps: AdminFieldComponentProps & Record<string, unknown> = {
+        value: fieldWithId.value,
+        onChange: fieldWithId.onChange,
+        field: schema,
+        path: fieldWithId.name,
+        disabled,
+        collection,
+        context,
+        doc: context?.doc ?? (context?.siblingData as any),
+        data: (context?.data as any) ?? context?.doc ?? (context?.siblingData as any),
+        record: (context?.record as any) ?? context?.doc ?? (context?.siblingData as any),
+        row: (context?.row as any) ?? context?.doc ?? (context?.siblingData as any),
+      }
+      return (
+        <DyrectedFieldPathProvider path={fieldWithId.name}>
+          <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
+            <CustomComponent {...customProps} />
+          </ErrorBoundary>
+        </DyrectedFieldPathProvider>
+      )
     }
-    return (
-      <DyrectedFieldPathProvider path={fieldWithId.name}>
-        <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
-          <CustomComponent {...customProps} />
-        </ErrorBoundary>
-      </DyrectedFieldPathProvider>
-    )
+
+    warnMissingComponent("fields", customComponentKey)
+    if (import.meta.env.DEV) {
+      return (
+        <AdminMissingComponentPlaceholder
+          slot="fields"
+          componentKey={customComponentKey}
+        />
+      )
+    }
   }
+
 
   const relSchema = schema as RelationFieldSchema
 

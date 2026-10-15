@@ -21,6 +21,21 @@ export * from './composables/useDyrectedForm';
 export * from './composables/useField';
 export * from './composables/useAdminTheme';
 export * from './composables/useTrash';
+export * from './composables/useAdminBridge';
+export * from './composables/useAdminNavigate';
+export * from './composables/useAdminNotify';
+export * from './composables/useAccess';
+
+// Admin component registration helpers
+export { defineAdminComponents } from '@dyrected/admin/public';
+export type {
+  AdminComponents,
+  AdminFieldComponentProps,
+  AdminFormComponentProps,
+  AdminViewLayoutProps,
+  AdminPageProps,
+  TypedAdminComponents,
+} from '@dyrected/admin/public';
 
 // Bridge
 export * from './bridge/react-in-vue';
@@ -28,6 +43,6 @@ export * from './bridge/react-in-vue';
 // Live-preview token helpers (re-exported from the SDK for frontend consumption)
 export { getPreviewToken, PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';
 
-// Schema typing seam (re-exported from the SDK). The generated types file
-// augments `Register`, which types the composables against your schema.
-export type { Register, RegisteredSchema, BaseSchema, InferSchema } from '@dyrected/sdk';
+// Schema and component typing seams (re-exported from the SDK).
+export type { Register, RegisteredSchema, BaseSchema, InferSchema, RegisteredComponentKeys } from '@dyrected/sdk';
+

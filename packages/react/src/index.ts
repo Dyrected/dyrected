@@ -22,18 +22,32 @@ export {
   useAdminTheme,
   useDyrectedForm,
   useField,
+  useAdminNavigate,
+  useAdminNotify,
+  useAccess,
+  defineAdminComponents,
 } from '@dyrected/admin/public';
 export type {
   AdminThemePreference,
   ResolvedAdminTheme,
   DyrectedFieldPathProviderProps,
   DyrectedFormProviderProps,
+  AdminNavigateResult,
+  AdminNotifyHelpers,
+  AdminNotifyOptions,
+  AdminAccessHelpers,
+  UseAccessResult,
+  AdminComponents,
+  AdminFieldComponentProps,
+  AdminFormComponentProps,
+  AdminViewLayoutProps,
+  AdminPageProps,
+  TypedAdminComponents,
 } from '@dyrected/admin/public';
 
 // Re-export core types and errors from SDK for convenience
 export { DyrectedClient, DyrectedError, getPreviewToken, PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';
 export type { CollectionConfig, GlobalConfig } from '@dyrected/sdk';
-// Schema typing seam (re-exported from the SDK). The generated types file
-// augments `Register`, which types the client (and hooks that use it) against
-// your schema.
-export type { Register, RegisteredSchema, BaseSchema, InferSchema } from '@dyrected/sdk';
+// Schema and component typing seams (re-exported from the SDK).
+export type { Register, RegisteredSchema, BaseSchema, InferSchema, RegisteredComponentKeys } from '@dyrected/sdk';
+

@@ -208,23 +208,24 @@ Audited against the codebase on 2026-10-15.
 | Section | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | 3 | Existing registries: `fields`, `dashboard`, `collectionList`, `collectionView` | **Done** | `AdminComponents` in `packages/admin/src/types/admin-components.ts` |
-| 3 | New registry slots `forms`, `viewLayouts`, `pages` | **Not started** | Absent from `AdminComponents` |
+| 3 | New registry slots `forms`, `viewLayouts`, `pages`, `customComponents` | **Done** | `AdminComponents` in `packages/admin/src/types/admin-components.ts` |
 | 4 | Forward bridge (React hosts a Vue island, shared host `appContext`) | **Done** | `wrapVueComponent` in `packages/vue/src/bridge/react-in-vue.ts` |
-| 4 | `ContextProvider` wrapper that `provide()`s ambient keys to the island | **Not started** | Island is mounted with `render(h(VueComp, props))` and no provider |
-| 4 | `DYRECTED_FORM_CONTROLLER_KEY`, `DYRECTED_FIELD_PATH_KEY` | **Done** (Vue side) | `packages/vue/src/composables/useDyrectedForm.ts`. Components still call `provideDyrectedForm` themselves |
-| 4 | `DYRECTED_DOCUMENT_KEY`, `DYRECTED_VIEW_KEY`, `DYRECTED_PAGE_KEY`, `DYRECTED_ADMIN_KEY` | **Not started** | Only `DYRECTED_CLIENT_KEY` exists besides the two form keys |
+| 4 | `ContextProvider` wrapper that `provide()`s ambient keys to the island | **Done** | `BridgeContextProvider` in `packages/vue/src/bridge/react-in-vue.ts` |
+| 4 | `DYRECTED_FORM_CONTROLLER_KEY`, `DYRECTED_FIELD_PATH_KEY` | **Done** | Provided automatically by bridge `ContextProvider` |
+| 4 | `DYRECTED_CLIENT_KEY`, `ADMIN_THEME_CONTROLLER_KEY`, `DYRECTED_ADMIN_KEY` | **Done** | Exported in vue and provided automatically across bridge |
 | 4 | Reverse bridge (Vue renders React) for `DyrectedRichText`, `DyrectedIcon` | **Done** | `packages/vue/src/components/` |
 | 4 | Single React copy under Nuxt | **Done** | `vite.resolve.dedupe` in `packages/nuxt/src/module.ts` |
 | 5 | `useDyrected`, `useDyrectedAuth`, `useAdminSchemas` | **Done** | react and vue packages |
-| 5 | `useAdminTheme`, `useDyrectedForm`, `useField` | **Done** (beyond spec) | react re-exports from `@dyrected/admin/public`; vue has its own |
-| 5 | `useAdminNavigate`, `useAdminNotify`, `useAccess` | **Not started** | No matches in any package |
-| 6 | `Register` seam in the SDK | **Done** | `packages/sdk/src/index.ts` (`Register`) |
-| 6 | `componentKeys` generation, `defineAdminComponents`, `noUnusedKeys` | **Not started** | `cli/src/utils/type-generator.ts` emits `Register` for schema only |
-| 7 | Error boundary around slot components | **Partial** | `AdminComponentErrorBoundary` in `admin-component-slot.tsx` renders `null` on error, not an error card with retry. Field boundary exists in `error-boundary.tsx` |
-| 7 | Unresolved key warning | **Partial** | Dev-only console warning, de-duplicated per slot and key. No inline placeholder, no `component-unresolved` `ConfigDiagnostic` |
+| 5 | `useAdminTheme`, `useDyrectedForm`, `useField` | **Done** | react re-exports from `@dyrected/admin/public`; vue has its own |
+| 5 | `useAdminNavigate`, `useAdminNotify`, `useAccess` | **Done** | Implemented across `@dyrected/admin/public`, `@dyrected/react`, `@dyrected/vue` |
+| 6 | `Register` seam in the SDK | **Done** | `packages/sdk/src/index.ts` (`Register` and `RegisteredComponentKeys`) |
+| 6 | `componentKeys` generation, `defineAdminComponents` | **Done** | `cli/src/utils/type-generator.ts` and `defineAdminComponents` in admin/react/vue |
+| 7 | Error boundary around slot components | **Done** | `AdminComponentErrorBoundary` renders error card with retry button |
+| 7 | Unresolved key warning & placeholder | **Done** | Dev-only placeholder and deduplicated warning |
 | 7 | Unused-registration warning | **Not started** | |
 | 7 | Suspense / skeleton fallback for async components | **Not started** | |
-| 8 | Nuxt `components/dyrected/<registry>/<key>.vue` auto-registration | **Not started** | |
+| 8 | Nuxt `components/dyrected/<registry>/<key>.vue` auto-registration | **Not started** | Deferred to Phase 3 |
+
 
 ### Spec updates implied by the audit
 

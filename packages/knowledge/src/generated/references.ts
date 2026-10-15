@@ -4685,6 +4685,16 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/sdk:RegisteredComponentKeys",
+    "name": "RegisteredComponentKeys",
+    "kind": "type",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "Component keys registered via CLI type generation on `Register['componentKeys']`.\nFalls back to loose string records when types have not been generated.",
+    "signature": "export type RegisteredComponentKeys = Register extends { componentKeys: infer K }\n  ? K\n  : {\n      fields?: string;\n      dashboard?: string;\n      collectionList?: string;\n      collectionView?: string;\n      forms?: string;\n      viewLayouts?: string;\n      pages?: string;\n      customComponents?: string;\n    };",
+    "members": []
+  },
+  {
     "id": "@dyrected/sdk:RegisteredSchema",
     "name": "RegisteredSchema",
     "kind": "type",

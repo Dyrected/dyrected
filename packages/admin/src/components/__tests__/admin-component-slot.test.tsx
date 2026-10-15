@@ -1,6 +1,5 @@
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { AdminComponentSlot } from '../admin-component-slot.js';
 
 // Silence console.warn and console.error during tests
@@ -81,7 +80,7 @@ describe('AdminComponentSlot', () => {
     expect(screen.getByTestId('props-comp').textContent).toBe('Hello World');
   });
 
-  it('skips missing components without breaking the page and emits a deduplicated warning', () => {
+  it('renders missing component placeholder and emits deduplicated warning', () => {
     const ValidComponent = () => <div data-testid="valid">Valid</div>;
 
     const registry = {
@@ -105,11 +104,20 @@ describe('AdminComponentSlot', () => {
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[Dyrected Admin] Component "missing-comp" configured for "beforeDashboard" is not registered.')
     );
+
+    // Missing component placeholder rendered
+    const placeholders = screen.getAllByRole('status');
+    expect(placeholders.length).toBeGreaterThan(0);
+    expect(placeholders[0].textContent).toContain('missing-comp');
   });
 
-  it('catches render errors in error boundary, preserving other components', () => {
+  it('catches render errors in error boundary, rendering an error card with retry', () => {
+    let shouldThrow = true;
     const ThrowingComponent = () => {
-      throw new Error('Crash!');
+      if (shouldThrow) {
+        throw new Error('Crash!');
+      }
+      return <div data-testid="recovered">Recovered</div>;
     };
     const SafeComponent = () => <div data-testid="safe">Safe</div>;
 
@@ -130,11 +138,16 @@ describe('AdminComponentSlot', () => {
     // The safe component still renders
     expect(screen.getByTestId('safe')).toBeDefined();
 
-    // Error boundary caught the crash
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('[Dyrected Admin] Component "throwing-comp" failed in "beforeDashboard".'),
-      expect.any(Error),
-      expect.any(Object)
-    );
+    // Error boundary caught the crash and rendered error card
+    expect(screen.getByRole('alert')).toBeDefined();
+    expect(screen.getByRole('alert').textContent).toContain('Crash!');
+    expect(screen.getByRole('button', { name: /retry/i })).toBeDefined();
+
+    // Now fix the error and click retry
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    // Should recover and render the component content
+    expect(screen.getByTestId('recovered').textContent).toBe('Recovered');
   });
 });

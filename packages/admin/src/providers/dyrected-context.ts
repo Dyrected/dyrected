@@ -36,3 +36,8 @@ export function useDyrected(): DyrectedContextType {
   if (!context) throw new Error("useDyrected must be used within a DyrectedProvider");
   return context;
 }
+
+export function useOptionalDyrected(): DyrectedContextType | undefined {
+  return useContext(DyrectedContext);
+}
+

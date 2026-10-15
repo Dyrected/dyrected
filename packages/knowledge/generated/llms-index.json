@@ -2024,6 +2024,12 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:RegisteredComponentKeys",
+      "name": "RegisteredComponentKeys",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:RegisteredSchema",
       "name": "RegisteredSchema",
       "category": "sdk",

@@ -41,6 +41,11 @@ export function useDyrectedFormControllerContext(): DyrectedFormController {
   return controller
 }
 
+export function useOptionalDyrectedFormControllerContext(): DyrectedFormController | null {
+  return React.useContext(DyrectedFormContext)
+}
+
 export function useDyrectedFieldPathContext(): string | null {
   return React.useContext(DyrectedFieldPathContext)
 }
+

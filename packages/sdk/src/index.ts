@@ -453,7 +453,15 @@ export interface SchemaShape {
  *
  * ```ts
  * declare module "@dyrected/sdk" {
- *   interface Register { schema: DyrectedSchema }
+ *   interface Register {
+ *     schema: DyrectedSchema;
+ *     componentKeys: {
+ *       fields: "check_ins.checkInScanner" | "rsvp_records.sendWhatsApp";
+ *       forms: "check_ins.scanForm";
+ *       viewLayouts: "guests.seatingChart";
+ *       pages: "door-checkin";
+ *     };
+ *   }
  * }
  * ```
  *
@@ -478,6 +486,24 @@ export type RegisteredSchema = Register extends { schema: infer S }
     ? S
     : BaseSchema
   : BaseSchema;
+
+/**
+ * Component keys registered via CLI type generation on `Register['componentKeys']`.
+ * Falls back to loose string records when types have not been generated.
+ */
+export type RegisteredComponentKeys = Register extends { componentKeys: infer K }
+  ? K
+  : {
+      fields?: string;
+      dashboard?: string;
+      collectionList?: string;
+      collectionView?: string;
+      forms?: string;
+      viewLayouts?: string;
+      pages?: string;
+      customComponents?: string;
+    };
+
 
 /**
  * Options for file uploads.

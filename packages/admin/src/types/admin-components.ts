@@ -8,7 +8,7 @@ import type {
   GlobalConfig,
   PublicAdminAuthConfig,
 } from "@dyrected/core";
-import type { DyrectedClient, PaginatedResult } from "@dyrected/sdk";
+import type { DyrectedClient, PaginatedResult, RegisteredComponentKeys } from "@dyrected/sdk";
 
 /** All collection and global schemas returned by the backend, plus optional admin config. */
 export interface AdminSchemas {
@@ -144,6 +144,32 @@ export interface AdminFieldComponentProps {
   row?: Record<string, unknown>;
 }
 
+/** Props passed into custom document form components (spec 2). Identity only; form state accessed via composables/hooks. */
+export interface AdminFormComponentProps {
+  /** Collection slug of the document being edited. */
+  collection: string;
+  /** Document ID when editing an existing document, or `undefined` in create mode. */
+  id?: string;
+  /** Current mode of the form. */
+  mode: "create" | "edit";
+  /** Whether the document form is read-only. */
+  readOnly?: boolean;
+}
+
+/** Props passed into custom operational view layout components (spec 3). Identity only; view state accessed via composables/hooks. */
+export interface AdminViewLayoutProps {
+  /** Collection slug of the view. */
+  collection: string;
+  /** Operational view slug. */
+  viewSlug: string;
+}
+
+/** Props passed into custom admin page components (spec 4). Identity only; page metadata accessed via composables/hooks. */
+export interface AdminPageProps {
+  /** Slug of the custom admin page. */
+  slug: string;
+}
+
 /**
  * Custom component overrides passed to `<DyrectedAdmin />`. Each key is a
  * registry: you reference a component by a string key in your schema config,
@@ -192,4 +218,45 @@ export interface AdminComponents {
    * calendar, or cards.
    */
   collectionView?: Record<string, ComponentType<CollectionViewSlotProps>>;
+  /**
+   * Custom document forms keyed by component key. Replaces the built-in form
+   * for a collection when configured in collection `admin.form` or `admin.components.forms`.
+   */
+  forms?: Record<string, ComponentType<AdminFormComponentProps>>;
+  /**
+   * Custom operational view layouts keyed by layout key. Replaces the layout
+   * for an operational view when configured in `view.layout`.
+   */
+  viewLayouts?: Record<string, ComponentType<AdminViewLayoutProps>>;
+  /**
+   * Custom full admin pages keyed by page slug or component key.
+   */
+  pages?: Record<string, ComponentType<AdminPageProps>>;
+  /**
+   * Custom components rendered inside Detail Views via `displayCustom` / `displayCustomComponent`.
+   */
+  customComponents?: Record<string, ComponentType<any>>;
 }
+
+/**
+ * Type-safe component map structure mapped against registered component keys.
+ */
+export type TypedAdminComponents<K extends Record<string, any> = RegisteredComponentKeys> = {
+  fields?: Record<K["fields"] extends string ? K["fields"] : string, ComponentType<AdminFieldComponentProps>>;
+  dashboard?: Record<K["dashboard"] extends string ? K["dashboard"] : string, ComponentType<DashboardSlotProps>>;
+  collectionList?: Record<K["collectionList"] extends string ? K["collectionList"] : string, ComponentType<CollectionListSlotProps>>;
+  collectionView?: Record<K["collectionView"] extends string ? K["collectionView"] : string, ComponentType<CollectionViewSlotProps>>;
+  forms?: Record<K["forms"] extends string ? K["forms"] : string, ComponentType<AdminFormComponentProps>>;
+  viewLayouts?: Record<K["viewLayouts"] extends string ? K["viewLayouts"] : string, ComponentType<AdminViewLayoutProps>>;
+  pages?: Record<K["pages"] extends string ? K["pages"] : string, ComponentType<AdminPageProps>>;
+  customComponents?: Record<K["customComponents"] extends string ? K["customComponents"] : string, ComponentType<any>>;
+};
+
+/**
+ * Type-safe helper for authoring custom component registration maps.
+ * Ensures provided keys match those generated in `Register.componentKeys`.
+ */
+export function defineAdminComponents<T extends TypedAdminComponents>(components: T): T {
+  return components;
+}
+
