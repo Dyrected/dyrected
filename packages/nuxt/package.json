@@ -16,7 +16,8 @@
   },
   "scripts": {
     "build": "nuxt-module-build build",
-    "dev": "nuxt-module-build build --watch"
+    "dev": "nuxt-module-build build --watch",
+    "test": "vitest run"
   },
   "dependencies": {
     "@dyrected/admin": "workspace:*",
@@ -40,7 +41,8 @@
     "@types/react": "^18.3.28",
     "@types/react-dom": "^19.2.3",
     "nuxt": "^3.11.2",
-    "vue": "^3.5.34"
+    "vue": "^3.5.34",
+    "vitest": "^1.6.1"
   },
   "license": "BSL-1.1",
   "author": "Busola Okeowo <busolaokemoney@gmail.com>",

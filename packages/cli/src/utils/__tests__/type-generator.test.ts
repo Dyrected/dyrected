@@ -61,29 +61,31 @@ describe("type-generator: flattenFields and generateTypes", () => {
         },
         pages: [
           { slug: "scanner", component: "door-scanner" },
-          { slug: "door-checkin" },
+          { slug: "door-checkin", component: "door-checkin" },
         ],
       },
       collections: [
         {
           slug: "check_ins",
           admin: {
-            form: "check_ins.scanForm",
             components: {
-              beforeList: "checkin-banner",
+              beforeList: ["checkin-banner"],
               collectionView: {
-                beforeViewHeader: "qr-button",
+                beforeViewHeader: ["qr-button"],
               },
             },
-            views: [
-              { slug: "chart", layout: "guests.seatingChart" },
-            ],
-            detail: {
-              layout: [
-                { type: "custom", name: "PassPreview" },
+          },
+          views: [
+            { slug: "chart", components: { afterViewContent: ["chart-legend"] } },
+          ],
+          detail: [
+            {
+              type: "tabs",
+              tabs: [
+                { type: "tab", label: "Pass", items: [{ type: "custom", name: "PassPreview" }] },
               ],
             },
-          },
+          ],
           fields: [
             {
               name: "scanner",
@@ -105,8 +107,7 @@ describe("type-generator: flattenFields and generateTypes", () => {
     expect(Array.from(keys.pages)).toContain("door-checkin");
     expect(Array.from(keys.collectionList)).toContain("checkin-banner");
     expect(Array.from(keys.collectionView)).toContain("qr-button");
-    expect(Array.from(keys.forms)).toContain("check_ins.scanForm");
-    expect(Array.from(keys.viewLayouts)).toContain("guests.seatingChart");
+    expect(Array.from(keys.collectionView)).toContain("chart-legend");
     expect(Array.from(keys.customComponents)).toContain("PassPreview");
 
     const code = generateTypes(schema);
@@ -116,8 +117,8 @@ describe("type-generator: flattenFields and generateTypes", () => {
     expect(code).toContain("schema: DyrectedSchema;");
     expect(code).toContain("componentKeys: {");
     expect(code).toContain('fields: "check_ins.checkInScanner";');
-    expect(code).toContain('forms: "check_ins.scanForm";');
-    expect(code).toContain('viewLayouts: "guests.seatingChart";');
+    expect(code).toMatch(/collectionView: "(qr-button" \| "chart-legend|chart-legend" \| "qr-button)";/);
+    expect(code).toContain("forms: string;");
     expect(code).toContain('customComponents: "PassPreview";');
   });
 });

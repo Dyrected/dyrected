@@ -1,4 +1,6 @@
-import { Component, createElement, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+import { Component, Suspense, createElement, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+
+import { Skeleton } from "./ui/skeleton";
 
 const warnedMissingComponents = new Set<string>();
 
@@ -89,6 +91,14 @@ export class AdminComponentErrorBoundary extends Component<
   }
 }
 
+/**
+ * Shown while a lazily loaded custom component (`React.lazy`, or a Vue
+ * `defineAsyncComponent` bridged through `wrapVueComponent`) resolves.
+ */
+export function AdminComponentFallback() {
+  return <Skeleton className="dy-my-2 dy-h-10 dy-w-full" aria-busy="true" />;
+}
+
 export function AdminMissingComponentPlaceholder({
   slot,
   componentKey,
@@ -144,7 +154,9 @@ export function AdminComponentSlot<Props extends object>({
         componentKey={componentKey}
         slot={slot}
       >
-        {createElement(CustomComponent, componentProps)}
+        <Suspense fallback={<AdminComponentFallback />}>
+          {createElement(CustomComponent, componentProps)}
+        </Suspense>
       </AdminComponentErrorBoundary>
     );
   });

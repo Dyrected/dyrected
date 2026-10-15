@@ -38,6 +38,12 @@ const props = defineProps<{
    * Can be raw Vue components; they will be automatically wrapped.
    */
   components?: any;
+  /**
+   * In development, warn once for each registered component the schema never
+   * references. Set to `false` to silence it.
+   * @default true
+   */
+  warnUnusedComponents?: boolean;
   /** Optional externally managed admin theme controller. */
   themeController?: AdminThemeController;
   /** Preferred theme when the wrapper should control the admin theme. */
@@ -98,6 +104,7 @@ const mountAdmin = async () => {
         baseUrl: props.config.baseUrl,
         isEmbedded: false,
         components: wrappedComponents.value,
+        warnUnusedComponents: props.warnUnusedComponents,
         themeController: activeThemeController.value,
       } as any);
     } catch (err) {

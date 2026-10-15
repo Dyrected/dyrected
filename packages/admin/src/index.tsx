@@ -382,6 +382,8 @@ export interface AdminUIProps {
   isEmbedded?: boolean;
   /** Custom component overrides for fields, dashboard slots, and collection list views. */
   components?: DyrectedProviderProps['components'];
+  /** Warn in development about registered components the schema never references. @default true */
+  warnUnusedComponents?: boolean;
   // @internal – not for public docs. Used by Dyrected Cloud to bypass admin-level
   // auth when the user is already authenticated at the cloud level. The token is
   // minted server-side by the cloud backend and is short-lived (1h).
@@ -418,6 +420,7 @@ export function AdminUI({
   onNavigate,
   isEmbedded,
   components,
+  warnUnusedComponents,
   initialToken,
   defaultTechStack,
   themeController,
@@ -462,7 +465,7 @@ export function AdminUI({
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
         <QueryProvider>
-          <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
+          <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} warnUnusedComponents={warnUnusedComponents} initialToken={initialToken} defaultTechStack={defaultTechStack}>
             <AdminThemeProvider controller={activeThemeController}>
               <AdminThemedRoot>
                 <HashRouter>

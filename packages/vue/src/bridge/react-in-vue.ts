@@ -1,4 +1,4 @@
-import { h, render, defineComponent, provide, shallowRef, type AppContext, type Component } from 'vue';
+import { h, render, defineComponent, onErrorCaptured, provide, type AppContext, type Component } from 'vue';
 import * as ReactModule from 'react';
 import {
   useOptionalDyrectedFormControllerContext,
@@ -24,16 +24,6 @@ function arePropsShallowEqual(prev: Record<string, any> | null, next: Record<str
   return true;
 }
 
-function areMapsEqual(prev: Map<any, any> | null, next: Map<any, any> | null): boolean {
-  if (prev === next) return true;
-  if (!prev || !next) return false;
-  if (prev.size !== next.size) return false;
-  for (const [key, val] of prev.entries()) {
-    if (next.get(key) !== val) return false;
-  }
-  return true;
-}
-
 /**
  * wrapVueComponent — Higher-order component that wraps a Vue 3 component
  * so it can be rendered within a React component tree.
@@ -52,91 +42,97 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
   const ReactWrapper = (props: any) => {
     const containerRef = ReactModule.useRef<HTMLDivElement>(null);
     const lastPropsRef = ReactModule.useRef<any>(null);
-    const lastProvidesRef = ReactModule.useRef<Map<any, any> | null>(null);
 
-    // Read ambient controllers and context from React tree
+    // Vue swallows render/setup errors into its own logger, so they never reach
+    // React. Forward them by rethrowing during render, which lets the slot's
+    // error boundary show its error card instead of a silently blank island.
+    const [islandError, setIslandError] = ReactModule.useState<Error | null>(null);
+    const reportErrorRef = ReactModule.useRef((err: Error) => {
+      setIslandError((prev) => prev ?? err);
+    });
+    if (islandError) throw islandError;
+
+    // Read ambient controllers and context from the React tree
     const formController = useOptionalDyrectedFormControllerContext();
     const fieldPath = useDyrectedFieldPathContext();
     const dyrected = useOptionalDyrected();
     const adminBridge = useAdminBridgeContext();
     const themeResult = useAdminTheme();
 
-    // Construct the provides map for ambient context keys
-    const providesMap = ReactModule.useMemo(() => {
-      const map = new Map<any, any>();
-      if (formController) {
-        map.set(DYRECTED_FORM_CONTROLLER_KEY, formController);
-      }
-      if (fieldPath) {
-        map.set(DYRECTED_FIELD_PATH_KEY, fieldPath);
-      }
-      if (dyrected?.client) {
-        map.set(DYRECTED_CLIENT_KEY, dyrected.client);
-      }
-      if (themeResult?.controller) {
-        map.set(ADMIN_THEME_CONTROLLER_KEY, themeResult.controller);
-      }
-      if (adminBridge) {
-        map.set(DYRECTED_ADMIN_KEY, adminBridge);
-      }
-      return map;
-    }, [formController, fieldPath, dyrected?.client, themeResult?.controller, adminBridge]);
+    // Mutable cell holding the latest admin bridge. The Vue island receives a
+    // stable facade that reads through it, so `provide()` (which runs once in
+    // `setup()`) never serves a stale bundle.
+    const latestBridgeRef = ReactModule.useRef(adminBridge);
+    latestBridgeRef.current = adminBridge;
 
-    // Setup ref map for provide keys
-    const providesRefsRef = ReactModule.useRef<Map<any, any>>(new Map());
+    const themeController = themeResult?.controller;
+    const client = dyrected?.client;
 
-    // (Re)render the Vue island whenever React props or ambient context change.
-    // Skip render only when both props and provided values are unchanged.
+    // Controllers are stable per surface (spec §4), so the provider component
+    // is rebuilt only when one of them is replaced, which is a new surface and
+    // correctly remounts the island. Ordinary prop updates keep the same
+    // component type, so Vue patches in place and preserves island state.
+    const Island = ReactModule.useMemo<Component>(() => {
+      const provides = new Map<any, any>();
+      if (formController) provides.set(DYRECTED_FORM_CONTROLLER_KEY, formController);
+      if (fieldPath) provides.set(DYRECTED_FIELD_PATH_KEY, fieldPath);
+      if (client) provides.set(DYRECTED_CLIENT_KEY, client);
+      if (themeController) provides.set(ADMIN_THEME_CONTROLLER_KEY, themeController);
+      provides.set(DYRECTED_ADMIN_KEY, {
+        navigate: (...args: Parameters<typeof adminBridge.navigate>) => latestBridgeRef.current.navigate(...args),
+        to: {
+          collection: (...a: Parameters<typeof adminBridge.to.collection>) => latestBridgeRef.current.to.collection(...a),
+          document: (...a: Parameters<typeof adminBridge.to.document>) => latestBridgeRef.current.to.document(...a),
+          view: (...a: Parameters<typeof adminBridge.to.view>) => latestBridgeRef.current.to.view(...a),
+          page: (...a: Parameters<typeof adminBridge.to.page>) => latestBridgeRef.current.to.page(...a),
+        },
+        notify: {
+          success: (...a: Parameters<typeof adminBridge.notify.success>) => latestBridgeRef.current.notify.success(...a),
+          error: (...a: Parameters<typeof adminBridge.notify.error>) => latestBridgeRef.current.notify.error(...a),
+          info: (...a: Parameters<typeof adminBridge.notify.info>) => latestBridgeRef.current.notify.info(...a),
+        },
+        access: {
+          can: (...a: Parameters<typeof adminBridge.access.can>) => latestBridgeRef.current.access.can(...a),
+        },
+      });
+
+      return defineComponent({
+        name: `DyrectedBridgeContextProvider(${(VueComp as any).name || 'Component'})`,
+        props: { innerProps: { type: Object, required: true } },
+        setup(bridgeProps) {
+          for (const [key, value] of provides) provide(key, value);
+          onErrorCaptured((err) => {
+            reportErrorRef.current(err instanceof Error ? err : new Error(String(err)));
+            return false;
+          });
+          return () => h(VueComp, bridgeProps.innerProps);
+        },
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formController, fieldPath, client, themeController]);
+
+    // A new island type starts from a clean render.
+    ReactModule.useEffect(() => {
+      lastPropsRef.current = null;
+    }, [Island]);
+
+    // Re-render when React props change. Same component type, so Vue patches
+    // the existing island and preserves its state.
     ReactModule.useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
 
-      const propsEqual = lastPropsRef.current !== null && arePropsShallowEqual(lastPropsRef.current, props);
-      const providesEqual = lastProvidesRef.current !== null && areMapsEqual(lastProvidesRef.current, providesMap);
-
-      if (propsEqual && providesEqual) {
+      if (lastPropsRef.current !== null && arePropsShallowEqual(lastPropsRef.current, props)) {
         return;
       }
-
       lastPropsRef.current = props;
-      lastProvidesRef.current = providesMap;
 
-      // Update values in providesRefsRef
-      for (const [key, val] of providesMap.entries()) {
-        const existingRef = providesRefsRef.current.get(key);
-        if (existingRef) {
-          existingRef.value = val;
-        } else {
-          providesRefsRef.current.set(key, shallowRef(val));
-        }
-      }
-
-      const BridgeContextProvider = defineComponent({
-        name: `DyrectedBridgeContextProvider(${(VueComp as any).name || 'Component'})`,
-        props: {
-          innerProps: {
-            type: Object,
-            required: true,
-          },
-        },
-        setup(bridgeProps) {
-          for (const [key, valRef] of providesRefsRef.current.entries()) {
-            provide(key, valRef.value);
-          }
-          return () => h(VueComp, bridgeProps.innerProps);
-        },
-      });
-
-      const vnode = h(BridgeContextProvider, {
-        innerProps: props,
-      });
-
+      const vnode = h(Island, { innerProps: props });
       if (appContext) {
         vnode.appContext = appContext;
       }
-
       render(vnode, container);
-    }, [props, providesMap]);
+    }, [props, Island]);
 
     // Unmount the Vue island only when the React component unmounts.
     ReactModule.useEffect(() => {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, DyrectedClient, DyrectedError } from "@dyrected/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { findUnusedComponentKeys } from "../lib/unused-components";
 import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
 import { decodeTokenPayload, getAdminCollectionSlug, normalizeAdminUser, type AdminUser } from "./admin-auth";
@@ -63,6 +64,8 @@ function ensureDefaultView(collection: any): any {
   return { ...collection, views: [defaultView] }
 }
 
+const warnedUnusedComponents = new Set<string>();
+
 function resolveSchemas(schema: AdminSchemas): AdminSchemas {
   const registry = new Map(
     (schema.blocks ?? []).map((block) => [block.slug, block] as const),
@@ -96,6 +99,13 @@ export interface DyrectedProviderProps {
   initialToken?: string;
   defaultTechStack?: string;
   components?: DyrectedContextType["components"];
+  /**
+   * In development, warn once for each registered component key that the
+   * schema never references. Set to `false` to silence it, for example when a
+   * shared component map serves several admin configs.
+   * @default true
+   */
+  warnUnusedComponents?: boolean;
 }
 
 function getStoredToken(): string | null {
@@ -123,6 +133,7 @@ export function DyrectedProvider({
   initialToken,
   defaultTechStack,
   components,
+  warnUnusedComponents = true,
 }: DyrectedProviderProps) {
   const [baseUrl, setBaseUrl] = useState<string>(
     () =>
@@ -209,6 +220,20 @@ export function DyrectedProvider({
     queryFn: async () => resolveSchemas(await client!.getSchemas()),
     enabled: !!client,
   });
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !warnUnusedComponents) return;
+    for (const entry of findUnusedComponentKeys(components, schemas)) {
+      if (warnedUnusedComponents.has(entry)) continue;
+      warnedUnusedComponents.add(entry);
+      const sep = entry.indexOf(":");
+      const registry = entry.slice(0, sep);
+      const key = entry.slice(sep + 1);
+      console.warn(
+        `[Dyrected Admin] Component "${key}" is registered in "${registry}" but the schema never references it.`,
+      );
+    }
+  }, [components, schemas, warnUnusedComponents]);
 
   useEffect(() => {
     if (schemasError) {

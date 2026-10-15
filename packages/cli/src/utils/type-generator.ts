@@ -3,6 +3,10 @@ import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
 import { createJiti } from "jiti";
+import {
+  collectReferencedComponentKeys,
+  type ReferencedComponentKeys,
+} from "@dyrected/core";
 
 function resolveFieldBlocks(field: any, registry: Map<string, any>): any {
   const next = { ...field };
@@ -285,141 +289,10 @@ export type UrlField = UrlFieldValue | string;
   return code;
 }
 
-export interface CollectedComponentKeys {
-  fields: Set<string>;
-  dashboard: Set<string>;
-  collectionList: Set<string>;
-  collectionView: Set<string>;
-  forms: Set<string>;
-  viewLayouts: Set<string>;
-  pages: Set<string>;
-  customComponents: Set<string>;
-}
+export type CollectedComponentKeys = ReferencedComponentKeys;
 
-export function collectComponentKeys(schema: any): CollectedComponentKeys {
-  const keys: CollectedComponentKeys = {
-    fields: new Set<string>(),
-    dashboard: new Set<string>(),
-    collectionList: new Set<string>(),
-    collectionView: new Set<string>(),
-    forms: new Set<string>(),
-    viewLayouts: new Set<string>(),
-    pages: new Set<string>(),
-    customComponents: new Set<string>(),
-  };
-
-  if (!schema) return keys;
-
-  // 1. Dashboard slots
-  if (schema.admin?.components?.beforeDashboard) {
-    for (const k of [].concat(schema.admin.components.beforeDashboard)) {
-      if (typeof k === "string") keys.dashboard.add(k);
-    }
-  }
-  if (schema.admin?.components?.afterDashboard) {
-    for (const k of [].concat(schema.admin.components.afterDashboard)) {
-      if (typeof k === "string") keys.dashboard.add(k);
-    }
-  }
-
-  // 2. Custom Pages
-  if (Array.isArray(schema.admin?.pages)) {
-    for (const p of schema.admin.pages) {
-      if (p.component && typeof p.component === "string") keys.pages.add(p.component);
-      else if (p.slug && typeof p.slug === "string") keys.pages.add(p.slug);
-    }
-  }
-
-  // Helper to scan fields recursively
-  function scanFields(fields: any[]) {
-    for (const f of flattenFields(fields)) {
-      if (f.admin?.component && typeof f.admin.component === "string") {
-        keys.fields.add(f.admin.component);
-      }
-      if (f.type === "blocks" && Array.isArray(f.blocks)) {
-        for (const b of f.blocks) {
-          if (Array.isArray(b.fields)) scanFields(b.fields);
-        }
-      }
-    }
-  }
-
-  // Helper to scan detail custom components
-  function scanDetailComponents(items: any[]) {
-    if (!Array.isArray(items)) return;
-    for (const item of items) {
-      if ((item.type === "custom" || item.type === "customComponent") && item.name) {
-        keys.customComponents.add(item.name);
-      }
-      if (Array.isArray(item.items)) scanDetailComponents(item.items);
-      if (Array.isArray(item.tabs)) {
-        for (const t of item.tabs) {
-          if (Array.isArray(t.items)) scanDetailComponents(t.items);
-        }
-      }
-    }
-  }
-
-  // 3. Collections
-  for (const col of schema.collections || []) {
-    if (Array.isArray(col.fields)) scanFields(col.fields);
-
-    // Collection slots
-    const colSlots = col.admin?.components;
-    if (colSlots) {
-      for (const slotKey of ["beforeList", "beforeListTable", "afterListTable", "afterList"]) {
-        if (colSlots[slotKey]) {
-          for (const k of [].concat(colSlots[slotKey])) {
-            if (typeof k === "string") keys.collectionList.add(k);
-          }
-        }
-      }
-      if (colSlots.collectionView && typeof colSlots.collectionView === "object") {
-        for (const slotKey of ["beforeViewHeader", "afterViewHeader", "beforeViewContent", "afterViewContent"]) {
-          if (colSlots.collectionView[slotKey]) {
-            for (const k of [].concat(colSlots.collectionView[slotKey])) {
-              if (typeof k === "string") keys.collectionView.add(k);
-            }
-          }
-        }
-      }
-      if (colSlots.forms) {
-        if (typeof colSlots.forms === "string") keys.forms.add(colSlots.forms);
-        else if (typeof colSlots.forms === "object") {
-          for (const k of Object.values(colSlots.forms)) {
-            if (typeof k === "string") keys.forms.add(k as string);
-          }
-        }
-      }
-    }
-
-    if (col.admin?.form && typeof col.admin.form === "string") {
-      keys.forms.add(col.admin.form);
-    }
-
-    // View layouts
-    if (Array.isArray(col.admin?.views)) {
-      for (const v of col.admin.views) {
-        if (v.layout && typeof v.layout === "string") {
-          keys.viewLayouts.add(v.layout);
-        }
-      }
-    }
-
-    // Detail view custom components
-    if (Array.isArray(col.admin?.detail?.layout)) {
-      scanDetailComponents(col.admin.detail.layout);
-    }
-  }
-
-  // 4. Globals
-  for (const glb of schema.globals || []) {
-    if (Array.isArray(glb.fields)) scanFields(glb.fields);
-  }
-
-  return keys;
-}
-
+/** Collects the component keys a schema references. See `@dyrected/core`. */
+export const collectComponentKeys = collectReferencedComponentKeys;
 
 /**
  * Build a union of string literals from a select/radio/multiSelect field's

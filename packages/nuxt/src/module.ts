@@ -8,8 +8,9 @@ import {
   addServerPlugin,
   addTemplate,
   installModule,
+  updateTemplates,
 } from "@nuxt/kit";
-import { join, resolve } from "path";
+import { join, resolve, relative, isAbsolute } from "path";
 import { existsSync } from "fs";
 import { createRequire } from "module";
 import {
@@ -49,6 +50,7 @@ export interface ModuleOptions extends DyrectedConfig {
 }
 
 import { NuxtModule } from "@nuxt/schema";
+import { discoverComponents, renderComponentRegistry } from "./utils/component-registry";
 
 const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   meta: {
@@ -149,6 +151,20 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       name: "DyrectedRichText",
       filePath: "@dyrected/vue",
       export: "DyrectedRichText",
+    });
+
+    // Auto-register admin components from `components/dyrected/<registry>/<key>.vue`.
+    // The explicit `components` prop on <DyrectedAdmin> always wins on a key clash.
+    const componentsDir = join(nuxt.options.srcDir, "components", "dyrected");
+    addTemplate({
+      filename: "dyrected-components.mjs",
+      write: true,
+      getContents: () => renderComponentRegistry(discoverComponents(componentsDir)),
+    });
+    nuxt.hook("builder:watch", async (_event, changedPath) => {
+      const rel = relative(componentsDir, isAbsolute(changedPath) ? changedPath : resolve(nuxt.options.rootDir, changedPath));
+      if (rel.startsWith("..") || isAbsolute(rel)) return;
+      await updateTemplates({ filter: (template) => template.filename === "dyrected-components.mjs" });
     });
 
     // 3. Add Composables

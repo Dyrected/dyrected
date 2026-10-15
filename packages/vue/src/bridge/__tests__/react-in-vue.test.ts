@@ -251,4 +251,83 @@ describe('Vue Bridge ambient context injection & updates', () => {
     });
     container.remove();
   });
+
+  it('preserves island state across prop updates (patches in place, no remount)', async () => {
+    const controller = createDyrectedFormController({ initialValues: { title: 'x' } });
+    let mounts = 0;
+    const VueChild = defineComponent({
+      name: 'StatefulChild',
+      props: { label: { type: String, default: '' } },
+      setup(p) {
+        mounts++;
+        return () => h('div', { id: 'label' }, p.label);
+      },
+    });
+    const Wrapped = wrapVueComponent(VueChild);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    const mount = (label: string) =>
+      React.act(async () => {
+        root.render(
+          React.createElement(
+            DyrectedFormProvider,
+            { controller },
+            React.createElement(Wrapped, { label })
+          )
+        );
+      });
+
+    await mount('a');
+    await mount('b');
+    await mount('c');
+
+    expect(container.querySelector('#label')?.textContent).toBe('c');
+    expect(mounts).toBe(1);
+
+    await React.act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
+
+  it('forwards errors thrown inside a Vue island to the React error boundary', async () => {
+    const Boom = defineComponent({
+      name: 'Boom',
+      setup() {
+        throw new Error('island exploded');
+      },
+    });
+    const Wrapped = wrapVueComponent(Boom);
+
+    class Boundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+      state = { error: null as Error | null };
+      static getDerivedStateFromError(error: Error) {
+        return { error };
+      }
+      render() {
+        return this.state.error
+          ? React.createElement('p', { id: 'caught' }, this.state.error.message)
+          : this.props.children;
+      }
+    }
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await React.act(async () => {
+      root.render(React.createElement(Boundary, null, React.createElement(Wrapped, {})));
+    });
+
+    expect(container.querySelector('#caught')?.textContent).toBe('island exploded');
+
+    spy.mockRestore();
+    await React.act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
 });

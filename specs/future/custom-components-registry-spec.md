@@ -1,7 +1,7 @@
 # Admin Component Registry & Framework Bridge Specification
 
 **Document Version:** 0.2.0 (Draft)
-**Status:** Partially implemented. See [Implementation Status](#12-implementation-status).
+**Status:** Implemented, apart from the documentation pages. See [Implementation Status](#12-implementation-status).
 **Scope:** `@dyrected/core`, `@dyrected/admin`, `@dyrected/react`, `@dyrected/vue`, `@dyrected/nuxt`, CLI type generation
 **Part of:** Custom Admin Surfaces (1 of 4)
 
@@ -26,7 +26,7 @@ Today that pattern exists in four registries (see `packages/admin/src/types/admi
 | --- | --- | --- |
 | `fields` | `field.admin.component` | replaces one field's input |
 | `dashboard` | `admin.components.before/afterDashboard` | injects around the dashboard |
-| `collectionList` | `collection.admin.components.beforeList…` | injects around the list |
+| `collectionList` (deprecated) | `collection.admin.components.beforeList…` | injects around the list |
 | `collectionView` | `…components.collectionView` / `view.components` | injects around an operational view |
 
 Every existing registry is either a **field override** or a **slot that injects around built-in UI**. Nothing replaces a form, a layout, or a page. Specs 2–4 add those. They share machinery that does not exist yet, and that machinery is this spec.
@@ -159,7 +159,7 @@ const components = defineAdminComponents({
 
 ## 7. Runtime Diagnostics & Failure Containment
 
-1. **Unresolved key.** The admin resolves each referenced key at mount. If missing, render an inline placeholder ("Component `check_ins.scanForm` is not registered in `forms`") and emit a `ConfigDiagnostic` (`code: "component-unresolved"`) into the existing `configDiagnostics` channel. In development this is a console warning too. In production the placeholder is generic, without key names or stack.
+1. **Unresolved key.** The admin resolves each referenced key at mount. If missing, render an inline placeholder ("Component `check_ins.scanForm` is not registered in `forms`"). In development this is also a console warning, deduplicated per slot and key. In production the placeholder is generic, without key names or stack. No `ConfigDiagnostic` is emitted: that channel is server-side and config-time, and the component registry only exists in the host's admin bundle, so the server cannot know a key is unregistered. The typed keys in §6 catch the same mistake at compile time.
 2. **Unused registration.** In development, warn once when a registered key is never referenced.
 3. **Error boundary.** Every custom mount, React or bridged Vue, sits in a boundary that renders a compact error card (key, message, retry). The surrounding shell (nav, header) keeps working. Errors go to the same logger the admin uses.
 4. **Suspense.** Async components (`React.lazy`, Vue `defineAsyncComponent`) are supported. The bridge wraps islands in the admin's skeleton fallback.
@@ -180,7 +180,6 @@ Convention: `components/dyrected/<registry>/<key>.vue`, for example `components/
 
 - `AdminComponents` gains the new registry slots (typed, unused until specs 2–4).
 - Key generation and `defineAdminComponents`.
-- `component-unresolved` diagnostic.
 
 **Phase 3**
 
@@ -195,11 +194,11 @@ Convention: `components/dyrected/<registry>/<key>.vue`, for example `components/
 - Unresolved-key placeholder and diagnostic emission.
 - Type tests: a wrong key fails `tsc`. Untyped apps still compile.
 
-## 11. Open Questions
+## 11. Resolved Questions
 
-1. Should `displayCustomComponent` (detail views) join the unified registry? It resolves by name today. Verify which registry it reads and fold it in if it has its own.
-2. Should `fields` keep its current per-field key scheme (`collection.field`) or also accept a global key? Keep as-is unless the generated union makes it awkward.
-3. Is one global `ContextProvider` per island enough for the bridge, or do slot components need per-slot contexts (a slot inside a view has the view context, one inside the dashboard does not)? Proposal: yes, per-mount `contexts` argument.
+1. **`displayCustomComponent` and the registry.** Resolved. Detail views resolve a `displayCustom(name)` against `components[name]`, `components.fields[name]` and `components.customComponents[name]` (`detail-renderer.tsx`). `customComponents` is the unified registry for them, and generated types and the unused-registration check treat it as one.
+2. **`fields` key scheme.** Resolved. Kept as-is: the key is whatever `field.admin.component` says.
+3. **Island contexts.** Resolved. Each island is built once per surface with the contexts of the React tree it mounts under. A replaced controller is a new surface and remounts the island. Registries added by specs 2–4 contribute their own keys the same way.
 
 ## 12. Implementation Status
 
@@ -208,9 +207,9 @@ Audited against the codebase on 2026-10-15.
 | Section | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | 3 | Existing registries: `fields`, `dashboard`, `collectionList`, `collectionView` | **Done** | `AdminComponents` in `packages/admin/src/types/admin-components.ts` |
-| 3 | New registry slots `forms`, `viewLayouts`, `pages`, `customComponents` | **Done** | `AdminComponents` in `packages/admin/src/types/admin-components.ts` |
+| 3 | New registry slots `forms`, `viewLayouts`, `pages`, `customComponents` | **Types only** | Declared on `AdminComponents`. Nothing in the admin resolves or renders them yet; that lands with specs 2–4 |
 | 4 | Forward bridge (React hosts a Vue island, shared host `appContext`) | **Done** | `wrapVueComponent` in `packages/vue/src/bridge/react-in-vue.ts` |
-| 4 | `ContextProvider` wrapper that `provide()`s ambient keys to the island | **Done** | `BridgeContextProvider` in `packages/vue/src/bridge/react-in-vue.ts` |
+| 4 | `ContextProvider` wrapper that `provide()`s ambient keys to the island | **Done** | `BridgeContextProvider` in `packages/vue/src/bridge/react-in-vue.ts`. Built once per surface (rebuilt only when a controller is replaced); the admin bundle is a stable facade over the latest bridge, so prop updates patch in place and keep island state |
 | 4 | `DYRECTED_FORM_CONTROLLER_KEY`, `DYRECTED_FIELD_PATH_KEY` | **Done** | Provided automatically by bridge `ContextProvider` |
 | 4 | `DYRECTED_CLIENT_KEY`, `ADMIN_THEME_CONTROLLER_KEY`, `DYRECTED_ADMIN_KEY` | **Done** | Exported in vue and provided automatically across bridge |
 | 4 | Reverse bridge (Vue renders React) for `DyrectedRichText`, `DyrectedIcon` | **Done** | `packages/vue/src/components/` |
@@ -221,10 +220,14 @@ Audited against the codebase on 2026-10-15.
 | 6 | `Register` seam in the SDK | **Done** | `packages/sdk/src/index.ts` (`Register` and `RegisteredComponentKeys`) |
 | 6 | `componentKeys` generation, `defineAdminComponents` | **Done** | `cli/src/utils/type-generator.ts` and `defineAdminComponents` in admin/react/vue |
 | 7 | Error boundary around slot components | **Done** | `AdminComponentErrorBoundary` renders error card with retry button |
-| 7 | Unresolved key warning & placeholder | **Done** | Dev-only placeholder and deduplicated warning |
-| 7 | Unused-registration warning | **Not started** | |
-| 7 | Suspense / skeleton fallback for async components | **Not started** | |
-| 8 | Nuxt `components/dyrected/<registry>/<key>.vue` auto-registration | **Not started** | Deferred to Phase 3 |
+| 7 | Errors inside a bridged Vue island reach the boundary | **Done** | `onErrorCaptured` in the island forwards to React, which rethrows during render |
+| 6 | Referenced-key scan shared by CLI and admin | **Done** | `collectReferencedComponentKeys` in `packages/core/src/utils/component-keys.ts` |
+| 9 | Docs pages and `admin.vue` migration note | **Not started** | Needs the `apps/docs` human-verified flow; tracked separately |
+| 7 | Unresolved key warning & placeholder | **Done** | Dev-only placeholder and deduplicated warning in `admin-component-slot.tsx` and `field-renderer.tsx` |
+| 7 | `component-unresolved` `ConfigDiagnostic` | **Dropped** | `ConfigDiagnostic` is a server-side, config-time channel (`declarative-hooks.ts`) with a fixed `source` union. The registry only exists in the host's admin bundle, so the server cannot detect an unregistered key. Decision: rely on the placeholder, the dev warning and compile-time typed keys (§6) |
+| 7 | Unused-registration warning | **Done** | `findUnusedComponentKeys` in `packages/admin/src/lib/unused-components.ts`, run from `DyrectedProvider`. Development only, once per key, silenced with `warnUnusedComponents={false}` |
+| 7 | Suspense / skeleton fallback for async components | **Done** | `<Suspense>` with `AdminComponentFallback` around slot components and custom fields. Vue `defineAsyncComponent` renders natively inside the island |
+| 8 | Nuxt `components/dyrected/<registry>/<key>.vue` auto-registration | **Done** | `packages/nuxt/src/utils/component-registry.ts`, generated `#build/dyrected-components.mjs`, merged in the Nuxt `<DyrectedAdmin>`. The explicit `components` prop wins per key |
 
 
 ### Spec updates implied by the audit

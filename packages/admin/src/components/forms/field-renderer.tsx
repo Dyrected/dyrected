@@ -27,10 +27,11 @@ import { TimePicker } from "./fields/time-picker"
 import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
 import { UrlField as UrlFieldComponent } from "./fields/url-field"
+import { Suspense } from "react"
 import jexl from 'jexl'
 import { useDyrected } from "../../providers/dyrected-context"
 import { ErrorBoundary } from "../error-boundary"
-import { AdminMissingComponentPlaceholder, warnMissingComponent } from "../admin-component-slot"
+import { AdminComponentFallback, AdminMissingComponentPlaceholder, warnMissingComponent } from "../admin-component-slot"
 import { DyrectedFieldPathProvider } from "../../providers/dyrected-form-context"
 import type { AdminFieldComponentContext, AdminFieldComponentProps } from "../../types/admin-components"
 
@@ -126,7 +127,9 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
       return (
         <DyrectedFieldPathProvider path={fieldWithId.name}>
           <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
-            <CustomComponent {...customProps} />
+            <Suspense fallback={<AdminComponentFallback />}>
+              <CustomComponent {...customProps} />
+            </Suspense>
           </ErrorBoundary>
         </DyrectedFieldPathProvider>
       )
