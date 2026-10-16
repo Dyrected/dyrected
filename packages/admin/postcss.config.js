@@ -13,7 +13,10 @@ import autoprefixer from 'autoprefixer';
 const dyScope = () => ({
   postcssPlugin: 'postcss-dy-scope',
 
-  Rule(rule) {
+  Rule(rule, { AtRule }) {
+    // Rules already inside a native layer are final.
+    if (rule.parent && rule.parent.type === 'atrule' && rule.parent.name === 'layer') return;
+
     const WILDCARD = new Set(['*', '::before', '::after', '*::before', '*::after']);
 
     // `*, ::before, ::after { --tw-* }` → scope under .dy-admin-ui
@@ -26,6 +29,14 @@ const dyScope = () => ({
         if (t === '::after' || t === '*::after') return '.dy-admin-ui *::after';
         return s;
       });
+
+      // These initialise Tailwind v3's `--tw-*` variables. They must sit in the
+      // base layer: unlayered, `--tw-ring-shadow: 0 0 #0000` and friends would
+      // override the same-named variables a Tailwind v4 host's `ring`/`shadow`
+      // utilities set on its own components inside the admin.
+      const layer = new AtRule({ name: 'layer', params: 'base' });
+      rule.replaceWith(layer);
+      layer.append(rule);
       return;
     }
 
@@ -37,6 +48,15 @@ const dyScope = () => ({
   },
 
   AtRule(atRule) {
+    // `@media dy-native-layer-base { … }` in index.css marks element defaults that
+    // belong in a native `@layer base`. Tailwind v3 would swallow a literal
+    // `@layer base`, so the marker is rewritten after Tailwind has run.
+    if (atRule.name === 'media' && atRule.params === 'dy-native-layer-base') {
+      atRule.name = 'layer';
+      atRule.params = 'base';
+      return;
+    }
+
     // tailwindcss-animate emits `@keyframes enter` / `@keyframes exit` without
     // respecting the `prefix` option. Rename them so they don't collide with
     // any host-application animations.

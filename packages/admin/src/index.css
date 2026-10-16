@@ -5,120 +5,132 @@
 @tailwind utilities;
 
 @layer base {
-  /* Scoped Preflight resets for .dy-admin-ui to prevent global style leakage */
-  .dy-admin-ui,
-  .dy-admin-ui *::before,
-  .dy-admin-ui *::after,
-  .dy-admin-ui * {
-    box-sizing: border-box;
-    border-width: 0;
-    border-style: solid;
-    border-color: currentColor;
-  }
+  /*
+   * Everything below that styles bare elements (the Preflight clone, heading,
+   * button and field defaults) goes in a native cascade layer: `postcss.config.js`
+   * turns this marker into `@layer base`. Unlayered CSS always beats layered CSS,
+   * so a host app on Tailwind v4 would otherwise lose every utility class
+   * (`border`, `bg-*`, `font-bold`, `mb-4`, `ring`) on its own components inside the
+   * admin. Layered, these defaults still beat the browser's, and still lose to the
+   * admin's own `dy-*` classes, which are unlayered.
+   */
+  @media dy-native-layer-base {
+    /* Scoped Preflight resets for .dy-admin-ui to prevent global style leakage */
+    .dy-admin-ui,
+    .dy-admin-ui *::before,
+    .dy-admin-ui *::after,
+    .dy-admin-ui * {
+      box-sizing: border-box;
+      border-width: 0;
+      border-style: solid;
+      border-color: currentColor;
+    }
 
-  .dy-admin-ui :where(a) {
-    color: inherit;
-    text-decoration: inherit;
-  }
+    .dy-admin-ui :where(a) {
+      color: inherit;
+      text-decoration: inherit;
+    }
 
-  .dy-admin-ui :where(blockquote, dl, dd, h1, h2, h3, h4, h5, h6, hr, figure, p, pre) {
-    margin: 0;
-  }
+    .dy-admin-ui :where(blockquote, dl, dd, h1, h2, h3, h4, h5, h6, hr, figure, p, pre) {
+      margin: 0;
+    }
 
-  .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
-    font-size: inherit;
-    font-weight: inherit;
-  }
+    .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
+      font-size: inherit;
+      font-weight: inherit;
+    }
 
-  .dy-admin-ui :where(ol, ul) {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
+    .dy-admin-ui :where(ol, ul) {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
 
-  .dy-admin-ui :where(button, input, optgroup, select, textarea) {
-    font-family: inherit;
-    font-size: 100%;
-    font-weight: inherit;
-    line-height: inherit;
-    color: inherit;
-    margin: 0;
-    padding: 0;
-  }
+    .dy-admin-ui :where(button, input, optgroup, select, textarea) {
+      font-family: inherit;
+      font-size: 100%;
+      font-weight: inherit;
+      line-height: inherit;
+      color: inherit;
+      margin: 0;
+      padding: 0;
+    }
 
-  .dy-admin-ui :where(button, select) {
-    text-transform: none;
-  }
+    .dy-admin-ui :where(button, select) {
+      text-transform: none;
+    }
 
-  .dy-admin-ui :where(button, [type='button'], [type='reset'], [type='submit']) {
-    -webkit-appearance: button;
-    appearance: button;
-    background-color: transparent;
-    background-image: none;
-  }
+    .dy-admin-ui :where(button, [type='button'], [type='reset'], [type='submit']) {
+      -webkit-appearance: button;
+      appearance: button;
+      background-color: transparent;
+      background-image: none;
+    }
 
-  .dy-admin-ui :where(input, textarea, select) {
-    background-color: transparent;
-  }
+    .dy-admin-ui :where(input, textarea, select) {
+      background-color: transparent;
+    }
 
-  .dy-admin-ui ::-moz-focus-inner {
-    border-style: none;
-    padding: 0;
-  }
+    .dy-admin-ui ::-moz-focus-inner {
+      border-style: none;
+      padding: 0;
+    }
 
-  .dy-admin-ui :-moz-focusring {
-    outline: 1px dotted ButtonText;
-  }
+    .dy-admin-ui :-moz-focusring {
+      outline: 1px dotted ButtonText;
+    }
 
-  .dy-admin-ui :-moz-ui-invalid {
-    box-shadow: none;
-  }
+    .dy-admin-ui :-moz-ui-invalid {
+      box-shadow: none;
+    }
 
-  .dy-admin-ui :where(textarea) {
-    resize: vertical;
-  }
+    .dy-admin-ui :where(textarea) {
+      resize: vertical;
+    }
 
-  .dy-admin-ui :where(img, svg, video, canvas, audio, iframe, embed, object) {
-    display: block;
-  }
+    .dy-admin-ui :where(img, svg, video, canvas, audio, iframe, embed, object) {
+      display: block;
+    }
 
-  .dy-admin-ui :where(img, video) {
-    max-width: 100%;
-    height: auto;
-  }
+    .dy-admin-ui :where(img, video) {
+      max-width: 100%;
+      height: auto;
+    }
 
-  /* Sexy scrollbars — thin, rounded, muted */
-  .dy-admin-ui * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
-  }
+    /* Sexy scrollbars — thin, rounded, muted */
+    .dy-admin-ui * {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--border)) transparent;
+    }
 
-  .dy-admin-ui *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+    .dy-admin-ui *::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
 
-  .dy-admin-ui *::-webkit-scrollbar-track {
-    background: transparent;
-  }
+    .dy-admin-ui *::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
-  .dy-admin-ui *::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.2);
-    border-radius: 9999px;
-    border: 1px solid transparent;
-    background-clip: padding-box;
-  }
+    .dy-admin-ui *::-webkit-scrollbar-thumb {
+      background-color: hsl(var(--muted-foreground) / 0.2);
+      border-radius: 9999px;
+      border: 1px solid transparent;
+      background-clip: padding-box;
+    }
 
-  .dy-admin-ui *::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.35);
-  }
+    .dy-admin-ui *::-webkit-scrollbar-thumb:hover {
+      background-color: hsl(var(--muted-foreground) / 0.35);
+    }
 
-  .dy-admin-ui *::-webkit-scrollbar-thumb:active {
-    background-color: hsl(var(--muted-foreground) / 0.5);
-  }
+    .dy-admin-ui *::-webkit-scrollbar-thumb:active {
+      background-color: hsl(var(--muted-foreground) / 0.5);
+    }
 
-  .dy-admin-ui *::-webkit-scrollbar-corner {
-    background: transparent;
+    .dy-admin-ui *::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
   }
 
   /* Dyrected defaults: Lime Paper, Signal Lime, and Violet. */
@@ -250,10 +262,12 @@
     color-scheme: dark;
   }
 
-  .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
-    @apply dy-font-serif;
-    font-weight: 500;
-    letter-spacing: 0;
+  @media dy-native-layer-base {
+    .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
+      @apply dy-font-serif;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
   }
 
   .dy-admin-ui .dy-font-bold,
@@ -262,9 +276,11 @@
     font-weight: 600;
   }
 
-  .dy-admin-ui :where(button, label) {
-    font-weight: 500;
-    letter-spacing: 0;
+  @media dy-native-layer-base {
+    .dy-admin-ui :where(button, label) {
+      font-weight: 500;
+      letter-spacing: 0;
+    }
   }
 
   /* Keep text accents legible: lime fills actions, violet carries links. */
@@ -296,12 +312,15 @@
 }
 
 @layer components {
-  .dy-admin-ui :where(input, select, textarea) {
-    @apply focus-visible:dy-ring-0 focus-visible:dy-ring-offset-0 focus-visible:dy-outline-none focus:dy-outline-none dy-border-border/60 dy-bg-transparent dy-transition-all;
-  }
+  /* Defaults for bare fields; layered so a host's own classes on its fields win. */
+  @media dy-native-layer-base {
+    .dy-admin-ui :where(input, select, textarea) {
+      @apply focus-visible:dy-ring-0 focus-visible:dy-ring-offset-0 focus-visible:dy-outline-none focus:dy-outline-none dy-border-border/60 dy-bg-transparent dy-transition-all;
+    }
 
-  .dy-admin-ui :where(input, select, textarea):focus {
-    border-color: hsl(var(--intelligence) / 0.5);
+    .dy-admin-ui :where(input, select, textarea):focus {
+      border-color: hsl(var(--intelligence) / 0.5);
+    }
   }
 }
 .dy-admin-ui [data-dy-path]:hover {

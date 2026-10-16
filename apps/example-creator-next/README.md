@@ -43,6 +43,10 @@ To try it, rebuild the workspace packages after pulling (`pnpm build:packages` f
   with a toast if the server refuses. Guests with no table show under *Not seated*.
 - **Actions.** Row actions such as *Check in* run through Dyrected's own confirm dialog and form.
 - **Slot.** The line above the chart is a `beforeViewContent` slot that reads the same documents.
+- **Light and dark.** The admin themes itself with CSS variables (`--card`, `--border`, `--muted`, …) that
+  hold bare HSL values and change with its light/dark toggle, so the demo styles itself with
+  `bg-[hsl(var(--card))]` and follows the admin automatically. Don't use Tailwind's `dark:` here: this site
+  sets `class="dark"` on `<html>` permanently, so it would always apply.
 - **Fallback.** Rename the key in `admin-client.tsx` to see the "layout is unavailable" card and its
   *Show as table* button.
 - **Replace a built-in.** Add `viewLayouts: { kanban: MyKanban }` to render your own kanban in Dyrected's
