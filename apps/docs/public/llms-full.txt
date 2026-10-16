@@ -41382,19 +41382,19 @@ Throughout, "your app" means the project you embedded the admin into — your Ne
 
 Every custom component follows the same two-step pattern: **declare** where it goes, then **provide** the component.
 
-- You reference a component by a **string key** — either on a field (`admin.component`) or in a slot list (`admin.components`) in your schema.
+- You reference a component by a **string key** in your config: on a field (`admin.component`), in a slot list (`admin.components`), as a view's `component`, or as a page's `component`.
 - You pass the actual component under that same key in the `components` prop of `<DyrectedAdmin>`.
 
 There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin shows a placeholder and warns in development (see [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings)); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
 
 There are four extension points:
 
-| You want to | Use | Read |
-| --- | --- | --- |
-| Replace the input for one field | A custom field component | [Below](#custom-field-components) |
-| Add something above, below, or around built-in screens | Component slots | [Dashboard](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard), [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) |
-| Show a set of records in a shape no built-in layout offers | A custom view layout | [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) |
-| Add a screen that is not a record or a list of records | A custom page | [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) |
+| You want to                                                | Use                      | Read                                                                                                                               |
+| ---------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Replace the input for one field                            | A custom field component | [Below](#custom-field-components)                                                                                                  |
+| Add something above, below, or around built-in screens     | Component slots          | [Dashboard](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard), [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) |
+| Show a set of records in a shape no built-in layout offers | A custom view layout     | [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts)                                                      |
+| Add a screen that is not a record or a list of records     | A custom page            | [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)                                                       |
 
 Once you have components, these pages cover the rest:
 
@@ -41449,15 +41449,15 @@ The key is yours to name — it's matched by the `admin.component` string, not b
 
 Your field component is handed everything it needs to read and write the value, plus context about where it's rendering:
 
-| Prop | What it is |
-|---|---|
-| `value` | The current field value |
-| `onChange` | Call it with the new value to update the form |
-| `field` | The field's schema definition from your config |
-| `path` | The field's name |
-| `disabled` | `true` when the field is read-only or the user lacks update access |
-| `collection` | The slug of the collection the field belongs to |
-| `context` | `{ user, schemas, siblingData }` — the current user, all loaded schemas, and the sibling field values in the same document |
+| Prop         | What it is                                                                                                                 |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `value`      | The current field value                                                                                                    |
+| `onChange`   | Call it with the new value to update the form                                                                              |
+| `field`      | The field's schema definition from your config                                                                             |
+| `path`       | The field's name                                                                                                           |
+| `disabled`   | `true` when the field is read-only or the user lacks update access                                                         |
+| `collection` | The slug of the collection the field belongs to                                                                            |
+| `context`    | `{ user, schemas, siblingData }` — the current user, all loaded schemas, and the sibling field values in the same document |
 
 Read from `value`, call `onChange` to update, and use `context.siblingData` if your input depends on other fields. Because the admin resolves access before rendering, honoring `disabled` is usually all you need for permissions.
 
@@ -41504,23 +41504,80 @@ Each slot list is an array, so you can stack more than one component in a slot. 
 - [Dashboard](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard) — the `beforeDashboard` / `afterDashboard` slots and their props.
 - [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) — the `beforeList` / `beforeListTable` / `afterListTable` / `afterList` slots and their props.
 
+Operational views have their own slots, `beforeViewHeader`, `afterViewHeader`, `beforeViewContent`, and `afterViewContent`. Declare them on a single view with `components` in `defineView`, or on a collection with `admin.components` to apply to all of its views, and register the components in the `collectionView` group:
+
+```ts
+defineView({
+  slug: "pipeline",
+  label: "Pipeline",
+  layout: "kanban",
+  groupBy: "status",
+  components: { beforeViewContent: ["pipeline-legend"] },
+});
+```
+
+```tsx
+<DyrectedAdmin
+  components={{ collectionView: { "pipeline-legend": PipelineLegend } }}
+/>
+```
+
+The components you register under `collectionList` also work in these slots, so existing list slots keep working inside views. See [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view#view-specific-component-slots-defineview) for how collection-wide and view-specific slots combine, and the props they receive.
+
+## Custom view layouts
+
+When your records need to be displayed in a shape that the built-in layouts (table, cards, kanban, spreadsheet, calendar) do not support — like a seating chart, an interactive map, or a timeline — you can create a custom view layout.
+
+Declare the layout key in your collection's views in `dyrected.config.ts`, then provide the component in `components.viewLayouts`:
+
+```tsx
+<DyrectedAdmin
+  components={{
+    viewLayouts: {
+      "seating-chart": SeatingChartLayout,
+    },
+  }}
+/>
+```
+
+Custom layouts receive the current view context and can read or update data using the [useCollectionView](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) hook. See [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts).
+
+## Custom admin pages
+
+When you need an operational screen that isn't tied to a single collection — an executive dashboard, an onboarding wizard, a billing hub, or an analytics panel — add a custom page to the admin navigation with `definePage()`.
+
+```tsx
+<DyrectedAdmin
+  components={{
+    pages: {
+      "ops.executiveHub": OperationsDashboard,
+    },
+  }}
+/>
+```
+
+Custom pages support dynamic header actions, breadcrumbs, sub-routing, and notifications. See [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages).
+
 ## Using Vue components
 
-If your app is Vue or Nuxt, you register Vue components exactly the same way — pass them in the `components` prop. The Vue integration wraps them automatically so they render inside the React-based admin; you don't do anything special beyond passing them. The props described above arrive as Vue props.
+If your app is Vue or Nuxt, you register Vue components exactly the same way — pass them in the `components` prop (or via `defineAdminComponents`). The Vue integration wraps them automatically so they render inside the admin interface; you don't do anything special beyond passing them. The props described above arrive as Vue props.
 
 ## What you can't customize this way
 
-It's worth being clear about the edges so you don't go looking for something that isn't there. Dyrected does **not** currently support:
+It's worth being clear about the edges so you don't go looking for something that isn't there:
 
-- Replacing root-level UI (the navigation, header, login screen, or logo as a component — the logo is set with [branding config](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css), not a component).
-- Injecting custom React context providers around the admin.
-- Replacing the document edit form or adding tabs to it. Use a [custom page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) for a standalone workflow instead.
+- **The root admin shell**: You cannot replace the core shell (the sidebar frame, header bar, or authentication screen) with arbitrary JSX/Vue components. You customize these declaratively: navigation structure via `admin.navigation`, logos via `admin.branding`, browser tab titles via `admin.meta`, and visual styles via [custom theme variables](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
+- **Internal provider injection**: You can wrap `<DyrectedAdmin>` in any providers your app needs (`QueryClientProvider`, etc.), but there is no configuration option to inject arbitrary React context providers _inside_ the admin's internal routing tree.
+- **The built-in document edit form**: The edit screen (`/collections/:slug/:id/edit`) always renders Dyrected's schema-driven form. You can replace individual field inputs (`components.fields`), but you cannot replace the full form or inject tabs into it. The read-only [Detail View](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view) is more flexible and can embed your own components. If you need a fully custom workflow, reach for a [custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages).
 
-If your goal is theming rather than swapping components, that's [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css). If you need one of the unsupported customizations above, it's a genuine gap — raise it rather than working around it.
+If your goal is theming rather than swapping components, that's [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
 
 ## Recommended path
 
-Reach for a **custom field component** when one field needs an input the defaults don't offer, a **slot** to add something alongside a built-in screen, a **view layout** when records need a new shape, and a **[custom page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)** for a screen that is a task. Start from this page's pattern (declare a key, register the component), then go to the page for the extension point you chose.
+- Reach for a **custom field component** when a field needs an input the defaults don't offer.
+- Reach for a **slot** to add widgets or banners alongside built-in dashboard or collection screens.
+- Reach for a **view layout** when collection records need a custom visual presentation (e.g. maps, timelines, seating charts).
+- Reach for a **[custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)** when you need a dedicated operational screen, wizard, or analytics dashboard with its own URL and navigation item.
 
 ---
 

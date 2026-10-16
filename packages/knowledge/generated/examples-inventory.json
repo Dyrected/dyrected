@@ -2324,6 +2324,34 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/custom-components/overview#example-5",
+    "page": "/editor-experience/custom-components/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/overview#example-6",
+    "page": "/editor-experience/custom-components/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/overview#example-7",
+    "page": "/editor-experience/custom-components/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/overview#example-8",
+    "page": "/editor-experience/custom-components/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/custom-components/registration-warnings#example-1",
     "page": "/editor-experience/custom-components/registration-warnings",
     "language": "text",
