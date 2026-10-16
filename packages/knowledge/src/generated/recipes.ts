@@ -1089,5 +1089,40 @@ export const recipes: readonly Recipe[] = [
     "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n  },\n  fields: [\n    defineTextField({ name: \"alt\", label: \"Alternative text\", required: true }),\n    defineTextareaField({ name: \"caption\", label: \"Caption\" }),\n  ],\n});",
     "docsPath": "/docs/examples-and-recipes/library/upload-collection",
     "snippetStatus": "validated"
+  },
+  {
+    "id": "walk-in-check-in-form",
+    "title": "Build a walk-in check-in form",
+    "description": "Replace a collection's create screen with a small desk form that saves a guest as attending and checked in, through the normal create path.",
+    "problem": "A guest arrives at the door without an RSVP. The desk needs three inputs and one button, but the record must still go through validation, access rules, and hooks.",
+    "summary": "Point createForm at a registered component, render a few built-in inputs with DyrectedField, and call submit with overrides for the values the editor never types.",
+    "category": "admin-experience",
+    "runtime": "variant",
+    "runtimeNotes": "The form component runs in the admin, which works the same on either runtime. Registration uses components.forms on DyrectedAdmin.",
+    "intents": [
+      "replace the create form with my own component",
+      "build a custom create screen for a collection",
+      "check in a guest from a custom admin form",
+      "save a record with values the editor does not type",
+      "use built-in field inputs inside a custom form"
+    ],
+    "concepts": [
+      "admin.components.createForm",
+      "formShell",
+      "components.forms",
+      "useDocumentForm",
+      "DyrectedField",
+      "submit overrides"
+    ],
+    "canonicalDocs": [
+      "/docs/editor-experience/custom-components/custom-document-forms",
+      "/docs/editor-experience/custom-components/overview"
+    ],
+    "requires": [
+      "@dyrected/react"
+    ],
+    "source": "import { useState } from \"react\";\nimport {\n  defineBooleanField,\n  defineCollection,\n  defineDateTimeField,\n  defineNumberField,\n  defineTextField,\n} from \"@dyrected/core\";\nimport { DyrectedField, defineAdminComponents, useAdminNotify, useDocumentForm } from \"@dyrected/react\";\n\nexport const GuestResponses = defineCollection({\n  slug: \"guest-responses\",\n  labels: { singular: \"Guest response\", plural: \"Guest responses\" },\n  admin: {\n    useAsTitle: \"name\",\n    components: {\n      // Used when creating. Editing keeps the built-in form.\n      createForm: \"guest-responses.walkIn\",\n      // The form brings its own button, so Dyrected keeps only the header.\n      formShell: \"header\",\n    },\n  },\n  fields: [\n    defineTextField({ name: \"name\", label: \"Full name\", required: true }),\n    defineTextField({ name: \"email\", label: \"Email\" }),\n    defineNumberField({ name: \"guestCount\", label: \"Plus-ones\", defaultValue: 0 }),\n    defineBooleanField({ name: \"attending\", label: \"Attending\", defaultValue: false }),\n    defineBooleanField({ name: \"checkedIn\", label: \"Checked in\", defaultValue: false }),\n    defineDateTimeField({ name: \"checkedInAt\", label: \"Checked in at\" }),\n  ],\n});\n\nexport function WalkInForm() {\n  const { submit, permissions, cancel } = useDocumentForm();\n  const notify = useAdminNotify();\n  const [saving, setSaving] = useState(false);\n\n  async function registerAndCheckIn() {\n    setSaving(true);\n    const result = await submit({\n      // Values the editor never types: they are what \"walk-in\" means.\n      overrides: { attending: true, checkedIn: true, checkedInAt: new Date().toISOString() },\n      redirect: \"list\",\n      silent: true,\n    });\n    setSaving(false);\n\n    if (result.ok) {\n      notify.success(\"Guest registered and checked in\");\n    } else {\n      notify.error(result.errors.name ?? result.errors._form ?? \"Could not register this guest\");\n    }\n  }\n\n  return (\n    <div>\n      <h2>Walk-in guest</h2>\n      <DyrectedField path=\"name\" />\n      <DyrectedField path=\"email\" />\n      <DyrectedField path=\"guestCount\" />\n\n      <button type=\"button\" onClick={cancel}>\n        Cancel\n      </button>\n      <button type=\"button\" disabled={saving || !permissions.canCreate} onClick={() => void registerAndCheckIn()}>\n        {saving ? \"Registering…\" : \"Register and check in\"}\n      </button>\n    </div>\n  );\n}\n\n// Registered on <DyrectedAdmin components={components} /> under the key the config uses.\nexport const components = defineAdminComponents({\n  forms: { \"guest-responses.walkIn\": WalkInForm },\n});",
+    "docsPath": "/docs/examples-and-recipes/library/walk-in-check-in-form",
+    "snippetStatus": "validated"
   }
 ];

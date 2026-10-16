@@ -11,18 +11,19 @@ Throughout, "your app" means the project you embedded the admin into — your Ne
 
 Every custom component follows the same two-step pattern: **declare** where it goes, then **provide** the component.
 
-- You reference a component by a **string key** in your config: on a field (`admin.component`), in a slot list (`admin.components`), as a view's `component`, or as a page's `component`.
+- You reference a component by a **string key** in your config: on a field (`admin.component`), in a slot list or form setting (`admin.components`), as a view's `component`, or as a page's `component`.
 - You pass the actual component under that same key in the `components` prop of `<DyrectedAdmin>`.
 
 There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin shows a placeholder and warns in development (see [Registration warnings](/docs/editor-experience/custom-components/registration-warnings)); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
 
-There are four extension points:
+There are five extension points:
 
 | You want to                                                | Use                      | Read                                                                                                                               |
 | ---------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Replace the input for one field                            | A custom field component | [Below](#custom-field-components)                                                                                                  |
 | Add something above, below, or around built-in screens     | Component slots          | [Dashboard](/docs/editor-experience/custom-components/dashboard), [List View](/docs/editor-experience/custom-components/list-view) |
 | Show a set of records in a shape no built-in layout offers | A custom view layout     | [Custom View Layouts](/docs/editor-experience/custom-components/view-layouts)                                                      |
+| Replace the create or edit screen of a collection          | A custom form            | [Custom Create & Edit Forms](/docs/editor-experience/custom-components/custom-document-forms)                                      |
 | Add a screen that is not a record or a list of records     | A custom page            | [Custom Admin Pages](/docs/editor-experience/custom-components/custom-pages)                                                       |
 
 Once you have components, these pages cover the rest:
@@ -31,6 +32,7 @@ Once you have components, these pages cover the rest:
 - [Styling Custom Components](/docs/editor-experience/custom-components/styling): match the admin in light and dark mode.
 - [Typed Component Keys](/docs/editor-experience/custom-components/typed-keys): catch a misspelled or missing key at compile time.
 - [Registration warnings](/docs/editor-experience/custom-components/registration-warnings): what the admin shows when a component is missing, unused, or throws.
+- [Custom Create & Edit Forms](/docs/editor-experience/custom-components/custom-document-forms): replace a collection's create or edit screen and keep Dyrected's save pipeline.
 - [Replacing a Built-in Layout](/docs/editor-experience/custom-components/replacing-built-in-layouts): swap the kanban, table, or another layout everywhere.
 - [Nuxt Auto-Registration](/docs/editor-experience/custom-components/nuxt-auto-registration): register components by dropping files in a folder.
 
@@ -197,7 +199,7 @@ It's worth being clear about the edges so you don't go looking for something tha
 
 - **The root admin shell**: You cannot replace the core shell (the sidebar frame, header bar, or authentication screen) with arbitrary JSX/Vue components. You customize these declaratively: navigation structure via `admin.navigation`, logos via `admin.branding`, browser tab titles via `admin.meta`, and visual styles via [custom theme variables](/docs/editor-experience/customizing-css).
 - **Internal provider injection**: You can wrap `<DyrectedAdmin>` in any providers your app needs (`QueryClientProvider`, etc.), but there is no configuration option to inject arbitrary React context providers _inside_ the admin's internal routing tree.
-- **The built-in document edit form**: The edit screen (`/collections/:slug/:id/edit`) always renders Dyrected's schema-driven form. You can replace individual field inputs (`components.fields`), but you cannot replace the full form or inject tabs into it. The read-only [Detail View](/docs/editor-experience/detail-view) is more flexible and can embed your own components. If you need a fully custom workflow, reach for a [custom admin page](/docs/editor-experience/custom-components/custom-pages).
+- **The save pipeline**: You can replace the create and edit *screens* with [your own form](/docs/editor-experience/custom-components/custom-document-forms), but a custom form still saves through Dyrected's write path, so validation, access rules, and hooks always run. The read-only [Detail View](/docs/editor-experience/detail-view) is separate and can embed your own components. If you need a workflow that is not a record at all, reach for a [custom admin page](/docs/editor-experience/custom-components/custom-pages).
 
 If your goal is theming rather than swapping components, that's [Customizing CSS](/docs/editor-experience/customizing-css).
 
@@ -205,5 +207,6 @@ If your goal is theming rather than swapping components, that's [Customizing CSS
 
 - Reach for a **custom field component** when a field needs an input the defaults don't offer.
 - Reach for a **slot** to add widgets or banners alongside built-in dashboard or collection screens.
+- Reach for a **[custom form](/docs/editor-experience/custom-components/custom-document-forms)** when a create or edit screen needs a different shape, like a walk-in desk or a scanner, but should still save through Dyrected.
 - Reach for a **view layout** when collection records need a custom visual presentation (e.g. maps, timelines, seating charts).
 - Reach for a **[custom admin page](/docs/editor-experience/custom-components/custom-pages)** when you need a dedicated operational screen, wizard, or analytics dashboard with its own URL and navigation item.

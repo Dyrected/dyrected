@@ -241,7 +241,7 @@ Options travel from your server to the admin as JSON, so keep functions and clas
 
 ## In Vue and Nuxt
 
-Register the component the same way. The Vue integration wraps it, and the same three composables work with no setup. State comes back as refs, so read it through `.value`:
+Register the component the same way. The Vue integration wraps it, and the same three composables work with no setup. State comes back as refs. In `<script>` read them through `.value`; templates unwrap them for you:
 
 ```vue
 <script setup lang="ts">
@@ -258,7 +258,7 @@ const grouped = useGroupedDocuments("tableNumber");
       <li v-for="guest in group.docs" :key="guest.id">
         {{ guest.name }}
         <button
-          v-if="permissions.value.canUpdate"
+          v-if="permissions.canUpdate"
           @click="updateDocument(guest.id, { tableNumber: null })"
         >
           Unseat

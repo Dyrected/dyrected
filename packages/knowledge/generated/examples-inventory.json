@@ -2156,6 +2156,55 @@
     "validation": "Inventoried vue example"
   },
   {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-1",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-2",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-3",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-4",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-5",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-6",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-document-forms#example-7",
+    "page": "/editor-experience/custom-components/custom-document-forms",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
     "id": "/editor-experience/custom-components/custom-pages#example-1",
     "page": "/editor-experience/custom-components/custom-pages",
     "language": "ts",
@@ -3985,6 +4034,13 @@
   {
     "id": "/examples-and-recipes/library/upload-collection#example-1",
     "page": "/examples-and-recipes/library/upload-collection",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/examples-and-recipes/library/walk-in-check-in-form#example-1",
+    "page": "/examples-and-recipes/library/walk-in-check-in-form",
     "language": "ts",
     "classification": "compiled-recipe",
     "validation": "Compiled and behavior-tested by @dyrected/knowledge"

@@ -1,0 +1,32 @@
+{
+  "id": "walk-in-check-in-form",
+  "title": "Build a walk-in check-in form",
+  "description": "Replace a collection's create screen with a small desk form that saves a guest as attending and checked in, through the normal create path.",
+  "problem": "A guest arrives at the door without an RSVP. The desk needs three inputs and one button, but the record must still go through validation, access rules, and hooks.",
+  "summary": "Point createForm at a registered component, render a few built-in inputs with DyrectedField, and call submit with overrides for the values the editor never types.",
+  "category": "admin-experience",
+  "runtime": "variant",
+  "runtimeNotes": "The form component runs in the admin, which works the same on either runtime. Registration uses components.forms on DyrectedAdmin.",
+  "intents": [
+    "replace the create form with my own component",
+    "build a custom create screen for a collection",
+    "check in a guest from a custom admin form",
+    "save a record with values the editor does not type",
+    "use built-in field inputs inside a custom form"
+  ],
+  "concepts": [
+    "admin.components.createForm",
+    "formShell",
+    "components.forms",
+    "useDocumentForm",
+    "DyrectedField",
+    "submit overrides"
+  ],
+  "canonicalDocs": [
+    "/docs/editor-experience/custom-components/custom-document-forms",
+    "/docs/editor-experience/custom-components/overview"
+  ],
+  "requires": [
+    "@dyrected/react"
+  ]
+}

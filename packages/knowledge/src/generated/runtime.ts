@@ -1083,6 +1083,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "editor-experience--custom-components--custom-document-forms",
+    "relativePath": "editor-experience/custom-components/custom-document-forms",
+    "title": "Custom Create & Edit Forms",
+    "description": "Replace a collection's create or edit screen with your own component, such as a walk-in desk or a review form, while saving still runs Dyrected's validation, access rules, and hooks.",
+    "runtime": "self-hosted",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience/custom-components",
+    "sourceFile": "apps/docs/content/docs/editor-experience/custom-components/custom-document-forms.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/custom-components/custom-document-forms",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/custom-components/custom-document-forms",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-document-forms",
+    "status": "classified"
+  },
+  {
     "id": "editor-experience--custom-components--custom-pages",
     "relativePath": "editor-experience/custom-components/custom-pages",
     "title": "Custom Admin Pages",
@@ -2400,6 +2415,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/upload-collection",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/upload-collection",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/upload-collection",
+    "status": "classified"
+  },
+  {
+    "id": "examples-and-recipes--library--walk-in-check-in-form",
+    "relativePath": "examples-and-recipes/library/walk-in-check-in-form",
+    "title": "Build a walk-in check-in form",
+    "description": "Replace a collection's create screen with a small desk form that saves a guest as attending and checked in, through the normal create path.",
+    "runtime": "variant",
+    "runtimeGroup": "recipe-walk-in-check-in-form",
+    "runtimeNotes": "Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.",
+    "sectionPath": "examples-and-recipes/library",
+    "sourceFile": "apps/docs/content/docs/examples-and-recipes/library/walk-in-check-in-form.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/examples-and-recipes/library/walk-in-check-in-form",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form",
     "status": "classified"
   },
   {

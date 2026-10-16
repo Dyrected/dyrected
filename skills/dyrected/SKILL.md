@@ -423,6 +423,7 @@ Dyrected terminology.
 - [Build a support desk workspace](https://docs.dyrected.com/docs/examples-and-recipes/library/support-desk-workspace) — Problem: Support agents need a shared queue of open tickets, a fast way to spot urgent ones, and their own assigned tickets, without every agent seeing the same unfiltered list. Summary: Define a workspace with defineWorkspace containing open, urgent, and resolved views, a badge counting open tickets, and a resolve action.
 - [Scope content to the current workspace](https://docs.dyrected.com/docs/examples-and-recipes/library/tenant-scoped-access) — Problem: Users should only see or manage records that belong to their current workspace or organization. Summary: Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.
 - [Create a media upload collection](https://docs.dyrected.com/docs/examples-and-recipes/library/upload-collection) — Problem: Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents. Summary: Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.
+- [Build a walk-in check-in form](https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form) — Problem: A guest arrives at the door without an RSVP. The desk needs three inputs and one button, but the record must still go through validation, access rules, and hooks. Summary: Point createForm at a registered component, render a few built-in inputs with DyrectedField, and call submit with overrides for the values the editor never types.
 <!-- GENERATED:RECIPES:END -->
 
 ## Intent-to-pattern index
@@ -569,6 +570,11 @@ Dyrected terminology.
 - “create a media library” → [Create a media upload collection](https://docs.dyrected.com/docs/examples-and-recipes/library/upload-collection)
 - “store uploaded files” → [Create a media upload collection](https://docs.dyrected.com/docs/examples-and-recipes/library/upload-collection)
 - “add image uploads to my project” → [Create a media upload collection](https://docs.dyrected.com/docs/examples-and-recipes/library/upload-collection)
+- “replace the create form with my own component” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form)
+- “build a custom create screen for a collection” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form)
+- “check in a guest from a custom admin form” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form)
+- “save a record with values the editor does not type” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form)
+- “use built-in field inputs inside a custom form” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/examples-and-recipes/library/walk-in-check-in-form)
 <!-- GENERATED:INTENTS:END -->
 
 ## Generated contract map

@@ -68,6 +68,7 @@ const recipeDocsPathMap = {
   "site-settings-global": "/docs/examples-and-recipes/library/site-settings-global",
   "tenant-scoped-access": "/docs/examples-and-recipes/library/tenant-scoped-access",
   "upload-collection": "/docs/examples-and-recipes/library/upload-collection",
+  "walk-in-check-in-form": "/docs/examples-and-recipes/library/walk-in-check-in-form",
   "operational-table-view": "/docs/examples-and-recipes/library/operational-table-view",
   "kanban-pipeline-view": "/docs/examples-and-recipes/library/kanban-pipeline-view",
   "calendar-schedule-view": "/docs/examples-and-recipes/library/calendar-schedule-view",
