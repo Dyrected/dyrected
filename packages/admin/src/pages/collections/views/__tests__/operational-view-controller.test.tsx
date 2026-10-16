@@ -161,10 +161,10 @@ describe("operational view controller", () => {
 
   it("lets the app replace a built-in layout by registering a component under its name", async () => {
     function MyTable(props: { collection: string; viewSlug: string }) {
-      const { documents } = useCollectionView()
+      const { documents, config } = useCollectionView()
       return (
         <div data-testid="my-table">
-          {props.collection}/{props.viewSlug}:{documents.length}
+          {props.collection}/{props.viewSlug}:{documents.length}:{config.dateField}
         </div>
       )
     }
@@ -180,13 +180,13 @@ describe("operational view controller", () => {
           <OperationalViewPage
             slug="guests"
             schema={{ slug: "guests", labels: { singular: "Guest" }, admin: {}, fields: [], access: {} }}
-            view={{ slug: "all", label: "All", layout: "table" }}
+            view={{ slug: "all", label: "All", layout: "table", dateField: "arrivesAt" }}
             schemas={{ collections: [] }}
           />
         </MemoryRouter>
       </QueryClientProvider>,
     )
 
-    expect((await screen.findByTestId("my-table")).textContent).toBe("guests/all:2")
+    expect((await screen.findByTestId("my-table")).textContent).toBe("guests/all:2:arrivesAt")
   })
 })

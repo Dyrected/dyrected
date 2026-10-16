@@ -158,10 +158,14 @@ export function useViewController(options: UseViewControllerOptions): ViewContro
     [refetch, setPage, setSearch, updateDocument, open, run],
   )
 
+  // What a layout may need to know about the view it replaces or implements.
   const config = useMemo(
     () => ({
       columns: view.columns,
       groupBy: (view as { groupBy?: string }).groupBy,
+      dateField: view.dateField,
+      startDateField: view.startDateField,
+      endDateField: view.endDateField,
       options: view.options,
     }),
     [view],

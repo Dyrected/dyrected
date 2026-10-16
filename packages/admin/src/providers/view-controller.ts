@@ -11,7 +11,11 @@ export type ViewOpenMode = "view" | "edit" | "drawer";
 export interface ViewLayoutConfig {
   columns?: string[];
   groupBy?: string;
-  /** Options authored on the view (`options` in `defineView`). */
+  /** Date field of a calendar view, and the start and end fields of a gantt view. */
+  dateField?: string;
+  startDateField?: string;
+  endDateField?: string;
+  /** Options authored on the view (`options` in `defineView`). Only `layout: "custom"` views carry them. */
   options?: Record<string, unknown>;
   [key: string]: unknown;
 }
