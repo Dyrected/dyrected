@@ -19,6 +19,7 @@ export function registerBundle(program: Command) {
     .description("Build the deployable bundle for your config and check it runs in Dyrected Cloud")
     .option("-c, --config <path>", "Path to your dyrected.config.ts")
     .option("-o, --out <dir>", "Directory to write the versioned bundle into", ".dyrected/bundles")
+    .option("--components <path>", "Entry file whose default export is your admin component registry")
     .option("--check", "Only run the Cloud compatibility check; write nothing")
     .option("--env-path <path>", "Path to an env file to load before inspecting")
     .addHelpText(
@@ -27,6 +28,7 @@ export function registerBundle(program: Command) {
 The bundle is a folder named after a content hash, containing:
   schema.json     your config with every function replaced by a reference
   server.js       one self-contained module exporting those functions (+ server.js.map)
+  components.js   your custom admin components for the Cloud-hosted admin (when you have any)
   manifest.json   the version, the function ids and the compatibility report
 
 Examples:
@@ -54,6 +56,7 @@ Examples:
           configPath,
           outDir: path.resolve(cwd, options.out),
           checkOnly: Boolean(options.check),
+          componentsEntry: options.components,
         });
       } catch (error: any) {
         console.error(chalk.red(`✖ ${error.message}`));

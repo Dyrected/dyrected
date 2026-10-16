@@ -91,6 +91,16 @@ export interface AdminConfig {
   homePage?: string;
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
+  /**
+   * Path to the file whose default export is your admin component registry (`defineAdminComponents({...})`),
+   * relative to this config file. Only `dyrected bundle` and `dyrected deploy` read it: they build that file into
+   * the `components.js` the Cloud-hosted admin loads. Omit it to use `dyrected.components.ts` next to the config,
+   * or to have no custom components in Cloud.
+   *
+   * @example
+   * admin: { componentsEntry: "./src/admin-components.ts" }
+   */
+  componentsEntry?: string;
   branding?: {
     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
     logo?: string;

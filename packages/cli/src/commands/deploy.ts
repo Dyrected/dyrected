@@ -14,16 +14,18 @@ function resolveConfigPath(cwd: string, srcDir: string): string {
 
 /** Uploads a built bundle directory (see `dyrected bundle`) to a project. */
 export async function uploadBundle(target: CloudTarget, directory: string, fetchImpl: typeof fetch = fetch) {
-  const [manifest, schema, serverJs, sourceMap] = await Promise.all([
-    fs.readJson(path.join(directory, "manifest.json")),
+  const manifest = await fs.readJson(path.join(directory, "manifest.json"));
+  const [schema, serverJs, sourceMap, componentsJs, componentsMap] = await Promise.all([
     fs.readJson(path.join(directory, "schema.json")),
     fs.readFile(path.join(directory, "server.js"), "utf8"),
     fs.readFile(path.join(directory, "server.js.map"), "utf8").catch(() => undefined),
+    manifest.components ? fs.readFile(path.join(directory, "components.js"), "utf8") : undefined,
+    manifest.components ? fs.readFile(path.join(directory, "components.js.map"), "utf8").catch(() => undefined) : undefined,
   ]);
   return cloudRequest<{ deployment: { id: string; version: string; functionCount: number } }>(
     target,
     "/deployments",
-    { method: "POST", body: { manifest, schema, serverJs, sourceMap } },
+    { method: "POST", body: { manifest, schema, serverJs, sourceMap, componentsJs, componentsMap } },
     fetchImpl,
   );
 }
@@ -36,6 +38,7 @@ export function registerDeploy(program: Command) {
     .option("-s, --site-id <id>", "Your Dyrected Project ID")
     .option("-u, --url <url>", "Cloud API URL (defaults to $DYRECTED_URL, then Dyrected Cloud)")
     .option("-c, --config <path>", "Path to your dyrected.config.ts")
+    .option("--components <path>", "Entry file whose default export is your admin component registry")
     .option("-o, --out <dir>", "Directory to build the bundle into", ".dyrected/bundles")
     .option("--env-path <path>", "Path to an env file to load before deploying")
     .addHelpText(
@@ -62,7 +65,7 @@ Examples:
         if (!fs.existsSync(configPath)) throw new Error(`Could not find a config at "${configRelative}". Pass one with --config.`);
 
         console.log(chalk.blue(`Building ${configRelative}...`));
-        const { manifest, directory } = await buildBundle({ configPath, outDir: path.resolve(cwd, options.out) });
+        const { manifest, directory } = await buildBundle({ configPath, outDir: path.resolve(cwd, options.out), componentsEntry: options.components });
 
         for (const finding of manifest.compatibility.findings) {
           const mark = finding.severity === "error" ? chalk.red("✖") : chalk.yellow("⚠");

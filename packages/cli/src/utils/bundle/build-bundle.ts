@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import fs from "fs-extra";
 import { build, type Plugin } from "esbuild";
+import { buildComponents, resolveComponentsEntry, type ComponentsBuild } from "./build-components.js";
 import { checkCloudCompatibility, type CompatFinding } from "./compat-check.js";
 
 const require = createRequire(import.meta.url);
@@ -63,6 +64,8 @@ export interface BundleManifest {
   createdAt: string;
   schema: { file: string; sha256: string; bytes: number };
   server: { file: string; map: string; sha256: string; bytes: number };
+  /** The browser bundle of custom admin components, when the project has any. */
+  components?: { file: string; map: string; sha256: string; integrity: string; bytes: number };
   /** Every function in the config, by the id used in `schema.json`. */
   functions: string[];
   compatibility: { ok: boolean; findings: CompatFinding[] };
@@ -75,6 +78,12 @@ export interface BuildBundleOptions {
   outDir: string;
   /** Skip writing files; only report compatibility. */
   checkOnly?: boolean;
+  /**
+   * Entry file whose default export is the admin component registry. Defaults to the config's
+   * `admin.componentsEntry`, then to `dyrected.components.{tsx,ts,jsx,js}` next to the config. Omit all of them
+   * and no components bundle is built.
+   */
+  componentsEntry?: string;
 }
 
 export interface BuildBundleResult {
@@ -158,7 +167,17 @@ export async function buildBundle(options: BuildBundleOptions): Promise<BuildBun
   const { schema, functionIds } = await evaluateBundle(serverJs);
   const schemaJson = JSON.stringify(schema, null, 2);
 
-  const version = sha256(`${schemaJson}\0${serverJs}`).slice(0, 12);
+  const componentsEntry = await resolveComponentsEntry({
+    explicit: options.componentsEntry,
+    fromConfig: (schema as { admin?: { componentsEntry?: string } } | undefined)?.admin?.componentsEntry,
+    configDir: projectDir,
+    cwd: process.cwd(),
+  });
+  const components: ComponentsBuild | null = componentsEntry ? await buildComponents(componentsEntry) : null;
+  if (components) findings.push(...components.findings);
+
+  // The components hash is part of the version, so changing only a component still produces a new deployment.
+  const version = sha256(`${schemaJson}\0${serverJs}${components ? `\0${components.sha256}` : ""}`).slice(0, 12);
   const manifest: BundleManifest = {
     version,
     createdAt: new Date().toISOString(),
@@ -169,6 +188,17 @@ export async function buildBundle(options: BuildBundleOptions): Promise<BuildBun
       sha256: sha256(serverJs),
       bytes: Buffer.byteLength(serverJs),
     },
+    ...(components
+      ? {
+          components: {
+            file: "components.js",
+            map: "components.js.map",
+            sha256: components.sha256,
+            integrity: components.integrity,
+            bytes: components.bytes,
+          },
+        }
+      : {}),
     functions: functionIds,
     compatibility: { ok: !findings.some((f) => f.severity === "error"), findings },
   };
@@ -181,6 +211,9 @@ export async function buildBundle(options: BuildBundleOptions): Promise<BuildBun
     fs.writeFile(path.join(directory, "schema.json"), schemaJson),
     fs.writeFile(path.join(directory, "server.js"), serverJs),
     fs.writeFile(path.join(directory, "server.js.map"), mapFile.text),
+    ...(components
+      ? [fs.writeFile(path.join(directory, "components.js"), components.js), fs.writeFile(path.join(directory, "components.js.map"), components.map)]
+      : []),
     fs.writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest, null, 2)),
   ]);
 
