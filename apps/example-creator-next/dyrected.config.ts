@@ -1952,6 +1952,17 @@ export default defineConfig({
         },
       }),
 
+      // A task page that reads and writes through the admin's own client.
+      definePage({
+        slug: "check-in-station",
+        label: "Check-in Station",
+        icon: "ScanSearch",
+        group: "Operations",
+        order: 4,
+        component: "ops.checkInStation",
+        layout: "contained",
+      }),
+
       // 4. Content Group: with FileText icon, sparse ordering, and badge counters
       defineWorkspace({
         collection: "blog-articles",

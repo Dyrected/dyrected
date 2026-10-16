@@ -4,6 +4,7 @@ import { DyrectedAdmin } from "@dyrected/next/admin";
 import { defineAdminComponents } from "@dyrected/react";
 import { GuestHeadcountBanner, SeatingChart } from "@/admin-components/seating-chart";
 import { OperationsDashboard } from "@/admin-components/operations-dashboard";
+import { CheckInStation } from "@/admin-components/check-in-station";
 
 /**
  * Components are functions, so they cannot be passed from a server component.
@@ -21,6 +22,7 @@ const components = defineAdminComponents({
   // Custom admin pages name one of these in `definePage({ component: ... })`
   pages: {
     "ops.executiveHub": OperationsDashboard,
+    "ops.checkInStation": CheckInStation,
   },
 });
 

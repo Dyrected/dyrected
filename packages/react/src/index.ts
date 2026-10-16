@@ -22,6 +22,7 @@ export {
   useAdminTheme,
   useDyrectedForm,
   useField,
+  useAdminClient,
   useAdminNavigate,
   useAdminNotify,
   useAccess,

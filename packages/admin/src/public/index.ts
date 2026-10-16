@@ -161,6 +161,7 @@ export type {
 } from "../lib/badge-colors";
 
 // Cross-cutting admin component hooks (Phase 1)
+export { useAdminClient } from "../hooks/use-admin-client";
 export { useAdminNavigate } from "../hooks/use-admin-navigate";
 export type { AdminNavigateResult } from "../hooks/use-admin-navigate";
 export { useAdminNotify } from "../hooks/use-admin-notify";
