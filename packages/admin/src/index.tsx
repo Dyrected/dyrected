@@ -36,6 +36,7 @@ import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
 import { OperationalViewRoute } from "./pages/collections/operational-view-route";
 import { WorkspaceRoute, WorkspaceRedirectRoute } from "./pages/workspaces/workspace-route";
+import { CustomPageRoute } from "./pages/custom/custom-page-route";
 import { OperationalViewPage } from "./pages/collections/views/operational-view-page";
 import { mergeFilters } from "./pages/collections/views/resolve-view-filter";
 import { EditEntryPage } from "./pages/collections/edit-page";
@@ -163,7 +164,26 @@ export { useMediaUpload } from "./hooks/use-media-upload";
 export { useMediaURL } from "./hooks/use-media-url";
 export { useAddMediaFromUrl } from "./hooks/use-add-media-from-url";
 export { CollectionTrashPage } from "./pages/collections/trash-page";
+
+
 export { GlobalTrashPage } from "./pages/trash/global-trash-page";
+export { usePageMeta } from "./hooks/use-page-meta";
+export type { UsePageMetaResult } from "./hooks/use-page-meta";
+export { usePageRoute } from "./hooks/use-page-route";
+export type { PageRoute } from "./hooks/use-page-route";
+export { CustomPageRoute } from "./pages/custom/custom-page-route";
+export {
+  PageMetaContext,
+  PageRouteContext,
+  DYRECTED_PAGE_KEY,
+  DYRECTED_PAGE_ROUTE_KEY,
+} from "./providers/page-context";
+export type {
+  PageMeta,
+  PageMetaContextValue,
+  PageRouteContextValue,
+} from "./providers/page-context";
+
 
 // ─── Route that resolves collection → list or media page ─────────────────────
 // Legacy `list-view-v1` is deprecated — operational views (table layout) are now
@@ -314,6 +334,16 @@ function LegacyCollectionEditRedirect() {
   return <Navigate to={`/collections/${slug}/${id}/edit`} replace />;
 }
 
+function RootLandingRoute() {
+  const { schemas } = useDyrected();
+  const homePage = schemas?.admin?.homePage;
+  if (homePage) {
+    const target = homePage.startsWith("/") ? homePage : `/pages/${homePage}`;
+    return <Navigate to={target} replace />;
+  }
+  return <Dashboard />;
+}
+
 // ─── Route tree (shared between embedded and standalone) ──────────────────────
 
 function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: string) => void, isEmbedded?: boolean }) {
@@ -324,7 +354,7 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
         <DocumentMeta />
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<RootLandingRoute />} />
             <Route path="/trash" element={<GlobalTrashPage />} />
             <Route path="/collections/:slug" element={<CollectionRoute />} />
             <Route path="/collections/:slug/views/:viewSlug" element={<OperationalViewRoute />} />
@@ -336,6 +366,9 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
             <Route path="/globals/:slug" element={<GlobalDetailPage />} />
             <Route path="/globals/:slug/edit" element={<GlobalEditorPage />} />
             <Route path="/setup" element={<SetupPage />} />
+            {/* Custom Admin Pages under reserved /pages prefix */}
+            <Route path="/pages/:slug/*" element={<CustomPageRoute />} />
+            <Route path="/pages/:slug" element={<CustomPageRoute />} />
             {/* Direct Contextual Workspace Routes (without /ops prefix) */}
             <Route path="/:workspaceSlug/:viewSlug" element={<WorkspaceRoute />} />
             <Route path="/:workspaceSlug" element={<WorkspaceRedirectRoute />} />

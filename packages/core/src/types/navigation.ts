@@ -1,6 +1,7 @@
 import type { AccessRule } from "./access.js";
 import type { AdminIconName } from "./admin.js";
 import type { ViewConfig } from "./views.js";
+import type { PageConfig } from "./pages.js";
 
 /**
  * Definition of a navigation group in the Dyrected admin sidebar.
@@ -87,12 +88,15 @@ export interface DefineWorkspaceOptions {
   /** Custom internal route or external URL. */
   href?: string;
 
+  /** References or defines a custom admin page. Can be a PageConfig or component key. */
+  page?: PageConfig | string;
+
   /** Views belonging to this item. The first view is automatically the default. */
   views?: ViewConfig[];
 }
 
 /**
- * Helper to define an operational workspace or customize placement of collections/globals.
+ * Helper to define an operational workspace or customize placement of collections/globals/pages.
  *
  * @example
  * ```ts
@@ -116,7 +120,7 @@ export function defineWorkspace(options: DefineWorkspaceOptions): DefineWorkspac
  */
 export interface CompiledNavItem {
   id: string;
-  type: "workspace" | "collection" | "global" | "dashboard" | "trash" | "link";
+  type: "workspace" | "collection" | "global" | "dashboard" | "trash" | "link" | "page";
   slug: string;
   label: string;
   icon?: string;
@@ -127,6 +131,7 @@ export interface CompiledNavItem {
   order: number;
   collection?: string;
   global?: string;
+  page?: PageConfig;
   views: ViewConfig[];
 }
 
@@ -152,7 +157,7 @@ export interface CompiledNavTree {
 }
 
 export interface PinnedNavItemRef {
-  type: "workspace" | "collection" | "global" | "trash" | "link" | "dashboard";
+  type: "workspace" | "collection" | "global" | "trash" | "link" | "dashboard" | "page";
   slug: string;
   view?: string;
   label?: string;

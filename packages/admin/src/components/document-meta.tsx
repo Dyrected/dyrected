@@ -1,10 +1,16 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useDyrected } from "../providers/dyrected-context";
-import type { CollectionConfig, GlobalConfig } from "@dyrected/core";
+import type {
+  AdminConfig,
+  CollectionConfig,
+  CompiledNavItem,
+  CompiledNavTree,
+  GlobalConfig,
+} from "@dyrected/core";
 
 /** Turn a slug like `blog-posts` into a readable `Blog Posts` fallback. */
-function humanize(slug: string): string {
+export function humanize(slug: string): string {
   return slug
     .split(/[-_]/)
     .filter(Boolean)
@@ -12,48 +18,132 @@ function humanize(slug: string): string {
     .join(" ");
 }
 
+/** Flatten all navigation groups, ungrouped items, and pinned items into a single list. */
+export function getAllNavItems(navigation: CompiledNavTree | null | undefined): CompiledNavItem[] {
+  if (!navigation) return [];
+  const items: CompiledNavItem[] = [];
+  if (navigation.groups) {
+    for (const group of navigation.groups) {
+      if (group.items) {
+        items.push(...group.items);
+      }
+    }
+  }
+  if (navigation.ungrouped) {
+    items.push(...navigation.ungrouped);
+  }
+  const pinned = (navigation as any).pinnedItems;
+  if (Array.isArray(pinned)) {
+    items.push(...pinned);
+  }
+  return items;
+}
+
 /**
  * Derive a human page label from the current admin path, e.g. "Posts",
- * "New Post", "Edit Post", or "Dashboard". Uses the collection/global labels
- * from the loaded schemas, falling back to a humanized slug.
+ * "Pending · Orders", "New Post", "Edit Post", "Custom Page", or "Dashboard".
+ * Uses schemas and compiled navigation items, falling back to humanized slugs.
  */
-function pageLabel(
+export function pageLabel(
   pathname: string,
-  collections: CollectionConfig[],
-  globals: GlobalConfig[],
+  collections: CollectionConfig[] = [],
+  globals: GlobalConfig[] = [],
+  navigation?: CompiledNavTree | null,
+  admin?: AdminConfig | null,
 ): string {
   const segments = pathname.split("/").filter(Boolean);
+  const allNavItems = getAllNavItems(navigation);
 
-  if (segments.length === 0) return "Dashboard";
+  if (segments.length === 0) {
+    if (admin?.homePage) {
+      const homeSlug = admin.homePage.replace(/^\/pages\//, "").replace(/^\//, "");
+      const homeItem = allNavItems.find(
+        (i) => i.type === "page" && (i.slug === homeSlug || i.id === `page:${homeSlug}` || i.id === homeSlug)
+      );
+      if (homeItem) {
+        return homeItem.page?.label || homeItem.label || humanize(homeSlug);
+      }
+    }
+    return "Dashboard";
+  }
+
   if (segments[0] === "setup") return "Setup";
+  if (segments[0] === "trash") return "Trash";
 
+  // Custom pages under reserved /pages prefix
+  if (segments[0] === "pages" && segments[1]) {
+    const slug = segments[1];
+    const pageItem = allNavItems.find(
+      (item) => item.type === "page" && (item.slug === slug || item.id === `page:${slug}` || item.id === slug)
+    );
+    const pageTitle = pageItem?.page?.label || pageItem?.label || humanize(slug);
+    if (segments.length > 2) {
+      const sub = segments.slice(2).map(humanize).join(" · ");
+      return `${sub} · ${pageTitle}`;
+    }
+    return pageTitle;
+  }
+
+  // Built-in collections route: /collections/:slug/...
   if (segments[0] === "collections" && segments[1]) {
     const slug = segments[1];
     const collection = collections.find((c) => c.slug === slug);
     const singular = collection?.labels?.singular ?? humanize(slug);
     const plural = collection?.labels?.plural ?? humanize(slug);
 
+    if (segments[2] === "trash") {
+      return `Trash · ${plural}`;
+    }
+
     if (segments[2] === "views" && segments[3]) {
       const viewSlug = segments[3];
-      const view = (collection as any)?.views?.find((v: any) => v.slug === viewSlug);
+      let view = (collection as any)?.views?.find((v: any) => v.slug === viewSlug);
+      if (!view) {
+        for (const item of allNavItems) {
+          if (item.collection === slug && item.views) {
+            const match = item.views.find((v: any) => v.slug === viewSlug);
+            if (match) {
+              view = match;
+              break;
+            }
+          }
+        }
+      }
       const viewLabel = view?.label ?? humanize(viewSlug);
       return `${viewLabel} · ${plural}`;
     }
 
     if (segments[2] === "new") return `New ${singular}`;
-    if (segments[2] === "edit") return `Edit ${singular}`;
-    if (segments[3] === "edit") return `Edit ${singular}`;
+    if (segments[2] === "edit" || segments[3] === "edit") return `Edit ${singular}`;
     if (segments[2]) return `${singular} Details`;
     return plural;
   }
 
+  // Built-in globals route: /globals/:slug/...
   if (segments[0] === "globals" && segments[1]) {
     const slug = segments[1];
     const global = globals.find((g) => g.slug === slug);
-    return global?.label ?? humanize(slug);
+    const label = global?.label ?? humanize(slug);
+    if (segments[2] === "edit") return `Edit ${label}`;
+    return label;
   }
 
-  return "";
+  // Operational workspace routes: /:workspaceSlug/:viewSlug or /:workspaceSlug
+  const workspaceSlug = segments[0];
+  const workspaceItem = allNavItems.find(
+    (item) => item.slug === workspaceSlug || item.id === workspaceSlug
+  );
+
+  const workspaceLabel = workspaceItem?.label ?? humanize(workspaceSlug);
+
+  if (segments[1]) {
+    const viewSlug = segments[1];
+    const view = workspaceItem?.views?.find((v: any) => v.slug === viewSlug);
+    const viewLabel = view?.label ?? humanize(viewSlug);
+    return `${viewLabel} · ${workspaceLabel}`;
+  }
+
+  return workspaceLabel;
 }
 
 /**
@@ -66,7 +156,7 @@ function pageLabel(
  */
 export function DocumentMeta() {
   const location = useLocation();
-  const { schemas } = useDyrected();
+  const { schemas, navigation } = useDyrected();
 
   const admin = schemas?.admin;
   const titleSuffix = admin?.meta?.titleSuffix ?? "- Dyrected";
@@ -93,12 +183,14 @@ export function DocumentMeta() {
       location.pathname,
       schemas?.collections ?? [],
       schemas?.globals ?? [],
+      navigation,
+      admin,
     );
     const next = [label, titleSuffix].filter(Boolean).join(" ");
     if (next && document.title !== next) {
       document.title = next;
     }
-  }, [location.pathname, schemas, titleSuffix]);
+  }, [location.pathname, schemas, navigation, admin, titleSuffix]);
 
   useEffect(() => {
     if (typeof document === "undefined" || !favicon) return;

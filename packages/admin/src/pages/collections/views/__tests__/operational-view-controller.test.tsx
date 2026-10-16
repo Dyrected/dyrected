@@ -158,4 +158,35 @@ describe("operational view controller", () => {
     button.click()
     expect(runSystemAction).toHaveBeenCalledWith("edit", ["b"])
   })
+
+  it("lets the app replace a built-in layout by registering a component under its name", async () => {
+    function MyTable(props: { collection: string; viewSlug: string }) {
+      const { documents } = useCollectionView()
+      return (
+        <div data-testid="my-table">
+          {props.collection}/{props.viewSlug}:{documents.length}
+        </div>
+      )
+    }
+    useDyrectedMock.mockReturnValue({
+      client: { collection: () => ({ find: async () => ({ docs: DOCS, total: 2, totalPages: 1 }) }) },
+      user: { id: "u1" },
+      components: { viewLayouts: { table: MyTable } },
+    })
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <OperationalViewPage
+            slug="guests"
+            schema={{ slug: "guests", labels: { singular: "Guest" }, admin: {}, fields: [], access: {} }}
+            view={{ slug: "all", label: "All", layout: "table" }}
+            schemas={{ collections: [] }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect((await screen.findByTestId("my-table")).textContent).toBe("guests/all:2")
+  })
 })

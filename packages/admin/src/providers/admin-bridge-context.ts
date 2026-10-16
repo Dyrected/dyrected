@@ -20,13 +20,14 @@ export type AdminNavigateTarget =
   | {
       type: "page";
       slug: string;
+      subPath?: string;
     };
 
 export interface AdminNavigateHelpers {
   collection: (slug: string) => string;
   document: (slug: string, id: string | number) => string;
   view: (slug: string, viewSlug: string) => string;
-  page: (slug: string) => string;
+  page: (slug: string, subPath?: string) => string;
 }
 
 export interface AdminNotifyOptions {
@@ -66,7 +67,12 @@ export const toUrlHelpers: AdminNavigateHelpers = {
     `/collections/${encodeURIComponent(slug)}/${encodeURIComponent(String(id))}`,
   view: (slug: string, viewSlug: string) =>
     `/collections/${encodeURIComponent(slug)}/views/${encodeURIComponent(viewSlug)}`,
-  page: (slug: string) => `/pages/${encodeURIComponent(slug)}`,
+  page: (slug: string, subPath?: string) => {
+    const base = `/pages/${encodeURIComponent(slug)}`;
+    if (!subPath) return base;
+    const cleanSub = subPath.startsWith("/") ? subPath : `/${subPath}`;
+    return `${base}${cleanSub}`;
+  },
 };
 
 export function resolveAdminNavigateUrl(target: AdminNavigateTarget): string {
@@ -79,7 +85,7 @@ export function resolveAdminNavigateUrl(target: AdminNavigateTarget): string {
     case "view":
       return toUrlHelpers.view(target.slug, target.viewSlug);
     case "page":
-      return toUrlHelpers.page(target.slug);
+      return toUrlHelpers.page(target.slug, target.subPath);
     default:
       return "/";
   }

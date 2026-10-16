@@ -7,7 +7,8 @@ import { CustomLayout, type CustomLayoutProps } from "../custom-layout"
 import { useViewController } from "../../use-view-controller"
 import { ViewControllerContext } from "../../../../../providers/view-controller"
 import { useCollectionView, useViewActions } from "../../../../../hooks/use-collection-view"
-import type { SerializedView } from "../../types"
+import type { SerializedAction, SerializedView } from "../../types"
+import type { ViewDocument } from "../../../../../providers/view-controller"
 
 const useDyrectedMock = vi.fn()
 
@@ -29,17 +30,23 @@ function makeClient(overrides: { find?: any; update?: any } = {}) {
 }
 
 /** Mounts the layout under the real per-view controller, as the page does. */
-function Harness(props: CustomLayoutProps & { permissions: { canCreate: boolean; canUpdate: boolean; canDelete: boolean } }) {
-  const { permissions, ...layoutProps } = props
+type HarnessProps = CustomLayoutProps & {
+  permissions: { canCreate: boolean; canUpdate: boolean; canDelete: boolean }
+  actions: SerializedAction[]
+  onRunAction: (action: SerializedAction, docs: ViewDocument[], input?: Record<string, unknown>) => Promise<boolean>
+}
+
+function Harness(props: HarnessProps) {
+  const { permissions, actions, onRunAction, ...layoutProps } = props
   const controller = useViewController({
     slug: layoutProps.slug,
     schema: layoutProps.schema,
     view: layoutProps.view,
-    actions: layoutProps.actions,
+    actions,
     permissions,
     hasDetail: true,
     runningKeys: [],
-    runAction: layoutProps.onRunAction,
+    runAction: onRunAction,
   })
   return (
     <ViewControllerContext.Provider value={controller}>
@@ -49,7 +56,7 @@ function Harness(props: CustomLayoutProps & { permissions: { canCreate: boolean;
 }
 
 function renderLayout(
-  props: Omit<Partial<CustomLayoutProps>, "view"> & { view?: Partial<SerializedView> },
+  props: Partial<Pick<HarnessProps, "actions" | "onRunAction">> & { view?: Partial<SerializedView> },
   components: Record<string, any>,
   client: unknown,
 ) {
@@ -79,7 +86,6 @@ function renderLayout(
           schemas={{}}
           actions={[]}
           onRunAction={vi.fn().mockResolvedValue(true)}
-          isRunningAction={() => false}
           renderTableFallback={() => <div data-testid="table-fallback" />}
           {...props}
           view={view}

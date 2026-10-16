@@ -41,6 +41,7 @@ import {
   X,
 } from "lucide-react"
 
+import { USER_SELECTABLE_LAYOUTS } from "../../pages/collections/views/layout-registry"
 import type { CompiledNavGroup, CompiledNavItem, DefineWorkspaceOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
 import { ViewFilterBuilder } from "./view-filter-builder"
 import { ViewMetricsBuilder } from "./view-metrics-builder"
@@ -1157,11 +1158,9 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                                 <SelectValue placeholder="Layout..." />
                                               </SelectTrigger>
                                               <SelectContent>
-                                                <SelectItem value="table" className="dy-text-xs">Table</SelectItem>
-                                                <SelectItem value="kanban" className="dy-text-xs">Kanban</SelectItem>
-                                                <SelectItem value="cards" className="dy-text-xs">Cards</SelectItem>
-                                                <SelectItem value="calendar" className="dy-text-xs">Calendar</SelectItem>
-                                                <SelectItem value="gantt" className="dy-text-xs">Gantt</SelectItem>
+                                                {USER_SELECTABLE_LAYOUTS.map((layout) => (
+                                                  <SelectItem key={layout.value} value={layout.value} className="dy-text-xs">{layout.label}</SelectItem>
+                                                ))}
                                               </SelectContent>
                                             </Select>
 
@@ -1425,11 +1424,9 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
                                         <SelectValue placeholder="Layout..." />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="table" className="dy-text-xs">Table</SelectItem>
-                                        <SelectItem value="kanban" className="dy-text-xs">Kanban</SelectItem>
-                                        <SelectItem value="cards" className="dy-text-xs">Cards</SelectItem>
-                                        <SelectItem value="calendar" className="dy-text-xs">Calendar</SelectItem>
-                                        <SelectItem value="gantt" className="dy-text-xs">Gantt</SelectItem>
+                                        {USER_SELECTABLE_LAYOUTS.map((layout) => (
+                                          <SelectItem key={layout.value} value={layout.value} className="dy-text-xs">{layout.label}</SelectItem>
+                                        ))}
                                       </SelectContent>
                                     </Select>
 

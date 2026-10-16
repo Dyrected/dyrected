@@ -8,6 +8,7 @@ import type {
   CompiledNavItem,
   CompiledNavGroup,
   CompiledNavTree,
+  PageConfig,
 } from "../types/index.js";
 
 import { resolveTrashConfig, INTERNAL_SYSTEM_COLLECTIONS } from "../trash.js";
@@ -28,14 +29,41 @@ export const RESERVED_NAVIGATION_SLUGS = new Set([
   "preferences",
   "auth",
   "trash",
+  "pages",
 ]);
 
 /**
- * Validates that no navigation item uses a reserved system route slug.
+ * Validates that no navigation item uses a reserved system route slug or duplicate slug.
  */
 export function assertValidNavigationSlugs(navigation: DefineWorkspaceOptions[]): void {
+  const seenWorkspaceSlugs = new Set<string>();
+  const seenPageSlugs = new Set<string>();
+
   for (const item of navigation) {
     if (item.dashboard || item.trash) continue;
+
+    if (item.page) {
+      const pageSlug =
+        typeof item.page === "string"
+          ? (item.slug || item.page)
+          : (item.slug || item.page.slug);
+      if (pageSlug) {
+        const normalized = pageSlug.toLowerCase().trim().replace(/^\//, "");
+        if (RESERVED_NAVIGATION_SLUGS.has(normalized)) {
+          throw new Error(
+            `[Dyrected Config] The slug '${pageSlug}' in custom page '${item.label || pageSlug}' is a reserved system path and cannot be used as a page slug.`,
+          );
+        }
+        if (seenPageSlugs.has(normalized)) {
+          throw new Error(
+            `[Dyrected Config] Duplicate page slug '${pageSlug}' in navigation. Page slugs must be unique.`,
+          );
+        }
+        seenPageSlugs.add(normalized);
+      }
+      continue;
+    }
+
     if (item.slug) {
       const normalizedSlug = item.slug.toLowerCase().trim().replace(/^\//, "");
       if (RESERVED_NAVIGATION_SLUGS.has(normalizedSlug)) {
@@ -43,9 +71,16 @@ export function assertValidNavigationSlugs(navigation: DefineWorkspaceOptions[])
           `[Dyrected Config] The slug '${item.slug}' in navigation item '${item.label || item.slug}' is a reserved system path and cannot be used as an operational workspace slug.`,
         );
       }
+      if (seenWorkspaceSlugs.has(normalizedSlug)) {
+        throw new Error(
+          `[Dyrected Config] Duplicate workspace slug '${item.slug}' in navigation. Workspace slugs must be unique.`,
+        );
+      }
+      seenWorkspaceSlugs.add(normalizedSlug);
     }
   }
 }
+
 
 /**
  * Extracts a group name and group metadata from an item's group property.
@@ -229,6 +264,48 @@ export function compileNavigation(
         views: [],
         badge: item.badge,
         access: item.access,
+      });
+      continue;
+    }
+
+    if (item.page) {
+      const pageConfig: PageConfig =
+        typeof item.page === "string"
+          ? {
+              slug: item.slug || item.page,
+              label: item.label || item.page,
+              icon: item.icon,
+              component: item.page,
+              group: typeof item.group === "string" ? item.group : item.group?.name,
+              order: item.order,
+              badge: item.badge,
+              access: item.access as any,
+            }
+          : {
+              ...item.page,
+              slug: item.slug || item.page.slug || "page",
+              label: item.label || item.page.label || item.slug || "Page",
+              icon: item.icon || item.page.icon,
+              group: item.group ? (typeof item.group === "string" ? item.group : item.group?.name) : item.page.group,
+              order: item.order ?? item.page.order,
+              badge: item.badge || item.page.badge,
+              access: item.access || (item.page.access && typeof item.page.access === "object" && "read" in item.page.access ? item.page.access.read : item.page.access) as any,
+            };
+
+      const pageSlug = pageConfig.slug || "page";
+      registerItem(groupName, {
+        id: `page:${pageSlug}`,
+        type: "page",
+        slug: pageSlug,
+        label: pageConfig.label || pageSlug,
+        icon: (pageConfig.icon as string) || "FileText",
+        href: `/pages/${pageSlug}`,
+        group: groupName,
+        order: pageConfig.order ?? 100,
+        views: [],
+        badge: pageConfig.badge,
+        access: (pageConfig.access && typeof pageConfig.access === "object" && "read" in pageConfig.access ? pageConfig.access.read : pageConfig.access) as any,
+        page: pageConfig,
       });
       continue;
     }

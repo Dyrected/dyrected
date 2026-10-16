@@ -6,12 +6,16 @@ import {
   useOptionalDyrected,
   useAdminBridgeContext,
   useAdminTheme,
+  PageMetaContext,
+  PageRouteContext,
   ViewControllerContext,
 } from '@dyrected/admin/public';
 import { DYRECTED_FORM_CONTROLLER_KEY, DYRECTED_FIELD_PATH_KEY } from '../composables/useDyrectedForm';
 import { DYRECTED_CLIENT_KEY } from '../composables/useDyrected';
 import { ADMIN_THEME_CONTROLLER_KEY } from '../composables/useAdminTheme';
 import { DYRECTED_ADMIN_KEY } from '../composables/useAdminBridge';
+import { DYRECTED_PAGE_KEY } from '../composables/usePageMeta';
+import { DYRECTED_PAGE_ROUTE_KEY } from '../composables/usePageRoute';
 import { DYRECTED_VIEW_KEY } from '../composables/useCollectionView';
 
 function arePropsShallowEqual(prev: Record<string, any> | null, next: Record<string, any> | null): boolean {
@@ -60,6 +64,8 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
     const dyrected = useOptionalDyrected();
     const adminBridge = useAdminBridgeContext();
     const themeResult = useAdminTheme();
+    const pageMetaContext = ReactModule.useContext(PageMetaContext);
+    const pageRouteContext = ReactModule.useContext(PageRouteContext);
     const viewController = ReactModule.useContext(ViewControllerContext);
 
     // Mutable cell holding the latest admin bridge. The Vue island receives a
@@ -67,6 +73,12 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
     // `setup()`) never serves a stale bundle.
     const latestBridgeRef = ReactModule.useRef(adminBridge);
     latestBridgeRef.current = adminBridge;
+
+    const latestPageMetaRef = ReactModule.useRef(pageMetaContext);
+    latestPageMetaRef.current = pageMetaContext;
+
+    const latestPageRouteRef = ReactModule.useRef(pageRouteContext);
+    latestPageRouteRef.current = pageRouteContext;
 
     const themeController = themeResult?.controller;
     const client = dyrected?.client;
@@ -103,6 +115,37 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
       // so it is provided directly (spec §4: controllers, never snapshots).
       if (viewController) provides.set(DYRECTED_VIEW_KEY, viewController);
 
+      if (pageMetaContext) {
+        provides.set(DYRECTED_PAGE_KEY, {
+          get meta() {
+            return latestPageMetaRef.current?.meta ?? {};
+          },
+          get options() {
+            return latestPageMetaRef.current?.options;
+          },
+          get page() {
+            return latestPageMetaRef.current?.page;
+          },
+          setMeta: (next: any) => latestPageMetaRef.current?.setMeta(next),
+        });
+      }
+
+      if (pageRouteContext) {
+        provides.set(DYRECTED_PAGE_ROUTE_KEY, {
+          get params() {
+            return latestPageRouteRef.current?.params ?? {};
+          },
+          get splat() {
+            return latestPageRouteRef.current?.splat ?? "";
+          },
+          get searchParams() {
+            return latestPageRouteRef.current?.searchParams ?? new URLSearchParams();
+          },
+          setSearchParams: (...args: any[]) => (latestPageRouteRef.current?.setSearchParams as any)(...args),
+          navigate: (...args: any[]) => (latestPageRouteRef.current?.navigate as any)(...args),
+        });
+      }
+
       return defineComponent({
         name: `DyrectedBridgeContextProvider(${(VueComp as any).name || 'Component'})`,
         props: { innerProps: { type: Object, required: true } },
@@ -116,7 +159,7 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
         },
       });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formController, fieldPath, client, themeController, viewController]);
+    }, [formController, fieldPath, client, themeController, viewController, Boolean(pageMetaContext), Boolean(pageRouteContext)]);
 
     // A new island type starts from a clean render.
     ReactModule.useEffect(() => {

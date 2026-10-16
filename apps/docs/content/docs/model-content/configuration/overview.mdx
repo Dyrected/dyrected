@@ -130,6 +130,8 @@ export interface AdminConfig {
    * If omitted, all collections and globals appear in default sections.
    */
   navigation?: DefineWorkspaceOptions[];
+  /** Optional custom landing page slug replacing the dashboard as the root view. */
+  homePage?: string;
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {
@@ -196,6 +198,7 @@ export interface AdminConfig {
 | Option | Description |
 | --- | --- |
 | <code>navigation</code> (optional) | Custom navigation layout for the admin sidebar. If omitted, all collections and globals appear in default sections. |
+| <code>homePage</code> (optional) | Optional custom landing page slug replacing the dashboard as the root view. |
 | <code>components</code> (optional) | Custom component slots around the built-in dashboard. |
 | <code>branding</code> (optional) |  |
 | <code>meta</code> (optional) |  |

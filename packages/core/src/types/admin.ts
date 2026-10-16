@@ -1,5 +1,6 @@
 import type { icons as lucideIcons } from "lucide-react";
 import type { DefineWorkspaceOptions } from "./navigation.js";
+import type { PageConfig } from "./pages.js";
 
 /** A valid icon component name from the Lucide icon set bundled with Dyrected Admin. */
 export type AdminIconName = keyof typeof lucideIcons;
@@ -51,6 +52,8 @@ export interface AdminConfig {
    * If omitted, all collections and globals appear in default sections.
    */
   navigation?: DefineWorkspaceOptions[];
+  /** Optional custom landing page slug replacing the dashboard as the root view. */
+  homePage?: string;
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {

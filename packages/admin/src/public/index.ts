@@ -196,6 +196,26 @@ export type {
   AdminComponentErrorBoundaryState,
 } from "../components/admin-component-slot";
 
+// Custom Admin Pages (Spec 4)
+export { usePageMeta } from "../hooks/use-page-meta";
+export type { UsePageMetaResult } from "../hooks/use-page-meta";
+export { usePageRoute } from "../hooks/use-page-route";
+export type { PageRoute } from "../hooks/use-page-route";
+export {
+  PageMetaContext,
+  PageRouteContext,
+  DYRECTED_PAGE_KEY,
+  DYRECTED_PAGE_ROUTE_KEY,
+} from "../providers/page-context";
+export type {
+  PageMeta,
+  PageMetaContextValue,
+  PageRouteContextValue,
+} from "../providers/page-context";
+export { CustomPageRoute } from "../pages/custom/custom-page-route";
+export { definePage } from "@dyrected/core";
+export type { PageAction, PageBreadcrumbItem, PageConfig, DefinePageInput } from "@dyrected/core";
+
 // Custom View Layouts (Spec 3)
 export {
   useCollectionView,

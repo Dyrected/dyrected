@@ -97,6 +97,18 @@ export function collectReferencedComponentKeys(schema: unknown): ReferencedCompo
 
   addSlots(keys.dashboard, root.admin?.components, DASHBOARD_SLOTS);
 
+  if (Array.isArray(root.admin?.navigation)) {
+    for (const item of root.admin.navigation as Loose[]) {
+      if (item?.page) {
+        if (typeof item.page === "string") {
+          addKeys(keys.pages, item.page);
+        } else if (item.page?.component) {
+          addKeys(keys.pages, item.page.component);
+        }
+      }
+    }
+  }
+
   if (Array.isArray(root.admin?.pages)) {
     for (const page of root.admin.pages as Loose[]) addKeys(keys.pages, page?.component);
   }

@@ -11,9 +11,10 @@ import {
   warnMissingComponent,
 } from "../../../../components/admin-component-slot"
 import { useDyrected } from "../../../../providers/dyrected-context"
-import { ViewControllerContext, type ViewDocument } from "../../../../providers/view-controller"
+import { ViewControllerContext } from "../../../../providers/view-controller"
 import { BulkActionBar } from "../bulk-action-bar"
-import type { SerializedAction, SerializedView } from "../types"
+import { useLayoutActions } from "../use-layout-actions"
+import type { SerializedView } from "../types"
 import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
 import { useCustomViewData } from "./use-custom-view-data"
@@ -23,9 +24,6 @@ export interface CustomLayoutProps {
   schema: any
   schemas: unknown
   view: SerializedView
-  actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, docs: ViewDocument[], input?: Record<string, unknown>) => Promise<boolean>
-  isRunningAction: (action: SerializedAction, ids: string[]) => boolean
   /** Renders the built-in table, used when the layout's component is not registered. */
   renderTableFallback: () => ReactNode
 }
@@ -42,12 +40,10 @@ export function CustomLayout({
   schema,
   schemas,
   view,
-  actions,
-  onRunAction,
-  isRunningAction,
   renderTableFallback,
 }: CustomLayoutProps) {
   const { components, client } = useDyrected()
+  const { actions, onRunAction, isRunningAction } = useLayoutActions()
   const [showTable, setShowTable] = useState(false)
   const [, setSearchParams] = useSearchParams()
 
@@ -188,12 +184,7 @@ export function CustomLayout({
         actions={actions}
         selectedIds={selectedIds}
         isRunning={isRunningAction}
-        onRun={(action, ids) =>
-          void onRunAction(
-            action,
-            state.documents.filter((doc) => ids.includes(String(doc.id))),
-          )
-        }
+        onRun={(action, ids) => onRunAction(action, ids)}
         onClearSelection={() => controller.handlers.setSelection([])}
       />
     </>

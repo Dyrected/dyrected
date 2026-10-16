@@ -25,6 +25,8 @@ export * from './composables/useAdminBridge';
 export * from './composables/useAdminNavigate';
 export * from './composables/useAdminNotify';
 export * from './composables/useAccess';
+export * from './composables/usePageMeta';
+export * from './composables/usePageRoute';
 export * from './composables/useCollectionView';
 export { defineCustomView } from '@dyrected/admin/public';
 export type { CustomViewConfig, CustomViewDataConfig } from '@dyrected/admin/public';

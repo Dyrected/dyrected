@@ -5,6 +5,7 @@ import {
   defineGlobal,
   defineWorkspace,
   defineView,
+  definePage,
   compileNavigation,
   pruneNavigationForUser,
   assertValidNavigationSlugs,
@@ -299,4 +300,90 @@ describe("Navigation Compiler Pipeline", () => {
     });
     expect(auditorTree.groups.some((g) => g.name === "Auditing")).toBe(true);
   });
+
+  it("should compile custom admin pages defined via definePage or defineWorkspace", () => {
+    const config = defineConfig({
+      admin: {
+        navigation: [
+          definePage({
+            slug: "arrivals",
+            label: "Today's Arrivals",
+            icon: "DoorOpen",
+            component: "arrivals",
+            group: "Operations",
+            order: 1,
+            layout: "full",
+          }),
+          defineWorkspace({
+            slug: "reconciliation",
+            label: "Reconciliation",
+            group: "Operations",
+            order: 2,
+            page: {
+              component: "reconcile",
+              layout: "contained",
+            },
+          }),
+        ],
+      },
+      db,
+    });
+
+    const tree = compileNavigation(config);
+    const operationsGroup = tree.groups.find((g) => g.name === "Operations");
+    expect(operationsGroup).toBeDefined();
+
+    const arrivals = operationsGroup?.items.find((i) => i.slug === "arrivals");
+    expect(arrivals).toBeDefined();
+    expect(arrivals?.id).toBe("page:arrivals");
+    expect(arrivals?.type).toBe("page");
+    expect(arrivals?.href).toBe("/pages/arrivals");
+    expect(arrivals?.page?.component).toBe("arrivals");
+    expect(arrivals?.page?.layout).toBe("full");
+
+    const reconcile = operationsGroup?.items.find((i) => i.slug === "reconciliation");
+    expect(reconcile).toBeDefined();
+    expect(reconcile?.id).toBe("page:reconciliation");
+    expect(reconcile?.type).toBe("page");
+    expect(reconcile?.href).toBe("/pages/reconciliation");
+    expect(reconcile?.page?.component).toBe("reconcile");
+    expect(reconcile?.page?.layout).toBe("contained");
+  });
+
+  it("should reject page slug collisions with reserved paths and duplicate page slugs", () => {
+    expect(() => {
+      assertValidNavigationSlugs([
+        definePage({
+          slug: "admin",
+          label: "Admin Page",
+          component: "admin",
+        }),
+      ]);
+    }).toThrow(/reserved system path/i);
+
+    expect(() => {
+      assertValidNavigationSlugs([
+        definePage({
+          slug: "arrivals",
+          label: "Arrivals 1",
+          component: "comp1",
+        }),
+        definePage({
+          slug: "arrivals",
+          label: "Arrivals 2",
+          component: "comp2",
+        }),
+      ]);
+    }).toThrow(/duplicate page slug/i);
+
+    expect(() => {
+      assertValidNavigationSlugs([
+        defineWorkspace({
+          slug: "pages",
+          label: "Pages Workspace",
+        }),
+      ]);
+    }).toThrow(/reserved system path/i);
+  });
 });
+

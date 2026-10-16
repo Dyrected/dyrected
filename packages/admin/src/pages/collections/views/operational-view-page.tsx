@@ -30,14 +30,8 @@ import {
   type HeaderMenuItem,
 } from "./view-io-actions"
 import type { SerializedAction, SerializedView } from "./types"
-import { TableLayout, type TableLayoutProps } from "./table/table-layout"
-import { KanbanLayout, type KanbanLayoutProps } from "./kanban/kanban-layout"
-import { CalendarLayout, type CalendarLayoutProps } from "./calendar/calendar-layout"
-import { CardsLayout, type CardsLayoutProps } from "./cards/cards-layout"
-import {
-  SpreadsheetLayout,
-  type SpreadsheetLayoutProps,
-} from "./spreadsheet/spreadsheet-layout"
+import { BuiltInLayout, type BuiltInLayoutProps } from "./built-in-layout"
+import { getLayoutCapabilities } from "./layout-registry"
 import { CustomLayout } from "./custom/custom-layout"
 import { useViewController } from "./use-view-controller"
 import { ViewControllerContext } from "../../../providers/view-controller"
@@ -77,8 +71,7 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   const authoredLayout = view.layout ?? "table"
 
   // Only tabular views can switch between table and spreadsheet.
-  const isTabular =
-    !authoredLayout || authoredLayout === "table" || authoredLayout === "spreadsheet"
+  const isTabular = getLayoutCapabilities(authoredLayout).tabular
   const viewMode = useViewMode({
     slug,
     viewSlug: view.slug,
@@ -509,7 +502,16 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
     )
   }
 
-  const layoutProps: KanbanLayoutProps | CalendarLayoutProps | CardsLayoutProps | TableLayoutProps | SpreadsheetLayoutProps = {
+  // The app can replace a built-in layout by registering a component under its
+  // name (for example `viewLayouts.kanban`); it then gets the same host shell
+  // and controller as a `layout: "custom"` view.
+  const layoutOverride = layout !== "custom" ? components?.viewLayouts?.[layout] : undefined
+  const layoutView = useMemo(
+    () => (layoutOverride ? { ...view, layout: "custom" as const, component: layout } : view),
+    [layoutOverride, view, layout],
+  )
+
+  const layoutProps: BuiltInLayoutProps = {
     slug,
     schema,
     view,
@@ -647,32 +649,21 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
         {renderSlot("beforeViewContent")}
 
-        {layout === "custom" ? (
-          <CustomLayout
-            slug={slug}
-            schema={schema}
-            schemas={schemas}
-            view={view}
-            actions={actions}
-            onRunAction={runCustomLayoutAction}
-            isRunningAction={isRunningAction}
-            renderTableFallback={() => (
-              <TableLayout {...(layoutProps as TableLayoutProps)} resolvePreview={resolvePreview} hasDetail={hasDetail} />
-            )}
-          />
-        ) : layout === "kanban" ? (
-          <KanbanLayout {...(layoutProps as KanbanLayoutProps)} />
-        ) : layout === "calendar" ? (
-          <CalendarLayout {...(layoutProps as CalendarLayoutProps)} />
-        ) : layout === "cards" ? (
-          <CardsLayout {...(layoutProps as CardsLayoutProps)} />
-        ) : layout === "spreadsheet" ? (
-          <SpreadsheetLayout {...(layoutProps as SpreadsheetLayoutProps)} resolvePreview={resolvePreview} hasDetail={hasDetail} />
-        ) : (
-          <TableLayout {...(layoutProps as TableLayoutProps)} resolvePreview={resolvePreview} hasDetail={hasDetail} />
-        )}
+        {layout === "custom" || layoutOverride ? (
+        <CustomLayout
+          slug={slug}
+          schema={schema}
+          schemas={schemas}
+          view={layoutView}
+          renderTableFallback={() => (
+            <BuiltInLayout {...layoutProps} layout="table" resolvePreview={resolvePreview} hasDetail={hasDetail} />
+          )}
+        />
+      ) : (
+        <BuiltInLayout {...layoutProps} layout={layout} resolvePreview={resolvePreview} hasDetail={hasDetail} />
+      )}
 
-        {renderSlot("afterViewContent")}
+      {renderSlot("afterViewContent")}
 
         <ActionDialogs
           collection={slug}

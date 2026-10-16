@@ -23,6 +23,7 @@ import {
   ExternalLink,
   SlidersHorizontal,
   Trash2,
+  FileText,
   icons,
 } from "lucide-react"
 import type { CompiledNavItem } from "@dyrected/sdk"
@@ -886,6 +887,8 @@ function SidebarInner({
       defaultPath = "/trash"
     } else if (item.type === "link") {
       defaultPath = item.href || "#"
+    } else if (item.type === "page") {
+      defaultPath = `/pages/${item.slug}`
     } else if (item.type === "global") {
       const glob = schemas?.globals?.find((g: any) => g.slug === item.slug)
       defaultPath = (glob as any)?.detail === false ? `/globals/${item.slug}/edit` : `/globals/${item.slug}`
@@ -906,6 +909,8 @@ function SidebarInner({
       isExactActive = location.pathname === "/" || location.pathname === ""
     } else if (item.type === "trash" || item.slug === "trash") {
       isExactActive = location.pathname === "/trash"
+    } else if (item.type === "page") {
+      isExactActive = location.pathname === `/pages/${item.slug}` || location.pathname.startsWith(`/pages/${item.slug}/`)
     } else if (item.type === "global") {
       isExactActive = location.pathname === `/globals/${item.slug}` || location.pathname === `/globals/${item.slug}/edit`
     } else if (item.type === "collection") {
@@ -924,6 +929,7 @@ function SidebarInner({
     const col = item.type === "collection" ? schemas?.collections?.find((c: any) => c.slug === item.slug) : undefined
     const FallbackIcon = item.type === "dashboard" ? LayoutDashboard :
       (item.type === "trash" || item.slug === "trash") ? Trash2 :
+      item.type === "page" ? FileText :
       item.type === "global" ? Settings :
         item.type === "link" ? ExternalLink :
           item.type === "collection" ? (col?.auth ? Users : col?.upload ? ImageIcon : Database) :

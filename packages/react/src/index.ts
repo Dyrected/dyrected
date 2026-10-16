@@ -25,6 +25,9 @@ export {
   useAdminNavigate,
   useAdminNotify,
   useAccess,
+  usePageMeta,
+  usePageRoute,
+  definePage,
   useCollectionView,
   useViewActions,
   useGroupedDocuments,
@@ -47,6 +50,13 @@ export type {
   AdminViewLayoutProps,
   AdminPageProps,
   TypedAdminComponents,
+  PageMeta,
+  PageRoute,
+  UsePageMetaResult,
+  PageAction,
+  PageBreadcrumbItem,
+  PageConfig,
+  DefinePageInput,
   CollectionViewApi,
   ViewActionsApi,
   ResolvedViewAction,
@@ -57,6 +67,7 @@ export type {
   CustomViewConfig,
   CustomViewDataConfig,
 } from '@dyrected/admin/public';
+
 
 // Re-export core types and errors from SDK for convenience
 export { DyrectedClient, DyrectedError, getPreviewToken, PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';
