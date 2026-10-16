@@ -161,3 +161,8 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 - “create a media library” → [Create a media upload collection](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/upload-collection)
 - “store uploaded files” → [Create a media upload collection](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/upload-collection)
 - “add image uploads to my project” → [Create a media upload collection](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/upload-collection)
+- “replace the create form with my own component” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form)
+- “build a custom create screen for a collection” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form)
+- “check in a guest from a custom admin form” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form)
+- “save a record with values the editor does not type” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form)
+- “use built-in field inputs inside a custom form” → [Build a walk-in check-in form](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form)

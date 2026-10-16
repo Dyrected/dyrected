@@ -9387,6 +9387,333 @@ Use `useAdminClient()` for data so permissions are applied for you, `useAdminNav
 
 ---
 
+## Custom Create & Edit Forms
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-document-forms
+
+Dyrected builds the create and edit screens from your field schema, and most of the time that is exactly what you want. Sometimes the job is different: a guest walks up to the door without an RSVP, and the desk needs three inputs and one button, not the whole form. For those screens you can hand Dyrected your own component and keep everything that makes saving safe.
+
+By the end of this page you will have a **walk-in** form for the `guest-responses` collection. It shows three of the built-in inputs, saves the guest as attending and already checked in with one button, and goes through the same create path as the default form.
+
+This page builds on the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). The examples use the guest list from [Operational Views](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/overview): a `guest-responses` collection with `name`, `email`, `guestCount`, `attending`, `checkedIn`, and `checkedInAt` fields.
+
+## What you write and what Dyrected keeps
+
+Your component owns the **body** of the screen. Saving is not something you rebuild:
+
+| Dyrected keeps | Your component does |
+| --- | --- |
+| Validation, access rules, hooks, and drafts on every save | Decide what the editor sees and when to save |
+| The built-in inputs, with labels, conditions, widths, and read-only rules | Place the inputs you want with `<DyrectedField>` |
+| Success and error handling, and server errors on the right field | Call `submit()` and react to the result |
+| The page header, and optionally the Save bar | Draw everything else |
+
+`submit()` is a client of the same write API the default form uses. A custom form cannot skip a hook or an access rule.
+
+## Step 1: declare the form
+
+Point the collection at a component key in `admin.components`. The key is yours to name, and you register it in step 3.
+
+```ts
+
+
+export const guestResponses = defineCollection({
+  slug: "guest-responses",
+  admin: {
+    useAsTitle: "name",
+    components: {
+      createForm: "guest-responses.walkIn",
+      formShell: "header",
+    },
+  },
+  fields: [
+    // name, email, guestCount, attending, checkedIn, checkedInAt …
+  ],
+});
+```
+
+You can set three keys. Dyrected picks one by what the editor is doing:
+
+| Setting | Used when |
+| --- | --- |
+| `createForm` | Creating a record. Falls back to `form`, then the built-in form |
+| `editForm` | Editing a record. Falls back to `form`, then the built-in form |
+| `form` | Fallback for both |
+
+`formShell` decides how much of the page stays around your form. We use `"header"` here because the walk-in form brings its own button. See [Choosing the shell](#choosing-the-shell).
+
+## Step 2: write the component
+
+```tsx
+// WalkInForm.tsx
+
+
+
+export function WalkInForm() {
+  const { submit, permissions, cancel } = useDocumentForm();
+  const notify = useAdminNotify();
+  const [saving, setSaving] = useState(false);
+
+  async function registerAndCheckIn() {
+    setSaving(true);
+    const result = await submit({
+      overrides: { attending: true, checkedIn: true, checkedInAt: new Date().toISOString() },
+      redirect: "list",
+      silent: true,
+    });
+    setSaving(false);
+
+    if (result.ok) {
+      notify.success("Guest registered and checked in");
+    } else {
+      notify.error(result.errors.name ?? result.errors._form ?? "Could not register this guest");
+    }
+  }
+
+  return (
+    <div>
+      <h2>Walk-in guest</h2>
+      <DyrectedField path="name" />
+      <DyrectedField path="email" />
+      <DyrectedField path="guestCount" />
+
+      <button type="button" onClick={cancel}>
+        Cancel
+      </button>
+      <button type="button" disabled={saving || !permissions.canCreate} onClick={() => void registerAndCheckIn()}>
+        {saving ? "Registering…" : "Register and check in"}
+      </button>
+    </div>
+  );
+}
+```
+
+Four things in there are worth noticing:
+
+- `<DyrectedField path="name" />` renders the real name input, with its label, required marker, and validation message. You did not rebuild any of it.
+- `overrides` sets `attending`, `checkedIn`, and `checkedInAt` for this one save. They are not inputs the editor sees; they are what "walk-in" means. Overrides are validated like any other value, and access rules still apply on the server.
+- `submit()` never throws. It resolves to `{ ok: true, doc }` or `{ ok: false, errors }`, so you branch on `result.ok`.
+- `silent: true` skips Dyrected's own success and error toasts, because this form shows its own. Leave it out if you want the default toasts.
+
+The example has no styling on purpose. To match the admin in light and dark mode, see [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
+
+## Step 3: register it
+
+Pass the component under the same key in `components.forms`:
+
+```tsx
+"use client";
+
+
+
+
+export function AdminClient() {
+  return <DyrectedAdmin components={{ forms: { "guest-responses.walkIn": WalkInForm } }} />;
+}
+```
+
+In Next.js, components are functions, so they cannot be passed from a server component. Keep the registration in a small client component like this one.
+
+Open **Guest Responses** and choose **New**. You should see Dyrected's header and your three inputs, with no default Save bar. Leave the name empty and press **Register and check in**: the required message appears under the name input and nothing is saved. Fill it in and press the button, and you land on the list with the new guest checked in.
+
+## Choosing the shell
+
+`formShell` controls the chrome around your component.
+
+| `formShell` | Dyrected renders | Use it when |
+| --- | --- | --- |
+| `full` (default) | Header, status badge, and the default Save bar | Your form only re-lays-out the body. Saving and navigation keep working |
+| `header` | Header only | Your form has its own buttons, like the walk-in desk |
+| `none` | Nothing | A full-screen tool that needs the whole page |
+
+`full` is the default because it is the least surprising: swap the body and Save still works. In the `full` shell, the Save bar saves exactly as it does for the default form, so a form that never calls `submit()` still saves.
+
+<Callout type="info">
+  `formShell` applies to both `createForm` and `editForm` of a collection. If one screen wants a Save bar and the other
+  does not, choose `header` and give the form that needs it its own Save button.
+</Callout>
+
+## Keeping the default form and changing part of it
+
+You rarely need to replace the whole body. `<DyrectedDefaultForm>` renders everything Dyrected normally shows, tabs and change-password section included, and `exclude` leaves out the fields you want to handle yourself. This `editForm` adds an arrival card above the default form:
+
+```tsx
+// GuestEditForm.tsx
+
+
+
+export function GuestEditForm() {
+  const { document, submit, permissions, form } = useDocumentForm();
+  const notify = useAdminNotify();
+  const [saving, setSaving] = useState(false);
+  const checkedIn = Boolean(document?.checkedIn);
+
+  async function toggleCheckIn() {
+    setSaving(true);
+    const result = await submit({
+      overrides: checkedIn
+        ? { checkedIn: false, checkedInAt: null }
+        : { checkedIn: true, checkedInAt: new Date().toISOString() },
+      silent: true,
+    });
+    setSaving(false);
+    if (result.ok) notify.success(checkedIn ? "Check-in undone" : "Checked in");
+    else notify.error(Object.values(result.errors)[0] ?? "Could not update the check-in");
+  }
+
+  return (
+    <div>
+      <section>
+        <p>{checkedIn ? "Arrived" : "Not arrived yet"}</p>
+        <button type="button" disabled={saving || !permissions.canUpdate} onClick={() => void toggleCheckIn()}>
+          {checkedIn ? "Undo check-in" : "Check in"}
+        </button>
+      </section>
+
+      <DyrectedDefaultForm exclude={["checkedIn", "checkedInAt"]} />
+
+      <button
+        type="button"
+        disabled={!form.isDirty || !permissions.canUpdate}
+        onClick={() => void submit()}
+      >
+        Save changes
+      </button>
+    </div>
+  );
+}
+```
+
+Register it under `editForm: "guest-responses.edit"`. With `formShell: "header"` it needs its own Save button, which is the last one above. Under the default `full` shell you would leave that button out and use Dyrected's Save bar.
+
+### The embedding components
+
+| Component | Renders |
+| --- | --- |
+| `<DyrectedField path="name" />` | One built-in input. Nested paths such as `address.city` work too |
+| `<DyrectedFields names={["name", "email"]} />` | Several inputs, in the order you give, with the schema's widths and conditions. Use `exclude` instead of `names` to render every field except some |
+| `<DyrectedDefaultForm exclude={["note"]} />` | The whole default body: tabs, fields, and the change-password section |
+
+They keep a field's `admin.condition`, `admin.readOnly`, access rules, and its own `admin.component` override, because they render through the same field renderer as the default form. They can only be used inside a registered form.
+
+## What `useDocumentForm()` gives you
+
+It composes `useDyrectedForm()`, so `useField(path)` and `useDyrectedForm()` keep working in your form.
+
+| Field | What it gives you |
+| --- | --- |
+| `mode` | `"create"` or `"edit"` |
+| `collection` | The collection (or global) schema |
+| `document` | The saved record. `undefined` on create, and while an edit loads |
+| `isLoadingDocument` | `true` while an edit loads |
+| `presentation` | `"page"` or `"drawer"` |
+| `permissions` | `{ canCreate, canUpdate, canDelete }`, for showing or hiding controls |
+| `urls` | `{ list, edit? }` |
+| `form` | Values, errors, `isDirty`, `setValue`, and the rest of `useDyrectedForm()` |
+| `submit(options?)` | Save the form. See below |
+| `cancel()` | Leave the form. Asks first when there are unsaved changes |
+
+<Callout type="info">
+  `permissions` hides controls; it is not security. The server enforces access rules on every request, whatever your
+  component shows. When the editor may not save, `submit()` returns `{ ok: false }` without sending a request.
+</Callout>
+
+### `submit()`
+
+```ts
+const result = await submit({
+  overrides: { checkedIn: true }, // merged over the form values for this call
+  redirect: "stay",               // "edit" | "list" | "stay" | false
+  silent: true,                   // skip Dyrected's toasts
+});
+```
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `overrides` | none | Values merged over the form's values for this call only. They are validated like any other value, and put back if the save fails. They are not a way around access: the server still checks every field |
+| `redirect` | `"edit"` on create, `"stay"` on edit | Where to go after a successful save. `"list"` goes to the collection list (the detail page for a global). `false` and `"stay"` both stay on the form. Ignored in a drawer |
+| `silent` | `false` | Skip the success and error toasts, for forms that report the outcome themselves |
+
+The result is `{ ok: true, doc }` or `{ ok: false, errors, error? }`. `errors` maps a field path to its message and includes both validation errors and errors the API returned. An error with no field is under `_form`. The same errors appear on the inputs: `useField("name").error` has the message with no extra code.
+
+After a save with `redirect: "stay"` on a new record, the form keeps the saved values and the next `submit()` creates another record. That is what a scanner wants. If you would rather open the record, use the default `"edit"`.
+
+## Globals
+
+A global is always edited, never created, so it takes `editForm` and `form`. In your component, `mode` is `"edit"` and there is no `documentId`.
+
+```ts
+defineGlobal({
+  slug: "site-settings",
+  admin: { components: { editForm: "site-settings.form" } },
+  fields: [/* … */],
+});
+```
+
+Globals do not send collection-level access to the admin, so `permissions.canUpdate` is `true` and the server decides when the editor saves.
+
+## Relationship drawers
+
+When an editor creates a related record from inside another form, Dyrected uses the target collection's `createForm` with `presentation: "drawer"`. `submit()` resolves to the drawer's own handler and does not redirect, because the drawer decides what happens next. The same applies to the **Create** dialog on relationship fields.
+
+Your component receives `presentation` as a prop, so it can hide controls that make no sense in a drawer. The walk-in form above would hide its **Cancel** button, for example, because the drawer has its own close button.
+
+To keep the built-in form in drawers while using your form on the page, set `formInDrawer: false` in `admin.components`.
+
+## Prefilling a new record
+
+Links to `/collections/guest-responses/new?email=ada@example.com` start the form with `email` filled in. The values are plain `?field=value` pairs, and `useDocumentForm().form.values` shows them.
+
+## In Vue and Nuxt
+
+Register the component the same way. The names are identical and state comes back as refs:
+
+```vue
+<script setup lang="ts">
+
+
+const { submit, permissions, cancel } = useDocumentForm();
+const notify = useAdminNotify();
+
+async function registerAndCheckIn() {
+  const result = await submit({
+    overrides: { attending: true, checkedIn: true, checkedInAt: new Date().toISOString() },
+    redirect: "list",
+    silent: true,
+  });
+  if (result.ok) notify.success("Guest registered and checked in");
+  else notify.error(result.errors.name ?? result.errors._form ?? "Could not register this guest");
+}
+</script>
+
+<template>
+  <div>
+    <DyrectedField path="name" />
+    <DyrectedField path="email" />
+    <DyrectedField path="guestCount" />
+    <button type="button" @click="cancel">Cancel</button>
+    <button type="button" :disabled="!permissions.canCreate" @click="registerAndCheckIn">
+      Register and check in
+    </button>
+  </div>
+</template>
+```
+
+With Nuxt, drop the file at `components/dyrected/forms/guest-responses.walkIn.vue` and it registers itself. See [Nuxt Auto-Registration](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/nuxt-auto-registration).
+
+## When something is wrong
+
+- **The key is not registered.** Dyrected renders the default form, so the editor is never left with an empty screen. In development the console names the missing key. See [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings).
+- **Your component throws.** The screen shows an error card with **Retry** and **Use default form**, so a broken form never blocks data entry.
+- **`formShell` is misspelled.** Dyrected treats it as `full`, and the dashboard lists the typo under the items that need attention.
+- **Your form never calls `submit()`.** Nothing saves on its own. Under the `full` shell, the default Save bar still works.
+
+## Recommended path
+
+Start with `formShell: "full"` and `<DyrectedDefaultForm>` with `exclude`, and add only the pieces that are special. Move to `header` when the form has its own actions, and to `none` only for a tool that needs the whole page. Put anything that is not a field value in `overrides`, and keep the real rules in your collection hooks and access rules, where the server enforces them.
+
+---
+
 ## Custom Admin Pages
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages
@@ -10277,18 +10604,19 @@ Throughout, "your app" means the project you embedded the admin into — your Ne
 
 Every custom component follows the same two-step pattern: **declare** where it goes, then **provide** the component.
 
-- You reference a component by a **string key** in your config: on a field (`admin.component`), in a slot list (`admin.components`), as a view's `component`, or as a page's `component`.
+- You reference a component by a **string key** in your config: on a field (`admin.component`), in a slot list or form setting (`admin.components`), as a view's `component`, or as a page's `component`.
 - You pass the actual component under that same key in the `components` prop of `<DyrectedAdmin>`.
 
 There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin shows a placeholder and warns in development (see [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings)); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
 
-There are four extension points:
+There are five extension points:
 
 | You want to                                                | Use                      | Read                                                                                                                               |
 | ---------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Replace the input for one field                            | A custom field component | [Below](#custom-field-components)                                                                                                  |
 | Add something above, below, or around built-in screens     | Component slots          | [Dashboard](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard), [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) |
 | Show a set of records in a shape no built-in layout offers | A custom view layout     | [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts)                                                      |
+| Replace the create or edit screen of a collection          | A custom form            | [Custom Create & Edit Forms](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-document-forms)                                      |
 | Add a screen that is not a record or a list of records     | A custom page            | [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)                                                       |
 
 Once you have components, these pages cover the rest:
@@ -10297,6 +10625,7 @@ Once you have components, these pages cover the rest:
 - [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling): match the admin in light and dark mode.
 - [Typed Component Keys](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys): catch a misspelled or missing key at compile time.
 - [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings): what the admin shows when a component is missing, unused, or throws.
+- [Custom Create & Edit Forms](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-document-forms): replace a collection's create or edit screen and keep Dyrected's save pipeline.
 - [Replacing a Built-in Layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/replacing-built-in-layouts): swap the kanban, table, or another layout everywhere.
 - [Nuxt Auto-Registration](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/nuxt-auto-registration): register components by dropping files in a folder.
 
@@ -10463,7 +10792,7 @@ It's worth being clear about the edges so you don't go looking for something tha
 
 - **The root admin shell**: You cannot replace the core shell (the sidebar frame, header bar, or authentication screen) with arbitrary JSX/Vue components. You customize these declaratively: navigation structure via `admin.navigation`, logos via `admin.branding`, browser tab titles via `admin.meta`, and visual styles via [custom theme variables](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
 - **Internal provider injection**: You can wrap `<DyrectedAdmin>` in any providers your app needs (`QueryClientProvider`, etc.), but there is no configuration option to inject arbitrary React context providers _inside_ the admin's internal routing tree.
-- **The built-in document edit form**: The edit screen (`/collections/:slug/:id/edit`) always renders Dyrected's schema-driven form. You can replace individual field inputs (`components.fields`), but you cannot replace the full form or inject tabs into it. The read-only [Detail View](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view) is more flexible and can embed your own components. If you need a fully custom workflow, reach for a [custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages).
+- **The save pipeline**: You can replace the create and edit *screens* with [your own form](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-document-forms), but a custom form still saves through Dyrected's write path, so validation, access rules, and hooks always run. The read-only [Detail View](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view) is separate and can embed your own components. If you need a workflow that is not a record at all, reach for a [custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages).
 
 If your goal is theming rather than swapping components, that's [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
 
@@ -10471,6 +10800,7 @@ If your goal is theming rather than swapping components, that's [Customizing CSS
 
 - Reach for a **custom field component** when a field needs an input the defaults don't offer.
 - Reach for a **slot** to add widgets or banners alongside built-in dashboard or collection screens.
+- Reach for a **[custom form](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-document-forms)** when a create or edit screen needs a different shape, like a walk-in desk or a scanner, but should still save through Dyrected.
 - Reach for a **view layout** when collection records need a custom visual presentation (e.g. maps, timelines, seating charts).
 - Reach for a **[custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)** when you need a dedicated operational screen, wizard, or analytics dashboard with its own URL and navigation item.
 
@@ -10498,7 +10828,7 @@ Your config names a component, but nothing is registered under that key. What ha
 
 The console warning appears once per key, not on every render. In production the messages stay out of editors' way and do not expose your key names.
 
-If you see the placeholder, check three things: the key in your config, the key in your `components` map, and that the component sits under the right group (`fields`, `dashboard`, `collectionList`, `collectionView`, `viewLayouts`, or `pages`).
+If you see the placeholder, check three things: the key in your config, the key in your `components` map, and that the component sits under the right group (`fields`, `dashboard`, `collectionList`, `collectionView`, `forms`, `viewLayouts`, or `pages`).
 
 ## A registered component is never used
 
@@ -10929,7 +11259,7 @@ The generator reads these places in your config:
 | `viewLayouts` | The `component` of any view with `layout: "custom"` |
 | `pages` | A page declared in `admin.navigation` |
 | `customComponents` | A name used with `displayCustom` in a detail view |
-| `forms` | Reserved. It stays `string` for now |
+| `forms` | `createForm`, `editForm`, and `form` on collections, and `editForm` and `form` on globals |
 
 ## When you do not generate types
 
@@ -11183,7 +11513,7 @@ Options travel from your server to the admin as JSON, so keep functions and clas
 
 ## In Vue and Nuxt
 
-Register the component the same way. The Vue integration wraps it, and the same three composables work with no setup. State comes back as refs, so read it through `.value`:
+Register the component the same way. The Vue integration wraps it, and the same three composables work with no setup. State comes back as refs. In `<script>` read them through `.value`; templates unwrap them for you:
 
 ```vue
 <script setup lang="ts">
@@ -11200,7 +11530,7 @@ const grouped = useGroupedDocuments("tableNumber");
       <li v-for="guest in group.docs" :key="guest.id">
         {{ guest.name }}
         <button
-          v-if="permissions.value.canUpdate"
+          v-if="permissions.canUpdate"
           @click="updateDocument(guest.id, { tableNumber: null })"
         >
           Unseat
@@ -17342,6 +17672,7 @@ Use this section to find copyable recipes that match your Dyrected runtime. Clou
 - [Build a support desk workspace](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/support-desk-workspace) — Problem: Support agents need a shared queue of open tickets, a fast way to spot urgent ones, and their own assigned tickets, without every agent seeing the same unfiltered list. Summary: Define a workspace with defineWorkspace containing open, urgent, and resolved views, a badge counting open tickets, and a resolve action.
 - [Scope content to the current workspace](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/tenant-scoped-access) — Problem: Users should only see or manage records that belong to their current workspace or organization. Summary: Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.
 - [Create a media upload collection](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/upload-collection) — Problem: Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents. Summary: Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.
+- [Build a walk-in check-in form](https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form) — Problem: A guest arrives at the door without an RSVP. The desk needs three inputs and one button, but the record must still go through validation, access rules, and hooks. Summary: Point createForm at a registered component, render a few built-in inputs with DyrectedField, and call submit with overrides for the values the editor never types.
 
 ---
 
@@ -19851,6 +20182,114 @@ export const Media = defineCollection({
     defineTextField({ name: "alt", label: "Alternative text", required: true }),
     defineTextareaField({ name: "caption", label: "Caption" }),
   ],
+});
+```
+
+---
+
+## Build a walk-in check-in form
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/examples-and-recipes/library/walk-in-check-in-form
+
+Replace a collection's create screen with a small desk form that saves a guest as attending and checked in, through the normal create path.
+
+## Use this when
+
+- replace the create form with my own component
+- build a custom create screen for a collection
+- check in a guest from a custom admin form
+- save a record with values the editor does not type
+- use built-in field inputs inside a custom form
+
+## Dyrected concepts
+
+`admin.components.createForm`, `formShell`, `components.forms`, `useDocumentForm`, `DyrectedField`, `submit overrides`
+
+**Additional packages:** `@dyrected/react`
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+
+
+  defineBooleanField,
+  defineCollection,
+  defineDateTimeField,
+  defineNumberField,
+  defineTextField,
+} from "@dyrected/core";
+
+
+export const GuestResponses = defineCollection({
+  slug: "guest-responses",
+  labels: { singular: "Guest response", plural: "Guest responses" },
+  admin: {
+    useAsTitle: "name",
+    components: {
+      // Used when creating. Editing keeps the built-in form.
+      createForm: "guest-responses.walkIn",
+      // The form brings its own button, so Dyrected keeps only the header.
+      formShell: "header",
+    },
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Full name", required: true }),
+    defineTextField({ name: "email", label: "Email" }),
+    defineNumberField({ name: "guestCount", label: "Plus-ones", defaultValue: 0 }),
+    defineBooleanField({ name: "attending", label: "Attending", defaultValue: false }),
+    defineBooleanField({ name: "checkedIn", label: "Checked in", defaultValue: false }),
+    defineDateTimeField({ name: "checkedInAt", label: "Checked in at" }),
+  ],
+});
+
+export function WalkInForm() {
+  const { submit, permissions, cancel } = useDocumentForm();
+  const notify = useAdminNotify();
+  const [saving, setSaving] = useState(false);
+
+  async function registerAndCheckIn() {
+    setSaving(true);
+    const result = await submit({
+      // Values the editor never types: they are what "walk-in" means.
+      overrides: { attending: true, checkedIn: true, checkedInAt: new Date().toISOString() },
+      redirect: "list",
+      silent: true,
+    });
+    setSaving(false);
+
+    if (result.ok) {
+      notify.success("Guest registered and checked in");
+    } else {
+      notify.error(result.errors.name ?? result.errors._form ?? "Could not register this guest");
+    }
+  }
+
+  return (
+    <div>
+      <h2>Walk-in guest</h2>
+      <DyrectedField path="name" />
+      <DyrectedField path="email" />
+      <DyrectedField path="guestCount" />
+
+      <button type="button" onClick={cancel}>
+        Cancel
+      </button>
+      <button type="button" disabled={saving || !permissions.canCreate} onClick={() => void registerAndCheckIn()}>
+        {saving ? "Registering…" : "Register and check in"}
+      </button>
+    </div>
+  );
+}
+
+// Registered on <DyrectedAdmin components={components} /> under the key the config uses.
+export const components = defineAdminComponents({
+  forms: { "guest-responses.walkIn": WalkInForm },
 });
 ```
 
@@ -23075,6 +23514,9 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
+
+    /** Custom components that replace this global's edit form. */
+    components?: GlobalFormComponentSlots;
   };
 
   /**
