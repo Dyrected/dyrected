@@ -15,14 +15,19 @@
       "types": "./dist/server.d.ts",
       "import": "./dist/server.js",
       "require": "./dist/server.cjs"
+    },
+    "./conformance": {
+      "types": "./dist/conformance/index.d.ts",
+      "import": "./dist/conformance/index.js",
+      "require": "./dist/conformance/index.cjs"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 tsup src/index.ts src/server.ts --format cjs,esm --dts",
-    "dev": "NODE_OPTIONS=--max-old-space-size=4096 tsup src/index.ts src/server.ts --format cjs,esm --watch --dts",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 tsup src/index.ts src/server.ts src/conformance/index.ts --format cjs,esm --dts",
+    "dev": "NODE_OPTIONS=--max-old-space-size=4096 tsup src/index.ts src/server.ts src/conformance/index.ts --format cjs,esm --watch --dts",
     "lint": "eslint src/**/*.ts",
     "test": "vitest"
   },
