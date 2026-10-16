@@ -26525,7 +26525,7 @@ flowchart LR
     end
     V[defineView]
     V --> S["slug + label + icon"]
-    V --> L["layout: table | kanban | calendar | cards | spreadsheet"]
+    V --> L["layout: table | kanban | calendar | cards | spreadsheet | custom"]
     V --> Q["filter + groupBy + dateField"]
     V --> C["columns + sort"]
     V --> A["actions + features + actionOrder"]
@@ -26685,7 +26685,8 @@ All options are optional except `slug` and `label`:
 | `slug` | `string` **required** | Stable path segment for the view. Used in URLs, sidebar keys, and preference persistence. | Always |
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
-| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
+| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, `"gantt"`, or `"custom"`. | Set explicitly to clarify design intent |
+| `component` / `options` / `data` | `string` / `object` / `{ pageSize?, fetchAll? }` | For `layout: "custom"`: the key of your layout component (required), serializable settings it can read, and how records load. See [Custom View Layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). | Only with `"custom"` |
 | `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
@@ -26706,6 +26707,7 @@ All options are optional except `slug` and `label`:
 
 ## Next steps
 
+- Draw records your own way — [Custom View Layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - Layout details — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
 - Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
 - Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
@@ -27952,7 +27954,7 @@ flowchart TB
 When you add `views` to a collection, Dyrected generates:
 
 - **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
-- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix), plus [custom layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) that you draw yourself. Each built-in layout respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
 - **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
 - **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
 
@@ -28082,6 +28084,7 @@ What just happened: three `defineView` entries share one collection. The table f
 
 - Configure the shape — [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view)
 - Choose a layout — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+- Draw records your own way — [Custom View Layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - Add verbs — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
 - Add numbers — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
 - Behavior in the admin — [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences)
@@ -28864,6 +28867,10 @@ Registration is global and assumes **one schema per app** — the same model Pay
 </Callout>
 
 You can still pass an explicit generic when you want to override the registered schema for a specific call — for example `createClient<OtherSchema>({ ... })` — but you rarely need to.
+
+## Component keys for custom admin components
+
+If your config references custom admin components by key, the generated file also lists those keys under `Register.componentKeys`. That is what lets `defineAdminComponents` fail to compile when a key is misspelled or missing. See [Typed Component Keys](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Recommended workflow
 

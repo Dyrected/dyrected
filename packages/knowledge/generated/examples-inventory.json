@@ -2114,11 +2114,53 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/custom-components/admin-hooks#example-1",
+    "page": "/editor-experience/custom-components/admin-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/admin-hooks#example-2",
+    "page": "/editor-experience/custom-components/admin-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/admin-hooks#example-3",
+    "page": "/editor-experience/custom-components/admin-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/admin-hooks#example-4",
+    "page": "/editor-experience/custom-components/admin-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/admin-hooks#example-5",
+    "page": "/editor-experience/custom-components/admin-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/admin-hooks#example-6",
+    "page": "/editor-experience/custom-components/admin-hooks",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
     "id": "/editor-experience/custom-components/custom-pages#example-1",
     "page": "/editor-experience/custom-components/custom-pages",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/editor-experience/custom-components/custom-pages#example-2",
@@ -2130,9 +2172,9 @@
   {
     "id": "/editor-experience/custom-components/custom-pages#example-3",
     "page": "/editor-experience/custom-components/custom-pages",
-    "language": "tsx",
+    "language": "vue",
     "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/editor-experience/custom-components/custom-pages#example-4",
@@ -2144,9 +2186,9 @@
   {
     "id": "/editor-experience/custom-components/custom-pages#example-5",
     "page": "/editor-experience/custom-components/custom-pages",
-    "language": "tsx",
+    "language": "vue",
     "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/editor-experience/custom-components/custom-pages#example-6",
@@ -2159,20 +2201,13 @@
     "id": "/editor-experience/custom-components/custom-pages#example-7",
     "page": "/editor-experience/custom-components/custom-pages",
     "language": "tsx",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/editor-experience/custom-components/custom-pages#example-8",
     "page": "/editor-experience/custom-components/custom-pages",
     "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/editor-experience/custom-components/custom-pages#example-9",
-    "page": "/editor-experience/custom-components/custom-pages",
-    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
@@ -2226,6 +2261,41 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/custom-components/list-view#example-5",
+    "page": "/editor-experience/custom-components/list-view",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/nuxt-auto-registration#example-1",
+    "page": "/editor-experience/custom-components/nuxt-auto-registration",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/editor-experience/custom-components/nuxt-auto-registration#example-2",
+    "page": "/editor-experience/custom-components/nuxt-auto-registration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/nuxt-auto-registration#example-3",
+    "page": "/editor-experience/custom-components/nuxt-auto-registration",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/editor-experience/custom-components/nuxt-auto-registration#example-4",
+    "page": "/editor-experience/custom-components/nuxt-auto-registration",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
     "id": "/editor-experience/custom-components/overview#example-1",
     "page": "/editor-experience/custom-components/overview",
     "language": "ts",
@@ -2249,6 +2319,41 @@
   {
     "id": "/editor-experience/custom-components/overview#example-4",
     "page": "/editor-experience/custom-components/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/registration-warnings#example-1",
+    "page": "/editor-experience/custom-components/registration-warnings",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/editor-experience/custom-components/registration-warnings#example-2",
+    "page": "/editor-experience/custom-components/registration-warnings",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/replacing-built-in-layouts#example-1",
+    "page": "/editor-experience/custom-components/replacing-built-in-layouts",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/replacing-built-in-layouts#example-2",
+    "page": "/editor-experience/custom-components/replacing-built-in-layouts",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/custom-components/replacing-built-in-layouts#example-3",
+    "page": "/editor-experience/custom-components/replacing-built-in-layouts",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
@@ -2294,6 +2399,90 @@
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/typed-keys#example-1",
+    "page": "/editor-experience/custom-components/typed-keys",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/editor-experience/custom-components/typed-keys#example-2",
+    "page": "/editor-experience/custom-components/typed-keys",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/typed-keys#example-3",
+    "page": "/editor-experience/custom-components/typed-keys",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/typed-keys#example-4",
+    "page": "/editor-experience/custom-components/typed-keys",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/editor-experience/custom-components/typed-keys#example-5",
+    "page": "/editor-experience/custom-components/typed-keys",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-1",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-2",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-3",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-4",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-5",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-6",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/view-layouts#example-7",
+    "page": "/editor-experience/custom-components/view-layouts",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/editor-experience/customizing-css#example-1",

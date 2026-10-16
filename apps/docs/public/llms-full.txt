@@ -26527,7 +26527,7 @@ flowchart LR
     end
     V[defineView]
     V --> S["slug + label + icon"]
-    V --> L["layout: table | kanban | calendar | cards | spreadsheet"]
+    V --> L["layout: table | kanban | calendar | cards | spreadsheet | custom"]
     V --> Q["filter + groupBy + dateField"]
     V --> C["columns + sort"]
     V --> A["actions + features + actionOrder"]
@@ -26687,7 +26687,8 @@ All options are optional except `slug` and `label`:
 | `slug` | `string` **required** | Stable path segment for the view. Used in URLs, sidebar keys, and preference persistence. | Always |
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
-| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
+| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, `"gantt"`, or `"custom"`. | Set explicitly to clarify design intent |
+| `component` / `options` / `data` | `string` / `object` / `{ pageSize?, fetchAll? }` | For `layout: "custom"`: the key of your layout component (required), serializable settings it can read, and how records load. See [Custom View Layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). | Only with `"custom"` |
 | `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
@@ -26708,6 +26709,7 @@ All options are optional except `slug` and `label`:
 
 ## Next steps
 
+- Draw records your own way — [Custom View Layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - Layout details — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
 - Add workflow buttons — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
 - Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
@@ -27954,7 +27956,7 @@ flowchart TB
 When you add `views` to a collection, Dyrected generates:
 
 - **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
-- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix), plus [custom layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) that you draw yourself. Each built-in layout respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
 - **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
 - **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
 
@@ -28084,6 +28086,7 @@ What just happened: three `defineView` entries share one collection. The table f
 
 - Configure the shape — [Define a view](https://docs.dyrected.com/docs/cloud/model-content/operational-views/define-view)
 - Choose a layout — [Table](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/cloud/model-content/operational-views/layouts/spreadsheet)
+- Draw records your own way — [Custom View Layouts](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - Add verbs — [Actions](https://docs.dyrected.com/docs/cloud/model-content/operational-views/actions)
 - Add numbers — [Metrics](https://docs.dyrected.com/docs/cloud/model-content/operational-views/metrics)
 - Behavior in the admin — [Routing and preferences](https://docs.dyrected.com/docs/cloud/model-content/operational-views/routing-and-preferences)
@@ -28866,6 +28869,10 @@ Registration is global and assumes **one schema per app** — the same model Pay
 </Callout>
 
 You can still pass an explicit generic when you want to override the registered schema for a specific call — for example `createClient<OtherSchema>({ ... })` — but you rarely need to.
+
+## Component keys for custom admin components
+
+If your config references custom admin components by key, the generated file also lists those keys under `Register.componentKeys`. That is what lets `defineAdminComponents` fail to compile when a key is misspelled or missing. See [Typed Component Keys](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Recommended workflow
 
@@ -40325,77 +40332,232 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/cust
 
 ---
 
+## Admin Hooks
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/admin-hooks
+
+Once you write your own admin components, you quickly need the same few things: data for the signed-in editor, a way to send them to another screen, a toast for feedback, and a way to hide a button they may not use. Dyrected gives you four hooks for exactly that, so your components do not import the admin's router, its toast library, or guess its URLs.
+
+By the end of this page you will have a small slot component that checks what the editor may do, loads data with their permissions, shows a toast, and sends them to a custom page.
+
+This page builds on the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). All four hooks work in custom fields, slots, [view layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts), and [pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages), in React and Vue. They are marked experimental, so expect small refinements.
+
+## The four hooks at a glance
+
+| You need to | Hook (React) | Vue |
+| --- | --- | --- |
+| Read or write documents as the signed-in editor | `useAdminClient()` | `useDyrectedClient()` |
+| Move to another admin screen | `useAdminNavigate()` | `useAdminNavigate()` |
+| Show a success, error, or info toast | `useAdminNotify()` | `useAdminNotify()` |
+| Hide or disable what the editor may not use | `useAccess()` | `useAccess()` |
+
+## A worked example
+
+This button belongs in a view's header slot. It only renders for editors who can update guests, counts the guests who have arrived, tells the editor with a toast, and opens the check-in station page:
+
+```tsx
+// CheckInShortcut.tsx
+
+
+export function CheckInShortcut() {
+  const client = useAdminClient();
+  const { navigate, to } = useAdminNavigate();
+  const notify = useAdminNotify();
+  const { can } = useAccess();
+
+  if (!can("update", "guest-responses")) return null;
+
+  async function openStation() {
+    try {
+      const arrived = await client
+        .collection("guest-responses")
+        .find({ where: { checkedIn: { equals: true } }, limit: 1 });
+      notify.info(`${arrived.total} guests have arrived`, { description: "Opening the check-in station" });
+      navigate(to.page("check-in-station"));
+    } catch (error) {
+      notify.error("Could not load arrivals", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }
+
+  return (
+    <button type="button" onClick={() => void openStation()}>
+      Open check-in station
+    </button>
+  );
+}
+```
+
+Register it as a view slot (see [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view)), and open the view. The button should appear for editors who can update guests and disappear for the rest. Clicking it shows the toast and takes you to the page.
+
+## Reading and writing data with `useAdminClient()`
+
+`useAdminClient()` returns the SDK client the admin itself is signed in with. Every call it makes carries the current editor's permissions, so an editor only reads and changes what they could in the admin. You do not manage a token.
+
+```tsx
+const client = useAdminClient();
+const { docs } = await client.collection("guest-responses").find({ limit: 10 });
+await client.collection("guest-responses").update(id, { checkedIn: true });
+```
+
+<Callout type="warn">
+  `useAdminClient()` is not `useDyrected()` from `@dyrected/react`. That one gives your **public site** a client and needs
+  its own `DyrectedProvider`, which the admin does not mount. Calling it inside a custom admin component throws.
+</Callout>
+
+In Vue, `useDyrectedClient()` already returns the admin's client inside custom components, so there is nothing new to learn.
+
+The hook throws a clear error if it is used outside the admin or before the editor has signed in. Components rendered by the admin only appear after sign-in, so you will not normally see that.
+
+## Moving around with `useAdminNavigate()`
+
+It returns `navigate`, plus `to`, a set of helpers that build admin addresses. Use them instead of typing paths, because the admin may be mounted with a hash router, under a prefix, or inside a Nuxt or Next app.
+
+| Helper | Goes to |
+| --- | --- |
+| `to.collection(slug)` | A collection's list |
+| `to.document(slug, id)` | One document |
+| `to.view(slug, viewSlug)` | An operational view on a collection |
+| `to.workspace(slug, viewSlug?)` | A workspace, optionally on one of its views |
+| `to.page(slug, subPath?)` | A [custom page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages), optionally below its root |
+
+```tsx
+const { navigate, to } = useAdminNavigate();
+
+navigate(to.document("guest-responses", guest.id));
+navigate(to.page("reports", "2026-08"), { replace: true });
+```
+
+Pass `{ replace: true }` to replace the current history entry instead of adding one. `to.*` returns an address for `navigate`, not a link you can put in an `href`.
+
+## Toasts with `useAdminNotify()`
+
+It returns `success`, `error`, and `info`. Each takes a message and an optional `description` for a second line:
+
+```tsx
+const notify = useAdminNotify();
+
+notify.success("Guest checked in", { description: "Table 4" });
+```
+
+The toasts look and behave like the admin's own, and you do not import a toast library.
+
+## Hiding what the editor may not use with `useAccess()`
+
+`can(operation, collection, doc?)` answers whether the current editor may `create`, `read`, `update`, or `delete` in a collection. Pass a document when the rule depends on it.
+
+```tsx
+const { can } = useAccess();
+
+<button disabled={!can("delete", "guest-responses", guest)}>Remove</button>
+```
+
+<Callout type="warn">
+  `useAccess()` is for what to show, not for security. It evaluates the collection's access rules in the browser, and
+  rules it cannot evaluate there, such as ones that run server code, answer `true`. The server enforces access on every
+  request no matter what your component shows.
+</Callout>
+
+## Vue
+
+The names are the same and the results are plain objects:
+
+```vue
+<script setup lang="ts">
+
+
+const client = useDyrectedClient();
+const { navigate, to } = useAdminNavigate();
+const notify = useAdminNotify();
+const { can } = useAccess();
+
+async function openStation() {
+  const arrived = await client.collection("guest-responses").find({ where: { checkedIn: { equals: true } }, limit: 1 });
+  notify.info(`${arrived.total} guests have arrived`);
+  navigate(to.page("check-in-station"));
+}
+</script>
+
+<template>
+  <button v-if="can('update', 'guest-responses')" type="button" @click="openStation">
+    Open check-in station
+  </button>
+</template>
+```
+
+## Recommended path
+
+Use `useAdminClient()` for data so permissions are applied for you, `useAdminNavigate()` and its `to` helpers for every link, `useAdminNotify()` for feedback, and `useAccess()` only to decide what to show. Keep real protection in your collection access rules.
+
+---
+
 ## Custom Admin Pages
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages
 
-When your project outgrows standard collection lists and edit forms, you can add custom pages directly into the Dyrected Admin interface. Custom pages live side-by-side with your collections in the sidebar navigation, inherit the admin's theme and authentication, and can render whatever custom React or Vue components you need.
+Some screens are not a record and not a list of records. A door check-in station, a reconciliation tool, an "invite guests" wizard, an integrations hub, or a reporting screen are tasks, and they do not belong on a collection. A custom page is a screen whose content you fully control, with a place in the sidebar and the admin's usual header around it.
 
-Use custom pages for:
+By the end of this page you will have a **check-in station** in the sidebar: a search box, one row per matching guest, and a button that checks the guest in. It reads and writes through the admin's own signed-in client, so it respects exactly what the editor is allowed to do.
 
-- Operational and executive overview dashboards
-- Multi-step onboarding, CSV reconcilers, or bulk migration wizards
-- Integration hubs for Stripe, SendGrid, Shopify, or external microservices
-- Custom reporting screens and analytics charts
+This page assumes you know the declare-then-provide pattern from the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). Throughout, "your app" means the project you embedded the admin into.
 
----
+## Which extension point do you need?
+
+| You want to | Use |
+| --- | --- |
+| Show a set of records in a different shape | A [custom view layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) |
+| Change how one field is edited | A custom field component |
+| A screen that is neither of those | **A custom page** |
+
+A page has no collection attached, so it also has no filters, columns, or paging to share with the admin. If you find yourself recreating those, a view layout is probably the better fit.
 
 ## The mental model
 
-Adding a custom page follows the same two-step pattern used across Dyrected: **declare** the page in your configuration, then **provide** the component in your application:
+Adding a page follows the same two steps as every custom component: **declare** it in your config, then **provide** the component in your app.
 
-1. **Declare the page**: In `dyrected.config.ts`, define the page in `admin.navigation` using `definePage()`. This assigns a route slug, a sidebar label, an icon, and a unique string component key.
-2. **Register the component**: In your React or Vue app, map that component key to your actual UI component using `defineAdminComponents({ pages: { ... } })` and pass it to `<DyrectedAdmin>`.
+- **Declare:** In `dyrected.config.ts`, add the page to `admin.navigation` with `definePage()`. That gives it a route, a sidebar label and icon, and a component key.
+- **Provide:** Register your component under that key in `components.pages`.
 
-Once registered, Dyrected automatically:
+Once both are in place, Dyrected adds the sidebar link, serves the page at `/pages/<slug>` (under wherever your admin is mounted), and wraps it in a header with breadcrumbs, a title, and optional action buttons. Everything below the header is yours.
 
-- Generates the route at `/admin/pages/:slug` (and subpaths `/admin/pages/:slug/*`)
-- Adds a link to your sidebar navigation under the designated group
-- Sets up page chrome with breadcrumbs, title, and action buttons
-- Provides specialized hooks for sub-routing, page metadata, navigation, and notifications
+## Quickstart: a check-in station
 
----
+### 1. Declare the page
 
-## 3-step quickstart
+Add it to `admin.navigation`. The `component` value is the key you will register in step 2, and the name is yours to choose:
 
-Here is how to get a custom page running in less than five minutes.
-
-### 1. Define the page in config
-
-In your `dyrected.config.ts`, import `definePage` and add it to `admin.navigation`:
-
-```ts title="dyrected.config.ts"
+```ts
 
 
 export default defineConfig({
+  collections: [],
+  globals: [],
   admin: {
     navigation: [
       definePage({
-        slug: "operations-hub",
-        label: "Operations Hub",
-        icon: "LayoutDashboard",
+        slug: "check-in-station",
+        label: "Check-in Station",
+        icon: "ScanSearch",
         group: "Operations",
-        order: 1,
-        component: "ops.hub",
+        order: 4,
+        component: "ops.checkInStation",
       }),
     ],
   },
-  // collections: [...]
 });
 ```
 
-Here:
-- `slug` determines the URL path: `/admin/pages/operations-hub`.
-- `label` is the display text in the sidebar navigation.
-- `icon` is any [Lucide icon](https://lucide.dev) name.
-- `group` nests the page inside an existing or new sidebar section.
-- `component` is the string key you will use when registering your component.
+The page appears in the sidebar under **Operations**. `slug`, `label`, and `component` are required. A slug must be unique among pages, and a few system names such as `pages`, `admin`, `settings`, and `trash` are reserved. Dyrected throws when your config loads if either rule is broken, so you find out immediately.
 
-### 2. Register the component in your app
+### 2. Register the component
 
-In your admin entry file (e.g. `app/admin/[[...admin]]/page.tsx` for Next.js, or your main admin view in Vite/Nuxt), pass the component under the matching key:
+Register it under the same key, in `components.pages`. Your component receives `slug`, the page's slug, as a prop.
 
-```tsx title="app/admin/[[...admin]]/page.tsx"
+<Tabs items={['React (Next.js)', 'Vue (Nuxt / Vite)']}>
+<Tab value="React (Next.js)">
+
+```tsx
 "use client";
 
 
@@ -40403,356 +40565,441 @@ In your admin entry file (e.g. `app/admin/[[...admin]]/page.tsx` for Next.js, or
 
 
 const components = defineAdminComponents({
-  pages: {
-    "ops.hub": OperationsHubPage,
-  },
+  pages: { "ops.checkInStation": CheckInStation },
 });
 
-export default function AdminPage() {
+export function AdminClient() {
   return <DyrectedAdmin components={components} />;
 }
 ```
 
-> [!NOTE]
-> For Vue and Nuxt apps, import `defineAdminComponents` from `@dyrected/vue`. Dyrected automatically wraps your Vue component in a bridge so it renders seamlessly inside the admin interface.
+In Next.js, components are functions, so they cannot be passed from a server component. Keep the registration in a small client component like this one and render it from your admin page.
 
-### 3. Build your custom page component
+</Tab>
+<Tab value="Vue (Nuxt / Vite)">
 
-Create the component. Custom page components receive a `{ slug }` prop and can use hooks provided by `@dyrected/admin` (or `@dyrected/react`):
+```vue
+<script setup lang="ts">
 
-```tsx title="src/admin-components/operations-hub.tsx"
+
+
+const components = defineAdminComponents({
+  pages: { "ops.checkInStation": CheckInStation },
+});
+</script>
+
+<template>
+  <DyrectedAdmin :components="components" />
+</template>
+```
+
+In Nuxt you can also skip the map and drop the file in `components/dyrected/pages/`. See [Nuxt Auto-Registration](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/nuxt-auto-registration).
+
+</Tab>
+</Tabs>
+
+### 3. Write the page
+
+Your component renders the screen. Dyrected supplies the breadcrumb trail and the page header, and you fill them in with `usePageMeta`. This one searches guests as you type and checks a guest in with one tap.
+
+<Tabs items={['React', 'Vue']}>
+<Tab value="React">
+
+```tsx
+// CheckInStation.tsx
 "use client";
 
 
 
+  useAccess,
+  useAdminClient,
+  useAdminNavigate,
+  useAdminNotify,
+  usePageMeta,
+  usePageRoute,
+  type AdminPageProps,
+} from "@dyrected/react";
 
-export function OperationsHubPage({ slug }: { slug: string }) {
+interface Guest {
+  id: string;
+  name: string;
+  guestCount?: number;
+  tableNumber?: number;
+  checkedIn?: boolean;
+}
+
+type Status = "idle" | "loading" | "error";
+
+/**
+ * A door check-in station: one search box, big result rows, one tap to check a
+ * guest in. It is a page and not a view because it is a task, not a list of
+ * records: it has no filters, columns or pagination to share with the admin.
+ */
+export function CheckInStation(_props: AdminPageProps) {
+  const client = useAdminClient();
   const notify = useAdminNotify();
-
-  // Synchronize title, description, and top header action buttons
-  usePageMeta({
-    title: "Operations Hub",
-    description: "Real-time system health and task queues",
-    actions: [
-      {
-        label: "Run Diagnostics",
-        icon: "Activity",
-        variant: "default",
-        onClick: () => {
-          notify.success("Diagnostics queued successfully");
-        },
-      },
-    ],
-  });
-
-  return (
-    <div className="dy-grid dy-gap-4 md:dy-grid-cols-3">
-      <div className="dy-rounded-xl dy-border dy-bg-card dy-p-6 dy-text-card-foreground dy-shadow-sm">
-        <h3 className="dy-text-sm dy-font-medium dy-text-muted-foreground">Active Tasks</h3>
-        <p className="dy-mt-2 dy-text-3xl dy-font-bold">24</p>
-      </div>
-      <div className="dy-rounded-xl dy-border dy-bg-card dy-p-6 dy-text-card-foreground dy-shadow-sm">
-        <h3 className="dy-text-sm dy-font-medium dy-text-muted-foreground">Sync Health</h3>
-        <p className="dy-mt-2 dy-text-3xl dy-font-bold dy-text-emerald-500">99.8%</p>
-      </div>
-      <div className="dy-rounded-xl dy-border dy-bg-card dy-p-6 dy-text-card-foreground dy-shadow-sm">
-        <h3 className="dy-text-sm dy-font-medium dy-text-muted-foreground">Pending Invoices</h3>
-        <p className="dy-mt-2 dy-text-3xl dy-font-bold">3</p>
-      </div>
-    </div>
-  );
-}
-```
-
-When you open your admin panel and click **Operations Hub** in the sidebar, your component renders with the header, actions, and custom cards.
-
----
-
-## Managing header and document metadata
-
-Custom pages support standard Dyrected page chrome: a breadcrumb trail, a page title, an optional subtitle description, and header action buttons.
-
-Use the `usePageMeta` hook inside your component to customize these values dynamically:
-
-```tsx
-
-
-export function AnalyticsPage() {
-  const [isExporting, setIsExporting] = useState(false);
-
-  usePageMeta({
-    title: "Monthly Analytics",
-    description: "Aggregated performance across all stores",
-    breadcrumbs: [
-      { label: "Admin", to: "/" },
-      { label: "Operations" },
-      { label: "Analytics" },
-    ],
-    actions: [
-      {
-        label: isExporting ? "Exporting..." : "Export CSV",
-        icon: "Download",
-        variant: "outline",
-        disabled: isExporting,
-        onClick: async () => {
-          setIsExporting(true);
-          await exportReport();
-          setIsExporting(false);
-        },
-      },
-    ],
-  });
-
-  return <div></div>;
-}
-```
-
-### Action button options
-
-Header actions are configured as an array of objects passed to `actions`:
-
-| Property | Type | Description |
-|---|---|---|
-| `label` | `string` | Button text |
-| `icon` | `string` (optional) | Lucide icon name, such as `"Download"`, `"Plus"`, or `"RefreshCw"` |
-| `variant` | `"default" \| "outline" \| "secondary" \| "ghost" \| "destructive"` | Visual button style (defaults to `"default"`) |
-| `disabled` | `boolean` (optional) | Whether the button is disabled |
-| `onClick` | `() => void` | Click event handler |
-
-The page title defined in `usePageMeta` also updates the browser window tab title automatically (using your configured `meta.titleSuffix`).
-
----
-
-## Sub-routing within custom pages
-
-Many custom pages require sub-views, such as tabs (`/admin/pages/ops/overview` vs `/admin/pages/ops/logs`) or item detail views (`/admin/pages/ops/tasks/123`).
-
-Dyrected routes all subpaths matching `/pages/:slug/*` into your page component. You can inspect the current subpath and trigger internal navigations with the `usePageRoute` hook:
-
-```tsx
-
-
-export function TeamHubPage() {
-  const { splat, navigate, searchParams, setSearchParams } = usePageRoute();
-
-  // Determine active tab from the subpath splat (e.g. "" -> "overview", "members" -> "members")
-  const activeTab = splat || "overview";
-
-  return (
-    <div>
-      
-      <div className="dy-flex dy-gap-2 dy-border-b dy-border-border dy-pb-2 dy-mb-6">
-        <button
-          onClick={() => navigate("")}
-          className={`dy-px-3 dy-py-1.5 dy-text-sm dy-font-medium dy-rounded-md ${
-            activeTab === "overview"
-              ? "dy-bg-primary dy-text-primary-foreground"
-              : "dy-text-muted-foreground hover:dy-text-foreground"
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => navigate("members")}
-          className={`dy-px-3 dy-py-1.5 dy-text-sm dy-font-medium dy-rounded-md ${
-            activeTab === "members"
-              ? "dy-bg-primary dy-text-primary-foreground"
-              : "dy-text-muted-foreground hover:dy-text-foreground"
-          }`}
-        >
-          Team Members
-        </button>
-        <button
-          onClick={() => navigate("activity")}
-          className={`dy-px-3 dy-py-1.5 dy-text-sm dy-font-medium dy-rounded-md ${
-            activeTab === "activity"
-              ? "dy-bg-primary dy-text-primary-foreground"
-              : "dy-text-muted-foreground hover:dy-text-foreground"
-          }`}
-        >
-          Activity Log
-        </button>
-      </div>
-
-      
-      {activeTab === "overview" && <TeamOverview />}
-      {activeTab === "members" && <TeamMembersList />}
-      {activeTab === "activity" && <TeamActivityLog />}
-    </div>
-  );
-}
-```
-
-### `usePageRoute()` returns:
-
-- `splat`: The relative subpath string after `/pages/:slug/` (without leading slash). If the user visits `/pages/my-page/reports/2026`, `splat` is `"reports/2026"`.
-- `navigate(subPath, { replace?: boolean })`: Navigates to a subpath under this custom page without page reload. Passing `""` navigates back to the root of the page.
-- `searchParams`: A `URLSearchParams` instance containing the current query parameters.
-- `setSearchParams(next)`: Function to update the query string.
-
----
-
-## Navigating to other admin surfaces
-
-To link or navigate from your custom page to another collection, workspace view, or document edit screen, use `useAdminNavigate`:
-
-```tsx
-
-
-export function QuickLinksWidget() {
+  const { can } = useAccess();
   const { navigate, to } = useAdminNavigate();
+  const { searchParams, setSearchParams } = usePageRoute();
 
-  return (
-    <div className="dy-flex dy-gap-2">
-      
-      <button
-        onClick={() => navigate(to.collection("orders"))}
-        className="dy-btn dy-btn-outline"
-      >
-        View Orders
-      </button>
+  // The search text lives in the URL, so a refresh or a shared link keeps it.
+  const query = searchParams.get("q") ?? "";
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [status, setStatus] = useState<Status>("idle");
 
-      
-      <button
-        onClick={() => navigate(to.document("orders", "order_123"))}
-        className="dy-btn dy-btn-outline"
-      >
-        Open Order #123
-      </button>
+  usePageMeta({
+    title: "Check-in station",
+    description: "Find a guest and check them in at the door.",
+    actions: [
+      {
+        label: "Open full roster",
+        variant: "outline",
+        onClick: () => navigate(to.workspace("door-checkin")),
+      },
+    ],
+  });
 
-      
-      <button
-        onClick={() => navigate(to.workspace("fulfillment", "pending-queue"))}
-        className="dy-btn dy-btn-outline"
-      >
-        Fulfillment Queue
-      </button>
-    </div>
-  );
-}
-```
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setGuests([]);
+      setStatus("idle");
+      return;
+    }
 
-`to` provides helper methods that guarantee you build valid admin URLs:
-- `to.collection(slug)`: `/collections/:slug`
-- `to.document(slug, id)`: `/collections/:slug/:id`
-- `to.workspace(slug, viewSlug?)`: `/:workspaceSlug` or `/:workspaceSlug/:viewSlug`
-- `to.page(slug, subPath?)`: `/pages/:slug` or `/pages/:slug/:subPath`
-- `to.view(slug, viewSlug)`: `/collections/:slug/views/:viewSlug`
+    // Ignore answers to searches the editor has already typed past.
+    let cancelled = false;
+    setStatus("loading");
+    const timer = setTimeout(async () => {
+      try {
+        const result = await client
+          .collection("guest-responses")
+          .find({ search: query.trim(), where: { attending: { equals: true } }, limit: 8 });
+        if (!cancelled) {
+          // With generated types (`npx dyrected generate:types`) this cast is not needed.
+          setGuests(result.docs as unknown as Guest[]);
+          setStatus("idle");
+        }
+      } catch {
+        if (!cancelled) setStatus("error");
+      }
+    }, 250);
 
----
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [client, query]);
 
-## Notifications and toasts
-
-Dyrected provides an integrated notification system via `useAdminNotify()`. Toasts automatically match the admin panel's theme and positioning:
-
-```tsx
-
-
-export function BackupTool() {
-  const notify = useAdminNotify();
-
-  const handleBackup = async () => {
+  async function checkIn(guest: Guest) {
     try {
-      notify.info("Creating backup archive...");
-      await performBackup();
-      notify.success("Backup created successfully", {
-        description: "Archive saved to s3://backups/2026-10-16.tar.gz",
+      await client.collection("guest-responses").update(guest.id, { checkedIn: true });
+      setGuests((current) => current.map((g) => (g.id === guest.id ? { ...g, checkedIn: true } : g)));
+      notify.success(`${guest.name} is checked in`, {
+        description: guest.tableNumber ? `Table ${guest.tableNumber}` : "No table assigned yet",
       });
-    } catch (err) {
-      notify.error("Backup failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
+    } catch (error) {
+      notify.error(`Could not check in ${guest.name}`, {
+        description: error instanceof Error ? error.message : undefined,
       });
     }
-  };
-
-  return <button onClick={handleBackup}>Start Backup</button>;
-}
-```
-
----
-
-## Checking permissions
-
-If your custom page includes privileged actions (such as deleting records or viewing sensitive reports), you can check the current user's permissions with `useAccess()`:
-
-```tsx
-
-
-export function DangerZone() {
-  const { can } = useAccess();
-
-  // Checks if the active user can delete records in the "users" collection
-  const canDeleteUsers = can("delete", "users");
-
-  if (!canDeleteUsers) {
-    return null;
   }
 
   return (
-    <div className="dy-border-destructive/30 dy-rounded-lg dy-border dy-p-4">
-      <h4 className="dy-text-destructive dy-font-semibold">Danger Zone</h4>
-      <p className="dy-text-sm dy-text-muted-foreground">Purge test accounts</p>
+    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+      <input
+        autoFocus
+        type="search"
+        value={query}
+        onChange={(event) =>
+          setSearchParams(event.target.value ? { q: event.target.value } : {}, { replace: true })
+        }
+        placeholder="Start typing a guest's name…"
+        aria-label="Search guests"
+        className="h-12 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 text-lg"
+      />
+
+      {status === "error" ? (
+        <p role="alert" className="text-sm text-[hsl(var(--muted-foreground))]">
+          Could not search just now. Check your connection and keep typing to try again.
+        </p>
+      ) : null}
+
+      <ul className="flex flex-col gap-2">
+        {guests.map((guest) => (
+          <li
+            key={guest.id}
+            className="flex items-center justify-between gap-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3"
+          >
+            <div>
+              <p className="font-medium">{guest.name}</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                {guest.guestCount ?? 1} {(guest.guestCount ?? 1) === 1 ? "person" : "people"}
+                {guest.tableNumber ? ` · Table ${guest.tableNumber}` : ""}
+              </p>
+            </div>
+            {guest.checkedIn ? (
+              <span className="text-sm font-medium">Checked in</span>
+            ) : (
+              <button
+                type="button"
+                disabled={!can("update", "guest-responses")}
+                onClick={() => void checkIn(guest)}
+                className="h-10 rounded-md bg-[hsl(var(--primary))] px-4 text-sm font-medium text-[hsl(var(--primary-foreground))] disabled:opacity-50"
+              >
+                Check in
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {query.trim().length >= 2 && status === "idle" && guests.length === 0 ? (
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">No attending guest matches “{query}”.</p>
+      ) : null}
     </div>
   );
 }
 ```
 
-> [!IMPORTANT]
-> The `useAccess().can()` check is an interface gating hint to show or hide UI controls. Your server-side API or backend functions remain the authoritative enforcement boundary for data operations.
+The classes are Tailwind from your own app. Use whatever CSS you already use.
 
----
+</Tab>
+<Tab value="Vue">
 
-## Page configuration options
+```vue
+<!-- CheckInStation.vue -->
+<script setup lang="ts">
 
-The `definePage()` helper accepts several options to control layout and appearance:
 
-```ts title="dyrected.config.ts"
-definePage({
-  slug: "full-canvas",
-  label: "Full Width Canvas",
-  icon: "Maximize2",
-  component: "canvas.full",
-  
-  // Custom options passed down to your component via usePageMeta().options
-  options: {
-    refreshRateMs: 5000,
-  },
 
-  // 'default' wraps your page in a centered max-w-7xl container with standard padding
-  // 'full' provides a full-width edge-to-edge container (great for maps, kanban boards, or split panes)
-  layout: "full",
+interface Guest {
+  id: string;
+  name: string;
+  guestCount?: number;
+  tableNumber?: number;
+  checkedIn?: boolean;
+}
 
-  // Set to false to disable the standard header, breadcrumbs, and title chrome
-  chrome: false,
+defineProps<{ slug: string }>();
+
+const client = useDyrectedClient();
+const notify = useAdminNotify();
+const { can } = useAccess();
+
+usePageMeta({
+  title: "Check-in station",
+  description: "Find a guest and check them in at the door.",
 });
+
+const query = ref("");
+const guests = ref<Guest[]>([]);
+let timer: ReturnType<typeof setTimeout> | undefined;
+let latest = 0;
+
+watch(query, (value) => {
+  clearTimeout(timer);
+  const text = value.trim();
+  if (text.length < 2) {
+    guests.value = [];
+    return;
+  }
+
+  // Ignore answers to searches the editor has already typed past.
+  const run = ++latest;
+  timer = setTimeout(async () => {
+    const result = await client
+      .collection("guest-responses")
+      .find({ search: text, where: { attending: { equals: true } }, limit: 8 });
+    if (run === latest) guests.value = result.docs as unknown as Guest[];
+  }, 250);
+});
+
+onBeforeUnmount(() => clearTimeout(timer));
+
+async function checkIn(guest: Guest) {
+  try {
+    await client.collection("guest-responses").update(guest.id, { checkedIn: true });
+    guest.checkedIn = true;
+    notify.success(`${guest.name} is checked in`);
+  } catch (error) {
+    notify.error(`Could not check in ${guest.name}`, {
+      description: error instanceof Error ? error.message : undefined,
+    });
+  }
+}
+</script>
+
+<template>
+  <div>
+    <input v-model="query" type="search" placeholder="Start typing a guest's name…" aria-label="Search guests" />
+    <ul>
+      <li v-for="guest in guests" :key="guest.id">
+        {{ guest.name }}
+        <span v-if="guest.checkedIn">Checked in</span>
+        <button v-else type="button" :disabled="!can('update', 'guest-responses')" @click="checkIn(guest)">
+          Check in
+        </button>
+      </li>
+    </ul>
+  </div>
+</template>
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `slug` | `string` | *(required)* | Unique URL path segment (`/admin/pages/:slug`) |
-| `label` | `string` | *(required)* | Display title shown in sidebar navigation |
-| `component` | `string` | *(required)* | String key matching `components.pages` |
-| `icon` | `string` | `"FileText"` | Lucide icon name for sidebar and page header |
-| `group` | `string` | `undefined` | Sidebar navigation group name |
-| `order` | `number` | `undefined` | Sort order within the navigation group |
-| `layout` | `"default" \| "full"` | `"default"` | Layout container width (`max-w-7xl` vs `w-full`) |
-| `chrome` | `boolean` | `true` | When `false`, hides the default page header and breadcrumbs |
-| `options` | `Record<string, unknown>` | `undefined` | Custom configuration accessible via `usePageMeta().options` |
+</Tab>
+</Tabs>
 
----
+Open **Check-in Station** in the sidebar and type two letters of a guest's name. You should see matching guests, and **Check in** should show a toast and mark the guest. If the admin says the page cannot be found, the slug in the URL does not match a page in `admin.navigation`.
 
-## Styling custom pages
+A few things in that code are worth pointing out:
 
-To ensure your custom page blends seamlessly with the rest of the Dyrected Admin interface:
+- `useAdminClient()` (React) and `useDyrectedClient()` (Vue) return the SDK client the admin is signed in with, so every call carries the editor's permissions. In React this is **not** `useDyrected()` from `@dyrected/react`, which belongs to your public site and needs its own provider. See [Admin Hooks](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/admin-hooks).
+- The search ignores answers to searches the editor has already typed past, so fast typing never shows stale rows.
+- `useAccess().can(...)` disables the button for editors who cannot update guests, and `useAdminNotify()` shows the same toasts as the rest of the admin.
+- The React version keeps the search text in the URL with `usePageRoute`, so a refresh or a shared link keeps it. See [URL state and sub-routes](#url-state-and-sub-routes).
 
-1. **Use `dy-` Tailwind classes**: Dyrected prefixes its utility classes with `dy-` to avoid conflicts with your application's styles (e.g. `dy-bg-card`, `dy-text-foreground`, `dy-rounded-xl`, `dy-border`, `dy-shadow-sm`).
-2. **Use theme color tokens**: Always consume theme variables via HSL notation:
-   - Backgrounds: `hsl(var(--background))`, `hsl(var(--card))`, `hsl(var(--muted))`
-   - Text: `hsl(var(--foreground))`, `hsl(var(--card-foreground))`, `hsl(var(--muted-foreground))`
-   - Accents: `hsl(var(--primary))`, `hsl(var(--primary-foreground))`, `hsl(var(--border))`
-3. **Responsive layouts**: Use grid or flex layouts (`dy-grid dy-grid-cols-1 md:dy-grid-cols-2 lg:dy-grid-cols-3 dy-gap-4`) so dashboard cards re-flow on tablet and mobile screens.
+## The page header
 
-For more details on available CSS variables, see [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
+Custom pages get the admin's page chrome: a breadcrumb trail, a title, an optional description, and action buttons. Set them from inside your component with `usePageMeta`:
+
+```tsx
+
+
+
+export function Reports() {
+  const [exporting, setExporting] = useState(false);
+
+  usePageMeta({
+    title: "Monthly reports",
+    description: "Check-ins and RSVPs by month",
+    breadcrumbs: [
+      { label: "Admin", to: "/" },
+      { label: "Operations" },
+      { label: "Reports" },
+    ],
+    actions: [
+      {
+        label: exporting ? "Exporting…" : "Export CSV",
+        icon: "Download",
+        variant: "outline",
+        disabled: exporting,
+        onClick: () => {
+          setExporting(true);
+          setTimeout(() => setExporting(false), 800);
+        },
+      },
+    ],
+  });
+
+  return <p>Report contents go here.</p>;
+}
+```
+
+Without `breadcrumbs`, the trail is "Admin", then your sidebar group, then the page title. The title also sets the browser tab title, using your configured `meta.titleSuffix`.
+
+Each action takes:
+
+| Property | Type | What it does |
+| --- | --- | --- |
+| `label` | `string` | Button text |
+| `icon` | `string` (optional) | A Lucide icon name, such as `"Download"` or `"RefreshCw"` |
+| `variant` | `"default"`, `"secondary"`, `"outline"`, `"ghost"`, `"destructive"`, or `"link"` | Button style. Defaults to `"default"` |
+| `disabled` | `boolean` (optional) | Disables the button |
+| `onClick` | `() => void` | Runs when the button is clicked |
+
+`usePageMeta` also returns the page's `options`, which is how a page reads the settings you gave `definePage`. In Vue, pass a ref or a getter so the header follows your state: `usePageMeta(() => ({ title: title.value }))`.
+
+## URL state and sub-routes
+
+Everything after `/pages/<slug>/` is passed to your page as `splat`, so one page can show different content for different paths without importing the admin's router. `usePageRoute` also gives you the query string and a way to move around inside the page:
+
+```tsx
+
+
+export function Reports() {
+  const { splat, navigate } = usePageRoute();
+  const month = splat || "2026-09";
+
+  return (
+    <div>
+      <button type="button" onClick={() => navigate("2026-08")}>August</button>
+      <button type="button" onClick={() => navigate("2026-09")}>September</button>
+      <p>Showing {month}</p>
+    </div>
+  );
+}
+```
+
+`usePageRoute()` returns:
+
+- `splat`: the path after the page's slug, without a leading slash. For `/pages/reports/2026-08`, it is `"2026-08"`.
+- `navigate(subPath, { replace? })`: moves to a path below this page. `navigate("")` returns to the page's root.
+- `searchParams`: the current query string as a `URLSearchParams`.
+- `setSearchParams(next, { replace? })`: updates the query string.
+
+Keep state that should survive a refresh, such as a search or a selected tab, in `searchParams` or the sub-path.
+
+
+
+## Linking to other admin screens
+
+Use `useAdminNavigate` instead of typing addresses, because the admin may be mounted under a prefix or a hash router:
+
+```tsx
+
+
+export function QuickLinks() {
+  const { navigate, to } = useAdminNavigate();
+
+  return (
+    <div>
+      <button type="button" onClick={() => navigate(to.collection("guest-responses"))}>All guests</button>
+      <button type="button" onClick={() => navigate(to.view("guest-responses", "seating-chart"))}>Seating chart</button>
+      <button type="button" onClick={() => navigate(to.workspace("door-checkin"))}>Door check-in</button>
+      <button type="button" onClick={() => navigate(to.page("reports", "2026-08"))}>August report</button>
+    </div>
+  );
+}
+```
+
+`to.collection`, `to.document`, `to.view`, `to.workspace`, and `to.page` build admin addresses for `navigate`. They are not links for an `href`. Toasts (`useAdminNotify`) and permission checks (`useAccess`) work in pages exactly as in any custom component, and are covered in [Admin Hooks](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/admin-hooks).
+
+## Page options
+
+`definePage` accepts these options:
+
+| Option | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `slug` | `string` | required | Unique URL segment, `/pages/<slug>` |
+| `label` | `string` | required | Sidebar label and default title |
+| `component` | `string` | required | The key in `components.pages` |
+| `icon` | `string` | `"FileText"` | A Lucide icon name for the sidebar and header |
+| `group` | `string` | none | The sidebar group to place the page in |
+| `order`, `after`, `before`, `position` | | | Where it sits in the group, with the same meaning as for [workspaces](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/workspaces-and-navigation) |
+| `badge` | | none | A live badge in the sidebar |
+| `access` | | none | Hides the sidebar item from editors who fail the rule. See [Access](#access) |
+| `layout` | `"contained"` or `"full"` | `"contained"` | Padded with a maximum width, or edge to edge. Use `"full"` for maps, boards, and split panes |
+| `chrome` | `boolean` | `true` | `false` hides the admin's breadcrumbs and header, for kiosk-style screens |
+| `options` | `Record<string, unknown>` | none | Serializable settings your component reads from `usePageMeta().options` |
+
+## Access
+
+`access` on a page hides its sidebar item from editors who do not pass the rule. Treat that as a convenience, not as security. Someone who knows the URL is not stopped by the sidebar, and a page runs in the browser, so anything sensitive it reads or writes must be protected by the access rules on your collections. The check-in station is safe because its reads and writes go through the admin's client, where those rules apply.
+
+
+
+## Styling
+
+Your page is styled with your app's own CSS, and it can read the admin's theme variables so it follows light and dark mode. The `dy-` classes you may see in the admin's markup are internal to it, so do not rely on them in your own components. [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling) shows how to match the admin.
+
+## When something is wrong
+
+- **The component key is not registered.** The page area shows a placeholder in development and nothing in production. See [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings).
+- **Your component throws.** An inline error card with a **Retry** button replaces it, and the header and sidebar keep working.
+- **The slug does not exist.** The admin shows a "Page not found" screen.
+
+## Recommended path
+
+Reach for a custom page when the screen is a task rather than a record or a list. Declare it with `definePage` in `admin.navigation`, set its title and actions with `usePageMeta`, keep state that should survive a refresh in the URL with `usePageRoute`, and read and write through the admin's client so every call carries the editor's permissions.
 
 ---
 
@@ -40985,6 +41232,34 @@ Because you receive `documents`, `pagination`, and `permissions`, most list add-
   content alongside the list, not driving its internal state. Use `client` if you need to run your own query.
 </Callout>
 
+## Slots inside operational views
+
+When these slots render inside an [operational view](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/overview), your component receives the documents the active layout has loaded. `documents` and `isLoading` reflect what is on screen, and the view's own slot props (`viewSlug`, `view`) are included.
+
+<Callout type="info">
+  **This changed.** Before, `documents` was always an empty list and `isLoading` always `false` inside a view, so a slot
+  that checked for an empty list would have always taken the empty branch. They now carry real values, so review any
+  slot that relied on that.
+</Callout>
+
+The legacy list keys (`beforeList`, `afterListTable`, and the rest) are not quite the same as on a plain collection list. `response` is `undefined`, and `pagination` describes a single page with `total` equal to the number of documents loaded, not the server's total. For the true total, paging, filters, and selection, read the view's state with `useCollectionView()`:
+
+```tsx
+
+
+export function ArrivalsSummary() {
+  const { documents, total, isFetching } = useCollectionView();
+
+  return (
+    <p aria-live="polite">
+      {isFetching ? "Updating…" : `${documents.length} of ${total} guests loaded`}
+    </p>
+  );
+}
+```
+
+`useCollectionView()` is documented with the rest of the view hooks in [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts#the-hooks). It works in any view slot, whichever layout the view uses.
+
 ## Using Vue components
 
 In a Vue or Nuxt app, register Vue components in the same `collectionList` map; they're wrapped automatically and receive the props above as Vue props. See the [overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview#using-vue-components).
@@ -40995,11 +41270,111 @@ Use `beforeList` for a header or collection-level action, `beforeListTable` for 
 
 ---
 
+## Nuxt Auto-Registration
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/nuxt-auto-registration
+
+In a Nuxt app you can skip the `components` map entirely. Put each custom component in a folder that names where it belongs, call the file after its key, and the Dyrected module registers it. A new component becomes one new file instead of one new file plus an edit to a long map.
+
+By the end of this page you will have a custom field and a custom page registered just by creating two files.
+
+This page is for Nuxt. In other frameworks, or when you want the registration to be explicit, use the `components` prop as shown in the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). Auto-registration is a convenience on top of that prop, never a requirement.
+
+## The folder convention
+
+Create files at `components/dyrected/<group>/<key>.vue` in your Nuxt source directory, which is `app/` in Nuxt 4 and the project root in Nuxt 3. The folder is the group (where the component is registered) and the file name, without `.vue`, is the key your config references.
+
+```text
+app/
+└── components/
+    └── dyrected/
+        ├── fields/
+        │   └── orders.statusPill.vue
+        └── pages/
+            └── reports.vue
+```
+
+Those two files register a field component under the key `orders.statusPill` and a page component under the key `reports`. Dots in the file name are fine, so you can keep the `collection.component` style of key used elsewhere in these docs.
+
+The groups you can use are the same as in the `components` prop: `fields`, `dashboard`, `collectionList`, `collectionView`, `forms`, `viewLayouts`, `pages`, and `customComponents`. Folders with any other name are ignored, and so are files that are not `.vue`.
+
+## Use the keys in your config
+
+Reference the keys exactly as you would with a hand-written map:
+
+```ts
+export default defineConfig({
+  collections: [
+    defineCollection({
+      slug: "orders",
+      fields: [
+        defineTextField({
+          name: "status",
+          label: "Status",
+          admin: { component: "orders.statusPill" },
+        }),
+      ],
+    }),
+  ],
+  globals: [],
+  admin: {
+    navigation: [
+      definePage({
+        slug: "reports",
+        label: "Reports",
+        icon: "BarChart3",
+        component: "reports",
+      }),
+    ],
+  },
+});
+```
+
+Mount the admin without passing any components:
+
+```vue
+<template>
+  <DyrectedAdmin />
+</template>
+```
+
+Open the admin. The orders form shows your status pill, and **Reports** appears in the sidebar. In development, adding or removing a file in `components/dyrected` updates the registration without restarting.
+
+
+
+## Mixing it with the components prop
+
+The prop still works, and it wins. If the same key exists in both places, the component you pass in `components` replaces the auto-registered one, key by key, and everything else keeps registering from the folder:
+
+```vue
+<script setup lang="ts">
+
+</script>
+
+<template>
+  <DyrectedAdmin :components="{ fields: { 'orders.statusPill': CustomStatusPill } }" />
+</template>
+```
+
+That is a handy way to override one component for a single admin page.
+
+## Good to know
+
+- **Nuxt also auto-imports these files as components.** You will see names such as `DyrectedFieldsOrdersStatusPill` in your editor's component hints. That is Nuxt's normal behaviour for any file under `components/`. It is harmless, and you do not use those names.
+- **Typed keys still work.** Auto-registration does not change what the generator reads from your config, so the keys in your config are still checked. Add [typed keys](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys) if you want a compile error for a key that has no file.
+- **Unused and missing keys are still flagged.** A file nobody references triggers the [unused-component warning](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings), and a key with no file shows the missing-key placeholder.
+
+## Recommended path
+
+Use the folder for the components that belong to your config, one file per key, named after the key. Reach for the `components` prop only when you want to override a single component or register one that cannot live under `components/dyrected`.
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview
 
-The admin is generated from your schema, but you're not stuck with the built-in look of every piece. Dyrected gives you two clean extension points: you can **replace a field's input** with your own component, and you can **inject components into slots** on the dashboard and collection lists. This page is the map — it explains both mechanisms, shows the registration pattern they share, and is honest about what you can't customize this way.
+The admin is generated from your schema, but you're not stuck with the built-in look of every piece. Dyrected gives you four extension points: you can **replace a field's input**, **inject components into slots** on the dashboard and views, **draw a view's records with your own layout**, and **add whole pages** to the sidebar. This page is the map. It explains the registration pattern they all share, points you to the page for each one, and is honest about what you can't customize this way.
 
 Throughout, "your app" means the project you embedded the admin into — your Next.js, Nuxt, Vue, or React application.
 
@@ -41010,13 +41385,25 @@ Every custom component follows the same two-step pattern: **declare** where it g
 - You reference a component by a **string key** — either on a field (`admin.component`) or in a slot list (`admin.components`) in your schema.
 - You pass the actual component under that same key in the `components` prop of `<DyrectedAdmin>`.
 
-There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin skips it (and warns in development); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
+There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin shows a placeholder and warns in development (see [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings)); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
 
-There are three core extension points:
+There are four extension points:
 
-1. **Custom field components** — replace the input for a specific field.
-2. **Component slots** — inject components into fixed positions on the dashboard and collection lists.
-3. **Custom admin pages** — add complete standalone pages, dashboards, and operational views to the sidebar navigation.
+| You want to | Use | Read |
+| --- | --- | --- |
+| Replace the input for one field | A custom field component | [Below](#custom-field-components) |
+| Add something above, below, or around built-in screens | Component slots | [Dashboard](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard), [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) |
+| Show a set of records in a shape no built-in layout offers | A custom view layout | [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) |
+| Add a screen that is not a record or a list of records | A custom page | [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) |
+
+Once you have components, these pages cover the rest:
+
+- [Admin Hooks](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/admin-hooks): read and write data as the signed-in editor, navigate, show toasts, and check access.
+- [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling): match the admin in light and dark mode.
+- [Typed Component Keys](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys): catch a misspelled or missing key at compile time.
+- [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings): what the admin shows when a component is missing, unused, or throws.
+- [Replacing a Built-in Layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/replacing-built-in-layouts): swap the kanban, table, or another layout everywhere.
+- [Nuxt Auto-Registration](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/nuxt-auto-registration): register components by dropping files in a folder.
 
 ## Custom field components
 
@@ -41123,23 +41510,211 @@ If your app is Vue or Nuxt, you register Vue components exactly the same way —
 
 ## What you can't customize this way
 
-It's worth being clear about the edges so you don't go looking for something that isn't there. These two extension points — field components and dashboard/list slots — are the whole surface today. Dyrected does **not** currently support:
+It's worth being clear about the edges so you don't go looking for something that isn't there. Dyrected does **not** currently support:
 
 - Replacing root-level UI (the navigation, header, login screen, or logo as a component — the logo is set with [branding config](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css), not a component).
 - Injecting custom React context providers around the admin.
-- Replacing built-in collection views (such as replacing the default edit form with an arbitrary component; use [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) for standalone workflows instead).
+- Replacing the document edit form or adding tabs to it. Use a [custom page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) for a standalone workflow instead.
 
 If your goal is theming rather than swapping components, that's [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css). If you need one of the unsupported customizations above, it's a genuine gap — raise it rather than working around it.
 
-## Styling your components
+## Recommended path
 
-Your components are styled with your own CSS, and can read the admin's theme variables so they follow light and dark mode. See [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
+Reach for a **custom field component** when one field needs an input the defaults don't offer, a **slot** to add something alongside a built-in screen, a **view layout** when records need a new shape, and a **[custom page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)** for a screen that is a task. Start from this page's pattern (declare a key, register the component), then go to the page for the extension point you chose.
+
+---
+
+## Registration Warnings
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings
+
+Custom components connect to your config by string keys, so the usual mistakes are small ones: a typo in a key, a component you forgot to register, or one you registered and never used. The admin tells you about each of them while you develop, and makes sure a broken component never takes the rest of the admin down with it.
+
+By the end of this page you will know what each situation looks like on screen, which messages only appear in development, and how to silence the unused-component warning when you need to.
+
+If you would rather catch key mistakes before you even open the admin, [Typed Component Keys](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys) does it at compile time. The two work well together.
+
+## A key is not registered
+
+Your config names a component, but nothing is registered under that key. What happens depends on where the component was meant to appear.
+
+| Where | In development | In production |
+| --- | --- | --- |
+| A slot or a [custom page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) | A dashed placeholder naming the missing key and its registry, plus a console warning | Nothing is shown |
+| A custom field (`admin.component`) | The same placeholder in place of the input | The field falls back to its built-in input, so editors can still fill it in |
+| A [custom view layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) | A card that names the missing key, with a **Show as table** button | The same card with a generic message, and the button |
+
+The console warning appears once per key, not on every render. In production the messages stay out of editors' way and do not expose your key names.
+
+If you see the placeholder, check three things: the key in your config, the key in your `components` map, and that the component sits under the right group (`fields`, `dashboard`, `collectionList`, `collectionView`, `viewLayouts`, or `pages`).
+
+## A registered component is never used
+
+If you register a component that no part of your config references, in development the console says so once:
+
+```text
+[Dyrected Admin] Component "guestHeadcount" is registered in "collectionView" but the schema never references it.
+```
+
+This usually means a key was renamed in the config and the registration was left behind, or a feature was removed and its component was not. A key counts as used if any part of your config references it, whichever group you registered it under.
+
+To silence it, for example when one shared component map serves several admins that each use only some of the components, turn it off:
+
+```tsx
+<DyrectedAdmin components={components} warnUnusedComponents={false} />
+```
+
+In Vue and Nuxt, pass it as `:warn-unused-components="false"`.
+
+## A component takes a while to load
+
+Components loaded with `React.lazy`, or `defineAsyncComponent` in Vue, work without extra setup. While they load, the admin shows a skeleton in their place, and swaps in your component when it is ready.
+
+## A component throws
+
+A component that throws never blanks the admin. What replaces it depends on the surface:
+
+- **A slot, a page, or a view layout** is replaced by an inline error card with the component's key, the error message, and a **Retry** button. The header, sidebar, and everything else keep working.
+- **A custom field** is replaced by a compact inline message naming the field and the error, so the rest of the form is still usable.
+- **A Vue component** is covered too. An error thrown while a Vue component renders is passed up to the same boundary, so it shows the same card instead of leaving a blank space.
+
+The full error and its stack are always in the browser console.
+
+## When messages do not show
+
+The development messages follow your app's own mode. They appear when your bundler runs in development and stay silent in a production build. If you never see the placeholder you expect, check that you are running the dev server and not a production build.
 
 ## Recommended path
 
-- Reach for a **custom field component** when a specific field needs an input the defaults don't offer.
-- Reach for a **slot** when you want to add banners or widgets alongside the built-in dashboard or list without rebuilding it.
-- Reach for a **[custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)** when you need a dedicated operational dashboard, analytics screen, or standalone administrative tool with its own URL and navigation item.
+While you develop, keep the console open and treat any registration warning as something to fix. Add [typed keys](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys) so most mistakes never reach the browser. Leave `warnUnusedComponents` on unless you deliberately share one component map across several admins.
+
+---
+
+## Replacing a Built-in Layout
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/replacing-built-in-layouts
+
+Sometimes you do not need a new kind of view. You want your own take on one that already exists, such as a kanban board that matches your product, in every view that uses it. You can do that by registering a component under the built-in layout's name. Views keep their `layout: "kanban"` setting, so nothing in your config changes.
+
+By the end of this page you will have replaced the kanban layout with your own board, and you will know what your replacement receives, what it does not, and where the edges are.
+
+This page builds on [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts). Read that first if you have not written a custom layout before, because a replacement is the same kind of component with a different registration.
+
+## How it works
+
+Every view layout has a name: `table`, `spreadsheet`, `kanban`, `cards`, `calendar`, or `gantt`. When the admin renders a view, it first checks whether you registered a component under that name in `components.viewLayouts`. If you did, it renders yours inside Dyrected's usual shell, with the same hooks a [custom layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) gets. If you did not, it renders the built-in one.
+
+The registration is the only change. Your views are untouched:
+
+```ts
+defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+});
+```
+
+## Replace the kanban layout
+
+This component draws every kanban view as a row of columns. It reads which field to group by from the view's own `groupBy`, so it works for any kanban view, and moving a card to another column saves the new value:
+
+```tsx
+// PipelineBoard.tsx
+
+
+export function PipelineBoard() {
+  const { config, updateDocument, open, permissions } = useCollectionView();
+  const groupBy = config.groupBy ?? "status";
+  const { groups, ungrouped } = useGroupedDocuments(groupBy);
+
+  const columns = [...groups, ...(ungrouped.length ? [{ key: "", label: "No status", docs: ungrouped }] : [])];
+
+  function move(id: string, value: string) {
+    updateDocument(id, { [groupBy]: value || null }).catch(() => {});
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
+      {columns.map((column) => (
+        <section key={column.key || "none"} style={{ minWidth: 240 }}>
+          <h3>
+            {column.label} ({column.docs.length})
+          </h3>
+          {column.docs.map((doc) => (
+            <article key={doc.id}>
+              <button type="button" onClick={() => open(doc.id, "drawer")}>
+                {doc.name ?? doc.id}
+              </button>
+              {permissions.canUpdate ? (
+                <select
+                  aria-label={`Move ${doc.name ?? doc.id}`}
+                  value={column.key}
+                  onChange={(event) => move(doc.id, event.target.value)}
+                >
+                  <option value="">No status</option>
+                  {groups.map((group) => (
+                    <option key={group.key} value={group.key}>
+                      {group.label}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </article>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+```
+
+Register it under the name `kanban`:
+
+```tsx
+"use client";
+
+
+
+
+export function AdminClient() {
+  return <DyrectedAdmin components={{ viewLayouts: { kanban: PipelineBoard } }} />;
+}
+```
+
+Open any kanban view. You should see Dyrected's header, KPI cards, search, and Filter bar as before, with your columns below instead of the built-in board. Open a table view and it is unchanged, because you only replaced `kanban`.
+
+## What your replacement receives
+
+It gets everything a [custom layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts#the-hooks) gets: the documents, search, filters, paging, selection, `updateDocument`, `open`, and `useViewActions()`. The shell around it is Dyrected's, so editors keep the same toolbar and dialogs.
+
+Two things differ from a `layout: "custom"` view:
+
+- **`config` carries the layout settings, not `options`.** For a replaced layout, `config` includes `columns`, `groupBy`, `dateField`, `startDateField`, and `endDateField`. `config.options` is empty, because only `layout: "custom"` views carry `options`. Read what your layout needs from the view's own settings instead.
+- **You do not get the built-in layout's extras.** The built-in table has a column picker and group-by control, and the built-in kanban has drag and drop and per-column loading. Your replacement shows only Dyrected's shared toolbar, and you build the rest.
+
+
+
+## Names and their quirks
+
+| Name | Notes |
+| --- | --- |
+| `table` | Views can also switch to `spreadsheet` with the switcher in the header. That is a separate name, so replacing `table` does not replace the spreadsheet |
+| `spreadsheet` | Replaces the inline-editing grid |
+| `kanban` | Uses `config.groupBy` |
+| `cards` | Uses `config.groupBy` for grouped cards |
+| `calendar` | Uses `config.dateField` |
+| `gantt` | Dyrected has no gantt renderer yet, so a gantt view shows as a table. Registering `viewLayouts.gantt` is how you supply one, using `config.startDateField` and `config.endDateField` |
+
+A replacement applies to every view with that layout, in every collection. If only one view should look different, give that view `layout: "custom"` and its own `component` instead.
+
+## If your component is missing or throws
+
+An unregistered name just means the built-in layout renders, since a replacement is optional. A component that throws shows an inline error card with a **Retry** button, and the rest of the page keeps working. For a custom layout whose key is not registered, see [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings).
+
+## Recommended path
+
+Prefer a `layout: "custom"` view for a one-off screen, and replace a built-in layout only when you want the same look across every view of that kind. Start by copying the example above, read `config` for what the layout needs, and keep the replacement small so editors still get Dyrected's toolbar and dialogs for free.
 
 ---
 
@@ -41147,7 +41722,7 @@ Your components are styled with your own CSS, and can read the admin's theme var
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling
 
-A custom component is yours, so you style it with your own CSS. The part that trips people up is making it match the admin around it, especially when the editor flips between light and dark mode. This page shows the one approach that follows the admin's theme automatically, and the four surprises worth knowing about before you hit them.
+A custom component is yours, so you style it with your own CSS. The part that trips people up is making it match the admin around it, especially when the editor flips between light and dark mode. This page shows the one approach that follows the admin's theme automatically, and the surprises worth knowing about before you hit them.
 
 By the end of this page you should have a component whose card, border, and text colors change with the admin's light and dark toggle, and you should know how to fix it when something looks wrong.
 
@@ -41175,8 +41750,7 @@ This component shows a summary line below a collection's list. It is a card whos
 const card: CSSProperties = {
   background: "hsl(var(--card))",
   color: "hsl(var(--card-foreground))",
-  // A ring instead of a border; see "Borders can disappear" below.
-  boxShadow: "0 0 0 1px hsl(var(--border))",
+  border: "1px solid hsl(var(--border))",
   borderRadius: "var(--radius)",
   padding: 12,
 };
@@ -41204,7 +41778,7 @@ Open the collection and switch the admin between light and dark from the sidebar
 If your app uses Tailwind, write the same values as arbitrary values:
 
 ```tsx
-<div className="rounded-xl bg-[hsl(var(--card))] p-3 text-[hsl(var(--card-foreground))] ring-1 ring-[hsl(var(--border))]">
+<div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 text-[hsl(var(--card-foreground))]">
   <span className="text-[hsl(var(--muted-foreground))]">12 posts on this page</span>
 </div>
 ```
@@ -41223,7 +41797,7 @@ These are the ones that come up most often. The full list, and how to override t
 | `--ring`                          | Focus outlines                      |
 | `--radius`                        | Corner radius                       |
 
-
+These variables are part of what Dyrected supports for component authors. Renaming or removing one of the variables in this table is treated as a breaking change and is called out in the changelog. Variables that are not in this table can change without notice.
 
 ## Light and dark mode
 
@@ -41263,18 +41837,6 @@ export function Badge({ children }: { children: React.ReactNode }) {
 
 In Vue, `useAdminTheme()` from `@dyrected/vue` returns the same values as refs, so read `resolvedTheme.value`.
 
-## Borders can disappear
-
-The admin ships a small scoped reset that sets `border-width: 0` on everything inside `.dy-admin-ui`, so its own markup doesn't pick up your app's browser defaults. That reset is plain, unlayered CSS. A Tailwind v4 `border` class in your app lives in a CSS layer, and unlayered rules win over layered ones, so the reset can win and your border never shows.
-
-Draw outlines with something the reset doesn't touch:
-
-- `box-shadow: 0 0 0 1px hsl(var(--border))`, or the Tailwind `ring-1` utility, which is what the examples above use
-- `outline`
-- an inline `style={{ border: ... }}`
-
-
-
 ## Popovers and dialogs you build yourself
 
 Menus, dialogs, and tooltips from libraries such as Radix render in a portal at the end of `<body>`. That puts them outside `.dy-admin-ui`, so the theme variables don't exist there and your colors fall back to nothing.
@@ -41303,13 +41865,409 @@ Wrap whatever you render into the portal with it. The admin's own dialogs do exa
 | --- | --- | --- |
 | A color has no effect | `var(--card)` used without `hsl(...)` | Write `hsl(var(--card))` |
 | Card is dark in light mode (or the reverse) | A `dark:` class is following your site's theme | Use the admin variables, or `[data-theme="dark"]` |
-| Border is missing | The admin's reset zeroes `border-width` | Use `ring-1`, `box-shadow`, or `outline` |
 | Colors are blank inside a dialog or menu | The portal renders outside `.dy-admin-ui` | Wrap the content with `themeClassName` and `data-theme` |
 | Tailwind classes in your component do nothing | Tailwind isn't scanning the component's folder | Add the folder to your Tailwind sources |
 
 ## Recommended path
 
-Build your component with your app's normal CSS, and take every color that should match the admin from its variables, wrapped in `hsl(...)`. Draw outlines with `ring` or `box-shadow`. Avoid `dark:` unless your site's theme and the admin's are guaranteed to move together. For deeper retheming of the admin itself, see [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
+Build your component with your app's normal CSS, and take every color that should match the admin from its variables, wrapped in `hsl(...)`. Avoid `dark:` unless your site's theme and the admin's are guaranteed to move together. For deeper retheming of the admin itself, see [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
+
+---
+
+## Typed Component Keys
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys
+
+Custom components are connected to your config by string keys, such as `"guest-responses.seatingChart"`. A typo in either place, or a component you forgot to register, shows up later as an empty spot in the admin. Typed component keys move that mistake to your editor: the compiler tells you which key is wrong before you run anything.
+
+By the end of this page you will have type generation producing a list of the keys your config uses, and a registration map that fails to compile when a key is misspelled or missing.
+
+This page assumes you already register components with the pattern in the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). Typing is optional: if you never generate types, everything works and keys are plain strings.
+
+## Step 1: generate types
+
+Run your project's type generation. If you used `dyrected init`, that is the `generate:types` script, and the command underneath is:
+
+```bash
+npx dyrected generate:types
+```
+
+Besides your document types, the generated file now lists every component key your config references, grouped by where the component is registered. For a config with a seating chart view, a custom page, and a view slot, the end of the file looks like this:
+
+```ts
+declare module "@dyrected/sdk" {
+  interface Register {
+    schema: DyrectedSchema;
+    componentKeys: {
+      fields: string;
+      dashboard: string;
+      collectionList: string;
+      collectionView: "guestHeadcount";
+      forms: string;
+      viewLayouts: "guest-responses.seatingChart";
+      pages: "ops.executiveHub" | "ops.checkInStation";
+      customComponents: string;
+    };
+  }
+}
+```
+
+A group that your config does not reference at all stays `string`, so nothing is enforced there. The generated file must be part of your TypeScript program, the same requirement as for the rest of the generated types. See [Generating Types](https://docs.dyrected.com/docs/self-hosted/reference/typescript/generating-types) for where the file is written.
+
+Run generation again whenever you add or rename a key in your config.
+
+
+
+## Step 2: register with `defineAdminComponents`
+
+Wrap your registration map in `defineAdminComponents`. It checks each group against the keys your config uses:
+
+```tsx
+"use client";
+
+
+
+
+
+
+
+
+const components = defineAdminComponents({
+  viewLayouts: { "guest-responses.seatingChart": SeatingChart },
+  collectionView: { guestHeadcount: GuestHeadcountBanner },
+  pages: {
+    "ops.executiveHub": ExecutiveHub,
+    "ops.checkInStation": CheckInStation,
+  },
+});
+
+export function AdminClient() {
+  return <DyrectedAdmin components={components} />;
+}
+```
+
+Because the groups are typed from your config, the compiler now catches two kinds of mistake. A key that your config never mentions fails:
+
+```text
+error TS2353: Object literal may only specify known properties, and
+'"guest-responses.seatingChar"' does not exist in type
+'Record<"guest-responses.seatingChart", ComponentType<AdminViewLayoutProps>>'.
+```
+
+And a key that your config references but you did not register fails too:
+
+```text
+error TS2741: Property '"ops.checkInStation"' is missing in type
+'{ "ops.executiveHub": ... }' but required in type
+'Record<"ops.executiveHub" | "ops.checkInStation", ComponentType<AdminPageProps>>'.
+```
+
+Fix the key, or register the component, and the error goes away.
+
+## What counts as a reference
+
+The generator reads these places in your config:
+
+| Group | Where the key comes from |
+| --- | --- |
+| `fields` | A field's `admin.component`, including fields nested in groups, arrays, blocks, and tabs |
+| `dashboard` | `admin.components.beforeDashboard` and `afterDashboard` |
+| `collectionList` | A collection's `admin.components` list slots, such as `beforeList` |
+| `collectionView` | View slots on a collection or on a single view (`beforeViewHeader`, `afterViewContent`, and so on) |
+| `viewLayouts` | The `component` of any view with `layout: "custom"` |
+| `pages` | A page declared in `admin.navigation` |
+| `customComponents` | A name used with `displayCustom` in a detail view |
+| `forms` | Reserved. It stays `string` for now |
+
+## When you do not generate types
+
+Without generated types, `defineAdminComponents` accepts any string key and returns your map unchanged. Nothing breaks, and you simply do not get the compile-time checks. The runtime still warns about unregistered and unused keys in development, covered in [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings).
+
+## Recommended path
+
+Add `generate:types` to your build or `postinstall`, wrap your registration map in `defineAdminComponents`, and let the compiler guard your keys. Keep one map per admin mount so every key appears in exactly one place.
+
+---
+
+## Custom View Layouts
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts
+
+The built-in view layouts (table, kanban, calendar, cards, spreadsheet) cover most jobs. When the records need a shape none of them offers, such as guests grouped by table or orders on a map, you can write the layout yourself. You draw the records. Dyrected still owns everything around them: the header, the KPI cards, search, filters, paging, selection, and the confirm dialogs for actions.
+
+By the end of this page you will have a **seating chart** view that groups guests by table, moves a guest to another table from a dropdown, and checks guests in, all inside a normal Dyrected view.
+
+This page assumes you know the declare-then-provide pattern from the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). The examples use the guest list from [Operational Views](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/overview): a `guest-responses` collection with `name`, `attending`, `guestCount`, `tableNumber`, and `checkedIn` fields, and a `checkIn` row action like the one in [Actions](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/actions).
+
+## What you write and what Dyrected keeps
+
+A custom layout is a view whose `layout` is `"custom"`. Dyrected loads the records and runs everything around them; your component only renders documents and calls a few hooks.
+
+| Dyrected keeps | Your component does |
+| --- | --- |
+| Header, title, header actions | Draw the documents |
+| KPI cards (`metrics`) | Handle interactions specific to your layout (drag, zoom, pick) |
+| Search, field filters, match all/any | Save changes with `updateDocument` |
+| Loading records, paging, sorting | Start actions with `run` |
+| Selection state and the bulk action bar | |
+| Confirm dialogs and input forms for actions | |
+
+Because the shell is shared, every custom view gets the same toolbar the table has, and it stays consistent as Dyrected improves.
+
+## Step 1: define the view
+
+Declare the view on the collection like any other, with `layout: "custom"` and a `component` key that you will register in step 3. The key is yours to name.
+
+```ts
+
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  type: "row",
+  mutation: { checkedIn: true },
+});
+
+export const seatingChart = defineView({
+  slug: "seating-chart",
+  label: "Seating Chart",
+  icon: "Armchair",
+  layout: "custom",
+  component: "guest-responses.seatingChart",
+  filter: { attending: { equals: true } },
+  data: { fetchAll: true },
+  actions: [checkInAction],
+});
+```
+
+Add `seatingChart` to the collection's `views` array, and to a workspace if you use [navigation workspaces](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/workspaces-and-navigation). `filter`, `sort`, `metrics`, `actions`, `access`, and `badge` work exactly as they do on any other view.
+
+`component` is required. If you leave it out, `defineView` throws when your config loads, so you find out immediately rather than in the admin.
+
+The `data: { fetchAll: true }` line asks Dyrected to load every matching record instead of one page, which a seating chart needs. More on that in [Choosing how records load](#choosing-how-records-load).
+
+## Step 2: write the component
+
+Your component reads the records and the view's state through hooks. This one groups guests by table, lets an editor move a guest to another table, and starts the `checkIn` action:
+
+```tsx
+// SeatingChart.tsx
+
+
+export function SeatingChart() {
+  const { permissions, updateDocument, open } = useCollectionView();
+  const { actions, run } = useViewActions();
+  const { groups, ungrouped } = useGroupedDocuments("tableNumber");
+
+  const tables = [
+    ...groups.map((group) => ({ key: group.key, title: `Table ${group.label}`, guests: group.docs })),
+    ...(ungrouped.length ? [{ key: "", title: "Not seated", guests: ungrouped }] : []),
+  ];
+  const checkIn = actions.find((action) => action.name === "checkIn");
+
+  function seat(guestId: string, table: string) {
+    // The admin shows the move at once, and rolls it back with an error toast if the server refuses it.
+    updateDocument(guestId, { tableNumber: table ? Number(table) : null }).catch(() => {});
+  }
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+      {tables.map((table) => (
+        <section key={table.key || "none"}>
+          <h3>{table.title}</h3>
+          <ul>
+            {table.guests.map((guest) => (
+              <li key={guest.id}>
+                <button type="button" onClick={() => open(guest.id, "drawer")}>
+                  {guest.name}
+                </button>
+
+                {permissions.canUpdate ? (
+                  <select
+                    aria-label={`Move ${guest.name}`}
+                    value={table.key}
+                    onChange={(event) => seat(guest.id, event.target.value)}
+                  >
+                    <option value="">Not seated</option>
+                    {groups.map((group) => (
+                      <option key={group.key} value={group.key}>
+                        Table {group.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+
+                {checkIn && !guest.checkedIn ? (
+                  <button type="button" onClick={() => run("checkIn", [guest])}>
+                    Check in
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+```
+
+Three things in there are worth noticing:
+
+- `useGroupedDocuments("tableNumber")` does the grouping and resolves labels for you. It keeps the declared options of a select field, even when a group is empty, and sets aside records with no value as `ungrouped`.
+- `updateDocument` goes through the normal update path, so your collection's hooks, access rules, and validation all run. The change appears immediately, and if the server refuses it the admin rolls it back and shows an error toast, so you do not write any rollback code.
+- `run("checkIn", [guest])` opens Dyrected's own confirm dialog if the action has a `confirm` message or input `fields`. You never rebuild that dialog.
+
+The component has no styling on purpose, so the example stays short. To make it match the admin in light and dark mode, see [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
+
+## Step 3: register it
+
+Pass the component under the same key in `components.viewLayouts`. Your component receives `collection` and `viewSlug`, which are enough to identify where it is mounted; everything else comes from the hooks.
+
+```tsx
+"use client";
+
+
+
+
+export function AdminClient() {
+  return (
+    <DyrectedAdmin
+      components={{ viewLayouts: { "guest-responses.seatingChart": SeatingChart } }}
+    />
+  );
+}
+```
+
+In Next.js, components are functions, so they cannot be passed from a server component. Put the registration in a small client component like this one and render it from your admin page.
+
+Open the **Seating Chart** view in the admin. You should see the standard header and KPI cards, the same search and Filter bar the table has, and your tables below. Move a guest with the dropdown and the guest jumps tables straight away.
+
+## The hooks
+
+Everything a layout needs comes from three hooks, exported from `@dyrected/react` (and as composables from `@dyrected/vue`). They throw a clear error if you call them outside a view.
+
+### `useCollectionView()`
+
+State and operations for the view your component is mounted in.
+
+| Field | What it gives you |
+| --- | --- |
+| `documents` | The records on screen: the current page, or all records when `data.fetchAll` is on |
+| `total` | How many records match on the server |
+| `isLoading` | `true` until the first load finishes |
+| `isFetching` | `true` during any request, including background refreshes |
+| `isTruncated` | `true` when `fetchAll` hit its cap and `documents` is a subset of `total` |
+| `error` | The load error, if there is one |
+| `refetch()` | Reload the records |
+| `config` | The view's settings: `columns`, `groupBy`, and your `options` |
+| `collection`, `viewSlug` | The collection schema and the view's slug |
+| `pagination` | `{ page, pageSize, totalPages, setPage(n) }` |
+| `sort` | `{ value, set(next) }` |
+| `search` | `{ value, set(query) }` |
+| `filters` | `{ where, set(where) }`; see below |
+| `selection` | `{ ids, docs, toggle(id), set(ids), clear() }`; selected records show the bulk action bar |
+| `updateDocument(id, patch, { silent? })` | Save a change, shown immediately and rolled back on failure |
+| `open(id, mode?)` | Open a record: `"view"` (default), `"edit"`, or `"drawer"` |
+| `permissions` | `{ canCreate, canUpdate, canDelete }`, for showing or hiding controls |
+| `urls` | `{ collection, create }` |
+
+Pass `{ silent: true }` to `updateDocument` if you report failures yourself and do not want the default error toast.
+
+`filters.where` is the full filter Dyrected is sending to the server. `filters.set(where)` adds a filter that belongs to your layout, such as "only unseated guests". It is combined with the toolbar's filters, and `filters.set(undefined)` clears it.
+
+<Callout type="info">
+  `permissions` and the `useAccess()` hook are hints for showing or hiding controls. They are not security. The server
+  enforces access rules on every request, whatever your component shows.
+</Callout>
+
+### `useViewActions()`
+
+The view's actions, ready to run.
+
+| Field | What it gives you |
+| --- | --- |
+| `actions` | The view's actions, ordered, including built-ins such as View, Edit, and Delete |
+| `run(name, docs?, input?)` | Start an action. `docs` defaults to the current selection |
+| `isRunning(name, docs?)` | `true` while that action is running |
+
+`run` shows the confirm dialog and the input form when the action has them. If you already know the answers, pass `input` and the form is skipped, for example `run("assignTable", [guest], { tableNumber: 4 })`. It resolves `true` once the action was started.
+
+### `useGroupedDocuments(field)`
+
+Groups `documents` by a field and returns `{ groups, ungrouped }`. Each group is `{ key, label, docs }`. It resolves select labels and the names of populated relationships, and puts a record in every group it names when the field holds several values. It is optional, since you can always group the documents yourself.
+
+## Choosing how records load
+
+By default the host loads one page of 50 records and shows paging controls. Set `data` on the view to change that:
+
+```ts
+data: { pageSize: 25 }       // 25 per page; the API allows at most 100
+data: { fetchAll: true }     // every record, no paging
+```
+
+`fetchAll` is for layouts that need the whole set to make sense, like a map or a seating chart. It loads up to 1,000 records. If there are more, the admin tells the editor that only the first 1,000 are shown, and `isTruncated` is `true` so your layout can say so too. For larger sets, narrow the view with `filter`.
+
+## Passing options to your component
+
+Put serializable settings on the view's `options`, and read them from `config.options`. This keeps one component reusable across views:
+
+```ts
+defineView({
+  slug: "seating-chart",
+  label: "Seating Chart",
+  layout: "custom",
+  component: "guest-responses.seatingChart",
+  options: { tableField: "tableNumber" },
+});
+```
+
+```tsx
+const { config } = useCollectionView();
+const tableField = config.options?.tableField as string;
+```
+
+Options travel from your server to the admin as JSON, so keep functions and class instances out of them.
+
+## In Vue and Nuxt
+
+Register the component the same way. The Vue integration wraps it, and the same three composables work with no setup. State comes back as refs, so read it through `.value`:
+
+```vue
+<script setup lang="ts">
+
+
+const { permissions, updateDocument } = useCollectionView();
+const grouped = useGroupedDocuments("tableNumber");
+</script>
+
+<template>
+  <section v-for="group in grouped.groups" :key="group.key">
+    <h3>Table {{ group.label }}</h3>
+    <ul>
+      <li v-for="guest in group.docs" :key="guest.id">
+        {{ guest.name }}
+        <button
+          v-if="permissions.value.canUpdate"
+          @click="updateDocument(guest.id, { tableNumber: null })"
+        >
+          Unseat
+        </button>
+      </li>
+    </ul>
+  </section>
+</template>
+```
+
+## When something is wrong
+
+- **The component key is not registered.** The view shows a message and a **Show as table** button, so editors still reach their data. In development the message names the missing key. See [Registration warnings](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/registration-warnings).
+- **Your component throws.** The admin shows an inline error card with a **Retry** button, and the rest of the page keeps working.
+- **Slots still apply.** Components you register in `beforeViewContent` and the other [view slots](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) render around your layout, and they see the same documents.
+
+## Recommended path
+
+Start from the table or cards layout, and only write a custom layout when the shape of the data on screen is the point. Keep the component small: read documents, draw them, and call `updateDocument` and `run` for changes. Let Dyrected keep the toolbar, paging, and dialogs. To replace one of the built-in layouts instead of adding a new one, see [Replacing a Built-in Layout](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/replacing-built-in-layouts).
 
 ---
 
@@ -58740,7 +59698,7 @@ flowchart LR
     end
     V[defineView]
     V --> S["slug + label + icon"]
-    V --> L["layout: table | kanban | calendar | cards | spreadsheet"]
+    V --> L["layout: table | kanban | calendar | cards | spreadsheet | custom"]
     V --> Q["filter + groupBy + dateField"]
     V --> C["columns + sort"]
     V --> A["actions + features + actionOrder"]
@@ -58900,7 +59858,8 @@ All options are optional except `slug` and `label`:
 | `slug` | `string` **required** | Stable path segment for the view. Used in URLs, sidebar keys, and preference persistence. | Always |
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
-| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
+| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, `"gantt"`, or `"custom"`. | Set explicitly to clarify design intent |
+| `component` / `options` / `data` | `string` / `object` / `{ pageSize?, fetchAll? }` | For `layout: "custom"`: the key of your layout component (required), serializable settings it can read, and how records load. See [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts). | Only with `"custom"` |
 | `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
@@ -58921,6 +59880,7 @@ All options are optional except `slug` and `label`:
 
 ## Next steps
 
+- Draw records your own way — [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts)
 - Layout details — [Table](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/spreadsheet)
 - Add workflow buttons — [Actions](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/actions)
 - Add KPI summary cards — [Metrics](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/metrics)
@@ -60167,7 +61127,7 @@ flowchart TB
 When you add `views` to a collection, Dyrected generates:
 
 - **Nested navigation** — views appear beneath the parent collection in the sidebar, with icons and counts. Collections without `views` still get a synthesized `list` table view so `/collections/:slug` never breaks.
-- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix). Each respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
+- **Layout-specific workspaces** — `table` (faceted filters and row actions), `kanban` (drag-and-drop pipeline board), `calendar` (dated event schedule), `cards` (visual gallery grid), `spreadsheet` (high-density editable matrix), plus [custom layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts) that you draw yourself. Each built-in layout respects `columns`, `filter`, `sort`, and persists column/view choices per editor.
 - **Actions where they belong** — row buttons, kanban cards, bulk bar, and view header via `defineAction`.
 - **Metrics above the data** — KPI cards powered by the aggregation engine (`count`, `sum`, `avg` with JEXL `transform` / `expression`).
 
@@ -60297,6 +61257,7 @@ What just happened: three `defineView` entries share one collection. The table f
 
 - Configure the shape — [Define a view](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/define-view)
 - Choose a layout — [Table](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/table), [Kanban](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/kanban), [Calendar](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/calendar), [Cards](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/cards), [Spreadsheet](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/layouts/spreadsheet)
+- Draw records your own way — [Custom View Layouts](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/view-layouts)
 - Add verbs — [Actions](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/actions)
 - Add numbers — [Metrics](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/metrics)
 - Behavior in the admin — [Routing and preferences](https://docs.dyrected.com/docs/self-hosted/model-content/operational-views/routing-and-preferences)
@@ -61079,6 +62040,10 @@ Registration is global and assumes **one schema per app** — the same model Pay
 </Callout>
 
 You can still pass an explicit generic when you want to override the registered schema for a specific call — for example `createClient<OtherSchema>({ ... })` — but you rarely need to.
+
+## Component keys for custom admin components
+
+If your config references custom admin components by key, the generated file also lists those keys under `Register.componentKeys`. That is what lets `defineAdminComponents` fail to compile when a key is misspelled or missing. See [Typed Component Keys](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/typed-keys).
 
 ## Recommended workflow
 
