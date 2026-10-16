@@ -1,9 +1,9 @@
-import { Suspense, useEffect, useState, type ReactNode } from "react"
-import { ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { Suspense, useCallback, useEffect, useState, type ReactNode } from "react"
+import { useSearchParams } from "react-router-dom"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CUSTOM_VIEW_FETCH_ALL_LIMIT } from "@dyrected/core"
 
 import { Button } from "../../../../components/ui/button"
-import { Input } from "../../../../components/ui/input"
 import { Skeleton } from "../../../../components/ui/skeleton"
 import {
   AdminComponentErrorBoundary,
@@ -14,14 +14,15 @@ import { useDyrected } from "../../../../providers/dyrected-context"
 import { ViewControllerContext, type ViewDocument } from "../../../../providers/view-controller"
 import { BulkActionBar } from "../bulk-action-bar"
 import type { SerializedAction, SerializedView } from "../types"
+import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
+import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
 import { useCustomViewSession } from "./use-custom-view-session"
 
 export interface CustomLayoutProps {
   slug: string
   schema: any
+  schemas: unknown
   view: SerializedView
-  /** Toolbar-derived `where` (view filter + metric chips + search). */
-  toolbarWhere: Record<string, any> | undefined
   actions: SerializedAction[]
   permissions: { canCreate: boolean; canUpdate: boolean; canDelete: boolean }
   hasDetail: boolean
@@ -42,8 +43,8 @@ export interface CustomLayoutProps {
 export function CustomLayout({
   slug,
   schema,
+  schemas,
   view,
-  toolbarWhere,
   actions,
   permissions,
   hasDetail,
@@ -52,14 +53,38 @@ export function CustomLayout({
   isRunningAction,
   renderTableFallback,
 }: CustomLayoutProps) {
-  const { components } = useDyrected()
+  const { components, client } = useDyrected()
   const [showTable, setShowTable] = useState(false)
+  const [, setSearchParams] = useSearchParams()
+
+  // Changing a filter or the search text starts again from the first page.
+  const resetPage = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        if (!prev.has("page")) return prev
+        const next = new URLSearchParams(prev)
+        next.delete("page")
+        return next
+      },
+      { replace: true },
+    )
+  }, [setSearchParams])
+
+  const toolbar = useViewToolbarState({
+    slug,
+    viewSlug: view.slug,
+    variant: "custom",
+    schema,
+    baseFilter: view.filter,
+    foldSearchIntoWhere: true,
+    onFilterChange: resetPage,
+  })
 
   const { controller, state } = useCustomViewSession({
     slug,
     schema,
     view,
-    toolbarWhere,
+    toolbar,
     actions,
     permissions,
     hasDetail,
@@ -108,10 +133,12 @@ export function CustomLayout({
   return (
     <ViewControllerContext.Provider value={controller}>
       <div className="dy-flex dy-flex-col dy-gap-4">
-        <CustomLayoutToolbar
-          search={state.search}
-          onSearch={controller.handlers.setSearch}
-          total={state.total}
+        <ViewFilterToolbar
+          schema={schema}
+          client={client}
+          schemas={schemas}
+          state={toolbar}
+          data={state.documents}
           isFetching={state.isFetching}
         />
 
@@ -183,49 +210,5 @@ export function CustomLayout({
         onClearSelection={() => controller.handlers.setSelection([])}
       />
     </ViewControllerContext.Provider>
-  )
-}
-
-function CustomLayoutToolbar({
-  search,
-  onSearch,
-  total,
-  isFetching,
-}: {
-  search: string
-  onSearch: (query: string) => void
-  total: number
-  isFetching: boolean
-}) {
-  const [draft, setDraft] = useState(search)
-
-  // Follow the URL when search is cleared or changed from outside (e.g. back button).
-  useEffect(() => {
-    setDraft((prev) => (prev === search ? prev : search))
-  }, [search])
-
-  // Debounce typing into the URL-backed search.
-  useEffect(() => {
-    if (draft === search) return
-    const timer = setTimeout(() => onSearch(draft), 300)
-    return () => clearTimeout(timer)
-  }, [draft, search, onSearch])
-
-  return (
-    <div className="dy-flex dy-items-center dy-justify-between dy-gap-3">
-      <div className="dy-relative dy-w-full sm:dy-max-w-xs">
-        <Search className="dy-pointer-events-none dy-absolute dy-left-2.5 dy-top-2.5 dy-h-4 dy-w-4 dy-text-muted-foreground" />
-        <Input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Search…"
-          aria-label="Search records"
-          className="dy-h-9 dy-pl-8"
-        />
-      </div>
-      <p className="dy-text-xs dy-text-muted-foreground dy-tabular-nums">
-        {isFetching ? "Updating…" : `${total.toLocaleString()} ${total === 1 ? "record" : "records"}`}
-      </p>
-    </div>
   )
 }

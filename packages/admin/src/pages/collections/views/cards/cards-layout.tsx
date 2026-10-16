@@ -1,11 +1,4 @@
 import * as React from "react"
-import {
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  useReactTable,
-  type ColumnFiltersState,
-} from "@tanstack/react-table"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { useSearchParams } from "react-router-dom"
@@ -13,16 +6,13 @@ import { Button } from "../../../../components/ui/button"
 import { CardGridItem } from "./card-grid-item"
 import { GroupedCardsView } from "./grouped-cards-view"
 import { SkeletonCardGrid } from "../view-skeletons"
-import { buildViewColumns } from "../build-view-columns"
-import { DataTableToolbar } from "../table/data-table-toolbar"
 import { getGroupableFields, useTableGroups } from "../table/use-table-groups"
 import { ViewOptionsPanel } from "../view-options-panel"
+import { resolveViewSort } from "../resolve-view-filter"
+import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
+import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
 import { useColumnPreferences } from "../use-column-preferences"
-import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
-import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
-import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
-import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
 import type { SerializedAction, SerializedView } from "../types"
 
 export interface CardsLayoutProps {
@@ -51,26 +41,7 @@ export function CardsLayout({
   actions,
   onRunAction,
 }: CardsLayoutProps) {
-  const toolbarStateKey = getToolbarStateKey(slug, view.slug, "cards")
-  const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug, "cards")
-  const storedState = React.useMemo(
-    () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
-    [toolbarStateKey, legacyToolbarStateKey],
-  )
   const [searchParams, setSearchParams] = useSearchParams()
-  const getInitialFilters = (): ColumnFiltersState => {
-    const f = searchParams.get("filters")
-    if (f) {
-      try {
-        const parsed = JSON.parse(f)
-        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
-      } catch {
-        // ignore invalid json filter param
-      }
-    }
-    return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
-  }
-  const getInitialSearch = (): string => searchParams.get("search") ?? ""
   const getInitialGroupBy = (): string | undefined => {
     const urlGroupBy = searchParams.get("groupBy")
     if (urlGroupBy) {
@@ -86,17 +57,19 @@ export function CardsLayout({
     }
     return 1
   }
-  const getInitialJoinOperator = (): "and" | "or" => {
-    const op = searchParams.get("joinOperator")
-    if (op === "or" || op === "and") return op
-    return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
-  }
-  const [globalFilter, setGlobalFilter] = React.useState(getInitialSearch)
   const [groupBy, setGroupBy] = React.useState<string | undefined>(getInitialGroupBy)
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
-  const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
   const [page, setPage] = React.useState(getInitialPage)
   const pageSize = 24
+
+  const toolbar = useViewToolbarState({
+    slug,
+    viewSlug: view.slug,
+    variant: "cards",
+    schema,
+    baseFilter: view.filter,
+    onFilterChange: () => setPage(1),
+  })
+  const { search: globalFilter, columnFilters, serverWhere } = toolbar
 
   // Synchronize groupBy when the active view changes
   React.useEffect(() => {
@@ -108,54 +81,12 @@ export function CardsLayout({
     }
   }, [view.groupBy, view.slug, searchParams])
 
-  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
-  const urlFiltersParam = searchParams.get("filters")
-  const urlSearchParam = searchParams.get("search") ?? ""
-  const urlJoinOpParam = searchParams.get("joinOperator")
+  // Follow the page param when the URL changes from outside (back button, shared link).
   const urlPageParam = searchParams.get("page")
-
   React.useEffect(() => {
-    let nextFilters: ColumnFiltersState = []
-    if (urlFiltersParam) {
-      try {
-        const parsed = JSON.parse(urlFiltersParam)
-        if (Array.isArray(parsed)) nextFilters = parsed
-      } catch {
-        // ignore invalid json filter param
-      }
-    }
-    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
-  }, [urlFiltersParam])
-
-  // Synchronize search and joinOperator when URL searchParams changes externally
-  React.useEffect(() => {
-    setGlobalFilter((prev) => (prev === urlSearchParam ? prev : urlSearchParam))
-    if (urlJoinOpParam === "and" || urlJoinOpParam === "or") {
-      setJoinOperator((prev) => (prev === urlJoinOpParam ? prev : urlJoinOpParam))
-    }
     const pageNum = urlPageParam ? Math.max(1, Number(urlPageParam) || 1) : 1
     setPage((prev) => (prev === pageNum ? prev : pageNum))
-  }, [urlSearchParam, urlJoinOpParam, urlPageParam])
-
-  const handleColumnFiltersChange = React.useCallback(
-    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
-      setColumnFilters((prev) => {
-        const next = typeof updater === "function" ? updater(prev) : updater
-        persistToolbarState(toolbarStateKey, { columnFilters: next })
-        return next
-      })
-      setPage(1)
-    },
-    [toolbarStateKey],
-  )
-
-  const handleJoinOperatorChange = React.useCallback(
-    (op: "and" | "or") => {
-      setJoinOperator(op)
-      persistToolbarState(toolbarStateKey, { joinOperator: op })
-    },
-    [toolbarStateKey],
-  )
+  }, [urlPageParam])
 
   /** Field picker scope: the view's configured columns that exist in the schema. */
   const fieldsByName = React.useMemo(
@@ -199,42 +130,20 @@ export function CardsLayout({
     [fieldPreferences.preferences],
   )
 
-  const columns = React.useMemo(
-    () => buildViewColumns({ schema, client, schemas }),
-    [schema, client, schemas],
-  )
-
-  const serverWhere = React.useMemo(() => {
-    return buildServerWhere({
-      baseFilter: resolveViewFilter(view.filter),
-      columnFilters,
-      schema,
-      joinOperator,
-    })
-  }, [view.filter, columnFilters, schema, joinOperator])
-
-  // URL ↔ sessionStorage sync (replace, not push).
+  // Group and page live beside the shared toolbar's filter/search params in the URL.
   React.useEffect(() => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        if (globalFilter) next.set("search", globalFilter)
-        else next.delete("search")
         if (groupBy) next.set("groupBy", groupBy)
         else next.delete("groupBy")
-        if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
-        else next.delete("filters")
-        if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
-        else next.delete("joinOperator")
         if (page > 1) next.set("page", String(page))
         else next.delete("page")
-        if (next.toString() === prev.toString()) return prev
-        return next
+        return next.toString() === prev.toString() ? prev : next
       },
       { replace: true },
     )
-    persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
-  }, [globalFilter, groupBy, columnFilters, joinOperator, page, setSearchParams, toolbarStateKey])
+  }, [groupBy, page, setSearchParams])
 
   const {
     data: docs,
@@ -269,22 +178,6 @@ export function CardsLayout({
     sort: resolveViewSort(view.sort),
   })
 
-  const table = useReactTable({
-    data: docs,
-    columns,
-    state: { globalFilter, columnFilters },
-    onGlobalFilterChange: (val) => {
-      setGlobalFilter(val)
-      setPage(1)
-    },
-    onColumnFiltersChange: handleColumnFiltersChange,
-    manualFiltering: true,
-    getRowId: (row) => String(row.id),
-    getCoreRowModel: getCoreRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
-
   const isInitialLoad =
     !docs.length &&
     !globalFilter &&
@@ -297,27 +190,21 @@ export function CardsLayout({
     return <SkeletonCardGrid items={8} aria-busy="true" />
   }
 
-  const collectionLabel = schema?.labels?.plural || schema?.labels?.singular || slug
-
   return (
     <div className="dy-space-y-4" data-collection={slug}>
-      <DataTableToolbar
-        table={table}
-        searchValue={globalFilter}
-        onSearchChange={(val) => {
-          setGlobalFilter(val)
-          setPage(1)
-        }}
-        searchPlaceholder={`Search ${collectionLabel}...`}
+      <ViewFilterToolbar
+        schema={schema}
+        client={client}
+        schemas={schemas}
+        state={toolbar}
+        data={docs}
+        isFetching={isGrouped ? isGroupFetching : isFetching}
         groupBy={groupBy}
         groupByOptions={groupByOptions}
         onGroupByChange={(field) => {
           setGroupBy(field)
           setPage(1)
         }}
-        isFetching={isGrouped ? isGroupFetching : isFetching}
-        joinOperator={joinOperator}
-        onJoinOperatorChange={handleJoinOperatorChange}
       >
         <ViewOptionsPanel
           label="Fields"
@@ -340,7 +227,7 @@ export function CardsLayout({
             fieldPreferences.isAdmin ? fieldPreferences.saveForEveryone : undefined
           }
         />
-      </DataTableToolbar>
+      </ViewFilterToolbar>
 
       {isGrouped ? (
         <GroupedCardsView

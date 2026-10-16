@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { ColumnFiltersState, PaginationState, SortingState } from "@tanstack/react-table"
+import type { PaginationState, SortingState } from "@tanstack/react-table"
 import {
   getCoreRowModel,
   getFacetedRowModel,
@@ -20,8 +20,8 @@ import { useColumnPreferences } from "../use-column-preferences"
 import { ExportMenu } from "../view-io-actions"
 import { SkeletonTable } from "../view-skeletons"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
-import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
-import { buildServerWhere } from "../build-server-where"
+import { resolveViewSort } from "../resolve-view-filter"
+import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import { useViewData } from "../use-view-data"
 import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
 import type { SerializedAction, SerializedView } from "../types"
@@ -91,24 +91,6 @@ export function TableLayout({
     if (storedState?.sorting) return storedState.sorting as SortingState
     return view.sort ? [{ id: view.sort.field, desc: view.sort.direction === "desc" }] : []
   }
-  const getInitialFilters = (): ColumnFiltersState => {
-    const f = searchParams.get("filters")
-    if (f) {
-      try {
-        const parsed = JSON.parse(f)
-        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
-      } catch {
-        // ignore invalid json filter param
-      }
-    }
-    return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
-  }
-  const getInitialJoinOperator = (): "and" | "or" => {
-    const op = searchParams.get("joinOperator")
-    if (op === "or" || op === "and") return op
-    return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
-  }
-  const getInitialSearch = (): string => searchParams.get("search") || ""
   const getInitialGroupBy = (): string | undefined => {
     const urlGroupBy = searchParams.get("groupBy")
     if (urlGroupBy) {
@@ -119,9 +101,22 @@ export function TableLayout({
 
   const [pagination, setPagination] = React.useState<PaginationState>(getInitialPagination)
   const [sorting, setSorting] = React.useState<SortingState>(getInitialSorting)
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialFilters)
-  const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
-  const [globalFilter, setGlobalFilter] = React.useState<string>(getInitialSearch)
+  const toolbar = useViewToolbarState({
+    slug,
+    viewSlug: view.slug,
+    schema,
+    baseFilter: view.filter,
+    onFilterChange: () => setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 })),
+  })
+  const {
+    columnFilters,
+    setColumnFilters: handleColumnFiltersChange,
+    joinOperator,
+    setJoinOperator: handleJoinOperatorChange,
+    search: globalFilter,
+    setSearch: setGlobalFilter,
+    serverWhere,
+  } = toolbar
   const [groupBy, setGroupBy] = React.useState<string | undefined>(getInitialGroupBy)
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
 
@@ -135,21 +130,6 @@ export function TableLayout({
     }
   }, [view.groupBy, view.slug, searchParams])
 
-  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
-  const urlFiltersParam = searchParams.get("filters")
-  React.useEffect(() => {
-    let nextFilters: ColumnFiltersState = []
-    if (urlFiltersParam) {
-      try {
-        const parsed = JSON.parse(urlFiltersParam)
-        if (Array.isArray(parsed)) nextFilters = parsed
-      } catch {
-        // ignore invalid json filter param
-      }
-    }
-    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
-  }, [urlFiltersParam])
-
   const handleSortingChange = React.useCallback(
     (updater: SortingState | ((prev: SortingState) => SortingState)) => {
       setSorting((prev) => {
@@ -157,25 +137,6 @@ export function TableLayout({
         persistToolbarState(toolbarStateKey, { sorting: next })
         return next
       })
-    },
-    [toolbarStateKey],
-  )
-
-  const handleColumnFiltersChange = React.useCallback(
-    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
-      setColumnFilters((prev) => {
-        const next = typeof updater === "function" ? updater(prev) : updater
-        persistToolbarState(toolbarStateKey, { columnFilters: next })
-        return next
-      })
-    },
-    [toolbarStateKey],
-  )
-
-  const handleJoinOperatorChange = React.useCallback(
-    (op: "and" | "or") => {
-      setJoinOperator(op)
-      persistToolbarState(toolbarStateKey, { joinOperator: op })
     },
     [toolbarStateKey],
   )
@@ -284,16 +245,8 @@ export function TableLayout({
     return `${first.desc ? "-" : ""}${first.id}`
   }, [sorting, view.sort])
 
-  const serverWhere = React.useMemo(() => {
-    return buildServerWhere({
-      baseFilter: resolveViewFilter(view.filter),
-      columnFilters,
-      schema,
-      joinOperator,
-    })
-  }, [view.filter, columnFilters, schema, joinOperator])
-
-  // Keep URL in sync with filter / sort / pagination / search / groupBy (replace, not push).
+  // Keep URL in sync with sort / pagination / groupBy (replace, not push).
+  // Filters, search and match logic are owned by the shared toolbar state.
   React.useEffect(() => {
     setSearchParams(
       (prev) => {
@@ -301,14 +254,8 @@ export function TableLayout({
         const sortStr = sorting.map((s) => `${s.desc ? "-" : ""}${s.id}`).join(",")
         if (sortStr) next.set("sort", sortStr)
         else next.delete("sort")
-        if (globalFilter) next.set("search", globalFilter)
-        else next.delete("search")
         if (groupBy) next.set("groupBy", groupBy)
         else next.delete("groupBy")
-        if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
-        else next.delete("filters")
-        if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
-        else next.delete("joinOperator")
         const pageStr = String(pagination.pageIndex + 1)
         const limitStr = String(pagination.pageSize)
         if (pagination.pageIndex > 0) next.set("page", pageStr)
@@ -321,8 +268,9 @@ export function TableLayout({
       { replace: true },
     )
     // Mirror to sessionStorage as fallback when URL is shared without params.
-    persistToolbarState(toolbarStateKey, { sorting, columnFilters, pageSize: pagination.pageSize, joinOperator })
-  }, [sorting, globalFilter, groupBy, columnFilters, joinOperator, pagination.pageIndex, pagination.pageSize, setSearchParams, toolbarStateKey])
+    // Filters and join logic are persisted by the shared toolbar state.
+    persistToolbarState(toolbarStateKey, { sorting, pageSize: pagination.pageSize })
+  }, [sorting, groupBy, pagination.pageIndex, pagination.pageSize, setSearchParams, toolbarStateKey])
 
   const {
     data: serverDocs,
@@ -395,10 +343,7 @@ export function TableLayout({
       handleSortingChange(updater as any)
       setPagination((prev) => ({ ...prev, pageIndex: 0 }))
     },
-    onColumnFiltersChange: (updater) => {
-      handleColumnFiltersChange(updater)
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-    },
+    onColumnFiltersChange: handleColumnFiltersChange,
     onPaginationChange: (updater) => {
       setPagination((prev) => {
         const next = typeof updater === "function" ? updater(prev) : updater
@@ -440,10 +385,7 @@ export function TableLayout({
       <DataTableToolbar
         table={table}
         searchValue={globalFilter}
-        onSearchChange={(val) => {
-          setGlobalFilter(val)
-          setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-        }}
+        onSearchChange={setGlobalFilter}
         searchPlaceholder={`Search ${collectionLabel}...`}
         groupBy={groupBy}
         groupByOptions={groupByOptions}

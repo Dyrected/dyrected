@@ -13,6 +13,7 @@ import {
   type ViewDocument,
 } from "../../../../providers/view-controller"
 import { resolveViewSort } from "../resolve-view-filter"
+import type { ViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import type { SerializedAction, SerializedView } from "../types"
 
 /** The API caps a single `find()` at 100 documents. */
@@ -30,8 +31,8 @@ export interface UseCustomViewSessionOptions {
   slug: string
   schema: any
   view: SerializedView
-  /** Toolbar-derived `where` (view filter + metric chips + search). */
-  toolbarWhere: Record<string, any> | undefined
+  /** Filters and search owned by the shared toolbar. */
+  toolbar: ViewToolbarState
   actions: SerializedAction[]
   permissions: { canCreate: boolean; canUpdate: boolean; canDelete: boolean }
   hasDetail: boolean
@@ -55,7 +56,7 @@ export function useCustomViewSession(options: UseCustomViewSessionOptions): {
   controller: ViewController
   state: CollectionViewState
 } {
-  const { slug, schema, view, toolbarWhere, actions, permissions, hasDetail, runningKey, runAction } = options
+  const { slug, schema, view, toolbar, actions, permissions, hasDetail, runningKey, runAction } = options
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -64,7 +65,7 @@ export function useCustomViewSession(options: UseCustomViewSessionOptions): {
   const fetchAll = Boolean(view.data?.fetchAll)
   const pageSize = Math.min(Math.max(Number(view.data?.pageSize) || DEFAULT_PAGE_SIZE, 1), API_PAGE_LIMIT)
   const page = Math.max(Number(searchParams.get("page")) || 1, 1)
-  const search = searchParams.get("search") ?? ""
+  const { search, setSearch, serverWhere: toolbarWhere } = toolbar
 
   const [sort, setSort] = useState<CollectionViewState["sort"]>(() => view.sort)
   const [layoutWhere, setLayoutWhere] = useState<Record<string, any> | undefined>(undefined)
@@ -134,19 +135,6 @@ export function useCustomViewSession(options: UseCustomViewSessionOptions): {
         const params = new URLSearchParams(prev)
         if (next <= 1) params.delete("page")
         else params.set("page", String(next))
-        return params
-      })
-    },
-    [setSearchParams],
-  )
-
-  const setSearch = useCallback(
-    (query: string) => {
-      setSearchParams((prev) => {
-        const params = new URLSearchParams(prev)
-        if (query.trim()) params.set("search", query)
-        else params.delete("search")
-        params.delete("page")
         return params
       })
     },

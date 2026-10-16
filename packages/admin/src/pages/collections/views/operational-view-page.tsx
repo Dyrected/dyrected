@@ -611,8 +611,8 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
         <CustomLayout
           slug={slug}
           schema={schema}
+          schemas={schemas}
           view={view}
-          toolbarWhere={filteredWhere}
           actions={actions}
           permissions={customPermissions}
           hasDetail={hasDetail}

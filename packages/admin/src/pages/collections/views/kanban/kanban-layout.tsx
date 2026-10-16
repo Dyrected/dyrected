@@ -10,19 +10,9 @@ import {
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { toast } from "sonner"
-import {
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  useReactTable,
-  type ColumnFiltersState,
-} from "@tanstack/react-table"
-import { Search } from "lucide-react"
 
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { useQueryClient } from "@tanstack/react-query"
-import { useSearchParams } from "react-router-dom"
-import { Input } from "../../../../components/ui/input"
 import { KanbanCard } from "./kanban-card"
 import { KanbanColumn } from "./kanban-column"
 import {
@@ -31,14 +21,10 @@ import {
   deriveGroups,
   useKanbanGroups,
 } from "./use-grouped-view-data"
-import { buildViewColumns } from "../build-view-columns"
-import { DataTableToolbar, FILTER_INPUT_CLASSES } from "../table/data-table-toolbar"
 import { ViewOptionsPanel } from "../view-options-panel"
+import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
+import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
 import { useColumnPreferences } from "../use-column-preferences"
-import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
-import { resolveViewFilter } from "../resolve-view-filter"
-import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
-import { buildServerWhere } from "../build-server-where"
 import type { SerializedAction, SerializedView } from "../types"
 import { SkeletonKanbanBoard } from "../view-skeletons"
 
@@ -115,78 +101,14 @@ export function KanbanLayout({
 
   /* ------------------------------------------------------ data + filtering */
 
-  const toolbarStateKey = getToolbarStateKey(slug, view.slug, "kanban")
-  const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug, "kanban")
-  const storedState = React.useMemo(
-    () => loadToolbarState(toolbarStateKey) ?? loadToolbarState(legacyToolbarStateKey),
-    [toolbarStateKey, legacyToolbarStateKey],
-  )
-  const [searchParams, setSearchParams] = useSearchParams()
-  const getInitialKanbanFilters = (): ColumnFiltersState => {
-    const f = searchParams.get("filters")
-    if (f) {
-      try {
-        const parsed = JSON.parse(f)
-        if (Array.isArray(parsed)) return parsed as ColumnFiltersState
-      } catch {
-        // invalid URL filter JSON, fall through
-      }
-    }
-    return (storedState?.columnFilters as ColumnFiltersState | undefined) ?? []
-  }
-  const getInitialJoinOperator = (): "and" | "or" => {
-    const op = searchParams.get("joinOperator")
-    if (op === "or" || op === "and") return op
-    return (storedState?.joinOperator as "and" | "or" | undefined) ?? "and"
-  }
-  const [globalFilter, setGlobalFilter] = React.useState(() => searchParams.get("search") ?? "")
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(getInitialKanbanFilters)
-  const [joinOperator, setJoinOperator] = React.useState<"and" | "or">(getInitialJoinOperator)
-
-  // Synchronize columnFilters when URL searchParams changes externally (e.g. from metric card click)
-  const urlFiltersParam = searchParams.get("filters")
-  const urlSearchParam = searchParams.get("search") ?? ""
-  const urlJoinOpParam = searchParams.get("joinOperator")
-
-  React.useEffect(() => {
-    let nextFilters: ColumnFiltersState = []
-    if (urlFiltersParam) {
-      try {
-        const parsed = JSON.parse(urlFiltersParam)
-        if (Array.isArray(parsed)) nextFilters = parsed
-      } catch {
-        // invalid URL filter JSON, fall through
-      }
-    }
-    setColumnFilters((prev) => (JSON.stringify(prev) === JSON.stringify(nextFilters) ? prev : nextFilters))
-  }, [urlFiltersParam])
-
-  // Synchronize search and joinOperator when URL searchParams changes externally
-  React.useEffect(() => {
-    setGlobalFilter((prev) => (prev === urlSearchParam ? prev : urlSearchParam))
-    if (urlJoinOpParam === "and" || urlJoinOpParam === "or") {
-      setJoinOperator((prev) => (prev === urlJoinOpParam ? prev : urlJoinOpParam))
-    }
-  }, [urlSearchParam, urlJoinOpParam])
-
-  const handleColumnFiltersChange = React.useCallback(
-    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
-      setColumnFilters((prev) => {
-        const next = typeof updater === "function" ? updater(prev) : updater
-        persistToolbarState(toolbarStateKey, { columnFilters: next })
-        return next
-      })
-    },
-    [toolbarStateKey],
-  )
-
-  const handleJoinOperatorChange = React.useCallback(
-    (op: "and" | "or") => {
-      setJoinOperator(op)
-      persistToolbarState(toolbarStateKey, { joinOperator: op })
-    },
-    [toolbarStateKey],
-  )
+  const toolbar = useViewToolbarState({
+    slug,
+    viewSlug: view.slug,
+    variant: "kanban",
+    schema,
+    baseFilter: view.filter,
+  })
+  const { search: globalFilter, serverWhere } = toolbar
 
   const fieldsByName = React.useMemo(
     () => new Map<string, any>((schema?.fields ?? []).map((field: any) => [field.name, field])),
@@ -222,33 +144,6 @@ export function KanbanLayout({
     [fieldPreferences.preferences],
   )
 
-  const serverWhere = React.useMemo(() => {
-    return buildServerWhere({
-      baseFilter: resolveViewFilter(view.filter),
-      columnFilters,
-      schema,
-      joinOperator,
-    })
-  }, [view.filter, columnFilters, schema, joinOperator])
-
-  React.useEffect(() => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (globalFilter) next.set("search", globalFilter)
-        else next.delete("search")
-        if (columnFilters.length) next.set("filters", JSON.stringify(columnFilters))
-        else next.delete("filters")
-        if (columnFilters.length >= 2 && joinOperator === "or") next.set("joinOperator", "or")
-        else next.delete("joinOperator")
-        if (next.toString() === prev.toString()) return prev
-        return next
-      },
-      { replace: true },
-    )
-    persistToolbarState(toolbarStateKey, { columnFilters, joinOperator })
-  }, [globalFilter, columnFilters, joinOperator, setSearchParams, toolbarStateKey])
-
   /**
    * Grouped mode fetches each column independently (paginated, parallel) with
    * the serverWhere filters applied to every column request.
@@ -271,24 +166,6 @@ export function KanbanLayout({
     }
     return grouped.fallbackDocs
   }, [isGrouped, grouped.columns, grouped.fallbackDocs])
-
-  const columns = React.useMemo(
-    () => buildViewColumns({ schema, client, schemas }),
-    [schema, client, schemas],
-  )
-
-  const table = useReactTable({
-    data: docs,
-    columns,
-    state: { globalFilter, columnFilters },
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: handleColumnFiltersChange,
-    manualFiltering: true,
-    getRowId: (row) => String(row.id),
-    getCoreRowModel: getCoreRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
 
   /* --------------------------------------------------------- board state */
 
@@ -471,51 +348,37 @@ export function KanbanLayout({
     )
   }
 
-  const collectionLabel = schema?.labels?.plural || schema?.labels?.singular || slug
-
   return (
     <div className="dy-space-y-4" data-collection={slug}>
-      <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
-        <div className="dy-relative dy-w-full sm:dy-max-w-xs">
-          <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
-          <Input
-            size="sm"
-            type="search"
-            aria-label={`Search ${collectionLabel}`}
-            placeholder={`Search ${collectionLabel}...`}
-            value={globalFilter}
-            onChange={(event) => setGlobalFilter(event.target.value)}
-            className={`dy-pl-10 ${FILTER_INPUT_CLASSES}`}
-          />
-        </div>
-        <DataTableToolbar
-          table={table}
-          joinOperator={joinOperator}
-          onJoinOperatorChange={handleJoinOperatorChange}
-        >
-          <ViewOptionsPanel
-            label="Fields"
-            managedIds={allFieldIds}
-            labelById={labelByIdFrom(allFieldIds, fieldsByName)}
-            hiddenIds={fieldPreferences.preferences.hidden}
-            showLabelIds={fieldPreferences.preferences.showLabel ?? []}
-            withLabelToggle
-            isDirty={fieldPreferences.isDirty}
-            isSaving={fieldPreferences.isSaving}
-            isAdmin={fieldPreferences.isAdmin}
-            onOrderChange={fieldPreferences.setOrder}
-            onToggleVisibility={fieldPreferences.toggleVisibility}
-            onToggleLabel={fieldPreferences.toggleLabel}
-            onShowAll={fieldPreferences.showAll}
-            onHideAllExcept={fieldPreferences.hideAllExcept}
-            onReset={fieldPreferences.reset}
-            onSaveForMe={fieldPreferences.saveForMe}
-            onSaveForEveryone={
-              fieldPreferences.isAdmin ? fieldPreferences.saveForEveryone : undefined
-            }
-          />
-        </DataTableToolbar>
-      </div>
+      <ViewFilterToolbar
+        schema={schema}
+        client={client}
+        schemas={schemas}
+        state={toolbar}
+        data={docs}
+      >
+      <ViewOptionsPanel
+        label="Fields"
+        managedIds={allFieldIds}
+        labelById={labelByIdFrom(allFieldIds, fieldsByName)}
+        hiddenIds={fieldPreferences.preferences.hidden}
+        showLabelIds={fieldPreferences.preferences.showLabel ?? []}
+        withLabelToggle
+        isDirty={fieldPreferences.isDirty}
+        isSaving={fieldPreferences.isSaving}
+        isAdmin={fieldPreferences.isAdmin}
+        onOrderChange={fieldPreferences.setOrder}
+        onToggleVisibility={fieldPreferences.toggleVisibility}
+        onToggleLabel={fieldPreferences.toggleLabel}
+        onShowAll={fieldPreferences.showAll}
+        onHideAllExcept={fieldPreferences.hideAllExcept}
+        onReset={fieldPreferences.reset}
+        onSaveForMe={fieldPreferences.saveForMe}
+        onSaveForEveryone={
+          fieldPreferences.isAdmin ? fieldPreferences.saveForEveryone : undefined
+        }
+      />
+      </ViewFilterToolbar>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
         <div className="dy-flex dy-gap-4 dy-overflow-x-auto dy-pb-2">

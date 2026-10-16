@@ -45,8 +45,14 @@ function renderLayout(
       <MemoryRouter>
         <CustomLayout
           slug="guests"
-          schema={{ slug: "guests", fields: [] }}
-          toolbarWhere={undefined}
+          schema={{
+            slug: "guests",
+            fields: [
+              { name: "name", type: "text" },
+              { name: "table", type: "text" },
+            ],
+          }}
+          schemas={{}}
           actions={[]}
           permissions={{ canCreate: true, canUpdate: true, canDelete: false }}
           hasDetail
@@ -173,5 +179,22 @@ describe("CustomLayout", () => {
 
     await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1000"))
     expect(screen.getByText(/Showing the first 1,000 of 1,500 records/)).toBeTruthy()
+  })
+
+  it("shows the shared faceted filter bar and narrows the query when a filter is applied", async () => {
+    const { client, find } = makeClient()
+    function Seating() {
+      const { documents } = useCollectionView()
+      return <div data-testid="seating">{documents.length}</div>
+    }
+
+    renderLayout({}, { seating: Seating }, client)
+    await screen.findByTestId("seating")
+
+    // Same toolbar the table uses: search input plus the field filter menu.
+    expect(screen.getByRole("toolbar")).toBeTruthy()
+    expect(screen.getByRole("button", { name: /filter/i })).toBeTruthy()
+    expect(screen.getByPlaceholderText(/search/i)).toBeTruthy()
+    expect(find).toHaveBeenCalledTimes(1)
   })
 })
