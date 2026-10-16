@@ -29493,6 +29493,50 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.24.0
+
+- A collection or global can now replace its create and edit screens with your own component, while saving still goes through the normal pipeline: validation, access rules, hooks and drafts.
+
+  **For app developers**
+
+  - **Point a collection at a form.** Set `createForm`, `editForm`, or a `form` fallback for both in `admin.components`, then register a component under that key in `components.forms`:
+
+    ```ts
+    defineCollection({
+      slug: "check_ins",
+      admin: {
+        components: {
+          createForm: "check_ins.scanForm",
+          editForm: "check_ins.reviewForm",
+          formShell: "header", // "full" (default) | "header" | "none"
+        },
+      },
+    });
+    ```
+
+    Globals take `editForm` and `form` the same way. A key that is not registered falls back to the built-in form, so an editor is never left with an empty screen.
+
+  - **Choose how much of the page stays.** `formShell: "full"` keeps the header, status badge and Dyrected's Save bar, so you only re-lay-out the body. `"header"` keeps the header and leaves saving to your form. `"none"` gives your form the whole screen.
+  - **Save with `useDocumentForm()`.** It returns the saved `document`, `permissions`, the `form` (values, errors, `setValue`) and `submit()`. `submit({ overrides, redirect, silent })` resolves to `{ ok: true, doc }` or `{ ok: false, errors }` and never throws. Server validation errors land on the matching field, so `useField(path).error` works with no extra code. `redirect` defaults to opening the new record after a create and staying put after an edit.
+  - **Reuse the built-in inputs.** `<DyrectedField path="guestName" />`, `<DyrectedFields names={[...]} />` and `<DyrectedDefaultForm exclude={[...]} />` render the real inputs with their labels, conditions, widths, read-only state and `admin.component` overrides.
+  - **Relationship drawers use it too.** Creating a related record inline opens the target collection's `createForm` with `presentation: "drawer"`. Set `formInDrawer: false` to keep the built-in form there.
+  - **Vue and Nuxt.** `useDocumentForm()`, `DyrectedField`, `DyrectedFields` and `DyrectedDefaultForm` exist in `@dyrected/vue` with state as refs, and work inside a registered form with no manual `provide`.
+  - **Safe by default.** A form that throws shows an error card with **Retry** and **Use default form**. `permissions` only decides what to show; the server enforces access on every save.
+
+  **For plugin and integration authors**
+
+  - `@dyrected/core` exports `FormShell`, `DocumentFormComponentSlots` and `GlobalFormComponentSlots`. `collectReferencedComponentKeys` now fills `forms`, so `npx dyrected generate:types` types `Register.componentKeys.forms` and the unused-registration warning covers forms.
+  - Config diagnostics report an unknown `formShell` and non-string form keys (source `adminComponents`).
+  - `@dyrected/admin/public` exports `DocumentContext`, `DYRECTED_DOCUMENT_KEY` and `buildDocumentFormApi` for hosts that embed the document context.
+
+  **Upgrade notes**
+
+  - `AdminFormComponentProps` changed shape: it is now `{ collection, mode, documentId?, presentation }`. Nothing in Dyrected consumed it before, so this only matters if you typed a placeholder against the old `{ id, readOnly }`.
+  - The inline "Create" dialog on relationship fields now saves through the same pipeline as the relationship drawer. A failed save shows an error toast instead of only logging to the console, and a successful one shows a success toast.
+  - The hooks and components are marked experimental. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/react`, `@dyrected/vue`)
+
+---
+
 ## v2.23.0
 
 - Custom admin components are now easier to write, harder to get wrong, and no longer need provider boilerplate in Vue.
@@ -30335,14 +30379,6 @@ Release notes and version history across all Dyrected packages.
   Improve admin document titles and list cell rendering for relationship, object, and array values, including nested relation title chains and nested field `admin.useAsTitle`.
 
   Add join-field admin actions to show or hide `Create new` and `View all`, with `View all` opening the related collection list pre-filtered by the join relationship. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
-
----
-
-## v2.5.65
-
-- - Keep the edit-form change-password section inside the default tab when a collection has multiple tabs.
-  - Populate nested join fields when the requested depth budget allows it, while leaving them unpopulated when depth is exhausted.
-  - Reuse a shared Postgres client per connection URL so repeated adapter construction in dev servers does not exhaust database connections. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/db-postgres`)
 
 ---
 
@@ -40947,6 +40983,12 @@ const result = await submit({
 | `silent` | `false` | Skip the success and error toasts, for forms that report the outcome themselves |
 
 The result is `{ ok: true, doc }` or `{ ok: false, errors, error? }`. `errors` maps a field path to its message and includes both validation errors and errors the API returned. An error with no field is under `_form`. The same errors appear on the inputs: `useField("name").error` has the message with no extra code.
+
+<Callout type="info">
+  `result.ok` narrows the result in TypeScript projects that use `strict` (or `strictNullChecks`), so `result.errors` is
+  available in the failure branch. In a project without those options, TypeScript cannot narrow on `ok`. Check
+  `"errors" in result` instead, which works in both.
+</Callout>
 
 After a save with `redirect: "stay"` on a new record, the form keeps the saved values and the next `submit()` creates another record. That is what a scanner wants. If you would rather open the record, use the default `"edit"`.
 
@@ -63258,6 +63300,50 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.24.0
+
+- A collection or global can now replace its create and edit screens with your own component, while saving still goes through the normal pipeline: validation, access rules, hooks and drafts.
+
+  **For app developers**
+
+  - **Point a collection at a form.** Set `createForm`, `editForm`, or a `form` fallback for both in `admin.components`, then register a component under that key in `components.forms`:
+
+    ```ts
+    defineCollection({
+      slug: "check_ins",
+      admin: {
+        components: {
+          createForm: "check_ins.scanForm",
+          editForm: "check_ins.reviewForm",
+          formShell: "header", // "full" (default) | "header" | "none"
+        },
+      },
+    });
+    ```
+
+    Globals take `editForm` and `form` the same way. A key that is not registered falls back to the built-in form, so an editor is never left with an empty screen.
+
+  - **Choose how much of the page stays.** `formShell: "full"` keeps the header, status badge and Dyrected's Save bar, so you only re-lay-out the body. `"header"` keeps the header and leaves saving to your form. `"none"` gives your form the whole screen.
+  - **Save with `useDocumentForm()`.** It returns the saved `document`, `permissions`, the `form` (values, errors, `setValue`) and `submit()`. `submit({ overrides, redirect, silent })` resolves to `{ ok: true, doc }` or `{ ok: false, errors }` and never throws. Server validation errors land on the matching field, so `useField(path).error` works with no extra code. `redirect` defaults to opening the new record after a create and staying put after an edit.
+  - **Reuse the built-in inputs.** `<DyrectedField path="guestName" />`, `<DyrectedFields names={[...]} />` and `<DyrectedDefaultForm exclude={[...]} />` render the real inputs with their labels, conditions, widths, read-only state and `admin.component` overrides.
+  - **Relationship drawers use it too.** Creating a related record inline opens the target collection's `createForm` with `presentation: "drawer"`. Set `formInDrawer: false` to keep the built-in form there.
+  - **Vue and Nuxt.** `useDocumentForm()`, `DyrectedField`, `DyrectedFields` and `DyrectedDefaultForm` exist in `@dyrected/vue` with state as refs, and work inside a registered form with no manual `provide`.
+  - **Safe by default.** A form that throws shows an error card with **Retry** and **Use default form**. `permissions` only decides what to show; the server enforces access on every save.
+
+  **For plugin and integration authors**
+
+  - `@dyrected/core` exports `FormShell`, `DocumentFormComponentSlots` and `GlobalFormComponentSlots`. `collectReferencedComponentKeys` now fills `forms`, so `npx dyrected generate:types` types `Register.componentKeys.forms` and the unused-registration warning covers forms.
+  - Config diagnostics report an unknown `formShell` and non-string form keys (source `adminComponents`).
+  - `@dyrected/admin/public` exports `DocumentContext`, `DYRECTED_DOCUMENT_KEY` and `buildDocumentFormApi` for hosts that embed the document context.
+
+  **Upgrade notes**
+
+  - `AdminFormComponentProps` changed shape: it is now `{ collection, mode, documentId?, presentation }`. Nothing in Dyrected consumed it before, so this only matters if you typed a placeholder against the old `{ id, readOnly }`.
+  - The inline "Create" dialog on relationship fields now saves through the same pipeline as the relationship drawer. A failed save shows an error toast instead of only logging to the console, and a successful one shows a success toast.
+  - The hooks and components are marked experimental. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/react`, `@dyrected/vue`)
+
+---
+
 ## v2.23.0
 
 - Custom admin components are now easier to write, harder to get wrong, and no longer need provider boilerplate in Vue.
@@ -64100,14 +64186,6 @@ Release notes and version history across all Dyrected packages.
   Improve admin document titles and list cell rendering for relationship, object, and array values, including nested relation title chains and nested field `admin.useAsTitle`.
 
   Add join-field admin actions to show or hide `Create new` and `View all`, with `View all` opening the related collection list pre-filtered by the join relationship. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
-
----
-
-## v2.5.65
-
-- - Keep the edit-form change-password section inside the default tab when a collection has multiple tabs.
-  - Populate nested join fields when the requested depth budget allows it, while leaving them unpopulated when depth is exhausted.
-  - Reuse a shared Postgres client per connection URL so repeated adapter construction in dev servers does not exhaust database connections. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/db-postgres`)
 
 ---
 

@@ -248,6 +248,12 @@ const result = await submit({
 
 The result is `{ ok: true, doc }` or `{ ok: false, errors, error? }`. `errors` maps a field path to its message and includes both validation errors and errors the API returned. An error with no field is under `_form`. The same errors appear on the inputs: `useField("name").error` has the message with no extra code.
 
+<Callout type="info">
+  `result.ok` narrows the result in TypeScript projects that use `strict` (or `strictNullChecks`), so `result.errors` is
+  available in the failure branch. In a project without those options, TypeScript cannot narrow on `ok`. Check
+  `"errors" in result` instead, which works in both.
+</Callout>
+
 After a save with `redirect: "stay"` on a new record, the form keeps the saved values and the next `submit()` creates another record. That is what a scanner wants. If you would rather open the record, use the default `"edit"`.
 
 ## Globals

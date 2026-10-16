@@ -29,7 +29,7 @@ function QuickForm(props: { collection: string; mode: string; presentation: stri
         type="button"
         onClick={async () => {
           const r = await submit({ overrides: { name: "Scanned" } })
-          setResult(r.ok ? "ok" : `failed:${Object.values(r.errors).join(",")}`)
+          setResult("errors" in r ? `failed:${Object.values(r.errors).join(",")}` : "ok")
         }}
       >
         Go
