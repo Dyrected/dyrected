@@ -21,6 +21,11 @@ export type AdminNavigateTarget =
       type: "page";
       slug: string;
       subPath?: string;
+    }
+  | {
+      type: "workspace";
+      slug: string;
+      viewSlug?: string;
     };
 
 export interface AdminNavigateHelpers {
@@ -28,6 +33,7 @@ export interface AdminNavigateHelpers {
   document: (slug: string, id: string | number) => string;
   view: (slug: string, viewSlug: string) => string;
   page: (slug: string, subPath?: string) => string;
+  workspace: (slug: string, viewSlug?: string) => string;
 }
 
 export interface AdminNotifyOptions {
@@ -73,6 +79,10 @@ export const toUrlHelpers: AdminNavigateHelpers = {
     const cleanSub = subPath.startsWith("/") ? subPath : `/${subPath}`;
     return `${base}${cleanSub}`;
   },
+  workspace: (slug: string, viewSlug?: string) =>
+    viewSlug
+      ? `/${encodeURIComponent(slug)}/${encodeURIComponent(viewSlug)}`
+      : `/${encodeURIComponent(slug)}`,
 };
 
 export function resolveAdminNavigateUrl(target: AdminNavigateTarget): string {
@@ -86,6 +96,8 @@ export function resolveAdminNavigateUrl(target: AdminNavigateTarget): string {
       return toUrlHelpers.view(target.slug, target.viewSlug);
     case "page":
       return toUrlHelpers.page(target.slug, target.subPath);
+    case "workspace":
+      return toUrlHelpers.workspace(target.slug, target.viewSlug);
     default:
       return "/";
   }

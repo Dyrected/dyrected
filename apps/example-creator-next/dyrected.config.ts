@@ -14,6 +14,7 @@ import {
   defineTextareaField,
   defineView,
   defineWorkspace,
+  definePage,
   defineAction,
   displaySection,
   displayField,
@@ -1490,6 +1491,31 @@ const tastingScheduleView = defineView({
   ],
 });
 
+// A custom layout: Dyrected keeps the header, KPI cards, search, filters, pagination
+// and action dialogs; `src/admin-components/seating-chart.tsx` draws the documents.
+// `component` is a key registered in `src/app/admin/admin-client.tsx`.
+const seatingChartView = defineView({
+  slug: "seating-chart",
+  label: "Seating Chart",
+  icon: "Armchair",
+  layout: "custom",
+  component: "guest-responses.seatingChart",
+  options: { tableField: "tableNumber" },
+  data: { fetchAll: true },
+  filter: { attending: { equals: true } },
+  actions: [checkInAction, undoCheckInAction],
+  components: { beforeViewContent: ["guestHeadcount"] },
+  metrics: [
+    {
+      label: "Seated Guests",
+      color: "emerald",
+      unit: "Guests",
+      scope: "filtered",
+      aggregate: { count: "*", where: { tableNumber: { exists: true } } },
+    },
+  ],
+});
+
 const guestDirectoryView = defineView({
   slug: "guest-directory",
   label: "Guest Directory",
@@ -1625,7 +1651,7 @@ const GuestResponses = defineCollection({
     defineDateTimeField({ name: "appointmentDate", label: "Tasting Date" }),
     defineTextareaField({ name: "wellWishes", label: "Well Wishes" }),
   ],
-  views: [attendingGuestsView, asoebiPipelineView, tastingScheduleView, guestDirectoryView],
+  views: [attendingGuestsView, asoebiPipelineView, tastingScheduleView, guestDirectoryView, seatingChartView],
   initialData: [
     {
       name: "Tunde Bakare",
@@ -1882,6 +1908,7 @@ export default defineConfig({
           { ...asoebiPipelineView, collection: "guest-responses" },
           { ...tastingScheduleView, collection: "guest-responses" },
           { ...guestDirectoryView, collection: "guest-responses" },
+          { ...seatingChartView, collection: "guest-responses" },
         ],
         order: 1,
       }),
@@ -1912,13 +1939,18 @@ export default defineConfig({
         order: 2,
       }),
 
-      // 3. Collection view placement within Operations
-      // defineWorkspace({
-      //   collection: "guest-responses",
-      //   label: "Guest Responses (Raw)",
-      //   group: "Operations",
-      //   order: 3,
-      // }),
+      // 3. Custom Admin Page: Executive Operations Hub
+      definePage({
+        slug: "executive-hub",
+        label: "Executive Hub",
+        icon: "Sparkles",
+        group: "Operations",
+        order: 3,
+        component: "ops.executiveHub",
+        options: {
+          refreshInterval: 10000,
+        },
+      }),
 
       // 4. Content Group: with FileText icon, sparse ordering, and badge counters
       defineWorkspace({
