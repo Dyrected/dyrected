@@ -1,5 +1,56 @@
 # @dyrected/vue
 
+## 2.24.0
+
+### Minor Changes
+
+- c8df2c9: A collection or global can now replace its create and edit screens with your own component, while saving still goes through the normal pipeline: validation, access rules, hooks and drafts.
+
+  **For app developers**
+
+  - **Point a collection at a form.** Set `createForm`, `editForm`, or a `form` fallback for both in `admin.components`, then register a component under that key in `components.forms`:
+
+    ```ts
+    defineCollection({
+      slug: "check_ins",
+      admin: {
+        components: {
+          createForm: "check_ins.scanForm",
+          editForm: "check_ins.reviewForm",
+          formShell: "header", // "full" (default) | "header" | "none"
+        },
+      },
+    });
+    ```
+
+    Globals take `editForm` and `form` the same way. A key that is not registered falls back to the built-in form, so an editor is never left with an empty screen.
+
+  - **Choose how much of the page stays.** `formShell: "full"` keeps the header, status badge and Dyrected's Save bar, so you only re-lay-out the body. `"header"` keeps the header and leaves saving to your form. `"none"` gives your form the whole screen.
+  - **Save with `useDocumentForm()`.** It returns the saved `document`, `permissions`, the `form` (values, errors, `setValue`) and `submit()`. `submit({ overrides, redirect, silent })` resolves to `{ ok: true, doc }` or `{ ok: false, errors }` and never throws. Server validation errors land on the matching field, so `useField(path).error` works with no extra code. `redirect` defaults to opening the new record after a create and staying put after an edit.
+  - **Reuse the built-in inputs.** `<DyrectedField path="guestName" />`, `<DyrectedFields names={[...]} />` and `<DyrectedDefaultForm exclude={[...]} />` render the real inputs with their labels, conditions, widths, read-only state and `admin.component` overrides.
+  - **Relationship drawers use it too.** Creating a related record inline opens the target collection's `createForm` with `presentation: "drawer"`. Set `formInDrawer: false` to keep the built-in form there.
+  - **Vue and Nuxt.** `useDocumentForm()`, `DyrectedField`, `DyrectedFields` and `DyrectedDefaultForm` exist in `@dyrected/vue` with state as refs, and work inside a registered form with no manual `provide`.
+  - **Safe by default.** A form that throws shows an error card with **Retry** and **Use default form**. `permissions` only decides what to show; the server enforces access on every save.
+
+  **For plugin and integration authors**
+
+  - `@dyrected/core` exports `FormShell`, `DocumentFormComponentSlots` and `GlobalFormComponentSlots`. `collectReferencedComponentKeys` now fills `forms`, so `npx dyrected generate:types` types `Register.componentKeys.forms` and the unused-registration warning covers forms.
+  - Config diagnostics report an unknown `formShell` and non-string form keys (source `adminComponents`).
+  - `@dyrected/admin/public` exports `DocumentContext`, `DYRECTED_DOCUMENT_KEY` and `buildDocumentFormApi` for hosts that embed the document context.
+
+  **Upgrade notes**
+
+  - `AdminFormComponentProps` changed shape: it is now `{ collection, mode, documentId?, presentation }`. Nothing in Dyrected consumed it before, so this only matters if you typed a placeholder against the old `{ id, readOnly }`.
+  - The inline "Create" dialog on relationship fields now saves through the same pipeline as the relationship drawer. A failed save shows an error toast instead of only logging to the console, and a successful one shows a success toast.
+  - The hooks and components are marked experimental.
+
+### Patch Changes
+
+- Updated dependencies [c8df2c9]
+  - @dyrected/core@2.24.0
+  - @dyrected/admin@2.24.0
+  - @dyrected/sdk@2.24.0
+
 ## 2.23.0
 
 ### Minor Changes
@@ -677,10 +728,12 @@
 - ea1d99d: Block icons & variants, a cleaner admin loading state, dark-mode text fix, and OpenAPI/Swagger fixes.
 
   **Block schema (`@dyrected/core`)**
+
   - `Block` now supports `icon` (a Lucide `AdminIconName`) and `description` (a one-line summary), shown on block cards and in the block library.
   - New `Block.variants` (`BlockVariant[]`) — presentation variants over a shared field set. The chosen variant is stored on each block row under the reserved `variant` key and passed to the render component as a `variant` prop. Switching variant preserves the author's content.
 
   **Admin (`@dyrected/admin`)**
+
   - Redesigned block cards to match the visual editor: drag handle, icon tile, title, and a description/variant subtitle, with an accent selected state; duplicate/delete reveal on hover.
   - Added an in-block **variant switcher** (drill-in and inline modes) that writes the `variant` key and updates the live preview immediately; new blocks default to the first variant, and older rows backfill a variant on load.
   - Click-to-edit / error-summary navigation now switches to the tab that owns the target block, so drilling into a field on a non-active tab actually mounts its sub-form (previously showed only the breadcrumb).
@@ -692,14 +745,17 @@
   - Mobile: the edit page can toggle between the form and the live preview (single-pane) via an action-rail switch.
 
   **Render packages (`@dyrected/react`, `@dyrected/vue`)**
+
   - `BlocksItem` now types the optional `variant` field; it already flows to block components via prop spreading.
 
   **Backend (`@dyrected/core`)**
+
   - Swagger UI now resolves its OpenAPI spec **relative to the docs page**, so `/api/docs` works when the app is mounted under a prefix (e.g. a Nuxt `apiBase: "/dyrected"`) instead of 404-ing on an absolute `/api/openapi.json`.
 
 - 227449f: Nested block editor, live-preview click-to-edit, and a redesigned edit page.
 
   **Admin**
+
   - Redesigned the collection edit page: live preview on the left, form on the right, with a vertical action rail (Save, New, Preview, Workflow, View, Reset, Info) replacing the horizontal header icon cluster.
   - Nested block/array/object editing via drill-in navigation with breadcrumbs, backed by a new `NestedEditorContext` with stable-id path tracking (survives reorder/delete) and a shared `resolveContainerPath` utility.
   - Live-preview click-to-edit: clicking an annotated element in the preview iframe drills into the owning block and focuses the exact field. The global error summary now also drills in before scrolling.
@@ -709,6 +765,7 @@
   - Added a scalar `usePreference` hook.
 
   **Site packages (`@dyrected/vue`, `@dyrected/react`, `@dyrected/nuxt`, `@dyrected/next`)**
+
   - New `Blocks` component plus `useDyPath` / `provideDyPath` (`DyPathProvider` in React, `DyPathScope` in Vue) for low-effort `data-dy-path` annotation — authors pass only a field name and the ancestor supplies the base path.
   - `useLivePreview` now supports edit mode: on `dyrected-enter-edit-mode` it highlights and captures clicks on `[data-dy-path]` elements (via document-level event delegation) and reports them to the admin.
   - Nuxt module auto-imports `useDyPath`/`provideDyPath` and registers the `DyrectedBlocks` component.
@@ -890,11 +947,13 @@
 ### Patch Changes
 
 - 1a2e552: ### ✨ Features & Refactors
+
   - **Admin UI Customization**: Implemented the Admin UI component slot injection system along with Vue bridging support, allowing developers to inject custom components natively into the dashboard and lists.
   - **Onboarding & Setup**: Replaced prompt generation with an external guided setup flow, and added a new email template service.
   - **UI Refresh**: Updated admin CSS variables and layout container styling for improved aesthetics.
 
   ### 📚 Documentation
+
   - **Structural Changes**: Migrated feature documentation into dedicated guides.
   - **Cloud Rebrand**: Updated app dashboard documentation and references to point to the new `cloud.dyrected.com` domain.
   - **General Polish**: Expanded and updated documentation across multiple files (including fixing the YAML parser bugs in the new markdown format).
@@ -933,6 +992,7 @@
 ### Patch Changes
 
 - 7db84cc: **UI/UX Improvement for Admin**
+
   1. Boolean field layout support
      Added a new `CheckboxField` and made boolean fields default to checkbox, with `admin.layout: "switch"` available when a switch UI is preferred.
   2. Array/object field renderer refactor
@@ -1133,44 +1193,54 @@
   ## 🛠️ Summary of Resolved Bugs
 
   ### 1. **Bug 1 (MySQL EADDRNOTAVAIL Socket Error)**
+
   - **Fix:** Handled and caught connection failures in `packages/db-mysql/src/index.ts`. If `EADDRNOTAVAIL` is detected on macOS loopback environments, we print a highly informative log advising the user to replace `localhost` with `127.0.0.1` in their `.env` file.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L105-L117)
 
   ### 2. **Bug 2 (MySQL Database Auto-Creation)**
+
   - **Fix:** Enhanced the adapter to check if the database exists prior to initializing the connection pool. It temporarily establishes a connection to the server without selecting a database, runs `CREATE DATABASE IF NOT EXISTS \`dbname\``, and gracefully closes the handshake.
   - **Reference File:** [packages/db-mysql/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-mysql/src/index.ts#L79-L93)
 
   ### 3. **Bug 3 (PostgreSQL Parameter Mismatch)**
+
   - **Fix:** Refactored the `find()` queries inside the pg adapter to construct plain SQL query strings, passing them directly to `this.sql.unsafe(queryStr, params)`. This prevents nested tagged template literals from stripping parameterized `$N` value bindings.
   - **Reference File:** [packages/db-postgres/src/index.ts](file:///Users/busola/Work/dyrected/packages/db-postgres/src/index.ts#L65-L119)
 
   ### 4. **Bug 4 (Nuxt TS Configuration Import)**
+
   - **Fix:** Integrated dynamic loading of `"jiti"` (bundled natively with Nuxt/Nitro) inside `packages/nuxt/src/runtime/server/plugins/db.ts` to cleanly transpile and import `dyrected.config.ts` without raw ES Module "Unknown file extension" exceptions.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L11-L40)
 
   ### 5. **Bug 5 (Nitro Runtime Import Resolution)**
+
   - **Fix:** Standardized module imports in the Nuxt context by replacing the problematic `"nitro/runtime"` import with `"nitropack/runtime"`.
   - **Reference File:** [packages/nuxt/src/runtime/server/plugins/db.ts](file:///Users/busola/Work/dyrected/packages/nuxt/src/runtime/server/plugins/db.ts#L2-L4)
 
   ### 6. **Bug 6 (Collapsible & Sortable Arrays)**
+
   - **Fix:** Redesigned array field lists into collapsible Cards utilizing draggable handle hooks, supporting both drag-and-drop reordering (`@dnd-kit/sortable`) and dynamic child attribute watch previews (displays key text values as a header preview).
   - **Reference File:** [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx#L182-L330)
 
   ### 7. **Bug 7 (Path Duplication)**
+
   - **Fix:** Prevented redundant folder prefixes (e.g. `/dyrected/dyrected/`) from being appended to logo media URLs.
   - **Reference File:** [packages/admin/src/lib/utils.ts](file:///Users/busola/Work/dyrected/packages/admin/src/lib/utils.ts#L14-L24)
 
   ### 8. **Bug 8 (Media Previews)**
+
   - **Fix:** Added a direct URL/path string fallback rendering in the admin dashboard `MediaPicker` to instantly load images when an empty relationship payload is returned.
   - **Reference File:** [packages/admin/src/components/forms/fields/media-picker.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/fields/media-picker.tsx#L45-L68)
 
   ### 9. **Bug 9 (Media Infinite Scroll)**
+
   - **Fix:** Upgraded the media library lists and selector modal dialog to use React Query's `useInfiniteQuery`, implementing an `IntersectionObserver` scroll listener to paginate assets.
   - **Reference Files:**
     - [packages/admin/src/pages/media/media-page.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/pages/media/media-page.tsx)
     - [packages/admin/src/components/media/media-library-dialog.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/media/media-library-dialog.tsx)
 
   ### 10. **Bug 10 (Slugs vs Labels / Dynamic Add Buttons)**
+
   - **Fix:** Swapped out hardcoded string actions with singularized schema collection labels (e.g. "Add Post", "Add Testimonial") and ensured singularized headers show everywhere.
   - **Reference Files:**
     - [packages/admin/src/components/forms/form-field-renderer.tsx](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/form-field-renderer.tsx)
