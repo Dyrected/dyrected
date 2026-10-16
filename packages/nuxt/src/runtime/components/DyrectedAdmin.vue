@@ -2,6 +2,7 @@
   <DyrectedAdmin
     :config="config"
     :components="mergedComponents"
+    :warn-unused-components="warnUnusedComponents"
     :theme="theme"
     :system-theme="systemTheme"
     :on-theme-change="onThemeChange"
@@ -22,6 +23,12 @@ const props = defineProps<{
    * Custom components to inject into the Admin UI.
    */
   components?: any;
+  /**
+   * In development, warn once for each registered component the schema never
+   * references. Set to `false` to silence it.
+   * @default true
+   */
+  warnUnusedComponents?: boolean;
   /** Preferred theme for the embedded admin. */
   theme?: AdminThemePreference;
   /** Current resolved system theme for the embedded admin. */

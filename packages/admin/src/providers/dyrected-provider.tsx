@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, DyrectedClient, DyrectedError } from "@dyrected/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { findUnusedComponentKeys } from "../lib/unused-components";
+import { isDevelopment } from "../lib/env";
 import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
 import { decodeTokenPayload, getAdminCollectionSlug, normalizeAdminUser, type AdminUser } from "./admin-auth";
@@ -222,7 +223,7 @@ export function DyrectedProvider({
   });
 
   useEffect(() => {
-    if (!import.meta.env.DEV || !warnUnusedComponents) return;
+    if (!isDevelopment() || !warnUnusedComponents) return;
     for (const entry of findUnusedComponentKeys(components, schemas)) {
       if (warnedUnusedComponents.has(entry)) continue;
       warnedUnusedComponents.add(entry);

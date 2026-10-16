@@ -28,6 +28,7 @@ import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
 import { UrlField as UrlFieldComponent } from "./fields/url-field"
 import { Suspense } from "react"
+import { isDevelopment } from "../../lib/env"
 import jexl from 'jexl'
 import { useDyrected } from "../../providers/dyrected-context"
 import { ErrorBoundary } from "../error-boundary"
@@ -136,7 +137,7 @@ export function FieldRenderer({ schema, field, id, collection, context }: FieldR
     }
 
     warnMissingComponent("fields", customComponentKey)
-    if (import.meta.env.DEV) {
+    if (isDevelopment()) {
       return (
         <AdminMissingComponentPlaceholder
           slot="fields"

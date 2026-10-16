@@ -11,6 +11,7 @@ import {
   warnMissingComponent,
 } from "../../../../components/admin-component-slot"
 import { useDyrected } from "../../../../providers/dyrected-context"
+import { isDevelopment } from "../../../../lib/env"
 import { ViewControllerContext } from "../../../../providers/view-controller"
 import { BulkActionBar } from "../bulk-action-bar"
 import { useLayoutActions } from "../use-layout-actions"
@@ -93,7 +94,7 @@ export function CustomLayout({
         <div className="dy-space-y-1">
           <p className="dy-text-sm dy-font-medium">This view's layout is unavailable.</p>
           <p className="dy-text-xs dy-text-muted-foreground">
-            {import.meta.env.DEV ? (
+            {isDevelopment() ? (
               <>
                 No component is registered as <code className="dy-font-mono">{componentKey || "(none)"}</code> in{" "}
                 <code className="dy-font-mono">viewLayouts</code>.

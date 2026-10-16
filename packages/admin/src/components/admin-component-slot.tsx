@@ -1,6 +1,7 @@
 import { Component, Suspense, createElement, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 
 import { Skeleton } from "./ui/skeleton";
+import { isDevelopment } from "../lib/env";
 
 const warnedMissingComponents = new Set<string>();
 
@@ -10,7 +11,7 @@ export function warnMissingComponent(slot: string, componentKey: string) {
 
   warnedMissingComponents.add(warningKey);
 
-  if (import.meta.env.DEV) {
+  if (isDevelopment()) {
     console.warn(`[Dyrected Admin] Component "${componentKey}" configured for "${slot}" is not registered.`);
   }
 }
@@ -106,7 +107,7 @@ export function AdminMissingComponentPlaceholder({
   slot: string;
   componentKey: string;
 }) {
-  if (!import.meta.env.DEV) {
+  if (!isDevelopment()) {
     return null;
   }
 
