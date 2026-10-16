@@ -21,7 +21,15 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return proto === Object.prototype || proto === null;
 };
 
-export function extractFunctionRefs<T>(config: T): ExtractedConfig<T> {
+export interface ExtractOptions {
+  /**
+   * Top-level config keys to leave out entirely. A hosting platform supplies its own database, storage and
+   * mailer, so a bundler omits `db`, `storage` and similar keys instead of shipping them.
+   */
+  omit?: readonly string[];
+}
+
+export function extractFunctionRefs<T>(config: T, options: ExtractOptions = {}): ExtractedConfig<T> {
   const functions = new Map<string, (...args: any[]) => unknown>();
   const seen = new WeakSet<object>();
 
@@ -39,6 +47,7 @@ export function extractFunctionRefs<T>(config: T): ExtractedConfig<T> {
       seen.add(value);
       const out: Record<string, unknown> = {};
       for (const [key, child] of Object.entries(value)) {
+        if (path === "" && options.omit?.includes(key)) continue;
         const next = walk(child, path ? `${path}.${key}` : key);
         if (next !== undefined) out[key] = next;
       }
