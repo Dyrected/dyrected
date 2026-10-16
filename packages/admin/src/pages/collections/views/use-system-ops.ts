@@ -317,8 +317,10 @@ export function useSystemOps({ slug, schema, schemas, data }: UseSystemOpsOption
       confirmDelete,
       isDeleting,
       isOperationRunning,
+      deletingIds,
+      duplicatingId,
     }),
-    [runSystemAction, exportAll, deleteDialog, confirmationValue, closeDeleteDialog, confirmDelete, isDeleting, isOperationRunning],
+    [runSystemAction, exportAll, deleteDialog, confirmationValue, closeDeleteDialog, confirmDelete, isDeleting, isOperationRunning, deletingIds, duplicatingId],
   )
 }
 

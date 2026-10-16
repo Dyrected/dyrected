@@ -1,8 +1,11 @@
+import { useEffect } from "react"
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { CustomLayout, type CustomLayoutProps } from "../custom-layout"
+import { useViewController } from "../../use-view-controller"
+import { ViewControllerContext } from "../../../../../providers/view-controller"
 import { useCollectionView, useViewActions } from "../../../../../hooks/use-collection-view"
 import type { SerializedView } from "../../types"
 
@@ -25,8 +28,28 @@ function makeClient(overrides: { find?: any; update?: any } = {}) {
   return { client: { collection: () => ({ find, update }) }, find, update }
 }
 
+/** Mounts the layout under the real per-view controller, as the page does. */
+function Harness(props: CustomLayoutProps & { permissions: { canCreate: boolean; canUpdate: boolean; canDelete: boolean } }) {
+  const { permissions, ...layoutProps } = props
+  const controller = useViewController({
+    slug: layoutProps.slug,
+    schema: layoutProps.schema,
+    view: layoutProps.view,
+    actions: layoutProps.actions,
+    permissions,
+    hasDetail: true,
+    runningKeys: [],
+    runAction: layoutProps.onRunAction,
+  })
+  return (
+    <ViewControllerContext.Provider value={controller}>
+      <CustomLayout {...layoutProps} />
+    </ViewControllerContext.Provider>
+  )
+}
+
 function renderLayout(
-  props: Partial<CustomLayoutProps> & { view?: Partial<SerializedView> },
+  props: Omit<Partial<CustomLayoutProps>, "view"> & { view?: Partial<SerializedView> },
   components: Record<string, any>,
   client: unknown,
 ) {
@@ -43,7 +66,8 @@ function renderLayout(
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <CustomLayout
+        <Harness
+          permissions={{ canCreate: true, canUpdate: true, canDelete: false }}
           slug="guests"
           schema={{
             slug: "guests",
@@ -54,9 +78,6 @@ function renderLayout(
           }}
           schemas={{}}
           actions={[]}
-          permissions={{ canCreate: true, canUpdate: true, canDelete: false }}
-          hasDetail
-          runningKey={null}
           onRunAction={vi.fn().mockResolvedValue(true)}
           isRunningAction={() => false}
           renderTableFallback={() => <div data-testid="table-fallback" />}
@@ -109,7 +130,9 @@ describe("CustomLayout", () => {
     let move: (() => Promise<unknown>) | undefined
     function Seating() {
       const { documents, updateDocument } = useCollectionView()
-      move = () => updateDocument("1", { table: "Z" }).catch(() => undefined)
+      useEffect(() => {
+        move = () => updateDocument("1", { table: "Z" }).catch(() => undefined)
+      }, [updateDocument])
       return <div data-testid="tables">{documents.map((d) => d.table).join(",")}</div>
     }
 

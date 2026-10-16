@@ -9,6 +9,8 @@ import {
 
 import { useSearchParams } from "react-router-dom"
 import { Checkbox } from "../../../../components/ui/checkbox"
+import { usePublishViewData } from "../../../../hooks/use-publish-view-data"
+import type { ViewDataHandlers, ViewDataSlice } from "../../../../providers/view-controller"
 import { DataTable } from "./data-table"
 import { DataTableToolbar } from "./data-table-toolbar"
 import { DataTableViewOptions } from "./data-table-view-options"
@@ -19,12 +21,13 @@ import { BulkActionBar } from "../bulk-action-bar"
 import { useColumnPreferences } from "../use-column-preferences"
 import { ExportMenu } from "../view-io-actions"
 import { SkeletonTable } from "../view-skeletons"
+import { useLayoutActions } from "../use-layout-actions"
 import { loadToolbarState, persistToolbarState } from "../toolbar-persistence"
 import { resolveViewSort } from "../resolve-view-filter"
 import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import { useViewData } from "../use-view-data"
 import { getToolbarStateKey, getLegacyToolbarStateKey } from "../view-preference-keys"
-import type { SerializedAction, SerializedView } from "../types"
+import type { SerializedView } from "../types"
 
 export interface TableLayoutProps {
   slug: string
@@ -38,11 +41,6 @@ export interface TableLayoutProps {
   resolvePreview?: (doc: Record<string, any>) => string | null
   /** Whether the collection exposes a read-only detail page. */
   hasDetail?: boolean
-  /** Resolved + ordered actions (customs and built-ins) for this view. */
-  actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
-  /** Returns true while an action × selection is executing (drives loading states). */
-  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 /**
@@ -58,10 +56,8 @@ export function TableLayout({
   schemas,
   resolvePreview,
   hasDetail = true,
-  actions,
-  onRunAction,
-  isRunningAction,
 }: TableLayoutProps) {
+  const { actions, onRunAction, isRunningAction } = useLayoutActions()
   const toolbarStateKey = getToolbarStateKey(slug, view.slug)
   const legacyToolbarStateKey = getLegacyToolbarStateKey(slug, view.slug)
   const storedState = React.useMemo(
@@ -363,6 +359,38 @@ export function TableLayout({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
+
+  const publishedDocs = React.useMemo(
+    () => (isGrouped ? groupStates.flatMap((group) => group.docs) : serverDocs),
+    [isGrouped, groupStates, serverDocs],
+  )
+  const dataSlice = React.useMemo<ViewDataSlice>(
+    () => ({
+      documents: publishedDocs,
+      total: isGrouped ? groupStates.reduce((sum, group) => sum + group.total, 0) : total,
+      isLoading: isGrouped ? isGroupPending : isPending,
+      isFetching: isGrouped ? isGroupFetching : isFetching,
+      isTruncated: false,
+      pagination: {
+        page: pagination.pageIndex + 1,
+        pageSize: pagination.pageSize,
+        totalPages: isGrouped ? 1 : totalPages,
+      },
+      sort: sorting[0] ? { field: sorting[0].id, direction: sorting[0].desc ? "desc" : "asc" } : view.sort,
+      where: serverWhere,
+    }),
+    [publishedDocs, isGrouped, groupStates, total, isGroupPending, isPending, isGroupFetching, isFetching, pagination, totalPages, sorting, view.sort, serverWhere],
+  )
+  const dataHandlers = React.useMemo<ViewDataHandlers>(
+    () => ({
+      setPage: (next) =>
+        setPagination((prev) => (prev.pageIndex === next - 1 ? prev : { ...prev, pageIndex: Math.max(0, next - 1) })),
+      setSort: (next) =>
+        handleSortingChange(next ? [{ id: next.field, desc: next.direction === "desc" }] : []),
+    }),
+    [handleSortingChange],
+  )
+  usePublishViewData(dataSlice, dataHandlers)
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id as keyof typeof rowSelection])
 

@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useState, type ReactNode } from "react"
+import { Suspense, useCallback, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
 import { useSearchParams } from "react-router-dom"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CUSTOM_VIEW_FETCH_ALL_LIMIT } from "@dyrected/core"
@@ -16,7 +16,7 @@ import { BulkActionBar } from "../bulk-action-bar"
 import type { SerializedAction, SerializedView } from "../types"
 import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
-import { useCustomViewSession } from "./use-custom-view-session"
+import { useCustomViewData } from "./use-custom-view-data"
 
 export interface CustomLayoutProps {
   slug: string
@@ -24,9 +24,6 @@ export interface CustomLayoutProps {
   schemas: unknown
   view: SerializedView
   actions: SerializedAction[]
-  permissions: { canCreate: boolean; canUpdate: boolean; canDelete: boolean }
-  hasDetail: boolean
-  runningKey: string | null
   onRunAction: (action: SerializedAction, docs: ViewDocument[], input?: Record<string, unknown>) => Promise<boolean>
   isRunningAction: (action: SerializedAction, ids: string[]) => boolean
   /** Renders the built-in table, used when the layout's component is not registered. */
@@ -46,9 +43,6 @@ export function CustomLayout({
   schemas,
   view,
   actions,
-  permissions,
-  hasDetail,
-  runningKey,
   onRunAction,
   isRunningAction,
   renderTableFallback,
@@ -80,17 +74,10 @@ export function CustomLayout({
     onFilterChange: resetPage,
   })
 
-  const { controller, state } = useCustomViewSession({
-    slug,
-    schema,
-    view,
-    toolbar,
-    actions,
-    permissions,
-    hasDetail,
-    runningKey,
-    runAction: onRunAction,
-  })
+  const controller = useContext(ViewControllerContext)
+  if (!controller) throw new Error("CustomLayout must render inside an operational view.")
+  useCustomViewData({ slug, view, toolbar })
+  const state = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState)
 
   const componentKey = view.component ?? ""
   const LayoutComponent = components?.viewLayouts?.[componentKey]
@@ -131,7 +118,7 @@ export function CustomLayout({
   const showPagination = !view.data?.fetchAll && state.pagination.totalPages > 1
 
   return (
-    <ViewControllerContext.Provider value={controller}>
+    <>
       <div className="dy-flex dy-flex-col dy-gap-4">
         <ViewFilterToolbar
           schema={schema}
@@ -209,6 +196,6 @@ export function CustomLayout({
         }
         onClearSelection={() => controller.handlers.setSelection([])}
       />
-    </ViewControllerContext.Provider>
+    </>
   )
 }

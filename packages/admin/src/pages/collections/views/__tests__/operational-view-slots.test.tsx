@@ -41,6 +41,8 @@ vi.mock("../use-system-ops", () => ({
     confirmationValue: "",
     setConfirmationValue: vi.fn(),
     isDeleting: false,
+    deletingIds: [],
+    duplicatingId: null,
     closeDeleteDialog: vi.fn(),
     confirmDelete: vi.fn(),
   }),

@@ -15,6 +15,8 @@ import { Button } from "../../../../components/ui/button"
 import { useDyrected } from "../../../../providers/dyrected-context"
 import { normalizeOptions } from "../build-view-columns"
 import { evaluateAccess } from "../system-actions"
+import { usePublishViewData } from "../../../../hooks/use-publish-view-data"
+import type { ViewDataHandlers, ViewDataSlice } from "../../../../providers/view-controller"
 import { useColumnPreferences } from "../use-column-preferences"
 import { DataTableToolbar } from "../table/data-table-toolbar"
 import { DataTablePagination } from "../table/data-table-pagination"
@@ -25,7 +27,7 @@ import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
 import { useTableGroups } from "../table/use-table-groups"
 import { GroupedSpreadsheetView } from "./grouped-spreadsheet-view"
-import type { SerializedAction, SerializedView } from "../types"
+import type { SerializedView } from "../types"
 import { DataGrid } from "./data-grid"
 import { SkeletonSpreadsheet } from "./../view-skeletons"
 import type { CellVariantMeta, DataGridTableMeta } from "./data-grid-types"
@@ -42,10 +44,6 @@ export interface SpreadsheetLayoutProps {
   schemas: unknown
   resolvePreview?: (doc: Record<string, any>) => string | null
   hasDetail?: boolean
-  actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
-  /** Returns true while an action × selection is executing (drives loading states). */
-  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 /** Maps a Dyrected field to the grid editor variant it can support inline. */
@@ -432,6 +430,28 @@ export function SpreadsheetLayout({
     }
     return serverDocs.filter((doc) => !String(doc.id ?? "").startsWith("__new__"))
   }, [groupBy, groupStates, serverDocs])
+
+  const dataSlice = React.useMemo<ViewDataSlice>(
+    () => ({
+      documents: exportableDocs,
+      total,
+      isLoading: groupBy ? isGroupPending : isPending,
+      isFetching: false,
+      isTruncated: false,
+      pagination: { page: pagination.pageIndex + 1, pageSize: pagination.pageSize, totalPages },
+      sort: sorting[0] ? { field: sorting[0].id, direction: sorting[0].desc ? "desc" : "asc" } : view.sort,
+      where: serverWhere,
+    }),
+    [exportableDocs, total, groupBy, isGroupPending, isPending, pagination, totalPages, sorting, view.sort, serverWhere],
+  )
+  const dataHandlers = React.useMemo<ViewDataHandlers>(
+    () => ({
+      setPage: (next) =>
+        setPagination((prev) => (prev.pageIndex === next - 1 ? prev : { ...prev, pageIndex: Math.max(0, next - 1) })),
+    }),
+    [],
+  )
+  usePublishViewData(dataSlice, dataHandlers)
 
   const invalidate = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })

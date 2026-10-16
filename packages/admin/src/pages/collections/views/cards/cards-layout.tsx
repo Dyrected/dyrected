@@ -3,9 +3,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { useSearchParams } from "react-router-dom"
 import { Button } from "../../../../components/ui/button"
+import { usePublishViewData } from "../../../../hooks/use-publish-view-data"
+import type { ViewDataHandlers, ViewDataSlice } from "../../../../providers/view-controller"
 import { CardGridItem } from "./card-grid-item"
 import { GroupedCardsView } from "./grouped-cards-view"
 import { SkeletonCardGrid } from "../view-skeletons"
+import { useLayoutActions } from "../use-layout-actions"
 import { getGroupableFields, useTableGroups } from "../table/use-table-groups"
 import { ViewOptionsPanel } from "../view-options-panel"
 import { resolveViewSort } from "../resolve-view-filter"
@@ -13,7 +16,7 @@ import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
 import { useColumnPreferences } from "../use-column-preferences"
 import { useViewData } from "../use-view-data"
-import type { SerializedAction, SerializedView } from "../types"
+import type { SerializedView } from "../types"
 
 export interface CardsLayoutProps {
   slug: string
@@ -23,8 +26,6 @@ export interface CardsLayoutProps {
   isLoading?: boolean
   client: unknown
   schemas: unknown
-  actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
 }
 
 /**
@@ -38,9 +39,8 @@ export function CardsLayout({
   isLoading: isParentLoading,
   client,
   schemas,
-  actions,
-  onRunAction,
 }: CardsLayoutProps) {
+  const { actions, onRunAction } = useLayoutActions()
   const [searchParams, setSearchParams] = useSearchParams()
   const getInitialGroupBy = (): string | undefined => {
     const urlGroupBy = searchParams.get("groupBy")
@@ -177,6 +177,26 @@ export function CardsLayout({
     search: globalFilter,
     sort: resolveViewSort(view.sort),
   })
+
+  const publishedDocs = React.useMemo(
+    () => (isGrouped ? groupStates.flatMap((group) => group.docs) : docs),
+    [isGrouped, groupStates, docs],
+  )
+  const dataSlice = React.useMemo<ViewDataSlice>(
+    () => ({
+      documents: publishedDocs,
+      total: isGrouped ? groupStates.reduce((sum, group) => sum + group.total, 0) : total,
+      isLoading: isGrouped ? isGroupPending : isPending,
+      isFetching: isGrouped ? isGroupFetching : isFetching,
+      isTruncated: false,
+      pagination: { page, pageSize, totalPages: isGrouped ? 1 : totalPages },
+      sort: view.sort,
+      where: serverWhere,
+    }),
+    [publishedDocs, isGrouped, groupStates, total, isGroupPending, isPending, isGroupFetching, isFetching, page, pageSize, totalPages, view.sort, serverWhere],
+  )
+  const dataHandlers = React.useMemo<ViewDataHandlers>(() => ({ setPage }), [])
+  usePublishViewData(dataSlice, dataHandlers)
 
   const isInitialLoad =
     !docs.length &&

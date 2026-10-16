@@ -72,7 +72,14 @@ export interface CollectionViewApi {
    * validation run). The change shows immediately and rolls back, with an
    * error toast, if the server rejects it.
    */
-  updateDocument: (id: string, patch: Record<string, unknown>) => Promise<ViewDocument>;
+  updateDocument: (
+    id: string,
+    patch: Record<string, unknown>,
+    options?: {
+      /** Skip the error toast when you report failures yourself. */
+      silent?: boolean;
+    },
+  ) => Promise<ViewDocument>;
 
   /** Opens a document in the detail view, the edit form or the side drawer. */
   open: (id: string, mode?: ViewOpenMode) => void;

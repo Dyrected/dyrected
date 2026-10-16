@@ -12,6 +12,9 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { toast } from "sonner"
 
 import { useDyrected } from "../../../../providers/dyrected-context"
+import { usePublishViewData } from "../../../../hooks/use-publish-view-data"
+import { useCollectionView } from "../../../../hooks/use-collection-view"
+import type { ViewDataSlice } from "../../../../providers/view-controller"
 import { useQueryClient } from "@tanstack/react-query"
 import { KanbanCard } from "./kanban-card"
 import { KanbanColumn } from "./kanban-column"
@@ -25,8 +28,9 @@ import { ViewOptionsPanel } from "../view-options-panel"
 import { useViewToolbarState } from "../toolbar/use-view-toolbar-state"
 import { ViewFilterToolbar } from "../toolbar/view-filter-toolbar"
 import { useColumnPreferences } from "../use-column-preferences"
-import type { SerializedAction, SerializedView } from "../types"
+import type { SerializedView } from "../types"
 import { SkeletonKanbanBoard } from "../view-skeletons"
+import { useLayoutActions } from "../use-layout-actions"
 
 export interface KanbanGroup {
   /** Raw group value written back to the `groupBy` field. */
@@ -53,10 +57,6 @@ export interface KanbanLayoutProps {
   isLoading?: boolean
   client: unknown
   schemas: unknown
-  actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
-  /** Returns true while an action × selection is executing (drives loading states). */
-  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 const COLUMN_TONES = [
@@ -87,10 +87,8 @@ export function KanbanLayout({
   isLoading,
   client,
   schemas,
-  actions,
-  onRunAction,
-  isRunningAction,
 }: KanbanLayoutProps) {
+  const { actions, onRunAction, isRunningAction } = useLayoutActions()
   const { client: dyrected } = useDyrected()
   const queryClient = useQueryClient()
   const groupField = view.groupBy ?? ""
@@ -158,6 +156,8 @@ export function KanbanLayout({
   })
   const isGrouped = grouped.mode === "grouped"
 
+  const { updateDocument } = useCollectionView()
+
   const docs = React.useMemo(() => {
     if (isGrouped) {
       return grouped.columns.flatMap((column) =>
@@ -166,6 +166,23 @@ export function KanbanLayout({
     }
     return grouped.fallbackDocs
   }, [isGrouped, grouped.columns, grouped.fallbackDocs])
+
+  const dataSlice = React.useMemo<ViewDataSlice>(
+    () => ({
+      documents: isGrouped ? grouped.columns.flatMap((column) => column.docs) : grouped.fallbackDocs,
+      total: isGrouped
+        ? grouped.columns.reduce((sum, column) => sum + column.total, 0)
+        : grouped.fallbackDocs.length,
+      isLoading: isGrouped ? grouped.columns.some((column) => column.isPending) : grouped.fallbackIsPending,
+      isFetching: isGrouped ? grouped.columns.some((column) => column.isFetchingMore) : false,
+      isTruncated: false,
+      pagination: { page: 1, pageSize: 0, totalPages: 1 },
+      sort: view.sort,
+      where: serverWhere,
+    }),
+    [isGrouped, grouped.columns, grouped.fallbackDocs, grouped.fallbackIsPending, view.sort, serverWhere],
+  )
+  usePublishViewData(dataSlice)
 
   /* --------------------------------------------------------- board state */
 
@@ -241,14 +258,15 @@ export function KanbanLayout({
 
   const persistMove = React.useCallback(
     async (docId: string, nextValue: string): Promise<void> => {
-      if (!dyrected) throw new Error("Dyrected client unavailable")
-      await (dyrected as any).collection(slug).update(docId, {
-        [groupField!]: coerceGroupValue(nextValue, groupField, schema),
-      })
-      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
-      await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
+      // The controller applies the change optimistically on every layout and
+      // refreshes the view afterwards; this layout reports failures itself.
+      await updateDocument(
+        docId,
+        { [groupField!]: coerceGroupValue(nextValue, groupField, schema) },
+        { silent: true },
+      )
     },
-    [dyrected, slug, groupField, schema, queryClient],
+    [updateDocument, groupField, schema],
   )
 
   const handleDragEnd = React.useCallback(

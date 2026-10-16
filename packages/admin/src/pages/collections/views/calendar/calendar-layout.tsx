@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { addMinutes, endOfMonth, parseISO, startOfMonth, subMonths, addMonths } from "date-fns"
 import { toast } from "sonner"
 
@@ -17,13 +16,16 @@ import { EventCalendarContent } from "../../../../components/reui/event-calendar
 import { EventCalendarNav } from "../../../../components/reui/event-calendar/event-calendar-nav"
 import { Card, CardContent } from "../../../../components/ui/card"
 import { useSearchParams } from "react-router-dom"
-import { useDyrected } from "../../../../providers/dyrected-context"
+import { usePublishViewData } from "../../../../hooks/use-publish-view-data"
+import { useCollectionView } from "../../../../hooks/use-collection-view"
+import type { ViewDataSlice } from "../../../../providers/view-controller"
 import { resolveViewFilter, resolveViewSort } from "../resolve-view-filter"
 import { buildServerWhere } from "../build-server-where"
 import { useViewData } from "../use-view-data"
 import { EventDetailSheet } from "./event-detail-sheet"
 import { SkeletonCalendar } from "../view-skeletons"
-import type { SerializedAction, SerializedView } from "../types"
+import { useLayoutActions } from "../use-layout-actions"
+import type { SerializedView } from "../types"
 
 interface CalendarLayoutProps {
   slug: string
@@ -33,10 +35,6 @@ interface CalendarLayoutProps {
   isLoading?: boolean
   client: unknown
   schemas: unknown
-  actions: SerializedAction[]
-  onRunAction: (action: SerializedAction, ids: string[], targetContext?: { doc?: Record<string, any>; docs?: Record<string, any>[] }) => void
-  /** Returns true while an action × selection is executing (drives loading states). */
-  isRunningAction?: (action: SerializedAction, ids: string[]) => boolean
 }
 
 export type { CalendarLayoutProps }
@@ -133,12 +131,9 @@ export function CalendarLayout({
   isLoading: isParentLoading,
   client,
   schemas,
-  actions,
-  onRunAction,
-  isRunningAction,
 }: CalendarLayoutProps) {
-  const { client: dyrected } = useDyrected()
-  const queryClient = useQueryClient()
+  const { actions, onRunAction, isRunningAction } = useLayoutActions()
+  const { updateDocument } = useCollectionView()
   const apiRef = useRef<EventCalendarApi | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<Record<string, any> | null>(null)
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
@@ -212,6 +207,21 @@ export function CalendarLayout({
     enabled: Boolean(dateField),
   })
 
+  const dataSlice = useMemo<ViewDataSlice>(
+    () => ({
+      documents: docs ?? [],
+      total: docs?.length ?? 0,
+      isLoading: isPending,
+      isFetching: false,
+      isTruncated: false,
+      pagination: { page: 1, pageSize: 100, totalPages: 1 },
+      sort: view.sort,
+      where: serverWhere,
+    }),
+    [docs, isPending, view.sort, serverWhere],
+  )
+  usePublishViewData(dataSlice)
+
   const resources = useMemo(
     () => (resourceField ? deriveResources(resourceField, schema, docs ?? []) : []),
     [resourceField, schema, docs],
@@ -242,7 +252,6 @@ export function CalendarLayout({
   const persistMove = async (update: EventCalendarProposedUpdate) => {
     const id = String(update.event.id)
     try {
-      if (!dyrected) throw new Error("Dyrected client unavailable")
       const patch: Record<string, unknown> = { [dateField!]: update.start.toISOString() }
       if (view.endDateField) patch[view.endDateField] = update.end.toISOString()
       if (resourceField && update.resourceId !== undefined) {
@@ -251,9 +260,9 @@ export function CalendarLayout({
           patch[resourceField] = coerceResourceValue(update.resourceId, resourceField, schema)
         }
       }
-      await dyrected.collection(slug).update(id, patch)
+      // The controller shows the change right away and refreshes the view after.
+      await updateDocument(id, patch, { silent: true })
       toast.success("Rescheduled")
-      await queryClient.invalidateQueries({ queryKey: ["operational-view", slug] })
     } catch (error: any) {
       toast.error("Reschedule failed", {
         description: error?.message ?? "The change was reverted.",

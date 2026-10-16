@@ -57,15 +57,34 @@ export interface ViewControllerHandlers {
   /** Sets a layout-owned `where` that is AND-merged with the toolbar's filters. */
   setFilters: (where: Record<string, any> | undefined) => void;
   setSelection: (ids: string[]) => void;
-  updateDocument: (id: string, patch: Record<string, unknown>) => Promise<ViewDocument>;
+  updateDocument: (
+    id: string,
+    patch: Record<string, unknown>,
+    options?: { silent?: boolean },
+  ) => Promise<ViewDocument>;
   open: (id: string, mode?: ViewOpenMode) => void;
   runAction: (name: string, docs?: ViewDocument[], input?: Record<string, unknown>) => Promise<boolean>;
 }
+
+/** The slice of {@link CollectionViewState} a layout publishes about the data it loaded. */
+export type ViewDataSlice = Pick<
+  CollectionViewState,
+  "documents" | "total" | "isLoading" | "isFetching" | "error" | "isTruncated" | "pagination" | "sort"
+> & { where?: Record<string, any> };
+
+/** Operations only the data owner can implement. Omitted ones fall back to the host's defaults. */
+export type ViewDataHandlers = Partial<
+  Pick<ViewControllerHandlers, "refetch" | "setPage" | "setSort" | "setFilters">
+>;
 
 /**
  * Subscribable, per-view controller. Framework-neutral on purpose: the React
  * hook reads it with `useSyncExternalStore` and the Vue bridge mirrors it into
  * a `shallowRef`, the same shape as `DyrectedFormController`.
+ *
+ * The host page owns it and provides it to every layout, built-in or custom.
+ * A layout that loads its own data publishes it with `setData`, so slot
+ * components and hooks see the same documents as the layout on screen.
  */
 export interface ViewController {
   getState: () => CollectionViewState;
@@ -74,27 +93,98 @@ export interface ViewController {
   handlers: ViewControllerHandlers;
   /** Host-only: publish a new snapshot and the handlers that go with it. */
   publish: (state: CollectionViewState, handlers: ViewControllerHandlers) => void;
+  /** Layout-only: publish the data this owner loaded. The latest owner wins. */
+  setData: (owner: symbol, slice: ViewDataSlice, handlers?: ViewDataHandlers) => void;
+  /** Layout-only: stop publishing, if `owner` is still the current data owner. */
+  clearData: (owner: symbol) => void;
+  /**
+   * Host-only: show `patch` on a document until the returned release function
+   * runs. Powers optimistic updates for every layout without each one
+   * patching its own cache.
+   */
+  addPatch: (id: string, patch: Record<string, unknown>) => () => void;
+}
+
+/**
+ * Layouts rebuild their slice on render, and several data hooks hand back a
+ * fresh `[]` while loading. Comparing by value keeps that from notifying
+ * subscribers (and re-rendering the layout that publishes) in a loop.
+ */
+function isSameSlice(a: ViewDataSlice, b: ViewDataSlice): boolean {
+  if (a === b) return true;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof ViewDataSlice>;
+  for (const key of keys) {
+    const left = a[key] as unknown;
+    const right = b[key] as unknown;
+    if (Object.is(left, right)) continue;
+    if (Array.isArray(left) && Array.isArray(right) && left.length === 0 && right.length === 0) continue;
+    if (
+      key === "pagination" &&
+      left && right &&
+      JSON.stringify(left) === JSON.stringify(right)
+    ) continue;
+    return false;
+  }
+  return true;
 }
 
 export function createViewController(initial: CollectionViewState, initialHandlers: ViewControllerHandlers): ViewController {
-  let state = initial;
-  let latest = initialHandlers;
+  let base = initial;
+  let baseHandlers = initialHandlers;
+  let data: { owner: symbol; slice: ViewDataSlice; handlers?: ViewDataHandlers } | null = null;
+  const patches = new Map<symbol, { id: string; patch: Record<string, unknown> }>();
+
+  let merged: CollectionViewState = initial;
+  let mergedFrom: { base: CollectionViewState; data: typeof data; patchCount: number; patchVersion: number } | null = null;
+  let patchVersion = 0;
   const listeners = new Set<() => void>();
 
+  const compute = (): CollectionViewState => {
+    if (
+      mergedFrom &&
+      mergedFrom.base === base &&
+      mergedFrom.data === data &&
+      mergedFrom.patchVersion === patchVersion
+    ) {
+      return merged;
+    }
+    mergedFrom = { base, data, patchCount: patches.size, patchVersion };
+    if (!data && patches.size === 0) {
+      merged = base;
+      return merged;
+    }
+    const slice = data?.slice;
+    let documents = slice ? slice.documents : base.documents;
+    if (patches.size) {
+      const byId = new Map<string, Record<string, unknown>>();
+      for (const { id, patch } of patches.values()) byId.set(id, { ...byId.get(id), ...patch });
+      documents = documents.map((doc) => {
+        const patch = byId.get(String(doc.id));
+        return patch ? { ...doc, ...patch } : doc;
+      });
+    }
+    merged = { ...base, ...(slice ?? {}), documents, where: slice?.where ?? base.where };
+    return merged;
+  };
+
+  const emit = () => {
+    for (const listener of [...listeners]) listener();
+  };
+
   const handlers: ViewControllerHandlers = {
-    refetch: () => latest.refetch(),
-    setPage: (page) => latest.setPage(page),
-    setSort: (sort) => latest.setSort(sort),
-    setSearch: (query) => latest.setSearch(query),
-    setFilters: (where) => latest.setFilters(where),
-    setSelection: (ids) => latest.setSelection(ids),
-    updateDocument: (id, patch) => latest.updateDocument(id, patch),
-    open: (id, mode) => latest.open(id, mode),
-    runAction: (name, docs, input) => latest.runAction(name, docs, input),
+    refetch: () => (data?.handlers?.refetch ?? baseHandlers.refetch)(),
+    setPage: (page) => (data?.handlers?.setPage ?? baseHandlers.setPage)(page),
+    setSort: (sort) => (data?.handlers?.setSort ?? baseHandlers.setSort)(sort),
+    setSearch: (query) => baseHandlers.setSearch(query),
+    setFilters: (where) => (data?.handlers?.setFilters ?? baseHandlers.setFilters)(where),
+    setSelection: (ids) => baseHandlers.setSelection(ids),
+    updateDocument: (id, patch, options) => baseHandlers.updateDocument(id, patch, options),
+    open: (id, mode) => baseHandlers.open(id, mode),
+    runAction: (name, docs, input) => baseHandlers.runAction(name, docs, input),
   };
 
   return {
-    getState: () => state,
+    getState: compute,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
@@ -103,15 +193,36 @@ export function createViewController(initial: CollectionViewState, initialHandle
     },
     handlers,
     publish: (next, nextHandlers) => {
-      latest = nextHandlers;
-      if (next === state) return;
-      state = next;
-      for (const listener of [...listeners]) listener();
+      baseHandlers = nextHandlers;
+      if (next === base) return;
+      base = next;
+      emit();
+    },
+    setData: (owner, slice, sliceHandlers) => {
+      if (data && data.owner === owner && data.handlers === sliceHandlers && isSameSlice(data.slice, slice)) return;
+      data = { owner, slice, handlers: sliceHandlers };
+      emit();
+    },
+    clearData: (owner) => {
+      if (!data || data.owner !== owner) return;
+      data = null;
+      emit();
+    },
+    addPatch: (id, patch) => {
+      const key = Symbol("view-patch");
+      patches.set(key, { id, patch });
+      patchVersion++;
+      emit();
+      return () => {
+        if (!patches.delete(key)) return;
+        patchVersion++;
+        emit();
+      };
     },
   };
 }
 
 export const DYRECTED_VIEW_KEY = Symbol.for("dyrected.view");
 
-/** Provided by the operational view page when `layout === "custom"`. */
+/** Provided by the operational view page to every layout, built-in or custom. */
 export const ViewControllerContext = createContext<ViewController | null>(null);
