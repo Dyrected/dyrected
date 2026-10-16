@@ -27,6 +27,13 @@ Operational views can now render documents with your own component, while Dyrect
 - **Load everything when you need to.** Set `data.fetchAll` to load up to 1,000 documents. Past that, the user sees a notice that the list was truncated.
 - **Safe fallback.** If the component key is not registered, the view shows a message with a **Show as table** button instead of a blank page.
 
+**Built-in layouts and custom layouts now share one foundation**
+
+- **Filters everywhere.** Custom layouts get the same filter bar as the table: search, per-field filters and match all/any. Table, kanban, cards and custom layouts now use one implementation, so a filter means the same thing in each.
+- **Slots see the documents.** Components registered in `beforeViewContent`, `afterViewHeader` and the other view slots now receive the documents the active layout loaded, and can call `useCollectionView()`. `documents` was always an empty list before.
+- **Replace a built-in layout.** Register a component under a built-in layout's name, such as `viewLayouts.kanban`, and views with that layout render it in Dyrected's shell, with the same hooks as a custom layout.
+- **One place that describes layouts.** The navigation customizer, the view header icon and the page's dispatch read a single layout registry. `gantt` still renders as a table.
+
 **For plugin and integration authors**
 
 - `ViewLayout` gains `"custom"`, and `@dyrected/core` exports `CustomViewConfig`, `CustomViewDataConfig`, `defineCustomView` and `CUSTOM_VIEW_FETCH_ALL_LIMIT`. Views serialized to the admin now carry `component`, `options` and `data`.
@@ -36,5 +43,7 @@ Operational views can now render documents with your own component, while Dyrect
 **Upgrade notes**
 
 - No breaking changes. Existing layouts are untouched.
-- The hooks are marked experimental. Built-in layouts do not use them yet.
+- The hooks are marked experimental.
+- If a slot component checked `documents.length === 0` because the list was always empty, it will now see real data.
+- Built-in layouts no longer take `actions`, `onRunAction` and `isRunningAction` props. They read them from the view controller. Only code that rendered `TableLayout`, `KanbanLayout`, `CardsLayout` or `CalendarLayout` directly is affected, and none of them are public exports.
 - A custom view's `component` is required. `defineView` throws at config load if it is missing.

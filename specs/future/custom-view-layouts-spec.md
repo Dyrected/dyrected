@@ -1,7 +1,7 @@
 # Custom View Layouts Specification
 
 **Document Version:** 0.1.0 (Draft)
-**Status:** Phase 1 implemented (custom layouts and public API). Phase 2 (built-ins on the controller) and docs remain. See [Implementation Status](#12-implementation-status).
+**Status:** Phases 1 and 2 implemented (custom layouts, public API, built-ins on the controller). Docs remain. See [Implementation Status](#12-implementation-status).
 **Scope:** `@dyrected/core` (view types), `@dyrected/admin` (view engine), `@dyrected/react`, `@dyrected/vue`
 **Part of:** Custom Admin Surfaces (3 of 4). Depends on [Component Registry & Bridge](./custom-components-registry-spec.md).
 
@@ -225,9 +225,23 @@ This is a refactor, not a prerequisite. Phase 1 can ship custom layouts with bui
 | 5 | `run()` through the host confirm dialog and input form, `input` to skip the form | **Done** | `runCustomLayoutAction` in `operational-view-page.tsx` |
 | 8 | Unresolved key: placeholder with "Show as table" | **Done** | `custom-layout.tsx` |
 | 8 | Host skeleton until first load | **Done** | `custom-layout.tsx` |
-| 4 | Host toolbar: search, metric-card filters, pagination, bulk bar | **Done** | `custom-layout.tsx`. The faceted column-filter builder is table-only for now, so custom layouts get search and metric-card filters |
-| 7 | Built-in layouts on the controller, registered in `viewLayouts` | **Not started** | Phase 2. A refactor, not a prerequisite |
+| 4 | Host toolbar: search, faceted field filters, match logic, metric-card filters, pagination, bulk bar | **Done** | `toolbar/use-view-toolbar-state.ts` and `toolbar/view-filter-toolbar.tsx`, shared by table, kanban, cards and custom layouts |
+| 7 | One controller per view, provided to every layout and extension slot | **Done** | `use-view-controller.ts`; `ViewControllerContext` wraps the whole page |
+| 7 | Table, spreadsheet, kanban, cards and calendar publish their documents | **Done** | `usePublishViewData` in each layout. Slots and `useCollectionView()` see what the layout shows |
+| 7 | Built-ins run actions through the controller | **Done** | `useLayoutActions()`; no action props are threaded to layouts any more |
+| 7 | Kanban and calendar save through `updateDocument` | **Done** | Optimistic overlay on every layout; failures roll back |
+| 7 | Layout registry with capabilities | **Done** | `layout-registry.ts`; the page, the header icon and the navigation customizer read it |
+| 7 | App replaces a built-in layout by registering under its name | **Done** | `viewLayouts.kanban`, `viewLayouts.table`, … render in the host shell |
+| 7 | Gantt renderer | **Not started** | `gantt` is accepted and renders as a table, as before. The registry records this as `rendersAs: "table"` |
 | 9.6 | Docs and a "seating chart" recipe | **Not started** | Needs the `apps/docs` human-verified flow |
+
+### Phase 2 notes
+
+- **Data stays where it is loaded.** Table and spreadsheet keep their server-paginated TanStack tables, and kanban keeps one request per column. They publish what they loaded rather than being forced through a single flat query, so kanban's per-column totals and "load more" are unchanged. For kanban, `documents` is every loaded column flattened and `total` is the sum of the column totals.
+- **Selection is the layout's own for table and spreadsheet.** Their row selection is a TanStack concern, so `useCollectionView().selection` reflects it only for custom layouts.
+- **`setSort` and `setFilters` need a data owner that supports them.** Custom layouts do; the built-ins ignore them.
+- **`updateDocument` takes `{ silent: true }`** to skip the error toast when the caller reports failures itself. Kanban and calendar use it.
+- **Slots receive real documents.** `documents` and `isLoading` on slot props used to be a fixed empty list. They now carry the active layout's documents.
 
 ### Behaviour notes
 
