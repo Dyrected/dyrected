@@ -242,3 +242,21 @@ export { groupDocuments } from "../lib/group-documents";
 export type { DocumentGroup, GroupedDocuments } from "../lib/group-documents";
 export { defineCustomView } from "@dyrected/core";
 export type { CustomViewConfig, CustomViewDataConfig } from "@dyrected/core";
+
+// Custom Document Forms (Spec 2)
+export { useDocumentForm, buildDocumentFormApi } from "../hooks/use-document-form";
+export type {
+  DocumentFormApi,
+  SubmitOptions,
+  SubmitResult,
+  SubmitRedirect,
+} from "../hooks/use-document-form";
+export { DocumentContext, DYRECTED_DOCUMENT_KEY } from "../providers/document-context";
+export type { DocumentContextValue, FormDocument } from "../providers/document-context";
+export { DyrectedField, DyrectedFields, DyrectedDefaultForm } from "../components/forms/embedded-fields";
+export type {
+  DyrectedFieldProps,
+  DyrectedFieldsProps,
+  DyrectedDefaultFormProps,
+} from "../components/forms/embedded-fields";
+export type { FormShell } from "@dyrected/core";

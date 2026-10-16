@@ -15,7 +15,7 @@ export interface ReferencedComponentKeys {
   collectionList: Set<string>;
   /** Operational view slots (`collectionView` and per-view `components`). */
   collectionView: Set<string>;
-  /** Reserved for custom document forms (spec 2). Empty until config can reference them. */
+  /** `createForm`, `editForm` and `form` keys on collections, and `editForm`/`form` on globals. */
   forms: Set<string>;
   /** `component` of views with `layout: "custom"`. */
   viewLayouts: Set<string>;
@@ -29,6 +29,7 @@ type Loose = Record<string, any>;
 
 const DASHBOARD_SLOTS = ["beforeDashboard", "afterDashboard"] as const;
 const LIST_SLOTS = ["beforeList", "beforeListTable", "afterListTable", "afterList"] as const;
+const FORM_SLOTS = ["createForm", "editForm", "form"] as const;
 const VIEW_SLOTS = ["beforeViewHeader", "afterViewHeader", "beforeViewContent", "afterViewContent"] as const;
 
 function addKeys(target: Set<string>, value: unknown): void {
@@ -125,11 +126,13 @@ export function collectReferencedComponentKeys(schema: unknown): ReferencedCompo
     // List slots may also carry the view slots directly or nested under `collectionView`.
     addSlots(keys.collectionView, slots, VIEW_SLOTS);
     addSlots(keys.collectionView, slots?.collectionView, VIEW_SLOTS);
+    addSlots(keys.forms, slots, FORM_SLOTS);
   }
 
   for (const global of (root.globals ?? []) as Loose[]) {
     scanFields(global.fields, keys);
     scanDetail(global.detail, keys);
+    addSlots(keys.forms, global.admin?.components, FORM_SLOTS);
   }
 
   return keys;

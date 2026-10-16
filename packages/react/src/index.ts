@@ -34,6 +34,10 @@ export {
   useGroupedDocuments,
   defineCustomView,
   defineAdminComponents,
+  useDocumentForm,
+  DyrectedField,
+  DyrectedFields,
+  DyrectedDefaultForm,
 } from '@dyrected/admin/public';
 export type {
   AdminThemePreference,
@@ -67,6 +71,14 @@ export type {
   DocumentGroup,
   CustomViewConfig,
   CustomViewDataConfig,
+  DocumentFormApi,
+  SubmitOptions,
+  SubmitResult,
+  SubmitRedirect,
+  DyrectedFieldProps,
+  DyrectedFieldsProps,
+  DyrectedDefaultFormProps,
+  FormShell,
 } from '@dyrected/admin/public';
 
 

@@ -19,8 +19,43 @@ export interface CollectionViewComponentSlots {
   afterViewContent?: string[];
 }
 
+/**
+ * How much of the default edit screen's chrome surrounds a custom form.
+ *
+ * - `full` (default): header, status badge, default save bar, and the unsaved-changes guard.
+ * - `header`: header and the unsaved-changes guard. The form supplies its own actions.
+ * - `none`: nothing. The form owns the whole screen.
+ */
+export type FormShell = "full" | "header" | "none";
+
+/** The values `formShell` accepts. */
+export const FORM_SHELLS: readonly FormShell[] = ["full", "header", "none"];
+
+/**
+ * Registry keys of custom components that replace the body of a create or edit screen.
+ * Each key is resolved against `components.forms` in the host's admin registration.
+ */
+export interface DocumentFormComponentSlots {
+  /** Used when creating a record. Falls back to `form`, then the built-in form. */
+  createForm?: string;
+  /** Used when editing a record. Falls back to `form`, then the built-in form. */
+  editForm?: string;
+  /** Fallback for both create and edit. */
+  form?: string;
+  /** How much default chrome surrounds the custom form. Defaults to `full`. */
+  formShell?: FormShell;
+}
+
+/** Component keys a global can replace. A global is always edited, never created. */
+export type GlobalFormComponentSlots = Pick<DocumentFormComponentSlots, "editForm" | "form" | "formShell">;
+
 /** Ordered custom component keys rendered around a collection's list content. */
-export interface CollectionListComponentSlots {
+export interface CollectionListComponentSlots extends DocumentFormComponentSlots {
+  /**
+   * Set to `false` to keep the built-in form when this collection is created or edited
+   * in a drawer (inline relationship creation), even if `createForm` is set.
+   */
+  formInDrawer?: boolean;
   beforeList?: string[];
   beforeListTable?: string[];
   afterListTable?: string[];

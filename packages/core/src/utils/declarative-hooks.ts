@@ -1,5 +1,6 @@
 import jexl from "jexl";
-import type { Block, CollectionConfig, Field, GlobalConfig } from "../types/index.js";
+import type { Block, CollectionConfig, Field, FormShell, GlobalConfig } from "../types/index.js";
+import { FORM_SHELLS } from "../types/index.js";
 
 export type DeclarativeHookSurface =
   | "collection.beforeRead"
@@ -50,7 +51,7 @@ export interface DeclarativePreviewValidationIssue {
 
 export interface ConfigDiagnostic {
   severity: "error" | "warning";
-  source: "declarativeHook" | "declarativeAccess" | "adminCondition" | "previewUrl";
+  source: "declarativeHook" | "declarativeAccess" | "adminCondition" | "previewUrl" | "adminComponents";
   path: string;
   surface: string;
   message: string;
@@ -67,7 +68,7 @@ type DeclarativeValidationConfig = {
     Pick<CollectionConfig, "fields" | "hooks" | "access" | "admin"> & Partial<Pick<CollectionConfig, "slug">>
   >;
   globals?: Array<
-    Pick<GlobalConfig, "fields" | "hooks" | "access"> & Partial<Pick<GlobalConfig, "slug">>
+    Pick<GlobalConfig, "fields" | "hooks" | "access" | "admin"> & Partial<Pick<GlobalConfig, "slug">>
   >;
   accessPolicies?: Record<string, unknown>;
 };
@@ -693,6 +694,76 @@ export function collectPreviewUrlValidationIssues(config: DeclarativeValidationC
   return issues;
 }
 
+export interface AdminComponentsValidationIssue {
+  path: string;
+  surface: "collection.admin.components" | "global.admin.components";
+  message: string;
+  expression: string;
+}
+
+const FORM_COMPONENT_KEYS = ["createForm", "editForm", "form"] as const;
+const GLOBAL_FORM_COMPONENT_KEYS = ["editForm", "form"] as const;
+
+function collectFormComponentIssues(
+  components: unknown,
+  path: string,
+  surface: AdminComponentsValidationIssue["surface"],
+  keys: readonly string[],
+  issues: AdminComponentsValidationIssue[],
+) {
+  if (!isPlainObject(components)) return;
+
+  for (const key of keys) {
+    const value = components[key];
+    if (value === undefined) continue;
+    if (typeof value !== "string" || value.length === 0) {
+      issues.push({
+        path: `${path}.admin.components.${key}`,
+        surface,
+        message: `\`${key}\` must be the registry key of a component, such as "check_ins.scanForm".`,
+        expression: String(value),
+      });
+    }
+  }
+
+  const shell = components.formShell;
+  if (shell !== undefined && !FORM_SHELLS.includes(shell as FormShell)) {
+    issues.push({
+      path: `${path}.admin.components.formShell`,
+      surface,
+      message: `Unknown formShell "${String(shell)}". Use ${FORM_SHELLS.map((value) => `"${value}"`).join(", ")}.`,
+      expression: String(shell),
+    });
+  }
+}
+
+/** Flags malformed `createForm`, `editForm`, `form` and `formShell` settings. */
+export function collectAdminComponentsValidationIssues(config: DeclarativeValidationConfig) {
+  const issues: AdminComponentsValidationIssue[] = [];
+
+  config.collections.forEach((collection, index) => {
+    collectFormComponentIssues(
+      collection.admin?.components,
+      collectionSegment(collection, index),
+      "collection.admin.components",
+      FORM_COMPONENT_KEYS,
+      issues,
+    );
+  });
+
+  config.globals?.forEach((global, index) => {
+    collectFormComponentIssues(
+      global.admin?.components,
+      globalSegment(global, index),
+      "global.admin.components",
+      GLOBAL_FORM_COMPONENT_KEYS,
+      issues,
+    );
+  });
+
+  return issues;
+}
+
 export function assertValidAdminConditionsInConfig(config: DeclarativeValidationConfig, source = "config") {
   const diagnostics = collectAdminConditionValidationIssues(config).map((issue) => ({
     severity: "error" as const,
@@ -758,7 +829,16 @@ export function collectConfigDiagnostics(config: DeclarativeValidationConfig): C
     expression: issue.expression,
   }));
 
-  return [...hookIssues, ...accessIssues, ...adminConditionIssues, ...previewUrlIssues];
+  const adminComponentIssues = collectAdminComponentsValidationIssues(config).map((issue) => ({
+    severity: "error" as const,
+    source: "adminComponents" as const,
+    path: issue.path,
+    surface: issue.surface,
+    message: issue.message,
+    expression: issue.expression,
+  }));
+
+  return [...hookIssues, ...accessIssues, ...adminConditionIssues, ...previewUrlIssues, ...adminComponentIssues];
 }
 
 export function formatConfigDiagnostics(

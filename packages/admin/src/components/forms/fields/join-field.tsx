@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from "react"
+import { useState, useMemo, Suspense } from "react"
 import { useWatch } from "react-hook-form"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { useNavigate, useParams } from "react-router-dom"
@@ -48,10 +48,7 @@ import {
   invalidateParentAndJoinQueries,
 } from "../../../lib/drawer-save-pipeline"
 
-const FormEngine = lazy(async () => {
-  const module = await import("../form-engine")
-  return { default: module.FormEngine }
-})
+import { DrawerDocumentForm } from "../drawer-document-form"
 
 const PAGE_SIZE = 10
 
@@ -274,16 +271,15 @@ export function JoinField({
     }
   }
 
+  // Failures are rethrown: the pipeline has already shown a toast, and a custom
+  // form's `submit()` reports them as `{ ok: false }`.
   const handleDrawerSubmit = async (formData: Record<string, unknown>) => {
-    try {
-      await saveDrawerDocument(pipelineContext, formData, {
-        isCreating: isCreatingNew,
-        activeDocId,
-      })
-      handleCloseDrawer()
-    } catch {
-      // Error toast already displayed by pipeline
-    }
+    const { doc } = await saveDrawerDocument(pipelineContext, formData, {
+      isCreating: isCreatingNew,
+      activeDocId,
+    })
+    handleCloseDrawer()
+    return doc
   }
 
   const handleDeleteItem = async (id: string) => {
@@ -716,9 +712,9 @@ export function JoinField({
                   </div>
                 }
               >
-                <FormEngine
+                <DrawerDocumentForm
                   collection={targetCollection}
-                  fields={targetSchema.fields}
+                  schema={targetSchema}
                   defaultValues={drawerDefaultValues}
                   documentId={activeDocId || undefined}
                   onSubmit={handleDrawerSubmit}

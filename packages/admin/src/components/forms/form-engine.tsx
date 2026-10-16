@@ -27,6 +27,8 @@ import {
 import { createDyrectedFormController, joinFieldPath } from "../../controllers/form"
 import { DyrectedFormProvider } from "../../providers/dyrected-form-context"
 import { useDyrected } from "../../providers/dyrected-context"
+import { FormValidationError } from "./form-validation-error"
+import { FormEngineBodyProvider, type DefaultBodyOptions, type FormEngineBodyApi } from "./form-engine-body-context"
 
 export type { FieldSchema, BlockSchema }
 
@@ -68,11 +70,35 @@ interface FormEngineProps {
     onSave: (data: Record<string, unknown>) => Promise<void>
     onStatusChange?: (state: WorkflowAutosaveState) => void
   }
+  /**
+   * A custom body rendered in place of the default fields. It renders inside the
+   * form, so `useDyrectedForm`, `useField`, and `DyrectedField` work in it.
+   */
+  body?: React.ReactNode
+}
+
+export interface SubmitCurrentDraftOptions {
+  /** Values merged over the form's values for this call. Validated like any other value. */
+  overrides?: Record<string, unknown>
 }
 
 export interface FormEngineHandle {
-  submitCurrentDraft: () => Promise<unknown>
+  submitCurrentDraft: (options?: SubmitCurrentDraftOptions) => Promise<unknown>
   isDirty: () => boolean
+}
+
+interface ServerFieldError {
+  field?: string
+  message: string
+}
+
+function readServerFieldErrors(error: unknown): ServerFieldError[] {
+  const errors = (error as { errors?: unknown } | null)?.errors
+  if (!Array.isArray(errors)) return []
+  return errors.filter(
+    (entry): entry is ServerFieldError =>
+      !!entry && typeof entry === "object" && typeof (entry as ServerFieldError).message === "string",
+  )
 }
 
 function flattenFlagTree(
@@ -119,6 +145,7 @@ function FormEngineInner({
   documentId,
   defaultTabLabel,
   autosave,
+  body,
 }: FormEngineProps, ref: React.ForwardedRef<FormEngineHandle>) {
   const { user } = useDyrected()
   const { activePath, navigateToPath, getStableId } = useNestedEditor()
@@ -278,8 +305,21 @@ function FormEngineInner({
   }, [collection, defaultValues, emitAutosaveState, form])
 
   const handleFormSubmit = useCallback(async (data: Record<string, unknown>) => {
-    return persistFormData(data, onSubmit, { reportAutosaveStatus: autosaveEnabled })
-  }, [autosaveEnabled, onSubmit, persistFormData])
+    try {
+      return await persistFormData(data, onSubmit, { reportAutosaveStatus: autosaveEnabled })
+    } catch (error) {
+      // Surface the API's per-field validation errors on the matching inputs, so
+      // `useField(path).error` and the error summary show them without extra code.
+      for (const issue of readServerFieldErrors(error)) {
+        if (!issue.field) continue
+        form.setError(issue.field as Parameters<typeof form.setError>[0], {
+          type: "server",
+          message: issue.message,
+        })
+      }
+      throw error
+    }
+  }, [autosaveEnabled, form, onSubmit, persistFormData])
 
   const handleFormSubmitRef = React.useRef(handleFormSubmit)
   const emitAutosaveStateRef = React.useRef(emitAutosaveState)
@@ -291,7 +331,21 @@ function FormEngineInner({
     autosaveEnabledRef.current = autosaveEnabled
   }, [autosaveEnabled, emitAutosaveState, handleFormSubmit])
 
-  const submitCurrentDraft = useCallback(() => {
+  const submitCurrentDraft = useCallback((options?: SubmitCurrentDraftOptions) => {
+    // Overrides go through the form so the resolver validates them like any
+    // other value. If the submit does not go through, the originals come back.
+    const overrides = options?.overrides ?? {}
+    const previous: Record<string, unknown> = {}
+    for (const [path, value] of Object.entries(overrides)) {
+      previous[path] = (form.getValues as (name: string) => unknown)(path)
+      form.setValue(path as Parameters<typeof form.setValue>[0], value as never, { shouldDirty: true })
+    }
+    const restore = () => {
+      for (const [path, value] of Object.entries(previous)) {
+        form.setValue(path as Parameters<typeof form.setValue>[0], value as never)
+      }
+    }
+
     return new Promise<unknown>((resolve, reject) => {
       void form.handleSubmit(
         async (data) => {
@@ -299,14 +353,22 @@ function FormEngineInner({
             const result = await handleFormSubmitRef.current(data as Record<string, unknown>)
             resolve(result)
           } catch (error) {
+            restore()
             reject(error)
           }
         },
-        () => {
+        (errors) => {
           if (autosaveEnabledRef.current) {
             emitAutosaveStateRef.current("dirty")
           }
-          reject(new Error("Please resolve validation errors before continuing."))
+          restore()
+          reject(
+            new FormValidationError(
+              Object.fromEntries(
+                getFlatErrors(errors as Record<string, unknown>).map((error) => [error.path, error.message]),
+              ),
+            ),
+          )
         },
       )()
     })
@@ -649,11 +711,7 @@ function FormEngineInner({
       if (isDrilledIn && rootDrilledFieldName && f.name !== rootDrilledFieldName) return false
       return true
     })
-  const topFields = visibleFields.filter((f) => !f.admin?.tab)
-  const tabbedFields = visibleFields.filter((f) => !!f.admin?.tab)
   const showPasswordSection = !isDrilledIn && hasPassword && passwordChangeMode !== null
-
-  let fieldsContent: React.ReactNode
 
   const renderFieldColumn = (field: FieldSchema) => (
     <div
@@ -746,26 +804,37 @@ function FormEngineInner({
     </div>
   )
 
-  const tabOrder: string[] = []
-  const tabGroups = new Map<string, FieldSchema[]>()
-
-  // When the form uses tabs, fields without an `admin.tab` are collected into a
-  // leading tab named after the collection's singular label (e.g. "Page")
-  // instead of floating above the tab bar.
   const defaultTab = defaultTabLabel || (collection.charAt(0).toUpperCase() + collection.slice(1))
-  if (tabbedFields.length > 0 && (topFields.length > 0 || showPasswordSection)) {
-    tabGroups.set(defaultTab, [...topFields])
-    tabOrder.push(defaultTab)
+
+  /**
+   * Splits fields into tab groups. When the form uses tabs, fields without an
+   * `admin.tab` are collected into a leading tab named after the collection's
+   * singular label (e.g. "Page") instead of floating above the tab bar.
+   */
+  const groupIntoTabs = (list: FieldSchema[], includePassword: boolean) => {
+    const top = list.filter((f) => !f.admin?.tab)
+    const tabbed = list.filter((f) => !!f.admin?.tab)
+    const order: string[] = []
+    const groups = new Map<string, FieldSchema[]>()
+
+    if (tabbed.length > 0 && (top.length > 0 || (includePassword && showPasswordSection))) {
+      groups.set(defaultTab, [...top])
+      order.push(defaultTab)
+    }
+
+    for (const field of tabbed) {
+      const tab = field.admin!.tab!
+      if (!groups.has(tab)) {
+        groups.set(tab, [])
+        order.push(tab)
+      }
+      groups.get(tab)!.push(field)
+    }
+
+    return { tabbed, order, groups }
   }
 
-  for (const field of tabbedFields) {
-    const tab = field.admin!.tab!
-    if (!tabGroups.has(tab)) {
-      tabGroups.set(tab, [])
-      tabOrder.push(tab)
-    }
-    tabGroups.get(tab)!.push(field)
-  }
+  const { order: tabOrder, groups: tabGroups } = groupIntoTabs(visibleFields, true)
 
   // When the editor drills into a nested container (via a preview click or the
   // error summary), resolve the tab that owns the drill-in root field. The
@@ -807,10 +876,27 @@ function FormEngineInner({
 
   const tabHidden = isDrilledIn
 
-  if (tabbedFields.length > 0) {
+  /** The default field layout (tabs or a flat list) for a set of visible fields. */
+  const renderFieldsContent = (list: FieldSchema[], includePassword: boolean): React.ReactNode => {
+    const { tabbed, order, groups } = groupIntoTabs(list, includePassword)
+    const passwordSection = includePassword && showPasswordSection
+    const current = urlTab && order.includes(urlTab) ? urlTab : (order[0] || "")
+
+    if (tabbed.length === 0) {
+      return (
+        <>
+          <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
+            {list.map(renderFieldColumn)}
+          </div>
+          {/* ── Change Password Section (edit mode + auth collections only) ── */}
+          {passwordSection && renderChangePasswordSection()}
+        </>
+      )
+    }
+
     const tabErrorsCount = new Map<string, number>()
-    for (const tab of tabOrder) {
-      const tabFields = tabGroups.get(tab) || []
+    for (const tab of order) {
+      const tabFields = groups.get(tab) || []
       let errorCount = 0
       for (const field of tabFields) {
         errorCount += flatErrors.filter(
@@ -820,17 +906,17 @@ function FormEngineInner({
       tabErrorsCount.set(tab, errorCount)
     }
 
-    fieldsContent = (
+    return (
       <div className="dy-space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={current} onValueChange={setActiveTab}>
           {/* Compact underline tab bar, pinned at the top and horizontally
               scrollable on narrow screens. Hidden (but kept mounted) while
               drilled into a block so the active tab is preserved. */}
           <div className={cn("dy-mb-5 dy-overflow-x-auto dy-border-b dy-border-border", tabHidden && "dy-hidden")}>
             <div className="dy-flex dy-items-center dy-gap-5 dy-min-w-max">
-              {tabOrder.map((tab) => {
+              {order.map((tab) => {
                 const errCount = tabErrorsCount.get(tab) || 0
-                const isActive = tab === activeTab
+                const isActive = tab === current
                 return (
                   <button
                     key={tab}
@@ -854,12 +940,12 @@ function FormEngineInner({
               })}
             </div>
           </div>
-          {tabOrder.map((tab) => (
+          {order.map((tab) => (
             <TabsContent key={tab} value={tab}>
               <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-pt-2">
-                {tabGroups.get(tab)!.map(renderFieldColumn)}
+                {groups.get(tab)!.map(renderFieldColumn)}
               </div>
-              {tab === defaultTab && showPasswordSection && (
+              {tab === defaultTab && passwordSection && (
                 <div className="dy-pt-6">
                   {renderChangePasswordSection()}
                 </div>
@@ -869,12 +955,23 @@ function FormEngineInner({
         </Tabs>
       </div>
     )
-  } else {
-    fieldsContent = (
-      <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
-        {visibleFields.map(renderFieldColumn)}
-      </div>
-    )
+  }
+
+  const renderDefaultBody = (options: DefaultBodyOptions = {}): React.ReactNode => {
+    const excluded = new Set(options.exclude ?? [])
+    const list = excluded.size ? visibleFields.filter((f) => !f.name || !excluded.has(f.name)) : visibleFields
+    return renderFieldsContent(list, excluded.size === 0)
+  }
+
+  const fieldsContent = renderFieldsContent(visibleFields, true)
+
+  const bodyApi: FormEngineBodyApi = {
+    control: form.control,
+    collection,
+    documentId,
+    fields: resolvedFields,
+    renderField: renderFieldColumn,
+    renderDefaultBody,
   }
 
   return (
@@ -909,6 +1006,7 @@ function FormEngineInner({
         </nav>
       )}
       <DyrectedFormProvider controller={formController}>
+       <FormEngineBodyProvider value={bodyApi}>
         <Form {...form}>
           <form
             id="dyrected-edit-form"
@@ -926,8 +1024,8 @@ function FormEngineInner({
               />
             ))}
 
-          {/* Global validation error summary */}
-          {flatErrors.length > 0 && (
+          {/* Global validation error summary. A custom body shows errors its own way. */}
+          {!body && flatErrors.length > 0 && (
             <div className="dy-p-4 dy-rounded-lg dy-bg-destructive/10 dy-border dy-border-destructive/20 dy-text-destructive dy-space-y-2">
               <div className="dy-flex dy-items-center dy-gap-2 dy-font-semibold">
                 <AlertCircle className="dy-h-4 dy-w-4 dy-shrink-0" />
@@ -972,10 +1070,7 @@ function FormEngineInner({
             </div>
           )}
 
-          {fieldsContent}
-
-          {/* ── Change Password Section (edit mode + auth collections only) ── */}
-          {showPasswordSection && tabbedFields.length === 0 && renderChangePasswordSection()}
+          {body ?? fieldsContent}
 
           {!hideSubmit && (
             <div className="dy-flex dy-justify-end dy-gap-4">
@@ -988,6 +1083,7 @@ function FormEngineInner({
           )}
           </form>
         </Form>
+       </FormEngineBodyProvider>
       </DyrectedFormProvider>
     </>
   )

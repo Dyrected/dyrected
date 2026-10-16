@@ -144,16 +144,19 @@ export interface AdminFieldComponentProps {
   row?: Record<string, unknown>;
 }
 
-/** Props passed into custom document form components (spec 2). Identity only; form state accessed via composables/hooks. */
+/**
+ * Props passed into custom create and edit form components. Identity only: read
+ * the form, the saved document, and `submit()` with `useDocumentForm()`.
+ */
 export interface AdminFormComponentProps {
-  /** Collection slug of the document being edited. */
+  /** Collection slug (or global slug) the form belongs to. */
   collection: string;
-  /** Document ID when editing an existing document, or `undefined` in create mode. */
-  id?: string;
-  /** Current mode of the form. */
+  /** `"create"` for a new record, `"edit"` for an existing record or a global. */
   mode: "create" | "edit";
-  /** Whether the document form is read-only. */
-  readOnly?: boolean;
+  /** The record's ID when editing. `undefined` when creating, and for globals. */
+  documentId?: string;
+  /** Where the form is shown: a full `"page"`, or a `"drawer"` (inline relationship creation). */
+  presentation: "page" | "drawer";
 }
 
 /** Props passed into custom operational view layout components (spec 3). Identity only; view state accessed via composables/hooks. */
@@ -220,7 +223,7 @@ export interface AdminComponents {
   collectionView?: Record<string, ComponentType<CollectionViewSlotProps>>;
   /**
    * Custom document forms keyed by component key. Replaces the built-in form
-   * for a collection when configured in collection `admin.form` or `admin.components.forms`.
+   * for a collection or global when its `admin.components` sets `createForm`, `editForm` or `form`.
    */
   forms?: Record<string, ComponentType<AdminFormComponentProps>>;
   /**

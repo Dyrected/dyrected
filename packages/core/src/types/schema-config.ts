@@ -1,4 +1,4 @@
-import type { AdminIconName, CollectionListComponentSlots } from "./admin.js";
+import type { AdminIconName, CollectionListComponentSlots, GlobalFormComponentSlots } from "./admin.js";
 import type { AccessRule } from "./access.js";
 import type {
   CollectionAfterChangeHook,
@@ -803,6 +803,9 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
+
+    /** Custom components that replace this global's edit form. */
+    components?: GlobalFormComponentSlots;
   };
 
   /**

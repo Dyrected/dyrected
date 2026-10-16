@@ -44,3 +44,16 @@ describe("collectReferencedComponentKeys", () => {
     expect([...keys.customComponents].sort()).toEqual(["chart", "deep", "g-detail"]);
   });
 });
+
+describe("document form keys", () => {
+  it("collects createForm, editForm and form from collections and globals", () => {
+    const keys = collectReferencedComponentKeys({
+      collections: [
+        { slug: "check_ins", fields: [], admin: { components: { createForm: "check_ins.scan", editForm: "check_ins.review", formShell: "header" } } },
+        { slug: "posts", fields: [], admin: { components: { form: "posts.any" } } },
+      ],
+      globals: [{ slug: "settings", fields: [], admin: { components: { editForm: "settings.form" } } }],
+    });
+    expect([...keys.forms].sort()).toEqual(["check_ins.review", "check_ins.scan", "posts.any", "settings.form"]);
+  });
+});

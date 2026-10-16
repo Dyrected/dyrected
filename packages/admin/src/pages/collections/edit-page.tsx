@@ -3,6 +3,19 @@ import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import type { FormEngineHandle } from "../../components/forms/form-engine"
+import {
+  AdminComponentErrorBoundary,
+  AdminComponentFallback,
+  warnMissingComponent,
+} from "../../components/admin-component-slot"
+import {
+  DocumentContext,
+  type DocumentContextValue,
+  type SubmitOptions,
+  type SubmitResult,
+} from "../../providers/document-context"
+import { resolveFormComponent } from "./forms/resolve-form-component"
+import { collectSubmitErrors } from "./forms/submit-errors"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft, Plus, ChevronDown } from "lucide-react"
 import { Button } from "../../components/ui/button"
@@ -342,6 +355,10 @@ export function EditEntryPage() {
   const [isResizingPreview, setIsResizingPreview] = useState(false)
   const formEngineRef = useRef<FormEngineHandle | null>(null)
   const draftSavePromiseRef = useRef<Promise<{ doc?: unknown; passwordChanged?: boolean }> | null>(null)
+  // Set by a custom form's `submit()` for the duration of one save.
+  const submitOptionsRef = useRef<Pick<SubmitOptions, "redirect" | "silent"> | null>(null)
+  // Set when an editor picks "Use default form" after a custom form crashes.
+  const [useDefaultForm, setUseDefaultForm] = useState(false)
   const splitPaneRef = useRef<HTMLDivElement | null>(null)
   const isEdit = !!id
 
@@ -576,23 +593,26 @@ export function EditEntryPage() {
         await queryClient.invalidateQueries({ queryKey: ["admin-navigation-badges"] })
       }
 
-      if (variables.mode === "manual") {
+      if (variables.mode === "manual" && !submitOptionsRef.current?.silent) {
         toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
           description: `${schema?.labels?.singular || schema?.slug} has been saved.`,
         })
       }
 
-      if (results.passwordChanged && variables.mode === "manual") {
+      if (results.passwordChanged && variables.mode === "manual" && !submitOptionsRef.current?.silent) {
         toast.success("Password changed successfully")
       }
 
       const createdId = (doc as { id?: string } | undefined)?.id
-      if (!isEdit && createdId) {
+      const redirect = submitOptionsRef.current?.redirect ?? (isEdit ? "stay" : "edit")
+      if (redirect === "list") {
+        navigate(`/collections/${slug}`)
+      } else if (redirect === "edit" && !isEdit && createdId) {
         navigate(`/collections/${slug}/${createdId}/edit`, { replace: true })
       }
     },
     onError: (error: Error, variables) => {
-      if (variables.mode === "autosave") return
+      if (variables.mode === "autosave" || submitOptionsRef.current?.silent) return
       toast.error("Failed to save entry", {
         description: error.message || "An unexpected error occurred.",
       })
@@ -936,6 +956,93 @@ export function EditEntryPage() {
     return resolveTransitionContextFromDoc((entry ?? null) as Record<string, unknown> | null)
   }, [entry, resolveTransitionContextFromDoc, saveCurrentDraftNow])
 
+  // ── Custom create/edit form ────────────────────────────────────────────────
+  const { components } = useDyrected()
+  const formMode = isEdit ? "edit" : "create"
+  const resolvedForm = useMemo(
+    () => resolveFormComponent((schema as any)?.admin?.components, formMode),
+    [formMode, schema],
+  )
+  const FormComponent = resolvedForm.key ? components?.forms?.[resolvedForm.key] : undefined
+  if (resolvedForm.key && !FormComponent) warnMissingComponent("forms", resolvedForm.key)
+  const hasCustomForm = !!FormComponent && !useDefaultForm
+  // A broken or unregistered form falls back to the default form with full chrome.
+  const formShell = hasCustomForm ? resolvedForm.shell : "full"
+  const hideChrome = formShell === "none"
+
+  const canSubmitDocument = isEdit ? canUpdate : canCreate
+
+  const submitDocument = useCallback(async (options: SubmitOptions = {}): Promise<SubmitResult> => {
+    if (!canSubmitDocument) {
+      return {
+        ok: false,
+        errors: {},
+        error: new Error("You do not have permission to save this entry."),
+      }
+    }
+    if (!formEngineRef.current) {
+      return { ok: false, errors: {}, error: new Error("The editor is not ready yet.") }
+    }
+    if (draftSavePromiseRef.current) {
+      await draftSavePromiseRef.current.catch(() => undefined)
+    }
+
+    submitOptionsRef.current = { redirect: options.redirect, silent: options.silent }
+    try {
+      const result = await formEngineRef.current.submitCurrentDraft({ overrides: options.overrides })
+      const doc = ((result as { doc?: Record<string, unknown> } | undefined)?.doc ?? {}) as Record<string, any>
+      return { ok: true, doc }
+    } catch (error) {
+      return {
+        ok: false,
+        errors: collectSubmitErrors(error),
+        error: error instanceof Error ? error : undefined,
+      }
+    } finally {
+      submitOptionsRef.current = null
+    }
+  }, [canSubmitDocument])
+
+  const cancelDocument = useCallback(() => {
+    if (formEngineRef.current?.isDirty() && !window.confirm("You have unsaved changes. Leave without saving?")) {
+      return
+    }
+    navigate(isEdit ? `/collections/${slug}/${id}` : `/collections/${slug}`)
+  }, [id, isEdit, navigate, slug])
+
+  const documentContext = useMemo<DocumentContextValue>(() => ({
+    mode: formMode,
+    collection: schema ?? {},
+    document: (entry ?? undefined) as Record<string, any> | undefined,
+    isLoadingDocument: isEdit && isEntryLoading,
+    presentation: "page",
+    permissions: { canCreate, canUpdate, canDelete },
+    urls: {
+      list: `/collections/${slug}`,
+      edit: isEdit ? `/collections/${slug}/${id}/edit` : undefined,
+    },
+    submit: submitDocument,
+    cancel: cancelDocument,
+  }), [
+    formMode, schema, entry, isEdit, isEntryLoading, canCreate, canUpdate, canDelete,
+    slug, id, submitDocument, cancelDocument,
+  ])
+
+  const customBody = hasCustomForm && FormComponent && resolvedForm.key ? (
+    <DocumentContext.Provider value={documentContext}>
+      <AdminComponentErrorBoundary
+        componentKey={resolvedForm.key}
+        slot="forms"
+        onUseDefault={() => setUseDefaultForm(true)}
+        useDefaultLabel="Use default form"
+      >
+        <Suspense fallback={<AdminComponentFallback />}>
+          <FormComponent collection={slug!} mode={formMode} documentId={id} presentation="page" />
+        </Suspense>
+      </AdminComponentErrorBoundary>
+    </DocumentContext.Provider>
+  ) : undefined
+
   // Admin-initiated password reset — sends an email to the target user
   const [sendingReset, setSendingReset] = useState(false)
   const handleSendResetLink = async () => {
@@ -1004,6 +1111,7 @@ export function EditEntryPage() {
       <div key={id || "new"} className={cn("dy-flex dy-flex-col dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showLivePreview ? "dy-h-screen" : "")}>
         {/* Top action bar — title/status on the left, actions on the right.
             Replaces the former far-right vertical rail. */}
+        {!hideChrome && (
         <div className="dy-flex dy-flex-wrap dy-shrink-0 dy-items-center dy-gap-2 dy-border-b dy-border-border/50 dy-bg-background dy-px-3 dy-py-2">
           <Button
             variant="ghost"
@@ -1255,7 +1363,7 @@ export function EditEntryPage() {
                     ]}
                   />
                 )}
-                {showManualSaveChrome && (
+                {showManualSaveChrome && formShell === "full" && (
                   <div className="dy-hidden md:dy-flex dy-items-center">
                     <div className="dy-mx-1 dy-h-6 dy-w-px dy-bg-border/60" />
                     <Button
@@ -1283,6 +1391,7 @@ export function EditEntryPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Content row: preview (left) + form + optional workflow sidebar */}
         <div
@@ -1556,6 +1665,7 @@ export function EditEntryPage() {
                           passwordChangeMode={isEdit ? passwordChangeMode : null}
                           documentId={id}
                           defaultTabLabel={schema?.labels?.singular || 'General'}
+                          body={customBody}
                         />
                       </Suspense>
                     );
@@ -1564,7 +1674,7 @@ export function EditEntryPage() {
 
                   {/* Desktop save bar — floating pill, only surfaces when there
                       are changes to save. Hidden on mobile (see docked bar below). */}
-                  {showManualSaveChrome && (isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
+                  {showManualSaveChrome && formShell === "full" && (isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
                     <div className="dy-hidden md:dy-block dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
                       <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-4">
                         <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
@@ -1598,7 +1708,7 @@ export function EditEntryPage() {
                       app action bar. Always present while the entry is editable,
                       but the button stays disabled until there is something to
                       save. This is the only save affordance on mobile. */}
-                  {showManualSaveChrome && (isEdit ? canUpdate : canCreate) && (
+                  {showManualSaveChrome && formShell === "full" && (isEdit ? canUpdate : canCreate) && (
                     <div className="md:dy-hidden dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-border-t dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-4 dy-py-3">
                       <Button
                         className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm"

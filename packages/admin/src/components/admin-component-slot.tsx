@@ -21,6 +21,14 @@ export interface AdminComponentErrorBoundaryProps {
   componentKey: string;
   slot: string;
   onRetry?: () => void;
+  /**
+   * When set, the error card offers a second action that switches to the built-in
+   * component (for example "Use default form"), so a broken replacement never
+   * blocks the editor's work.
+   */
+  onUseDefault?: () => void;
+  /** Label of the {@link onUseDefault} action. */
+  useDefaultLabel?: string;
 }
 
 export interface AdminComponentErrorBoundaryState {
@@ -79,13 +87,24 @@ export class AdminComponentErrorBoundary extends Component<
               {this.state.error?.message || "An unexpected error occurred while rendering this component."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={this.handleRetry}
-            className="dy-shrink-0 dy-rounded-md dy-border dy-border-destructive/30 dy-bg-background dy-px-2.5 dy-py-1 dy-text-xs dy-font-semibold dy-text-foreground hover:dy-bg-destructive/10 dy-transition-colors"
-          >
-            Retry
-          </button>
+          <div className="dy-flex dy-shrink-0 dy-gap-2">
+            <button
+              type="button"
+              onClick={this.handleRetry}
+              className="dy-rounded-md dy-border dy-border-destructive/30 dy-bg-background dy-px-2.5 dy-py-1 dy-text-xs dy-font-semibold dy-text-foreground hover:dy-bg-destructive/10 dy-transition-colors"
+            >
+              Retry
+            </button>
+            {this.props.onUseDefault ? (
+              <button
+                type="button"
+                onClick={this.props.onUseDefault}
+                className="dy-rounded-md dy-border dy-border-destructive/30 dy-bg-background dy-px-2.5 dy-py-1 dy-text-xs dy-font-semibold dy-text-foreground hover:dy-bg-destructive/10 dy-transition-colors"
+              >
+                {this.props.useDefaultLabel ?? "Use default"}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     );

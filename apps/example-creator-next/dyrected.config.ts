@@ -1578,6 +1578,14 @@ const GuestResponses = defineCollection({
     useAsTitle: "name",
     icon: "Users",
     hidden: true,
+    components: {
+      // A walk-in desk form instead of the full RSVP form when creating.
+      createForm: "guest-responses.walkIn",
+      // The default form plus an arrival card when editing.
+      editForm: "guest-responses.edit",
+      // `createForm` keeps Dyrected's header (back button, title); the form owns its own actions.
+      formShell: "header",
+    },
   },
   fields: [
     defineTextField({ name: "name", label: "Full Name", required: true, promoted: true }),

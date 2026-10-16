@@ -9,6 +9,20 @@ import { Button } from "../../components/ui/button"
 import { AdminEditorSkeleton } from "../../components/layout/admin-loading"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { AdminNotFound } from "../../components/layout/admin-not-found"
+import {
+  AdminComponentErrorBoundary,
+  AdminComponentFallback,
+  warnMissingComponent,
+} from "../../components/admin-component-slot"
+import {
+  DocumentContext,
+  type DocumentContextValue,
+  type SubmitOptions,
+  type SubmitResult,
+} from "../../providers/document-context"
+import type { FormEngineHandle } from "../../components/forms/form-engine"
+import { resolveFormComponent } from "../collections/forms/resolve-form-component"
+import { collectSubmitErrors } from "../collections/forms/submit-errors"
 
 const FormEngine = React.lazy(async () => {
   const module = await import("../../components/forms/form-engine")
@@ -18,9 +32,13 @@ const FormEngine = React.lazy(async () => {
 export function GlobalEditorPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const { client } = useDyrected()
+  const { client, components } = useDyrected()
   const queryClient = useQueryClient()
   const [isDirty, setIsDirty] = useState(false)
+  const formEngineRef = React.useRef<FormEngineHandle | null>(null)
+  // Set by a custom form's `submit()` for the duration of one save.
+  const submitOptionsRef = React.useRef<Pick<SubmitOptions, "redirect" | "silent"> | null>(null)
+  const [useDefaultForm, setUseDefaultForm] = useState(false)
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -76,15 +94,85 @@ export function GlobalEditorPage() {
       }
       await queryClient.invalidateQueries({ queryKey: ["global", slug] })
       await queryClient.invalidateQueries({ queryKey: ["global", slug, "detail"] })
-      toast.success(`${schema?.label || schema?.slug || "Global"} updated successfully`)
-      navigate(`/globals/${slug}`)
+      if (!submitOptionsRef.current?.silent) {
+        toast.success(`${schema?.label || schema?.slug || "Global"} updated successfully`)
+      }
+      // The built-in Save returns to the detail page. A custom form's submit()
+      // stays put unless it asks for `"list"` (the detail page, for a global).
+      const redirect = submitOptionsRef.current ? submitOptionsRef.current.redirect : "list"
+      if (redirect === "list") navigate(`/globals/${slug}`)
     },
     onError: (error: any) => {
+      if (submitOptionsRef.current?.silent) return
       toast.error("Failed to update settings", {
         description: error.message
       })
     }
   })
+
+  // ── Custom edit form ───────────────────────────────────────────────────────
+  const resolvedForm = React.useMemo(
+    () => resolveFormComponent(schema?.admin?.components, "edit"),
+    [schema],
+  )
+  const FormComponent = resolvedForm.key ? components?.forms?.[resolvedForm.key] : undefined
+  if (resolvedForm.key && !FormComponent) warnMissingComponent("forms", resolvedForm.key)
+  const hasCustomForm = !!FormComponent && !useDefaultForm
+  const formShell = hasCustomForm ? resolvedForm.shell : "full"
+
+  const submitDocument = React.useCallback(async (options: SubmitOptions = {}): Promise<SubmitResult> => {
+    if (!formEngineRef.current) {
+      return { ok: false, errors: {}, error: new Error("The editor is not ready yet.") }
+    }
+    submitOptionsRef.current = { redirect: options.redirect, silent: options.silent }
+    try {
+      const result = await formEngineRef.current.submitCurrentDraft({ overrides: options.overrides })
+      return { ok: true, doc: (result ?? {}) as Record<string, any> }
+    } catch (error) {
+      return {
+        ok: false,
+        errors: collectSubmitErrors(error),
+        error: error instanceof Error ? error : undefined,
+      }
+    } finally {
+      submitOptionsRef.current = null
+    }
+  }, [])
+
+  const cancelDocument = React.useCallback(() => {
+    if (formEngineRef.current?.isDirty() && !window.confirm("You have unsaved changes. Leave without saving?")) {
+      return
+    }
+    navigate(`/globals/${slug}`)
+  }, [navigate, slug])
+
+  const documentContext = React.useMemo<DocumentContextValue>(() => ({
+    mode: "edit",
+    collection: schema ?? {},
+    document: (globalData ?? undefined) as Record<string, any> | undefined,
+    isLoadingDocument: isGlobalLoading,
+    presentation: "page",
+    // Globals do not serialize collection-level access; the server enforces it on save.
+    permissions: { canCreate: false, canUpdate: true, canDelete: false },
+    urls: { list: `/globals/${slug}`, edit: `/globals/${slug}/edit` },
+    submit: submitDocument,
+    cancel: cancelDocument,
+  }), [schema, globalData, isGlobalLoading, slug, submitDocument, cancelDocument])
+
+  const customBody = hasCustomForm && FormComponent && resolvedForm.key ? (
+    <DocumentContext.Provider value={documentContext}>
+      <AdminComponentErrorBoundary
+        componentKey={resolvedForm.key}
+        slot="forms"
+        onUseDefault={() => setUseDefaultForm(true)}
+        useDefaultLabel="Use default form"
+      >
+        <React.Suspense fallback={<AdminComponentFallback />}>
+          <FormComponent collection={slug!} mode="edit" presentation="page" />
+        </React.Suspense>
+      </AdminComponentErrorBoundary>
+    </DocumentContext.Provider>
+  ) : undefined
 
   if (isLoadingSchemas || !schemas) return <AdminEditorSkeleton className="dy-max-w-5xl dy-mx-auto" />
   if (!schema) {
@@ -100,6 +188,7 @@ export function GlobalEditorPage() {
 
   return (
     <div className="dy-space-y-8 dy-max-w-5xl dy-mx-auto">
+      {formShell !== "none" && (
       <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border/50 dy-pb-6">
         <div className="dy-flex dy-items-center dy-gap-4">
           <Button
@@ -145,6 +234,7 @@ export function GlobalEditorPage() {
           >
             Cancel
           </Button>
+          {formShell === "full" && (
           <Button
             size="icon"
             className="dy-h-9 dy-w-9 dy-rounded-lg dy-shadow-sm"
@@ -158,16 +248,20 @@ export function GlobalEditorPage() {
               <Save className="dy-h-4 dy-w-4" />
             )}
           </Button>
+          )}
         </div>
       </div>
+      )}
 
       <div className="dy-animate-in dy-space-y-8 dy-pb-32">
         <React.Suspense fallback={<AdminEditorSkeleton />}>
           <FormEngine
+            ref={formEngineRef}
+            body={customBody}
             collection={slug!}
             fields={schema.fields}
             defaultValues={globalData || {}}
-            onSubmit={(data) => saveMutation.mutate(data)}
+            onSubmit={(data) => saveMutation.mutateAsync(data)}
             isLoading={saveMutation.isPending}
             onChange={(dirty) => setIsDirty(dirty)}
             submitLabel="Save Changes"
@@ -176,7 +270,7 @@ export function GlobalEditorPage() {
         <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
 
         {/* Sticky Save Bar */}
-        {isDirty && (
+        {isDirty && formShell === "full" && (
           <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
             <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
               <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">

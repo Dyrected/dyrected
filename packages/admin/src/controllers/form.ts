@@ -32,7 +32,13 @@ export interface DyrectedFormControllerAdapters {
   setValue?: (path: string, value: unknown, options?: DyrectedSetValueOptions) => void
   reset?: (values?: DyrectedFormValues) => void
   validate?: (paths?: string | string[]) => Promise<boolean>
-  submit?: () => Promise<unknown>
+  submit?: (options?: DyrectedSubmitOptions) => Promise<unknown>
+}
+
+/** Options a caller can pass when submitting through the controller. */
+export interface DyrectedSubmitOptions {
+  /** Values merged over the form's values for this call only. */
+  overrides?: Record<string, unknown>
 }
 
 export interface DyrectedFormControllerOptions {
@@ -79,7 +85,7 @@ export interface DyrectedFormController {
   getFieldState(path: string): DyrectedFieldState
   reset(values?: DyrectedFormValues): void
   validate(paths?: string | string[]): Promise<boolean>
-  submit(): Promise<unknown>
+  submit(options?: DyrectedSubmitOptions): Promise<unknown>
 }
 
 /**
@@ -302,9 +308,9 @@ export function createDyrectedFormController({
       emit()
     },
     validate: async (paths) => controllerAdapters?.validate?.(paths) ?? true,
-    submit: async () => {
+    submit: async (options) => {
       if (!controllerAdapters?.submit) return state.values
-      return controllerAdapters.submit()
+      return controllerAdapters.submit(options)
     },
   }
 

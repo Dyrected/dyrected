@@ -26,10 +26,8 @@ import {
 } from "../../ui/dialog"
 import type { FieldSchema } from "../form-engine"
 
-const FormEngine = React.lazy(async () => {
-  const module = await import("../form-engine")
-  return { default: module.FormEngine }
-})
+import { DrawerDocumentForm } from "../drawer-document-form"
+import { saveDrawerDocument } from "../../../lib/drawer-save-pipeline"
 
 const PAGE_SIZE = 50
 
@@ -147,21 +145,30 @@ export function RelationshipPicker({ id, value, onChange, label, relationTo, mul
 
   const defaultValues = { [displayField]: trimmedSearch }
 
+  // Goes through the same pipeline as the relationship drawer, so a failure shows
+  // a toast and a custom `createForm`'s `submit()` reports it as `{ ok: false }`.
   const handleCreateSubmit = async (formData: Record<string, unknown>) => {
-    try {
-      const created = await client!.collection(relationTo).create(formData) as { id: string }
-      setCreateDialogOpen(false)
-      if (multiple) {
-        onChange([...values, created.id])
-      } else {
-        onChange(created.id)
-        setOpen(false)
-      }
-      setSearch("")
-      queryClient.invalidateQueries({ queryKey: ["collection", relationTo] })
-    } catch (err: unknown) {
-      console.error("Failed to create referenced document:", err)
+    const { doc } = await saveDrawerDocument(
+      {
+        client,
+        queryClient,
+        targetCollection: relationTo,
+        singularLabel: relatedCollection?.labels?.singular || relatedCollection?.label || relationTo,
+      },
+      formData,
+      { isCreating: true },
+    )
+    const created = doc as { id: string }
+    setCreateDialogOpen(false)
+    if (multiple) {
+      onChange([...values, created.id])
+    } else {
+      onChange(created.id)
+      setOpen(false)
     }
+    setSearch("")
+    queryClient.invalidateQueries({ queryKey: ["collection", relationTo] })
+    return doc
   }
 
   return (
@@ -284,15 +291,13 @@ export function RelationshipPicker({ id, value, onChange, label, relationTo, mul
               <DialogTitle>Create New {relatedCollection.labels?.singular || relatedCollection.label || relationTo}</DialogTitle>
             </DialogHeader>
             <div className="dy-pt-4">
-              <React.Suspense fallback={<div className="dy-h-40 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
-                <FormEngine
-                  collection={relationTo}
-                  fields={relatedCollection.fields}
-                  defaultValues={defaultValues}
-                  onSubmit={handleCreateSubmit}
-                  submitLabel="Create"
-                />
-              </React.Suspense>
+              <DrawerDocumentForm
+                collection={relationTo}
+                schema={relatedCollection}
+                defaultValues={defaultValues}
+                onSubmit={handleCreateSubmit}
+                submitLabel="Create"
+              />
             </div>
           </DialogContent>
         </Dialog>

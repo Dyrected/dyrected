@@ -1,7 +1,7 @@
 # Custom Create & Edit Forms Specification
 
 **Document Version:** 0.1.0 (Draft)
-**Status:** Proposed
+**Status:** Implemented (core, admin, react, vue, drawer). Docs remain. See [Implementation Status](#11-implementation-status).
 **Scope:** `@dyrected/core` (config types), `@dyrected/admin` (routes, controller), `@dyrected/react`, `@dyrected/vue`
 **Part of:** Custom Admin Surfaces (2 of 4). Depends on [Component Registry & Bridge](./custom-components-registry-spec.md).
 
@@ -206,3 +206,37 @@ function ScanForm() {
 1. Is `full` the right default shell, or `header`? `full` is safest for body-swaps. `header` is more natural for tools like the scanner.
 2. Should `overrides` be allowed on fields marked `admin.readOnly`? Proposal: yes, since server access rules are the real gate and readOnly is a UI hint. Confirm no field-level `access.update` is being bypassed.
 3. Should globals get a distinct `mode`? Proposal: no, a global is `mode: "edit"` with no `documentId`.
+
+---
+
+## 11. Implementation Status
+
+| Section | Item | Status | Notes |
+|---|---|---|---|
+| 3 | `createForm` / `editForm` / `form` / `formShell` on collections, `editForm` / `form` / `formShell` on globals | Done | `DocumentFormComponentSlots`, `GlobalFormComponentSlots`, `FormShell` in `@dyrected/core`. Keys feed `collectReferencedComponentKeys().forms` |
+| 3 | Resolution order and fallback | Done | `resolveFormComponent`. An unregistered key renders the default form and warns in development |
+| 3 | Shell modes `full` / `header` / `none` | Done | `full` is the default (open question 1) |
+| 4 | `AdminFormComponentProps` | Done | Now `{ collection, mode, documentId?, presentation }`. The old `{ id, readOnly }` shape had no consumers |
+| 4 | `useDocumentForm()` (React and Vue) | Done | Composes `useDyrectedForm()`. Vue gets refs through a bridge-maintained ref (`DYRECTED_DOCUMENT_KEY`) |
+| 4 | `submit()` uses the default save path | Done | Goes through `FormEngine`'s submit adapter. Validation first, then the same mutation the Save bar uses |
+| 4 | Server validation errors on fields | Done | `DyrectedError.errors` are set on the matching field, and returned in `SubmitResult.errors`. Errors with no field use the key `_form` |
+| 4 | `SubmitOptions.overrides` | Done | Applied through the form so they validate like any value, and restored if the submit fails. Allowed on `admin.readOnly` fields (open question 2). Field `access.update` is enforced by the server only |
+| 4 | `SubmitOptions.redirect` | Done | Default `edit` on create, `stay` on edit. `list` goes to the list (the detail page for a global) |
+| 4 | `SubmitOptions.draft` | Dropped | The default Save already saves a draft on workflow collections, and publishing is a workflow transition. A `draft` flag would change nothing, so it was left out rather than shipped as a no-op |
+| 4 | `SubmitOptions.silent` | Added | Skips the success and error toasts, so a form that reports its own outcome does not show two |
+| 4 | `<DyrectedField>`, `<DyrectedFields>`, `<DyrectedDefaultForm>` | Done | Render through `FormFieldRenderer`, so conditions, widths, access and `admin.component` apply. Vue renders them in the React tree through a portal, so form contexts are kept |
+| 4 | `cancel()` honors the unsaved guard | Partial | The admin has no router-level blocker, only `beforeunload`. `cancel()` asks for confirmation when the form is dirty. A router blocker is a separate change |
+| 6 | Page routes `/new` and `/:id/edit`, globals edit | Done | Access is checked before the form mounts. Globals do not serialize collection-level access, so the server is the gate and `permissions.canUpdate` is `true` |
+| 6 | Inline relation creation with `presentation: "drawer"` | Done | Both the relationship drawer and the picker's create dialog. Both now save through `saveDrawerDocument` |
+| 6 | `formInDrawer: false` | Done | |
+| 6 | Prefill via query | Verified | The default form reads plain `?field=value` into the defaults on create (not `defaults[field]`), and `useDocumentForm().form` sees them. Documented as such |
+| 7 | Throwing form shows "Use default form" | Done | `AdminComponentErrorBoundary` gains `onUseDefault` |
+| 7 | Unresolved key emits `component-unresolved` | Dropped | Same decision as the registry spec. The default form renders and development builds warn |
+| 8.1 | Diagnostics for unknown shell values | Done | Source `adminComponents` in `collectConfigDiagnostics`, returned in `/api/schemas` and listed on the dashboard's attention list |
+| 8.6 | Docs and `check-in` recipe | Docs remain | Example app has a walk-in `createForm` and an `editForm` body swap |
+
+### Open questions, resolved
+
+1. **Default shell:** `full`.
+2. **`overrides` on `admin.readOnly` fields:** allowed. Server access rules are the gate, and no client-side check was added.
+3. **Globals:** `mode: "edit"` with no `documentId`.

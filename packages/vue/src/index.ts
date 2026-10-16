@@ -28,6 +28,8 @@ export * from './composables/useAccess';
 export * from './composables/usePageMeta';
 export * from './composables/usePageRoute';
 export * from './composables/useCollectionView';
+export * from './composables/useDocumentForm';
+export { DyrectedField, DyrectedFields, DyrectedDefaultForm } from './components/DocumentFields';
 export { defineCustomView } from '@dyrected/admin/public';
 export type { CustomViewConfig, CustomViewDataConfig } from '@dyrected/admin/public';
 

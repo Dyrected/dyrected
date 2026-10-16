@@ -1,5 +1,6 @@
-import { h, render, defineComponent, onErrorCaptured, provide, type AppContext, type Component } from 'vue';
+import { h, render, defineComponent, onErrorCaptured, provide, shallowRef, type AppContext, type Component } from 'vue';
 import * as ReactModule from 'react';
+import { createPortal } from 'react-dom';
 import {
   useOptionalDyrectedFormControllerContext,
   useDyrectedFieldPathContext,
@@ -9,6 +10,10 @@ import {
   PageMetaContext,
   PageRouteContext,
   ViewControllerContext,
+  DocumentContext,
+  DyrectedField as ReactDyrectedField,
+  DyrectedFields as ReactDyrectedFields,
+  DyrectedDefaultForm as ReactDyrectedDefaultForm,
 } from '@dyrected/admin/public';
 import { DYRECTED_FORM_CONTROLLER_KEY, DYRECTED_FIELD_PATH_KEY } from '../composables/useDyrectedForm';
 import { DYRECTED_CLIENT_KEY } from '../composables/useDyrected';
@@ -17,6 +22,8 @@ import { DYRECTED_ADMIN_KEY } from '../composables/useAdminBridge';
 import { DYRECTED_PAGE_KEY } from '../composables/usePageMeta';
 import { DYRECTED_PAGE_ROUTE_KEY } from '../composables/usePageRoute';
 import { DYRECTED_VIEW_KEY } from '../composables/useCollectionView';
+import { DYRECTED_DOCUMENT_KEY } from '../composables/useDocumentForm';
+import { DYRECTED_REACT_SLOTS_KEY, type ReactSlotKind, type ReactSlotRegistry } from './react-slots';
 
 function arePropsShallowEqual(prev: Record<string, any> | null, next: Record<string, any> | null): boolean {
   if (prev === next) return true;
@@ -28,6 +35,19 @@ function arePropsShallowEqual(prev: Record<string, any> | null, next: Record<str
     if (prev[key] !== next[key]) return false;
   }
   return true;
+}
+
+const REACT_SLOT_COMPONENTS: Record<ReactSlotKind, ReactModule.ComponentType<any>> = {
+  field: ReactDyrectedField,
+  fields: ReactDyrectedFields,
+  defaultForm: ReactDyrectedDefaultForm,
+};
+
+interface ReactSlotEntry {
+  id: number;
+  el: HTMLElement;
+  kind: ReactSlotKind;
+  props: Record<string, unknown>;
 }
 
 /**
@@ -67,6 +87,34 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
     const pageMetaContext = ReactModule.useContext(PageMetaContext);
     const pageRouteContext = ReactModule.useContext(PageRouteContext);
     const viewController = ReactModule.useContext(ViewControllerContext);
+    const documentContext = ReactModule.useContext(DocumentContext);
+
+    // The document, permissions and `submit` change while the form is open, so
+    // the island gets a ref the bridge keeps current instead of a snapshot.
+    const documentRef = ReactModule.useRef<ReturnType<typeof shallowRef<any>> | null>(null);
+    if (!documentRef.current) documentRef.current = shallowRef(documentContext);
+    ReactModule.useEffect(() => {
+      documentRef.current!.value = documentContext;
+    }, [documentContext]);
+
+    // Built-in form pieces requested by the island (`<DyrectedField>` and
+    // friends) render here, in the React tree, and portal into the island.
+    const [slotEntries, setSlotEntries] = ReactModule.useState<ReactSlotEntry[]>([]);
+    const slotRegistry = ReactModule.useRef<ReactSlotRegistry | null>(null);
+    if (!slotRegistry.current) {
+      let nextId = 0;
+      slotRegistry.current = {
+        mount(el, kind, slotProps) {
+          const id = nextId++;
+          setSlotEntries((prev) => [...prev, { id, el, kind, props: slotProps }]);
+          return {
+            update: (next) =>
+              setSlotEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, props: next } : entry))),
+            unmount: () => setSlotEntries((prev) => prev.filter((entry) => entry.id !== id)),
+          };
+        },
+      };
+    }
 
     // Mutable cell holding the latest admin bridge. The Vue island receives a
     // stable facade that reads through it, so `provide()` (which runs once in
@@ -115,6 +163,9 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
       // so it is provided directly (spec §4: controllers, never snapshots).
       if (viewController) provides.set(DYRECTED_VIEW_KEY, viewController);
 
+      if (documentContext) provides.set(DYRECTED_DOCUMENT_KEY, documentRef.current);
+      if (formController) provides.set(DYRECTED_REACT_SLOTS_KEY, slotRegistry.current);
+
       if (pageMetaContext) {
         provides.set(DYRECTED_PAGE_KEY, {
           get meta() {
@@ -159,7 +210,7 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
         },
       });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formController, fieldPath, client, themeController, viewController, Boolean(pageMetaContext), Boolean(pageRouteContext)]);
+    }, [formController, fieldPath, client, themeController, viewController, Boolean(documentContext), Boolean(pageMetaContext), Boolean(pageRouteContext)]);
 
     // A new island type starts from a clean render.
     ReactModule.useEffect(() => {
@@ -192,11 +243,18 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
       };
     }, []);
 
-    return ReactModule.createElement('div', {
-      ref: containerRef,
-      className: 'dyrected-vue-bridge-container',
-      style: { display: 'contents' },
-    });
+    return ReactModule.createElement(
+      ReactModule.Fragment,
+      null,
+      ReactModule.createElement('div', {
+        ref: containerRef,
+        className: 'dyrected-vue-bridge-container',
+        style: { display: 'contents' },
+      }),
+      ...slotEntries.map((entry) =>
+        createPortal(ReactModule.createElement(REACT_SLOT_COMPONENTS[entry.kind], entry.props), entry.el, String(entry.id)),
+      ),
+    );
   };
 
   // Set display name for better debugging
