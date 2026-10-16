@@ -2114,6 +2114,69 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/custom-components/custom-pages#example-1",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-2",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-3",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-4",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-5",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-6",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-7",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-8",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-9",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/custom-components/dashboard#example-1",
     "page": "/editor-experience/custom-components/dashboard",
     "language": "ts",
@@ -2186,6 +2249,48 @@
   {
     "id": "/editor-experience/custom-components/overview#example-4",
     "page": "/editor-experience/custom-components/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/styling#example-1",
+    "page": "/editor-experience/custom-components/styling",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/styling#example-2",
+    "page": "/editor-experience/custom-components/styling",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/styling#example-3",
+    "page": "/editor-experience/custom-components/styling",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/styling#example-4",
+    "page": "/editor-experience/custom-components/styling",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/editor-experience/custom-components/styling#example-5",
+    "page": "/editor-experience/custom-components/styling",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/styling#example-6",
+    "page": "/editor-experience/custom-components/styling",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"

@@ -18,6 +18,7 @@ import {
   type PageRouteContextValue,
 } from "../../providers/page-context";
 import type { CompiledNavItem } from "@dyrected/sdk";
+import { isMetaShallowEqual } from "../../hooks/use-page-meta";
 
 function findPageItem(navigation: any, slug: string): CompiledNavItem | undefined {
   if (!navigation) return undefined;
@@ -50,6 +51,11 @@ function findPageItem(navigation: any, slug: string): CompiledNavItem | undefine
 }
 
 export function CustomPageRoute() {
+  const { slug } = useParams<{ slug: string }>();
+  return <CustomPageContent key={slug} />;
+}
+
+function CustomPageContent() {
   const { slug, "*": splatParam } = useParams<{ slug: string; "*": string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -67,24 +73,17 @@ export function CustomPageRoute() {
 
   const pageConfig = navItem?.page;
 
-  const [pageMeta, setPageMeta] = React.useState<PageMeta>(() => ({
-    title: pageConfig?.label || navItem?.label || slug,
-    description: undefined,
-    breadcrumbs: undefined,
-    actions: undefined,
-  }));
+  const defaultMeta = React.useMemo<PageMeta>(
+    () => ({
+      title: pageConfig?.label || navItem?.label || slug,
+      description: undefined,
+      breadcrumbs: undefined,
+      actions: undefined,
+    }),
+    [slug, pageConfig?.label, navItem?.label]
+  );
 
-  // Reset pageMeta when switching pages
-  React.useEffect(() => {
-    if (pageConfig || navItem) {
-      setPageMeta({
-        title: pageConfig?.label || navItem?.label || slug,
-        description: undefined,
-        breadcrumbs: undefined,
-        actions: undefined,
-      });
-    }
-  }, [slug, pageConfig?.label, navItem?.label]);
+  const [pageMeta, setPageMeta] = React.useState<PageMeta>(defaultMeta);
 
   React.useEffect(() => {
     if (pageMeta.title && typeof document !== "undefined") {
@@ -98,22 +97,40 @@ export function CustomPageRoute() {
 
   const pageNavigate = React.useCallback(
     (subPath: string, opts?: { replace?: boolean }) => {
+      if (!subPath || subPath === "/") {
+        navigate(`/pages/${encodeURIComponent(slug || "")}`, opts);
+        return;
+      }
       const clean = subPath.startsWith("/") ? subPath : `/${subPath}`;
       navigate(`/pages/${encodeURIComponent(slug || "")}${clean}`, opts);
     },
     [navigate, slug]
   );
 
+  const setMeta = React.useCallback(
+    (next: Partial<PageMeta> | ((prev: PageMeta) => PageMeta)) => {
+      setPageMeta((prev) => {
+        const resolved = typeof next === "function" ? next(prev) : { ...prev, ...next };
+        if (isMetaShallowEqual(prev, resolved)) {
+          if (resolved.actions && prev.actions) {
+            return { ...prev, actions: resolved.actions };
+          }
+          return prev;
+        }
+        return resolved;
+      });
+    },
+    []
+  );
+
   const metaContextValue = React.useMemo<PageMetaContextValue>(
     () => ({
       meta: pageMeta,
-      setMeta: (next) => {
-        setPageMeta((prev) => (typeof next === "function" ? next(prev) : { ...prev, ...next }));
-      },
+      setMeta,
       options: pageConfig?.options,
       page: pageConfig,
     }),
-    [pageMeta, pageConfig]
+    [pageMeta, pageConfig, setMeta]
   );
 
   const splat = splatParam || "";
@@ -167,7 +184,7 @@ export function CustomPageRoute() {
                   {breadcrumbs.map((crumb, idx) => {
                     const isLast = idx === breadcrumbs.length - 1;
                     return (
-                      <React.Fragment key={crumb.label + idx}>
+                      <React.Fragment key={(crumb.label ?? "crumb") + idx}>
                         {idx > 0 && <ChevronRight className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-text-muted-foreground/50" />}
                         {crumb.to && !isLast ? (
                           <Link

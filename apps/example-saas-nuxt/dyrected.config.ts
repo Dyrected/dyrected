@@ -1,4 +1,4 @@
-import { defineConfig, defineWorkspace } from "@dyrected/core";
+import { defineConfig, defineWorkspace, definePage } from "@dyrected/core";
 import { exampleSaasAccessPolicies } from "./dyrected/access-policies";
 import { postgresAdapter } from "@dyrected/db-postgres";
 // Collections
@@ -30,6 +30,14 @@ export default defineConfig({
         collection: "products",
         group: { name: "Catalog", icon: "Boxes", defaultExpanded: true, order: 10 },
         order: 1,
+      }),
+      definePage({
+        slug: "inventory-hub",
+        label: "Inventory Hub",
+        icon: "PackageCheck",
+        group: "Catalog",
+        order: 2,
+        component: "catalog.inventoryHub",
       }),
       defineWorkspace({
         collection: "pages",

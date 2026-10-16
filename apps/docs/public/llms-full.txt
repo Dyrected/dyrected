@@ -3797,7 +3797,7 @@ Surface tokens — backgrounds, cards, borders, muted text — are the ones that
 
 ## Scoping and escape hatches
 
-If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead of a CSS override.
+If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead of a CSS override. To make that component follow the admin's theme, see [Styling Custom Components](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Recommended path
 
@@ -40325,6 +40325,437 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/cust
 
 ---
 
+## Custom Admin Pages
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages
+
+When your project outgrows standard collection lists and edit forms, you can add custom pages directly into the Dyrected Admin interface. Custom pages live side-by-side with your collections in the sidebar navigation, inherit the admin's theme and authentication, and can render whatever custom React or Vue components you need.
+
+Use custom pages for:
+
+- Operational and executive overview dashboards
+- Multi-step onboarding, CSV reconcilers, or bulk migration wizards
+- Integration hubs for Stripe, SendGrid, Shopify, or external microservices
+- Custom reporting screens and analytics charts
+
+---
+
+## The mental model
+
+Adding a custom page follows the same two-step pattern used across Dyrected: **declare** the page in your configuration, then **provide** the component in your application:
+
+1. **Declare the page**: In `dyrected.config.ts`, define the page in `admin.navigation` using `definePage()`. This assigns a route slug, a sidebar label, an icon, and a unique string component key.
+2. **Register the component**: In your React or Vue app, map that component key to your actual UI component using `defineAdminComponents({ pages: { ... } })` and pass it to `<DyrectedAdmin>`.
+
+Once registered, Dyrected automatically:
+
+- Generates the route at `/admin/pages/:slug` (and subpaths `/admin/pages/:slug/*`)
+- Adds a link to your sidebar navigation under the designated group
+- Sets up page chrome with breadcrumbs, title, and action buttons
+- Provides specialized hooks for sub-routing, page metadata, navigation, and notifications
+
+---
+
+## 3-step quickstart
+
+Here is how to get a custom page running in less than five minutes.
+
+### 1. Define the page in config
+
+In your `dyrected.config.ts`, import `definePage` and add it to `admin.navigation`:
+
+```ts title="dyrected.config.ts"
+
+
+export default defineConfig({
+  admin: {
+    navigation: [
+      definePage({
+        slug: "operations-hub",
+        label: "Operations Hub",
+        icon: "LayoutDashboard",
+        group: "Operations",
+        order: 1,
+        component: "ops.hub",
+      }),
+    ],
+  },
+  // collections: [...]
+});
+```
+
+Here:
+- `slug` determines the URL path: `/admin/pages/operations-hub`.
+- `label` is the display text in the sidebar navigation.
+- `icon` is any [Lucide icon](https://lucide.dev) name.
+- `group` nests the page inside an existing or new sidebar section.
+- `component` is the string key you will use when registering your component.
+
+### 2. Register the component in your app
+
+In your admin entry file (e.g. `app/admin/[[...admin]]/page.tsx` for Next.js, or your main admin view in Vite/Nuxt), pass the component under the matching key:
+
+```tsx title="app/admin/[[...admin]]/page.tsx"
+"use client";
+
+
+
+
+
+const components = defineAdminComponents({
+  pages: {
+    "ops.hub": OperationsHubPage,
+  },
+});
+
+export default function AdminPage() {
+  return <DyrectedAdmin components={components} />;
+}
+```
+
+> [!NOTE]
+> For Vue and Nuxt apps, import `defineAdminComponents` from `@dyrected/vue`. Dyrected automatically wraps your Vue component in a bridge so it renders seamlessly inside the admin interface.
+
+### 3. Build your custom page component
+
+Create the component. Custom page components receive a `{ slug }` prop and can use hooks provided by `@dyrected/admin` (or `@dyrected/react`):
+
+```tsx title="src/admin-components/operations-hub.tsx"
+"use client";
+
+
+
+
+export function OperationsHubPage({ slug }: { slug: string }) {
+  const notify = useAdminNotify();
+
+  // Synchronize title, description, and top header action buttons
+  usePageMeta({
+    title: "Operations Hub",
+    description: "Real-time system health and task queues",
+    actions: [
+      {
+        label: "Run Diagnostics",
+        icon: "Activity",
+        variant: "default",
+        onClick: () => {
+          notify.success("Diagnostics queued successfully");
+        },
+      },
+    ],
+  });
+
+  return (
+    <div className="dy-grid dy-gap-4 md:dy-grid-cols-3">
+      <div className="dy-rounded-xl dy-border dy-bg-card dy-p-6 dy-text-card-foreground dy-shadow-sm">
+        <h3 className="dy-text-sm dy-font-medium dy-text-muted-foreground">Active Tasks</h3>
+        <p className="dy-mt-2 dy-text-3xl dy-font-bold">24</p>
+      </div>
+      <div className="dy-rounded-xl dy-border dy-bg-card dy-p-6 dy-text-card-foreground dy-shadow-sm">
+        <h3 className="dy-text-sm dy-font-medium dy-text-muted-foreground">Sync Health</h3>
+        <p className="dy-mt-2 dy-text-3xl dy-font-bold dy-text-emerald-500">99.8%</p>
+      </div>
+      <div className="dy-rounded-xl dy-border dy-bg-card dy-p-6 dy-text-card-foreground dy-shadow-sm">
+        <h3 className="dy-text-sm dy-font-medium dy-text-muted-foreground">Pending Invoices</h3>
+        <p className="dy-mt-2 dy-text-3xl dy-font-bold">3</p>
+      </div>
+    </div>
+  );
+}
+```
+
+When you open your admin panel and click **Operations Hub** in the sidebar, your component renders with the header, actions, and custom cards.
+
+---
+
+## Managing header and document metadata
+
+Custom pages support standard Dyrected page chrome: a breadcrumb trail, a page title, an optional subtitle description, and header action buttons.
+
+Use the `usePageMeta` hook inside your component to customize these values dynamically:
+
+```tsx
+
+
+export function AnalyticsPage() {
+  const [isExporting, setIsExporting] = useState(false);
+
+  usePageMeta({
+    title: "Monthly Analytics",
+    description: "Aggregated performance across all stores",
+    breadcrumbs: [
+      { label: "Admin", to: "/" },
+      { label: "Operations" },
+      { label: "Analytics" },
+    ],
+    actions: [
+      {
+        label: isExporting ? "Exporting..." : "Export CSV",
+        icon: "Download",
+        variant: "outline",
+        disabled: isExporting,
+        onClick: async () => {
+          setIsExporting(true);
+          await exportReport();
+          setIsExporting(false);
+        },
+      },
+    ],
+  });
+
+  return <div></div>;
+}
+```
+
+### Action button options
+
+Header actions are configured as an array of objects passed to `actions`:
+
+| Property | Type | Description |
+|---|---|---|
+| `label` | `string` | Button text |
+| `icon` | `string` (optional) | Lucide icon name, such as `"Download"`, `"Plus"`, or `"RefreshCw"` |
+| `variant` | `"default" \| "outline" \| "secondary" \| "ghost" \| "destructive"` | Visual button style (defaults to `"default"`) |
+| `disabled` | `boolean` (optional) | Whether the button is disabled |
+| `onClick` | `() => void` | Click event handler |
+
+The page title defined in `usePageMeta` also updates the browser window tab title automatically (using your configured `meta.titleSuffix`).
+
+---
+
+## Sub-routing within custom pages
+
+Many custom pages require sub-views, such as tabs (`/admin/pages/ops/overview` vs `/admin/pages/ops/logs`) or item detail views (`/admin/pages/ops/tasks/123`).
+
+Dyrected routes all subpaths matching `/pages/:slug/*` into your page component. You can inspect the current subpath and trigger internal navigations with the `usePageRoute` hook:
+
+```tsx
+
+
+export function TeamHubPage() {
+  const { splat, navigate, searchParams, setSearchParams } = usePageRoute();
+
+  // Determine active tab from the subpath splat (e.g. "" -> "overview", "members" -> "members")
+  const activeTab = splat || "overview";
+
+  return (
+    <div>
+      
+      <div className="dy-flex dy-gap-2 dy-border-b dy-border-border dy-pb-2 dy-mb-6">
+        <button
+          onClick={() => navigate("")}
+          className={`dy-px-3 dy-py-1.5 dy-text-sm dy-font-medium dy-rounded-md ${
+            activeTab === "overview"
+              ? "dy-bg-primary dy-text-primary-foreground"
+              : "dy-text-muted-foreground hover:dy-text-foreground"
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => navigate("members")}
+          className={`dy-px-3 dy-py-1.5 dy-text-sm dy-font-medium dy-rounded-md ${
+            activeTab === "members"
+              ? "dy-bg-primary dy-text-primary-foreground"
+              : "dy-text-muted-foreground hover:dy-text-foreground"
+          }`}
+        >
+          Team Members
+        </button>
+        <button
+          onClick={() => navigate("activity")}
+          className={`dy-px-3 dy-py-1.5 dy-text-sm dy-font-medium dy-rounded-md ${
+            activeTab === "activity"
+              ? "dy-bg-primary dy-text-primary-foreground"
+              : "dy-text-muted-foreground hover:dy-text-foreground"
+          }`}
+        >
+          Activity Log
+        </button>
+      </div>
+
+      
+      {activeTab === "overview" && <TeamOverview />}
+      {activeTab === "members" && <TeamMembersList />}
+      {activeTab === "activity" && <TeamActivityLog />}
+    </div>
+  );
+}
+```
+
+### `usePageRoute()` returns:
+
+- `splat`: The relative subpath string after `/pages/:slug/` (without leading slash). If the user visits `/pages/my-page/reports/2026`, `splat` is `"reports/2026"`.
+- `navigate(subPath, { replace?: boolean })`: Navigates to a subpath under this custom page without page reload. Passing `""` navigates back to the root of the page.
+- `searchParams`: A `URLSearchParams` instance containing the current query parameters.
+- `setSearchParams(next)`: Function to update the query string.
+
+---
+
+## Navigating to other admin surfaces
+
+To link or navigate from your custom page to another collection, workspace view, or document edit screen, use `useAdminNavigate`:
+
+```tsx
+
+
+export function QuickLinksWidget() {
+  const { navigate, to } = useAdminNavigate();
+
+  return (
+    <div className="dy-flex dy-gap-2">
+      
+      <button
+        onClick={() => navigate(to.collection("orders"))}
+        className="dy-btn dy-btn-outline"
+      >
+        View Orders
+      </button>
+
+      
+      <button
+        onClick={() => navigate(to.document("orders", "order_123"))}
+        className="dy-btn dy-btn-outline"
+      >
+        Open Order #123
+      </button>
+
+      
+      <button
+        onClick={() => navigate(to.workspace("fulfillment", "pending-queue"))}
+        className="dy-btn dy-btn-outline"
+      >
+        Fulfillment Queue
+      </button>
+    </div>
+  );
+}
+```
+
+`to` provides helper methods that guarantee you build valid admin URLs:
+- `to.collection(slug)`: `/collections/:slug`
+- `to.document(slug, id)`: `/collections/:slug/:id`
+- `to.workspace(slug, viewSlug?)`: `/:workspaceSlug` or `/:workspaceSlug/:viewSlug`
+- `to.page(slug, subPath?)`: `/pages/:slug` or `/pages/:slug/:subPath`
+- `to.view(slug, viewSlug)`: `/collections/:slug/views/:viewSlug`
+
+---
+
+## Notifications and toasts
+
+Dyrected provides an integrated notification system via `useAdminNotify()`. Toasts automatically match the admin panel's theme and positioning:
+
+```tsx
+
+
+export function BackupTool() {
+  const notify = useAdminNotify();
+
+  const handleBackup = async () => {
+    try {
+      notify.info("Creating backup archive...");
+      await performBackup();
+      notify.success("Backup created successfully", {
+        description: "Archive saved to s3://backups/2026-10-16.tar.gz",
+      });
+    } catch (err) {
+      notify.error("Backup failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  };
+
+  return <button onClick={handleBackup}>Start Backup</button>;
+}
+```
+
+---
+
+## Checking permissions
+
+If your custom page includes privileged actions (such as deleting records or viewing sensitive reports), you can check the current user's permissions with `useAccess()`:
+
+```tsx
+
+
+export function DangerZone() {
+  const { can } = useAccess();
+
+  // Checks if the active user can delete records in the "users" collection
+  const canDeleteUsers = can("delete", "users");
+
+  if (!canDeleteUsers) {
+    return null;
+  }
+
+  return (
+    <div className="dy-border-destructive/30 dy-rounded-lg dy-border dy-p-4">
+      <h4 className="dy-text-destructive dy-font-semibold">Danger Zone</h4>
+      <p className="dy-text-sm dy-text-muted-foreground">Purge test accounts</p>
+    </div>
+  );
+}
+```
+
+> [!IMPORTANT]
+> The `useAccess().can()` check is an interface gating hint to show or hide UI controls. Your server-side API or backend functions remain the authoritative enforcement boundary for data operations.
+
+---
+
+## Page configuration options
+
+The `definePage()` helper accepts several options to control layout and appearance:
+
+```ts title="dyrected.config.ts"
+definePage({
+  slug: "full-canvas",
+  label: "Full Width Canvas",
+  icon: "Maximize2",
+  component: "canvas.full",
+  
+  // Custom options passed down to your component via usePageMeta().options
+  options: {
+    refreshRateMs: 5000,
+  },
+
+  // 'default' wraps your page in a centered max-w-7xl container with standard padding
+  // 'full' provides a full-width edge-to-edge container (great for maps, kanban boards, or split panes)
+  layout: "full",
+
+  // Set to false to disable the standard header, breadcrumbs, and title chrome
+  chrome: false,
+});
+```
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `slug` | `string` | *(required)* | Unique URL path segment (`/admin/pages/:slug`) |
+| `label` | `string` | *(required)* | Display title shown in sidebar navigation |
+| `component` | `string` | *(required)* | String key matching `components.pages` |
+| `icon` | `string` | `"FileText"` | Lucide icon name for sidebar and page header |
+| `group` | `string` | `undefined` | Sidebar navigation group name |
+| `order` | `number` | `undefined` | Sort order within the navigation group |
+| `layout` | `"default" \| "full"` | `"default"` | Layout container width (`max-w-7xl` vs `w-full`) |
+| `chrome` | `boolean` | `true` | When `false`, hides the default page header and breadcrumbs |
+| `options` | `Record<string, unknown>` | `undefined` | Custom configuration accessible via `usePageMeta().options` |
+
+---
+
+## Styling custom pages
+
+To ensure your custom page blends seamlessly with the rest of the Dyrected Admin interface:
+
+1. **Use `dy-` Tailwind classes**: Dyrected prefixes its utility classes with `dy-` to avoid conflicts with your application's styles (e.g. `dy-bg-card`, `dy-text-foreground`, `dy-rounded-xl`, `dy-border`, `dy-shadow-sm`).
+2. **Use theme color tokens**: Always consume theme variables via HSL notation:
+   - Backgrounds: `hsl(var(--background))`, `hsl(var(--card))`, `hsl(var(--muted))`
+   - Text: `hsl(var(--foreground))`, `hsl(var(--card-foreground))`, `hsl(var(--muted-foreground))`
+   - Accents: `hsl(var(--primary))`, `hsl(var(--primary-foreground))`, `hsl(var(--border))`
+3. **Responsive layouts**: Use grid or flex layouts (`dy-grid dy-grid-cols-1 md:dy-grid-cols-2 lg:dy-grid-cols-3 dy-gap-4`) so dashboard cards re-flow on tablet and mobile screens.
+
+For more details on available CSS variables, see [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
+
+---
+
 ## Dashboard
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard
@@ -40581,10 +41012,11 @@ Every custom component follows the same two-step pattern: **declare** where it g
 
 There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin skips it (and warns in development); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
 
-There are exactly two extension points:
+There are three core extension points:
 
 1. **Custom field components** — replace the input for a specific field.
 2. **Component slots** — inject components into fixed positions on the dashboard and collection lists.
+3. **Custom admin pages** — add complete standalone pages, dashboards, and operational views to the sidebar navigation.
 
 ## Custom field components
 
@@ -40695,13 +41127,189 @@ It's worth being clear about the edges so you don't go looking for something tha
 
 - Replacing root-level UI (the navigation, header, login screen, or logo as a component — the logo is set with [branding config](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css), not a component).
 - Injecting custom React context providers around the admin.
-- Replacing or adding whole views (a custom edit view, document tabs, custom routes, or a full list-view replacement).
+- Replacing built-in collection views (such as replacing the default edit form with an arbitrary component; use [Custom Admin Pages](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages) for standalone workflows instead).
 
 If your goal is theming rather than swapping components, that's [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css). If you need one of the unsupported customizations above, it's a genuine gap — raise it rather than working around it.
 
+## Styling your components
+
+Your components are styled with your own CSS, and can read the admin's theme variables so they follow light and dark mode. See [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
+
 ## Recommended path
 
-Reach for a **custom field component** when a specific field needs an input the defaults don't offer, and a **slot** when you want to add something alongside the built-in dashboard or list without rebuilding it. Start from this page's pattern — declare a key, register the component — then go to the [Dashboard](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard) or [List View](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/list-view) page for the exact props your slot receives.
+- Reach for a **custom field component** when a specific field needs an input the defaults don't offer.
+- Reach for a **slot** when you want to add banners or widgets alongside the built-in dashboard or list without rebuilding it.
+- Reach for a **[custom admin page](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages)** when you need a dedicated operational dashboard, analytics screen, or standalone administrative tool with its own URL and navigation item.
+
+---
+
+## Styling Custom Components
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling
+
+A custom component is yours, so you style it with your own CSS. The part that trips people up is making it match the admin around it, especially when the editor flips between light and dark mode. This page shows the one approach that follows the admin's theme automatically, and the four surprises worth knowing about before you hit them.
+
+By the end of this page you should have a component whose card, border, and text colors change with the admin's light and dark toggle, and you should know how to fix it when something looks wrong.
+
+This page assumes you already registered a component using the pattern from the [Custom Components overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview). "Your app" means the project you embedded the admin into.
+
+## How custom components are styled
+
+Your component renders inside the admin's shell, but it is not made of admin classes. Two things follow from that:
+
+- **Your app's CSS applies to it.** Tailwind, CSS Modules, plain CSS, or inline styles all work, the same as anywhere else in your app.
+- **The admin's own classes don't.** The `dy-` classes you may spot in the page markup belong to the admin's stylesheet. They are internal, so don't copy them into your components.
+
+What the admin *does* share with you is its theme. It describes its colors as CSS variables on the `.dy-admin-ui` root element and swaps their values when the theme changes. Because your component renders inside that root, you can read those variables and your component will follow the theme without any extra code.
+
+## The recommended path: read the admin's theme variables
+
+Use the admin's color variables for any surface, border, or text color you want to match the admin. Each one holds three bare HSL numbers, so wrap it in `hsl(...)` when you use it. That is the one detail that matters here: `var(--card)` on its own is not a valid color and the browser quietly ignores it.
+
+This component shows a summary line below a collection's list. It is a card whose background, border, and text all come from the admin's variables:
+
+```tsx
+// PostsSummary.tsx
+
+
+const card: CSSProperties = {
+  background: "hsl(var(--card))",
+  color: "hsl(var(--card-foreground))",
+  // A ring instead of a border; see "Borders can disappear" below.
+  boxShadow: "0 0 0 1px hsl(var(--border))",
+  borderRadius: "var(--radius)",
+  padding: 12,
+};
+
+export function PostsSummary({ documents }: { documents: Array<{ id: string }> }) {
+  return (
+    <div style={card}>
+      <strong>{documents.length}</strong>{" "}
+      <span style={{ color: "hsl(var(--muted-foreground))" }}>posts on this page</span>
+    </div>
+  );
+}
+```
+
+Register it as a list slot, the same way as any other slot component:
+
+```tsx
+<DyrectedAdmin components={{ collectionList: { "posts-summary": PostsSummary } }} />
+```
+
+Open the collection and switch the admin between light and dark from the sidebar. The card should change with it, and no `if (dark)` logic exists anywhere in your component. If the card stays white or stays dark, jump to [Troubleshooting](#troubleshooting).
+
+### The same thing in Tailwind
+
+If your app uses Tailwind, write the same values as arbitrary values:
+
+```tsx
+<div className="rounded-xl bg-[hsl(var(--card))] p-3 text-[hsl(var(--card-foreground))] ring-1 ring-[hsl(var(--border))]">
+  <span className="text-[hsl(var(--muted-foreground))]">12 posts on this page</span>
+</div>
+```
+
+### Which variables to use
+
+These are the ones that come up most often. The full list, and how to override them, is in [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css#the-tokens-youll-reach-for-most).
+
+| Variable                          | Use it for                          |
+| --------------------------------- | ----------------------------------- |
+| `--background` / `--foreground`   | Page surface and default text       |
+| `--card` / `--card-foreground`    | Panels and cards                    |
+| `--muted` / `--muted-foreground`  | Tinted areas, helper text           |
+| `--border`                        | Dividers and outlines               |
+| `--primary` / `--primary-foreground` | Filled, committed actions        |
+| `--ring`                          | Focus outlines                      |
+| `--radius`                        | Corner radius                       |
+
+
+
+## Light and dark mode
+
+The admin resolves its own theme from the editor's choice and falls back to their operating system setting. Your component doesn't need to do anything for that, as long as it reads the variables above: they hold different values in light and dark mode.
+
+### Don't use your site's `dark:` styles here
+
+If you hard-code dark colors with Tailwind's `dark:` prefix, you are following your *site's* theme, not the admin's. The two can disagree. For example, a site that sets `class="dark"` on `<html>` all the time makes every `dark:` class apply permanently, so a card turns dark even while the admin is in light mode.
+
+Prefer the variables. If you really need your own light and dark values, key them off the admin's theme instead of the site's. The admin marks its root with `data-theme="light"` or `data-theme="dark"`, so this plain CSS works:
+
+```css
+.my-card {
+  background: white;
+}
+
+[data-theme="dark"] .my-card {
+  background: #111114;
+}
+```
+
+Or read the resolved theme in code with `useAdminTheme()`, which is covered in [Theme Hooks](https://docs.dyrected.com/docs/self-hosted/editor-experience/theme-hooks):
+
+```tsx
+
+
+export function Badge({ children }: { children: React.ReactNode }) {
+  const { resolvedTheme } = useAdminTheme();
+
+  return (
+    <span style={{ background: resolvedTheme === "dark" ? "#27272a" : "#f4f4f5", padding: "2px 8px" }}>
+      {children}
+    </span>
+  );
+}
+```
+
+In Vue, `useAdminTheme()` from `@dyrected/vue` returns the same values as refs, so read `resolvedTheme.value`.
+
+## Borders can disappear
+
+The admin ships a small scoped reset that sets `border-width: 0` on everything inside `.dy-admin-ui`, so its own markup doesn't pick up your app's browser defaults. That reset is plain, unlayered CSS. A Tailwind v4 `border` class in your app lives in a CSS layer, and unlayered rules win over layered ones, so the reset can win and your border never shows.
+
+Draw outlines with something the reset doesn't touch:
+
+- `box-shadow: 0 0 0 1px hsl(var(--border))`, or the Tailwind `ring-1` utility, which is what the examples above use
+- `outline`
+- an inline `style={{ border: ... }}`
+
+
+
+## Popovers and dialogs you build yourself
+
+Menus, dialogs, and tooltips from libraries such as Radix render in a portal at the end of `<body>`. That puts them outside `.dy-admin-ui`, so the theme variables don't exist there and your colors fall back to nothing.
+
+The fix is to re-apply the admin's theme class and attribute on the portal's content. `useAdminTheme()` gives you both:
+
+```tsx
+
+
+export function ThemedPortalContent({ children }: { children: React.ReactNode }) {
+  const { themeClassName, resolvedTheme } = useAdminTheme();
+
+  return (
+    <div className={themeClassName} data-theme={resolvedTheme}>
+      {children}
+    </div>
+  );
+}
+```
+
+Wrap whatever you render into the portal with it. The admin's own dialogs do exactly this.
+
+## Troubleshooting
+
+| What you see | Likely cause | Fix |
+| --- | --- | --- |
+| A color has no effect | `var(--card)` used without `hsl(...)` | Write `hsl(var(--card))` |
+| Card is dark in light mode (or the reverse) | A `dark:` class is following your site's theme | Use the admin variables, or `[data-theme="dark"]` |
+| Border is missing | The admin's reset zeroes `border-width` | Use `ring-1`, `box-shadow`, or `outline` |
+| Colors are blank inside a dialog or menu | The portal renders outside `.dy-admin-ui` | Wrap the content with `themeClassName` and `data-theme` |
+| Tailwind classes in your component do nothing | Tailwind isn't scanning the component's folder | Add the folder to your Tailwind sources |
+
+## Recommended path
+
+Build your component with your app's normal CSS, and take every color that should match the admin from its variables, wrapped in `hsl(...)`. Draw outlines with `ring` or `box-shadow`. Avoid `dark:` unless your site's theme and the admin's are guaranteed to move together. For deeper retheming of the admin itself, see [Customizing CSS](https://docs.dyrected.com/docs/self-hosted/editor-experience/customizing-css).
 
 ---
 
@@ -40885,7 +41493,7 @@ Surface tokens — backgrounds, cards, borders, muted text — are the ones that
 
 ## Scoping and escape hatches
 
-If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview) instead of a CSS override.
+If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview) instead of a CSS override. To make that component follow the admin's theme, see [Styling Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling).
 
 ## Recommended path
 

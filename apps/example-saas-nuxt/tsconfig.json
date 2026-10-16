@@ -15,5 +15,7 @@
       "path": "./.nuxt/tsconfig.node.json"
     }
   ],
-  "allowImportingTsExtensions": true
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  }
 }

@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef } from "react";
 import { PageMetaContext, type PageMeta } from "../providers/page-context";
 import type { PageConfig } from "@dyrected/core";
 
-function isMetaShallowEqual(a: PageMeta, b: Partial<PageMeta>): boolean {
+export function isMetaShallowEqual(a: PageMeta, b: Partial<PageMeta>): boolean {
   if (b.title !== undefined && a.title !== b.title) return false;
   if (b.description !== undefined && a.description !== b.description) return false;
   if (b.breadcrumbs !== undefined) {
@@ -22,8 +22,7 @@ function isMetaShallowEqual(a: PageMeta, b: Partial<PageMeta>): boolean {
         actA.label !== actB.label ||
         actA.icon !== actB.icon ||
         actA.disabled !== actB.disabled ||
-        actA.variant !== actB.variant ||
-        actA.onClick !== actB.onClick
+        actA.variant !== actB.variant
       ) {
         return false;
       }
@@ -41,24 +40,42 @@ export interface UsePageMetaResult {
 
 export function usePageMeta(meta?: Partial<PageMeta>): UsePageMetaResult {
   const context = useContext(PageMetaContext);
+  const setMeta = context?.setMeta;
   const prevInputRef = useRef<Partial<PageMeta> | undefined>(undefined);
 
-  useEffect(() => {
-    if (!context || !meta) return;
+  const breadcrumbsSig = meta?.breadcrumbs ? JSON.stringify(meta.breadcrumbs) : "";
+  const actionsSig = meta?.actions
+    ?.map((a) => `${a.label}:${a.icon}:${a.disabled}:${a.variant}`)
+    .join(";");
 
-    if (prevInputRef.current && isMetaShallowEqual(context.meta, meta)) {
+  useEffect(() => {
+    if (!setMeta || !meta) return;
+
+    if (prevInputRef.current && isMetaShallowEqual(prevInputRef.current, meta)) {
+      // Keep click handler references fresh without triggering visual update cascades
+      if (meta.actions) {
+        setMeta((prev) => {
+          if (!prev.actions) return prev;
+          return { ...prev, actions: meta.actions };
+        });
+      }
       return;
     }
 
     prevInputRef.current = meta;
-    context.setMeta((prev) => {
-      if (isMetaShallowEqual(prev, meta)) return prev;
+    setMeta((prev) => {
+      if (isMetaShallowEqual(prev, meta)) {
+        if (meta.actions && prev.actions) {
+          return { ...prev, actions: meta.actions };
+        }
+        return prev;
+      }
       return {
         ...prev,
         ...meta,
       };
     });
-  }, [context, meta?.title, meta?.description, meta?.breadcrumbs, meta?.actions]);
+  }, [setMeta, meta?.title, meta?.description, breadcrumbsSig, actionsSig]);
 
   if (!context) {
     return {

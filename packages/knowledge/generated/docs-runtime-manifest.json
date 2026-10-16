@@ -1065,6 +1065,21 @@
     "status": "classified"
   },
   {
+    "id": "editor-experience--custom-components--custom-pages",
+    "relativePath": "editor-experience/custom-components/custom-pages",
+    "title": "Custom Admin Pages",
+    "description": "Build custom operational dashboards, analytics screens, or standalone administrative tools inside the Dyrected Admin panel.",
+    "runtime": "self-hosted",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience/custom-components",
+    "sourceFile": "apps/docs/content/docs/editor-experience/custom-components/custom-pages.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/custom-components/custom-pages",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/custom-components/custom-pages",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/custom-pages",
+    "status": "classified"
+  },
+  {
     "id": "editor-experience--custom-components--dashboard",
     "relativePath": "editor-experience/custom-components/dashboard",
     "title": "Dashboard",
@@ -1107,6 +1122,21 @@
     "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/custom-components/overview",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/custom-components/overview",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview",
+    "status": "classified"
+  },
+  {
+    "id": "editor-experience--custom-components--styling",
+    "relativePath": "editor-experience/custom-components/styling",
+    "title": "Styling Custom Components",
+    "description": "Make your own field, slot, and layout components look at home in the admin, in light and dark mode, using the admin's theme variables and your app's own CSS.",
+    "runtime": "self-hosted",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience/custom-components",
+    "sourceFile": "apps/docs/content/docs/editor-experience/custom-components/styling.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/custom-components/styling",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/custom-components/styling",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/styling",
     "status": "classified"
   },
   {

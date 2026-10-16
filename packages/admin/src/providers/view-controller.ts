@@ -109,6 +109,21 @@ export interface ViewController {
   addPatch: (id: string, patch: Record<string, unknown>) => () => void;
 }
 
+function isSameDocuments(a: unknown[], b: unknown[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const docA = a[i] as any;
+    const docB = b[i] as any;
+    if (docA === docB) continue;
+    if (!docA || !docB || typeof docA !== "object" || typeof docB !== "object") return false;
+    if (docA.id !== docB.id) return false;
+    if (docA.updatedAt !== docB.updatedAt) return false;
+    if (JSON.stringify(docA) !== JSON.stringify(docB)) return false;
+  }
+  return true;
+}
+
 /**
  * Layouts rebuild their slice on render, and several data hooks hand back a
  * fresh `[]` while loading. Comparing by value keeps that from notifying
@@ -121,25 +136,35 @@ function isSameSlice(a: ViewDataSlice, b: ViewDataSlice): boolean {
     const left = a[key] as unknown;
     const right = b[key] as unknown;
     if (Object.is(left, right)) continue;
-    if (Array.isArray(left) && Array.isArray(right) && left.length === 0 && right.length === 0) continue;
-    if (
-      key === "pagination" &&
-      left && right &&
-      JSON.stringify(left) === JSON.stringify(right)
-    ) continue;
+    if (key === "documents") {
+      if (Array.isArray(left) && Array.isArray(right) && isSameDocuments(left, right)) continue;
+      return false;
+    }
+    if (key === "pagination" || key === "sort" || key === "where") {
+      if (left !== undefined && right !== undefined && JSON.stringify(left) === JSON.stringify(right)) continue;
+      if (left === undefined && right === undefined) continue;
+      return false;
+    }
+    if (Array.isArray(left) && Array.isArray(right)) {
+      if (left.length === 0 && right.length === 0) continue;
+      if (JSON.stringify(left) === JSON.stringify(right)) continue;
+      return false;
+    }
     return false;
   }
   return true;
 }
 
+type DataOwner = { owner: symbol; slice: ViewDataSlice; handlers?: ViewDataHandlers };
+
 export function createViewController(initial: CollectionViewState, initialHandlers: ViewControllerHandlers): ViewController {
   let base = initial;
   let baseHandlers = initialHandlers;
-  let data: { owner: symbol; slice: ViewDataSlice; handlers?: ViewDataHandlers } | null = null;
+  let data: DataOwner | null = null;
   const patches = new Map<symbol, { id: string; patch: Record<string, unknown> }>();
 
   let merged: CollectionViewState = initial;
-  let mergedFrom: { base: CollectionViewState; data: typeof data; patchCount: number; patchVersion: number } | null = null;
+  let mergedFrom: { base: CollectionViewState; data: DataOwner | null; patchCount: number; patchVersion: number } | null = null;
   let patchVersion = 0;
   const listeners = new Set<() => void>();
 
@@ -203,7 +228,10 @@ export function createViewController(initial: CollectionViewState, initialHandle
       emit();
     },
     setData: (owner, slice, sliceHandlers) => {
-      if (data && data.owner === owner && data.handlers === sliceHandlers && isSameSlice(data.slice, slice)) return;
+      if (data && data.owner === owner && isSameSlice(data.slice, slice)) {
+        data.handlers = sliceHandlers;
+        return;
+      }
       data = { owner, slice, handlers: sliceHandlers };
       emit();
     },

@@ -3795,7 +3795,7 @@ Surface tokens — backgrounds, cards, borders, muted text — are the ones that
 
 ## Scoping and escape hatches
 
-If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead of a CSS override.
+If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead of a CSS override. To make that component follow the admin's theme, see [Styling Custom Components](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Recommended path
 

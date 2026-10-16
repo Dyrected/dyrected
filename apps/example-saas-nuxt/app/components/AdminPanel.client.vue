@@ -2,6 +2,7 @@
 import "@dyrected/admin/styles";
 import RsvpLink from "~/components/RsvpLink.vue";
 import AuthorAnalytics from "~/components/AuthorAnalytics.vue";
+import InventoryHubPage from "~/components/admin/InventoryHubPage.vue";
 
 const { preference, systemTheme, setTheme } = useTheme();
 
@@ -10,6 +11,9 @@ const customComponents = {
     rsvpLink: RsvpLink,
   },
   AuthorAnalytics,
+  pages: {
+    "catalog.inventoryHub": InventoryHubPage,
+  },
 };
 
 const runtimeConfig = useRuntimeConfig();

@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useRef } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   ViewControllerContext,
   type ViewDataHandlers,
@@ -14,15 +14,13 @@ import {
  */
 export function usePublishViewData(slice: ViewDataSlice, handlers?: ViewDataHandlers): void {
   const controller = useContext(ViewControllerContext);
-  const ownerRef = useRef<symbol | null>(null);
-  if (!ownerRef.current) ownerRef.current = Symbol("view-data-owner");
+  const [owner] = useState(() => Symbol("view-data-owner"));
 
-  useLayoutEffect(() => {
-    controller?.setData(ownerRef.current!, slice, handlers);
-  }, [controller, slice, handlers]);
+  useEffect(() => {
+    controller?.setData(owner, slice, handlers);
+  }, [controller, owner, slice, handlers]);
 
-  useLayoutEffect(() => {
-    const owner = ownerRef.current!;
+  useEffect(() => {
     return () => controller?.clearData(owner);
-  }, [controller]);
+  }, [controller, owner]);
 }
