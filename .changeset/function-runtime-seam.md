@@ -12,4 +12,4 @@ Every function Dyrected calls on your behalf (hooks, access rules, action handle
 
 **A conformance suite you can run against any runtime**
 
-`@dyrected/core/conformance` exports `conformanceCases`, `runConformance` and a small `ConformanceHarness` interface. Each case is a config plus scripted requests, asserting the same responses and database state wherever the config runs. Core runs the suite against the in-process runtime; a hosting platform runs it against its own.
+`@dyrected/core/conformance` exports `conformanceCases`, `runConformance` and a small `ConformanceHarness` interface. Each case is a config plus scripted requests, asserting the same responses and database state wherever the config runs. Core runs the suite against the in-process runtime; a hosting platform runs it against its own. `InMemoryAdapter`, the database the suite runs on, is exported from the same entry point.
