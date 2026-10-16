@@ -38,7 +38,7 @@ Operational views can now render documents with your own component, while Dyrect
 
 - `ViewLayout` gains `"custom"`, and `@dyrected/core` exports `CustomViewConfig`, `CustomViewDataConfig`, `defineCustomView` and `CUSTOM_VIEW_FETCH_ALL_LIMIT`. Views serialized to the admin now carry `component`, `options` and `data`.
 - `@dyrected/admin/public` exports `ViewControllerContext`, `createViewController` and `DYRECTED_VIEW_KEY` for hosts that embed the controller. The controller is subscribable, like the form controller.
-- `dyrected generate-types` now includes custom layout components in `Register.componentKeys.viewLayouts`.
+- `npx dyrected generate:types` now includes custom layout components in `Register.componentKeys.viewLayouts`.
 
 **Upgrade notes**
 
