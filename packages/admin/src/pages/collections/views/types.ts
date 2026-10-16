@@ -257,7 +257,13 @@ export interface SerializedView {
    * - `"cards"`: Responsive gallery of structured visual cards.
    * Defaults to `"table"`.
    */
-  layout?: "table" | "spreadsheet" | "kanban" | "calendar" | "gantt" | "cards"
+  layout?: "table" | "spreadsheet" | "kanban" | "calendar" | "gantt" | "cards" | "custom"
+  /** Key in `AdminComponents.viewLayouts` (required when `layout: "custom"`). */
+  component?: string
+  /** Serializable options for a custom layout, read via `useCollectionView().config.options`. */
+  options?: Record<string, unknown>
+  /** How the host loads documents for a custom layout. */
+  data?: { pageSize?: number; fetchAll?: boolean }
   /** Base query filter applied before user toolbar filters (Where DSL object or JEXL string). */
   filter?: Record<string, any> | string
   /** Field name used to organize records into kanban columns or collapsible grouped sections in table and cards. */

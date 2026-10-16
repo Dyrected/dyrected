@@ -117,7 +117,7 @@ function useActionRunner(options: {
     [runningKey, keyOf],
   );
 
-  return { pending, isRunning, initiate, resolve, cancel, execute, isActionRunning };
+  return { pending, isRunning, runningKey, initiate, resolve, cancel, execute, isActionRunning };
 }
 
 /**

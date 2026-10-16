@@ -17,7 +17,7 @@ export interface ReferencedComponentKeys {
   collectionView: Set<string>;
   /** Reserved for custom document forms (spec 2). Empty until config can reference them. */
   forms: Set<string>;
-  /** Reserved for custom view layouts (spec 3). Empty until config can reference them. */
+  /** `component` of views with `layout: "custom"`. */
   viewLayouts: Set<string>;
   /** `admin.pages[].component` keys. */
   pages: Set<string>;
@@ -73,6 +73,7 @@ function scanViews(views: unknown, keys: ReferencedComponentKeys): void {
   if (!Array.isArray(views)) return;
   for (const view of views as Loose[]) {
     addSlots(keys.collectionView, view?.components, VIEW_SLOTS);
+    if (view?.layout === "custom") addKeys(keys.viewLayouts, view.component);
   }
 }
 

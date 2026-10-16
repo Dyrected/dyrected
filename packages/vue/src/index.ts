@@ -25,6 +25,9 @@ export * from './composables/useAdminBridge';
 export * from './composables/useAdminNavigate';
 export * from './composables/useAdminNotify';
 export * from './composables/useAccess';
+export * from './composables/useCollectionView';
+export { defineCustomView } from '@dyrected/admin/public';
+export type { CustomViewConfig, CustomViewDataConfig } from '@dyrected/admin/public';
 
 // Admin component registration helpers
 export { defineAdminComponents } from '@dyrected/admin/public';

@@ -330,4 +330,61 @@ describe('Vue Bridge ambient context injection & updates', () => {
     });
     container.remove();
   });
+
+  it('resolves useCollectionView() inside a custom layout island with no manual provide', async () => {
+    const { ViewControllerContext, createViewController } = await import('@dyrected/admin/public') as any;
+    const { useCollectionView } = await import('../../composables/useCollectionView');
+
+    const state: any = {
+      collection: { slug: 'guests' },
+      viewSlug: 'seating',
+      config: { options: { tableField: 'table' } },
+      documents: [{ id: '1', name: 'Ada' }],
+      total: 1,
+      isLoading: false,
+      isFetching: false,
+      isTruncated: false,
+      pagination: { page: 1, pageSize: 50, totalPages: 1 },
+      search: '',
+      selectedIds: [],
+      permissions: { canCreate: true, canUpdate: true, canDelete: false },
+      urls: { collection: '/collections/guests', create: '/collections/guests/new' },
+      actions: [],
+      runningActions: [],
+    };
+    const handlers: any = { updateDocument: vi.fn(), refetch: vi.fn(), open: vi.fn(), runAction: vi.fn() };
+    const controller = (createViewController as any)(state, handlers);
+
+    const Layout = defineComponent({
+      name: 'SeatingLayout',
+      setup() {
+        const { documents, config } = useCollectionView();
+        return () =>
+          h('div', { id: 'seating' }, `${documents.value.map((d: any) => d.name).join(',')}|${config.value.options?.tableField}`);
+      },
+    });
+    const Wrapped = wrapVueComponent(Layout);
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(ViewControllerContext.Provider, { value: controller }, React.createElement(Wrapped, {})),
+      );
+    });
+    expect(container.querySelector('#seating')?.textContent).toBe('Ada|table');
+
+    // The island follows controller updates through its subscription.
+    await React.act(async () => {
+      controller.publish({ ...state, documents: [{ id: '2', name: 'Grace' }] }, handlers);
+    });
+    expect(container.querySelector('#seating')?.textContent).toBe('Grace|table');
+
+    await React.act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
 });

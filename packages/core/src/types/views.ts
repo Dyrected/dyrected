@@ -18,8 +18,9 @@ export type ViewComponentSlots = CollectionViewComponentSlots;
  * - `'calendar'`: Event schedule grid plotting records across month/week/day views by date.
  * - `'gantt'`: Timeline bars plotted across start and end dates.
  * - `'cards'`: Visual image/thumbnail gallery grid.
+ * - `'custom'`: A host-supplied component registered under `AdminComponents.viewLayouts`.
  */
-export type ViewLayout = 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards';
+export type ViewLayout = 'table' | 'spreadsheet' | 'kanban' | 'calendar' | 'gantt' | 'cards' | 'custom';
 
 /**
  * Scope and placement for an operational view action:
@@ -367,6 +368,42 @@ export interface CardsViewConfig extends ViewConfigBase {
 }
 
 /**
+ * Custom view — the host app supplies the component that renders documents.
+ *
+ * Dyrected keeps owning the header, KPI metrics, search, pagination, selection,
+ * bulk actions and action execution. The component only renders documents and
+ * reads everything else through `useCollectionView()` / `useViewActions()`.
+ */
+export interface CustomViewConfig extends ViewConfigBase {
+  layout: 'custom';
+  /** Key in `AdminComponents.viewLayouts`, for example `"guests.seatingChart"`. */
+  component: string;
+  /**
+   * Serializable options handed to the component through
+   * `useCollectionView().config.options`. Never put functions here: the config
+   * travels to the admin as JSON.
+   */
+  options?: Record<string, unknown>;
+  /** How the host loads documents for this layout. Defaults to `{ pageSize: 50 }`. */
+  data?: CustomViewDataConfig;
+}
+
+/** Document loading strategy for a custom view. */
+export interface CustomViewDataConfig {
+  /** Documents per page. Defaults to 50, and is capped at 100 by the API. */
+  pageSize?: number;
+  /**
+   * Load every matching document, up to {@link CUSTOM_VIEW_FETCH_ALL_LIMIT}.
+   * Use it for layouts that need the full set (a map, a seating chart). A
+   * visible notice tells the user when the result was truncated.
+   */
+  fetchAll?: boolean;
+}
+
+/** Safety cap on documents loaded when `data.fetchAll` is set. */
+export const CUSTOM_VIEW_FETCH_ALL_LIMIT = 1000;
+
+/**
  * Complete configuration for a tailored operational view.
  */
 export type ViewConfig =
@@ -374,7 +411,8 @@ export type ViewConfig =
   | KanbanViewConfig
   | CalendarViewConfig
   | GanttViewConfig
-  | CardsViewConfig;
+  | CardsViewConfig
+  | CustomViewConfig;
 
 /**
  * Backwards-compatible aliases for builder types.
@@ -385,6 +423,7 @@ export type DefineKanbanViewOptions = KanbanViewConfig;
 export type DefineCalendarViewOptions = CalendarViewConfig;
 export type DefineGanttViewOptions = GanttViewConfig;
 export type DefineCardsViewOptions = CardsViewConfig;
+export type DefineCustomViewOptions = CustomViewConfig;
 export type DefineViewOptions = ViewConfig;
 
 /**
@@ -467,9 +506,21 @@ export function defineView(config: DefineKanbanViewOptions): DefineKanbanViewOpt
 export function defineView(config: DefineCalendarViewOptions): DefineCalendarViewOptions;
 export function defineView(config: DefineGanttViewOptions): DefineGanttViewOptions;
 export function defineView(config: DefineCardsViewOptions): DefineCardsViewOptions;
+export function defineView(config: DefineCustomViewOptions): DefineCustomViewOptions;
 export function defineView<const T extends DefineViewOptions>(config: T): T;
 export function defineView<const T extends DefineViewOptions>(config: T): T {
+  assertCustomViewComponent(config);
   return config;
+}
+
+function assertCustomViewComponent(config: { layout?: string; component?: unknown; slug?: string }): void {
+  if (config.layout !== 'custom') return;
+  if (typeof config.component !== 'string' || config.component.trim() === '') {
+    throw new Error(
+      `View "${config.slug ?? '(unnamed)'}" uses layout: "custom" but has no \`component\`. ` +
+        `Set \`component\` to a key registered in AdminComponents.viewLayouts.`,
+    );
+  }
 }
 
 /** Convenience helper for table views. Enforces no view-specific required fields. */
@@ -489,6 +540,12 @@ export function defineCalendarView(config: DefineCalendarViewOptions): DefineCal
 
 /** Convenience helper for gantt views. Enforces `startDateField` and `endDateField` are provided. */
 export function defineGanttView(config: DefineGanttViewOptions): DefineGanttViewOptions {
+  return config;
+}
+
+/** Convenience helper for custom-layout views. Enforces `component` is provided. */
+export function defineCustomView(config: DefineCustomViewOptions): DefineCustomViewOptions {
+  assertCustomViewComponent(config);
   return config;
 }
 

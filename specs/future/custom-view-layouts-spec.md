@@ -1,7 +1,7 @@
 # Custom View Layouts Specification
 
 **Document Version:** 0.1.0 (Draft)
-**Status:** Proposed
+**Status:** Phase 1 implemented (custom layouts and public API). Phase 2 (built-ins on the controller) and docs remain. See [Implementation Status](#12-implementation-status).
 **Scope:** `@dyrected/core` (view types), `@dyrected/admin` (view engine), `@dyrected/react`, `@dyrected/vue`
 **Part of:** Custom Admin Surfaces (3 of 4). Depends on [Component Registry & Bridge](./custom-components-registry-spec.md).
 
@@ -112,7 +112,7 @@ interface CollectionViewApi {
 }
 ```
 
-`updateDocument` is what drag-and-drop layouts need. The existing kanban implements optimistic move logic internally (`use-grouped-view-data.ts`), and this promotes that behavior to public API. It goes through the normal update path (hooks, access, validation). A rejected update rolls back and surfaces through `useAdminNotify`.
+`updateDocument` is what drag-and-drop layouts need. The existing kanban implements optimistic move logic internally (`use-grouped-view-data.ts`), and this promotes that behavior to public API. It goes through the normal update path (hooks, access, validation). A rejected update rolls back and shows an error toast.
 
 ### `useViewActions()`
 
@@ -185,7 +185,7 @@ This is a refactor, not a prerequisite. Phase 1 can ship custom layouts with bui
 | View filter builder and navigation customizer | list custom views like any view. Layout-specific controls (column picker) are hidden. |
 | `access.read` | gates the route before the component mounts. |
 | Loading skeleton | host shows a generic skeleton until first load completes. The layout may render its own via `isLoading`. |
-| Unresolved `component` key | render a placeholder card with a "Show as table" action (falls back to a synthesized table view), plus a `component-unresolved` diagnostic. |
+| Unresolved `component` key | render a placeholder card with a "Show as table" action (falls back to the built-in table). As decided in the registry spec §7.1, no `ConfigDiagnostic` is emitted: the server cannot know which components the host registered. |
 
 ## 9. Implementation Plan
 
@@ -210,3 +210,28 @@ This is a refactor, not a prerequisite. Phase 1 can ship custom layouts with bui
 1. **Layout switcher.** Should a collection be able to offer `layouts: ['table', { component, label, icon }]` so users toggle between built-in and custom within one view (there is an existing `useLayoutPreference`)? Deferred to keep v1 small, but the config shape above does not preclude it.
 2. **Page size vs fetchAll defaults.** Is a 1,000-document cap right for `fetchAll`? Kanban today presumably has its own limit; align with it.
 3. **Option validation.** `options` is an untyped bag. Should a layout be able to declare an options schema for config diagnostics? Likely a plugin-packaging concern.
+
+## 12. Implementation Status
+
+| Section | Item | Status | Evidence |
+| --- | --- | --- | --- |
+| 3 | `'custom'` layout, `CustomViewConfig`, `defineCustomView`, `defineView` overload | **Done** | `packages/core/src/types/views.ts` |
+| 3 | `component` required for `layout: "custom"` | **Done** | Required by the type, and `defineView`/`defineCustomView` throw at definition time |
+| 3 | `component`, `options`, `data` reach the admin | **Done** | `serializeViewForApi` in `packages/core/src/router.ts` |
+| 3 | `data.fetchAll` with 1,000-document cap and truncation notice | **Done** | `CUSTOM_VIEW_FETCH_ALL_LIMIT`; `use-custom-view-session.ts`, `custom-layout.tsx` |
+| 5 | `useCollectionView()`, `useViewActions()`, `useGroupedDocuments()` (React) | **Done** | `packages/admin/src/hooks/use-collection-view.ts`, re-exported by `@dyrected/react` |
+| 5 | Vue composables and `DYRECTED_VIEW_KEY` | **Done** | `packages/vue/src/composables/useCollectionView.ts`, provided by the bridge |
+| 5 | Optimistic `updateDocument` with rollback | **Done** | Goes through `collection.update`, so hooks, access and validation run |
+| 5 | `run()` through the host confirm dialog and input form, `input` to skip the form | **Done** | `runCustomLayoutAction` in `operational-view-page.tsx` |
+| 8 | Unresolved key: placeholder with "Show as table" | **Done** | `custom-layout.tsx` |
+| 8 | Host skeleton until first load | **Done** | `custom-layout.tsx` |
+| 4 | Host toolbar: search, metric-card filters, pagination, bulk bar | **Done** | `custom-layout.tsx`. The faceted column-filter builder is table-only for now, so custom layouts get search and metric-card filters |
+| 7 | Built-in layouts on the controller, registered in `viewLayouts` | **Not started** | Phase 2. A refactor, not a prerequisite |
+| 9.6 | Docs and a "seating chart" recipe | **Not started** | Needs the `apps/docs` human-verified flow |
+
+### Behaviour notes
+
+- `filters.set(where)` adds a **layout-owned** filter that is AND-merged with the toolbar's; the toolbar's own filters stay read-only to the layout. `set(undefined)` clears it.
+- `run()` resolves `true` once the action was dispatched. When a confirm dialog is shown it resolves right away and progress is reported through `isRunning()`.
+- The controller is subscribable (`getState()` / `subscribe()`), the same shape as `DyrectedFormController`, so the Vue bridge provides it directly instead of a snapshot.
+- Custom views are configuration-only. The navigation customizer does not offer `custom`, because a view created in the UI has no component.

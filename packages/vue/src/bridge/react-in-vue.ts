@@ -6,11 +6,13 @@ import {
   useOptionalDyrected,
   useAdminBridgeContext,
   useAdminTheme,
+  ViewControllerContext,
 } from '@dyrected/admin/public';
 import { DYRECTED_FORM_CONTROLLER_KEY, DYRECTED_FIELD_PATH_KEY } from '../composables/useDyrectedForm';
 import { DYRECTED_CLIENT_KEY } from '../composables/useDyrected';
 import { ADMIN_THEME_CONTROLLER_KEY } from '../composables/useAdminTheme';
 import { DYRECTED_ADMIN_KEY } from '../composables/useAdminBridge';
+import { DYRECTED_VIEW_KEY } from '../composables/useCollectionView';
 
 function arePropsShallowEqual(prev: Record<string, any> | null, next: Record<string, any> | null): boolean {
   if (prev === next) return true;
@@ -58,6 +60,7 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
     const dyrected = useOptionalDyrected();
     const adminBridge = useAdminBridgeContext();
     const themeResult = useAdminTheme();
+    const viewController = ReactModule.useContext(ViewControllerContext);
 
     // Mutable cell holding the latest admin bridge. The Vue island receives a
     // stable facade that reads through it, so `provide()` (which runs once in
@@ -96,6 +99,10 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
         },
       });
 
+      // The view controller is subscribable and its identity is stable per view,
+      // so it is provided directly (spec §4: controllers, never snapshots).
+      if (viewController) provides.set(DYRECTED_VIEW_KEY, viewController);
+
       return defineComponent({
         name: `DyrectedBridgeContextProvider(${(VueComp as any).name || 'Component'})`,
         props: { innerProps: { type: Object, required: true } },
@@ -109,7 +116,7 @@ export function wrapVueComponent(VueComp: Component, appContext?: AppContext | n
         },
       });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formController, fieldPath, client, themeController]);
+    }, [formController, fieldPath, client, themeController, viewController]);
 
     // A new island type starts from a clean render.
     ReactModule.useEffect(() => {

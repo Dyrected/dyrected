@@ -196,3 +196,28 @@ export type {
   AdminComponentErrorBoundaryState,
 } from "../components/admin-component-slot";
 
+// Custom View Layouts (Spec 3)
+export {
+  useCollectionView,
+  useViewActions,
+  useGroupedDocuments,
+  buildCollectionViewApi,
+} from "../hooks/use-collection-view";
+export type {
+  CollectionViewApi,
+  ViewActionsApi,
+  ResolvedViewAction,
+} from "../hooks/use-collection-view";
+export { ViewControllerContext, DYRECTED_VIEW_KEY, createViewController } from "../providers/view-controller";
+export type {
+  CollectionViewState,
+  ViewController,
+  ViewControllerHandlers,
+  ViewDocument,
+  ViewOpenMode,
+  ViewLayoutConfig,
+} from "../providers/view-controller";
+export { groupDocuments } from "../lib/group-documents";
+export type { DocumentGroup, GroupedDocuments } from "../lib/group-documents";
+export { defineCustomView } from "@dyrected/core";
+export type { CustomViewConfig, CustomViewDataConfig } from "@dyrected/core";

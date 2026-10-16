@@ -25,6 +25,10 @@ export {
   useAdminNavigate,
   useAdminNotify,
   useAccess,
+  useCollectionView,
+  useViewActions,
+  useGroupedDocuments,
+  defineCustomView,
   defineAdminComponents,
 } from '@dyrected/admin/public';
 export type {
@@ -43,6 +47,15 @@ export type {
   AdminViewLayoutProps,
   AdminPageProps,
   TypedAdminComponents,
+  CollectionViewApi,
+  ViewActionsApi,
+  ResolvedViewAction,
+  ViewDocument,
+  ViewOpenMode,
+  GroupedDocuments,
+  DocumentGroup,
+  CustomViewConfig,
+  CustomViewDataConfig,
 } from '@dyrected/admin/public';
 
 // Re-export core types and errors from SDK for convenience

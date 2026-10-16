@@ -38,6 +38,7 @@ import {
   SpreadsheetLayout,
   type SpreadsheetLayoutProps,
 } from "./spreadsheet/spreadsheet-layout"
+import { CustomLayout } from "./custom/custom-layout"
 import { RecordPeekDrawer } from "./record-peek-drawer"
 import { buildServerWhere } from "./build-server-where"
 
@@ -270,6 +271,44 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
       actionRunner.initiate(action, ids, targetContext)
     },
     [actionRunner, systemOps],
+  )
+
+  /**
+   * Action entry point for custom layouts. With `input`, the request skips the
+   * confirm/input dialogs; without it, the host dialogs run as usual.
+   */
+  const runCustomLayoutAction = useCallback(
+    async (action: SerializedAction, docs: Record<string, any>[], input?: Record<string, unknown>) => {
+      const ids = docs.map((doc) => String(doc.id))
+      if (isSystemAction(action)) {
+        systemOps.runSystemAction(action.operation, ids)
+        return true
+      }
+      if (input !== undefined) {
+        return actionRunner.execute(
+          {
+            actionName: action.name,
+            label: action.label,
+            confirm: action.confirm,
+            submitLabel: action.submitLabel,
+            fields: action.fields,
+            ids,
+            doc: docs[0],
+            docs,
+          },
+          input,
+        )
+      }
+      actionRunner.initiate(action, ids, { doc: docs[0], docs })
+      return true
+    },
+    [actionRunner, systemOps],
+  )
+
+  const canUpdate = useMemo(() => evaluateAccess(schema?.access?.update, user), [schema, user])
+  const customPermissions = useMemo(
+    () => ({ canCreate, canUpdate, canDelete }),
+    [canCreate, canUpdate, canDelete],
   )
 
   const resolvePreview = useCallback(
@@ -568,7 +607,23 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
       {renderSlot("beforeViewContent")}
 
-      {layout === "kanban" ? (
+      {layout === "custom" ? (
+        <CustomLayout
+          slug={slug}
+          schema={schema}
+          view={view}
+          toolbarWhere={filteredWhere}
+          actions={actions}
+          permissions={customPermissions}
+          hasDetail={hasDetail}
+          runningKey={actionRunner.runningKey}
+          onRunAction={runCustomLayoutAction}
+          isRunningAction={isRunningAction}
+          renderTableFallback={() => (
+            <TableLayout {...(layoutProps as TableLayoutProps)} resolvePreview={resolvePreview} hasDetail={hasDetail} />
+          )}
+        />
+      ) : layout === "kanban" ? (
         <KanbanLayout {...(layoutProps as KanbanLayoutProps)} />
       ) : layout === "calendar" ? (
         <CalendarLayout {...(layoutProps as CalendarLayoutProps)} />
