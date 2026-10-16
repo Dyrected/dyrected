@@ -1,0 +1,126 @@
+---
+title: Replacing a Built-in Layout
+description: Swap the table, kanban, cards, calendar, or spreadsheet layout for your own component across every view that uses it, and keep Dyrected's toolbar, paging, and dialogs.
+---
+
+Sometimes you do not need a new kind of view. You want your own take on one that already exists, such as a kanban board that matches your product, in every view that uses it. You can do that by registering a component under the built-in layout's name. Views keep their `layout: "kanban"` setting, so nothing in your config changes.
+
+By the end of this page you will have replaced the kanban layout with your own board, and you will know what your replacement receives, what it does not, and where the edges are.
+
+This page builds on [Custom View Layouts](/docs/editor-experience/custom-components/view-layouts). Read that first if you have not written a custom layout before, because a replacement is the same kind of component with a different registration.
+
+## How it works
+
+Every view layout has a name: `table`, `spreadsheet`, `kanban`, `cards`, `calendar`, or `gantt`. When the admin renders a view, it first checks whether you registered a component under that name in `components.viewLayouts`. If you did, it renders yours inside Dyrected's usual shell, with the same hooks a [custom layout](/docs/editor-experience/custom-components/view-layouts) gets. If you did not, it renders the built-in one.
+
+The registration is the only change. Your views are untouched:
+
+```ts
+defineView({
+  slug: "asoebi-pipeline",
+  label: "Asoebi Fulfillment",
+  layout: "kanban",
+  groupBy: "asoebiStatus",
+});
+```
+
+## Replace the kanban layout
+
+This component draws every kanban view as a row of columns. It reads which field to group by from the view's own `groupBy`, so it works for any kanban view, and moving a card to another column saves the new value:
+
+```tsx
+// PipelineBoard.tsx
+import { useCollectionView, useGroupedDocuments } from "@dyrected/react";
+
+export function PipelineBoard() {
+  const { config, updateDocument, open, permissions } = useCollectionView();
+  const groupBy = config.groupBy ?? "status";
+  const { groups, ungrouped } = useGroupedDocuments(groupBy);
+
+  const columns = [...groups, ...(ungrouped.length ? [{ key: "", label: "No status", docs: ungrouped }] : [])];
+
+  function move(id: string, value: string) {
+    updateDocument(id, { [groupBy]: value || null }).catch(() => {});
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
+      {columns.map((column) => (
+        <section key={column.key || "none"} style={{ minWidth: 240 }}>
+          <h3>
+            {column.label} ({column.docs.length})
+          </h3>
+          {column.docs.map((doc) => (
+            <article key={doc.id}>
+              <button type="button" onClick={() => open(doc.id, "drawer")}>
+                {doc.name ?? doc.id}
+              </button>
+              {permissions.canUpdate ? (
+                <select
+                  aria-label={`Move ${doc.name ?? doc.id}`}
+                  value={column.key}
+                  onChange={(event) => move(doc.id, event.target.value)}
+                >
+                  <option value="">No status</option>
+                  {groups.map((group) => (
+                    <option key={group.key} value={group.key}>
+                      {group.label}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </article>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+```
+
+Register it under the name `kanban`:
+
+```tsx
+"use client";
+
+import { DyrectedAdmin } from "@dyrected/next/admin";
+import { PipelineBoard } from "./PipelineBoard";
+
+export function AdminClient() {
+  return <DyrectedAdmin components={{ viewLayouts: { kanban: PipelineBoard } }} />;
+}
+```
+
+Open any kanban view. You should see Dyrected's header, KPI cards, search, and Filter bar as before, with your columns below instead of the built-in board. Open a table view and it is unchanged, because you only replaced `kanban`.
+
+## What your replacement receives
+
+It gets everything a [custom layout](/docs/editor-experience/custom-components/view-layouts#the-hooks) gets: the documents, search, filters, paging, selection, `updateDocument`, `open`, and `useViewActions()`. The shell around it is Dyrected's, so editors keep the same toolbar and dialogs.
+
+Two things differ from a `layout: "custom"` view:
+
+- **`config` carries the layout settings, not `options`.** For a replaced layout, `config` includes `columns`, `groupBy`, `dateField`, `startDateField`, and `endDateField`. `config.options` is empty, because only `layout: "custom"` views carry `options`. Read what your layout needs from the view's own settings instead.
+- **You do not get the built-in layout's extras.** The built-in table has a column picker and group-by control, and the built-in kanban has drag and drop and per-column loading. Your replacement shows only Dyrected's shared toolbar, and you build the rest.
+
+{/* NEEDS-HUMAN-VERIFY: config for replaced layouts lists columns, groupBy and the three date fields only. Settings such as resourceField, moveAction, and moveMode are not passed through. Confirm whether that is the intended surface or whether the full view config should be exposed. */}
+
+## Names and their quirks
+
+| Name | Notes |
+| --- | --- |
+| `table` | Views can also switch to `spreadsheet` with the switcher in the header. That is a separate name, so replacing `table` does not replace the spreadsheet |
+| `spreadsheet` | Replaces the inline-editing grid |
+| `kanban` | Uses `config.groupBy` |
+| `cards` | Uses `config.groupBy` for grouped cards |
+| `calendar` | Uses `config.dateField` |
+| `gantt` | Dyrected has no gantt renderer yet, so a gantt view shows as a table. Registering `viewLayouts.gantt` is how you supply one, using `config.startDateField` and `config.endDateField` |
+
+A replacement applies to every view with that layout, in every collection. If only one view should look different, give that view `layout: "custom"` and its own `component` instead.
+
+## If your component is missing or throws
+
+An unregistered name just means the built-in layout renders, since a replacement is optional. A component that throws shows an inline error card with a **Retry** button, and the rest of the page keeps working. For a custom layout whose key is not registered, see [Registration warnings](/docs/editor-experience/custom-components/registration-warnings).
+
+## Recommended path
+
+Prefer a `layout: "custom"` view for a one-off screen, and replace a built-in layout only when you want the same look across every view of that kind. Start by copying the example above, read `config` for what the layout needs, and keep the replacement small so editors still get Dyrected's toolbar and dialogs for free.

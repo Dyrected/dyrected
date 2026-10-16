@@ -1,0 +1,280 @@
+---
+title: Custom View Layouts
+description: Draw a view's records your own way, such as a seating chart or a floor plan, while Dyrected keeps the header, filters, search, paging, and action dialogs.
+---
+
+The built-in view layouts (table, kanban, calendar, cards, spreadsheet) cover most jobs. When the records need a shape none of them offers, such as guests grouped by table or orders on a map, you can write the layout yourself. You draw the records. Dyrected still owns everything around them: the header, the KPI cards, search, filters, paging, selection, and the confirm dialogs for actions.
+
+By the end of this page you will have a **seating chart** view that groups guests by table, moves a guest to another table from a dropdown, and checks guests in, all inside a normal Dyrected view.
+
+This page assumes you know the declare-then-provide pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview). The examples use the guest list from [Operational Views](/docs/model-content/operational-views/overview): a `guest-responses` collection with `name`, `attending`, `guestCount`, `tableNumber`, and `checkedIn` fields, and a `checkIn` row action like the one in [Actions](/docs/model-content/operational-views/actions).
+
+## What you write and what Dyrected keeps
+
+A custom layout is a view whose `layout` is `"custom"`. Dyrected loads the records and runs everything around them; your component only renders documents and calls a few hooks.
+
+| Dyrected keeps | Your component does |
+| --- | --- |
+| Header, title, header actions | Draw the documents |
+| KPI cards (`metrics`) | Handle interactions specific to your layout (drag, zoom, pick) |
+| Search, field filters, match all/any | Save changes with `updateDocument` |
+| Loading records, paging, sorting | Start actions with `run` |
+| Selection state and the bulk action bar | |
+| Confirm dialogs and input forms for actions | |
+
+Because the shell is shared, every custom view gets the same toolbar the table has, and it stays consistent as Dyrected improves.
+
+## Step 1: define the view
+
+Declare the view on the collection like any other, with `layout: "custom"` and a `component` key that you will register in step 3. The key is yours to name.
+
+```ts
+import { defineAction, defineView } from "@dyrected/core";
+
+const checkInAction = defineAction({
+  name: "checkIn",
+  label: "Check In",
+  type: "row",
+  mutation: { checkedIn: true },
+});
+
+export const seatingChart = defineView({
+  slug: "seating-chart",
+  label: "Seating Chart",
+  icon: "Armchair",
+  layout: "custom",
+  component: "guest-responses.seatingChart",
+  filter: { attending: { equals: true } },
+  data: { fetchAll: true },
+  actions: [checkInAction],
+});
+```
+
+Add `seatingChart` to the collection's `views` array, and to a workspace if you use [navigation workspaces](/docs/model-content/operational-views/workspaces-and-navigation). `filter`, `sort`, `metrics`, `actions`, `access`, and `badge` work exactly as they do on any other view.
+
+`component` is required. If you leave it out, `defineView` throws when your config loads, so you find out immediately rather than in the admin.
+
+The `data: { fetchAll: true }` line asks Dyrected to load every matching record instead of one page, which a seating chart needs. More on that in [Choosing how records load](#choosing-how-records-load).
+
+## Step 2: write the component
+
+Your component reads the records and the view's state through hooks. This one groups guests by table, lets an editor move a guest to another table, and starts the `checkIn` action:
+
+```tsx
+// SeatingChart.tsx
+import { useCollectionView, useGroupedDocuments, useViewActions } from "@dyrected/react";
+
+export function SeatingChart() {
+  const { permissions, updateDocument, open } = useCollectionView();
+  const { actions, run } = useViewActions();
+  const { groups, ungrouped } = useGroupedDocuments("tableNumber");
+
+  const tables = [
+    ...groups.map((group) => ({ key: group.key, title: `Table ${group.label}`, guests: group.docs })),
+    ...(ungrouped.length ? [{ key: "", title: "Not seated", guests: ungrouped }] : []),
+  ];
+  const checkIn = actions.find((action) => action.name === "checkIn");
+
+  function seat(guestId: string, table: string) {
+    // The admin shows the move at once, and rolls it back with an error toast if the server refuses it.
+    updateDocument(guestId, { tableNumber: table ? Number(table) : null }).catch(() => {});
+  }
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+      {tables.map((table) => (
+        <section key={table.key || "none"}>
+          <h3>{table.title}</h3>
+          <ul>
+            {table.guests.map((guest) => (
+              <li key={guest.id}>
+                <button type="button" onClick={() => open(guest.id, "drawer")}>
+                  {guest.name}
+                </button>
+
+                {permissions.canUpdate ? (
+                  <select
+                    aria-label={`Move ${guest.name}`}
+                    value={table.key}
+                    onChange={(event) => seat(guest.id, event.target.value)}
+                  >
+                    <option value="">Not seated</option>
+                    {groups.map((group) => (
+                      <option key={group.key} value={group.key}>
+                        Table {group.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+
+                {checkIn && !guest.checkedIn ? (
+                  <button type="button" onClick={() => run("checkIn", [guest])}>
+                    Check in
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+```
+
+Three things in there are worth noticing:
+
+- `useGroupedDocuments("tableNumber")` does the grouping and resolves labels for you. It keeps the declared options of a select field, even when a group is empty, and sets aside records with no value as `ungrouped`.
+- `updateDocument` goes through the normal update path, so your collection's hooks, access rules, and validation all run. The change appears immediately, and if the server refuses it the admin rolls it back and shows an error toast, so you do not write any rollback code.
+- `run("checkIn", [guest])` opens Dyrected's own confirm dialog if the action has a `confirm` message or input `fields`. You never rebuild that dialog.
+
+The component has no styling on purpose, so the example stays short. To make it match the admin in light and dark mode, see [Styling Custom Components](/docs/editor-experience/custom-components/styling).
+
+## Step 3: register it
+
+Pass the component under the same key in `components.viewLayouts`. Your component receives `collection` and `viewSlug`, which are enough to identify where it is mounted; everything else comes from the hooks.
+
+```tsx
+"use client";
+
+import { DyrectedAdmin } from "@dyrected/next/admin";
+import { SeatingChart } from "./SeatingChart";
+
+export function AdminClient() {
+  return (
+    <DyrectedAdmin
+      components={{ viewLayouts: { "guest-responses.seatingChart": SeatingChart } }}
+    />
+  );
+}
+```
+
+In Next.js, components are functions, so they cannot be passed from a server component. Put the registration in a small client component like this one and render it from your admin page.
+
+Open the **Seating Chart** view in the admin. You should see the standard header and KPI cards, the same search and Filter bar the table has, and your tables below. Move a guest with the dropdown and the guest jumps tables straight away.
+
+## The hooks
+
+Everything a layout needs comes from three hooks, exported from `@dyrected/react` (and as composables from `@dyrected/vue`). They throw a clear error if you call them outside a view.
+
+### `useCollectionView()`
+
+State and operations for the view your component is mounted in.
+
+| Field | What it gives you |
+| --- | --- |
+| `documents` | The records on screen: the current page, or all records when `data.fetchAll` is on |
+| `total` | How many records match on the server |
+| `isLoading` | `true` until the first load finishes |
+| `isFetching` | `true` during any request, including background refreshes |
+| `isTruncated` | `true` when `fetchAll` hit its cap and `documents` is a subset of `total` |
+| `error` | The load error, if there is one |
+| `refetch()` | Reload the records |
+| `config` | The view's settings: `columns`, `groupBy`, and your `options` |
+| `collection`, `viewSlug` | The collection schema and the view's slug |
+| `pagination` | `{ page, pageSize, totalPages, setPage(n) }` |
+| `sort` | `{ value, set(next) }` |
+| `search` | `{ value, set(query) }` |
+| `filters` | `{ where, set(where) }`; see below |
+| `selection` | `{ ids, docs, toggle(id), set(ids), clear() }`; selected records show the bulk action bar |
+| `updateDocument(id, patch, { silent? })` | Save a change, shown immediately and rolled back on failure |
+| `open(id, mode?)` | Open a record: `"view"` (default), `"edit"`, or `"drawer"` |
+| `permissions` | `{ canCreate, canUpdate, canDelete }`, for showing or hiding controls |
+| `urls` | `{ collection, create }` |
+
+Pass `{ silent: true }` to `updateDocument` if you report failures yourself and do not want the default error toast.
+
+`filters.where` is the full filter Dyrected is sending to the server. `filters.set(where)` adds a filter that belongs to your layout, such as "only unseated guests". It is combined with the toolbar's filters, and `filters.set(undefined)` clears it.
+
+<Callout type="info">
+  `permissions` and the `useAccess()` hook are hints for showing or hiding controls. They are not security. The server
+  enforces access rules on every request, whatever your component shows.
+</Callout>
+
+### `useViewActions()`
+
+The view's actions, ready to run.
+
+| Field | What it gives you |
+| --- | --- |
+| `actions` | The view's actions, ordered, including built-ins such as View, Edit, and Delete |
+| `run(name, docs?, input?)` | Start an action. `docs` defaults to the current selection |
+| `isRunning(name, docs?)` | `true` while that action is running |
+
+`run` shows the confirm dialog and the input form when the action has them. If you already know the answers, pass `input` and the form is skipped, for example `run("assignTable", [guest], { tableNumber: 4 })`. It resolves `true` once the action was started.
+
+### `useGroupedDocuments(field)`
+
+Groups `documents` by a field and returns `{ groups, ungrouped }`. Each group is `{ key, label, docs }`. It resolves select labels and the names of populated relationships, and puts a record in every group it names when the field holds several values. It is optional, since you can always group the documents yourself.
+
+## Choosing how records load
+
+By default the host loads one page of 50 records and shows paging controls. Set `data` on the view to change that:
+
+```ts
+data: { pageSize: 25 }       // 25 per page; the API allows at most 100
+data: { fetchAll: true }     // every record, no paging
+```
+
+`fetchAll` is for layouts that need the whole set to make sense, like a map or a seating chart. It loads up to 1,000 records. If there are more, the admin tells the editor that only the first 1,000 are shown, and `isTruncated` is `true` so your layout can say so too. For larger sets, narrow the view with `filter`.
+
+## Passing options to your component
+
+Put serializable settings on the view's `options`, and read them from `config.options`. This keeps one component reusable across views:
+
+```ts
+defineView({
+  slug: "seating-chart",
+  label: "Seating Chart",
+  layout: "custom",
+  component: "guest-responses.seatingChart",
+  options: { tableField: "tableNumber" },
+});
+```
+
+```tsx
+const { config } = useCollectionView();
+const tableField = config.options?.tableField as string;
+```
+
+Options travel from your server to the admin as JSON, so keep functions and class instances out of them.
+
+## In Vue and Nuxt
+
+Register the component the same way. The Vue integration wraps it, and the same three composables work with no setup. State comes back as refs, so read it through `.value`:
+
+```vue
+<script setup lang="ts">
+import { useCollectionView, useGroupedDocuments } from "@dyrected/vue";
+
+const { permissions, updateDocument } = useCollectionView();
+const grouped = useGroupedDocuments("tableNumber");
+</script>
+
+<template>
+  <section v-for="group in grouped.groups" :key="group.key">
+    <h3>Table {{ group.label }}</h3>
+    <ul>
+      <li v-for="guest in group.docs" :key="guest.id">
+        {{ guest.name }}
+        <button
+          v-if="permissions.value.canUpdate"
+          @click="updateDocument(guest.id, { tableNumber: null })"
+        >
+          Unseat
+        </button>
+      </li>
+    </ul>
+  </section>
+</template>
+```
+
+## When something is wrong
+
+- **The component key is not registered.** The view shows a message and a **Show as table** button, so editors still reach their data. In development the message names the missing key. See [Registration warnings](/docs/editor-experience/custom-components/registration-warnings).
+- **Your component throws.** The admin shows an inline error card with a **Retry** button, and the rest of the page keeps working.
+- **Slots still apply.** Components you register in `beforeViewContent` and the other [view slots](/docs/editor-experience/custom-components/list-view) render around your layout, and they see the same documents.
+
+## Recommended path
+
+Start from the table or cards layout, and only write a custom layout when the shape of the data on screen is the point. Keep the component small: read documents, draw them, and call `updateDocument` and `run` for changes. Let Dyrected keep the toolbar, paging, and dialogs. To replace one of the built-in layouts instead of adding a new one, see [Replacing a Built-in Layout](/docs/editor-experience/custom-components/replacing-built-in-layouts).

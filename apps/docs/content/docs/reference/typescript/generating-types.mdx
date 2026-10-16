@@ -177,6 +177,10 @@ Registration is global and assumes **one schema per app** — the same model Pay
 
 You can still pass an explicit generic when you want to override the registered schema for a specific call — for example `createClient<OtherSchema>({ ... })` — but you rarely need to.
 
+## Component keys for custom admin components
+
+If your config references custom admin components by key, the generated file also lists those keys under `Register.componentKeys`. That is what lets `defineAdminComponents` fail to compile when a key is misspelled or missing. See [Typed Component Keys](/docs/editor-experience/custom-components/typed-keys).
+
 ## Recommended workflow
 
 The recommended path is:

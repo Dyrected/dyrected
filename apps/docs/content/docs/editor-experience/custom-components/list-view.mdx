@@ -140,6 +140,34 @@ Because you receive `documents`, `pagination`, and `permissions`, most list add-
   content alongside the list, not driving its internal state. Use `client` if you need to run your own query.
 </Callout>
 
+## Slots inside operational views
+
+When these slots render inside an [operational view](/docs/model-content/operational-views/overview), your component receives the documents the active layout has loaded. `documents` and `isLoading` reflect what is on screen, and the view's own slot props (`viewSlug`, `view`) are included.
+
+<Callout type="info">
+  **This changed.** Before, `documents` was always an empty list and `isLoading` always `false` inside a view, so a slot
+  that checked for an empty list would have always taken the empty branch. They now carry real values, so review any
+  slot that relied on that.
+</Callout>
+
+The legacy list keys (`beforeList`, `afterListTable`, and the rest) are not quite the same as on a plain collection list. `response` is `undefined`, and `pagination` describes a single page with `total` equal to the number of documents loaded, not the server's total. For the true total, paging, filters, and selection, read the view's state with `useCollectionView()`:
+
+```tsx
+import { useCollectionView } from "@dyrected/react";
+
+export function ArrivalsSummary() {
+  const { documents, total, isFetching } = useCollectionView();
+
+  return (
+    <p aria-live="polite">
+      {isFetching ? "Updating…" : `${documents.length} of ${total} guests loaded`}
+    </p>
+  );
+}
+```
+
+`useCollectionView()` is documented with the rest of the view hooks in [Custom View Layouts](/docs/editor-experience/custom-components/view-layouts#the-hooks). It works in any view slot, whichever layout the view uses.
+
 ## Using Vue components
 
 In a Vue or Nuxt app, register Vue components in the same `collectionList` map; they're wrapped automatically and receive the props above as Vue props. See the [overview](/docs/editor-experience/custom-components/overview#using-vue-components).

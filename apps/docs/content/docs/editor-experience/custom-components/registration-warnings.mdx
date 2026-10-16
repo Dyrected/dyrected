@@ -1,0 +1,64 @@
+---
+title: Registration Warnings
+description: What the admin shows when a custom component is missing, unused, slow to load, or throws, and how to turn the development warnings off.
+---
+
+Custom components connect to your config by string keys, so the usual mistakes are small ones: a typo in a key, a component you forgot to register, or one you registered and never used. The admin tells you about each of them while you develop, and makes sure a broken component never takes the rest of the admin down with it.
+
+By the end of this page you will know what each situation looks like on screen, which messages only appear in development, and how to silence the unused-component warning when you need to.
+
+If you would rather catch key mistakes before you even open the admin, [Typed Component Keys](/docs/editor-experience/custom-components/typed-keys) does it at compile time. The two work well together.
+
+## A key is not registered
+
+Your config names a component, but nothing is registered under that key. What happens depends on where the component was meant to appear.
+
+| Where | In development | In production |
+| --- | --- | --- |
+| A slot or a [custom page](/docs/editor-experience/custom-components/custom-pages) | A dashed placeholder naming the missing key and its registry, plus a console warning | Nothing is shown |
+| A custom field (`admin.component`) | The same placeholder in place of the input | The field falls back to its built-in input, so editors can still fill it in |
+| A [custom view layout](/docs/editor-experience/custom-components/view-layouts) | A card that names the missing key, with a **Show as table** button | The same card with a generic message, and the button |
+
+The console warning appears once per key, not on every render. In production the messages stay out of editors' way and do not expose your key names.
+
+If you see the placeholder, check three things: the key in your config, the key in your `components` map, and that the component sits under the right group (`fields`, `dashboard`, `collectionList`, `collectionView`, `viewLayouts`, or `pages`).
+
+## A registered component is never used
+
+If you register a component that no part of your config references, in development the console says so once:
+
+```text
+[Dyrected Admin] Component "guestHeadcount" is registered in "collectionView" but the schema never references it.
+```
+
+This usually means a key was renamed in the config and the registration was left behind, or a feature was removed and its component was not. A key counts as used if any part of your config references it, whichever group you registered it under.
+
+To silence it, for example when one shared component map serves several admins that each use only some of the components, turn it off:
+
+```tsx
+<DyrectedAdmin components={components} warnUnusedComponents={false} />
+```
+
+In Vue and Nuxt, pass it as `:warn-unused-components="false"`.
+
+## A component takes a while to load
+
+Components loaded with `React.lazy`, or `defineAsyncComponent` in Vue, work without extra setup. While they load, the admin shows a skeleton in their place, and swaps in your component when it is ready.
+
+## A component throws
+
+A component that throws never blanks the admin. What replaces it depends on the surface:
+
+- **A slot, a page, or a view layout** is replaced by an inline error card with the component's key, the error message, and a **Retry** button. The header, sidebar, and everything else keep working.
+- **A custom field** is replaced by a compact inline message naming the field and the error, so the rest of the form is still usable.
+- **A Vue component** is covered too. An error thrown while a Vue component renders is passed up to the same boundary, so it shows the same card instead of leaving a blank space.
+
+The full error and its stack are always in the browser console.
+
+## When messages do not show
+
+The development messages follow your app's own mode. They appear when your bundler runs in development and stay silent in a production build. If you never see the placeholder you expect, check that you are running the dev server and not a production build.
+
+## Recommended path
+
+While you develop, keep the console open and treat any registration warning as something to fix. Add [typed keys](/docs/editor-experience/custom-components/typed-keys) so most mistakes never reach the browser. Leave `warnUnusedComponents` on unless you deliberately share one component map across several admins.

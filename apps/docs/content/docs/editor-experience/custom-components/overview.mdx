@@ -1,9 +1,9 @@
 ---
 title: Overview
-description: Swap your own React (or Vue) components into the admin at two extension points — field inputs and dashboard/list slots — and know where the boundaries are.
+description: Swap your own React or Vue components into the admin: field inputs, dashboard and list slots, whole view layouts, and full pages. Learn the pattern they all share.
 ---
 
-The admin is generated from your schema, but you're not stuck with the built-in look of every piece. Dyrected gives you two clean extension points: you can **replace a field's input** with your own component, and you can **inject components into slots** on the dashboard and collection lists. This page is the map — it explains both mechanisms, shows the registration pattern they share, and is honest about what you can't customize this way.
+The admin is generated from your schema, but you're not stuck with the built-in look of every piece. Dyrected gives you four extension points: you can **replace a field's input**, **inject components into slots** on the dashboard and views, **draw a view's records with your own layout**, and **add whole pages** to the sidebar. This page is the map. It explains the registration pattern they all share, points you to the page for each one, and is honest about what you can't customize this way.
 
 Throughout, "your app" means the project you embedded the admin into — your Next.js, Nuxt, Vue, or React application.
 
@@ -14,12 +14,25 @@ Every custom component follows the same two-step pattern: **declare** where it g
 - You reference a component by a **string key** — either on a field (`admin.component`) or in a slot list (`admin.components`) in your schema.
 - You pass the actual component under that same key in the `components` prop of `<DyrectedAdmin>`.
 
-There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin skips it (and warns in development); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
+There's no import map, no build step, and no string module paths. You hand real component references to the admin, and it renders them where your config said to. If a key has no matching component, the admin shows a placeholder and warns in development (see [Registration warnings](/docs/editor-experience/custom-components/registration-warnings)); if a custom component throws, an error boundary isolates it so the rest of the admin keeps working.
 
-There are exactly two extension points:
+There are four extension points:
 
-1. **Custom field components** — replace the input for a specific field.
-2. **Component slots** — inject components into fixed positions on the dashboard and collection lists.
+| You want to | Use | Read |
+| --- | --- | --- |
+| Replace the input for one field | A custom field component | [Below](#custom-field-components) |
+| Add something above, below, or around built-in screens | Component slots | [Dashboard](/docs/editor-experience/custom-components/dashboard), [List View](/docs/editor-experience/custom-components/list-view) |
+| Show a set of records in a shape no built-in layout offers | A custom view layout | [Custom View Layouts](/docs/editor-experience/custom-components/view-layouts) |
+| Add a screen that is not a record or a list of records | A custom page | [Custom Admin Pages](/docs/editor-experience/custom-components/custom-pages) |
+
+Once you have components, these pages cover the rest:
+
+- [Admin Hooks](/docs/editor-experience/custom-components/admin-hooks): read and write data as the signed-in editor, navigate, show toasts, and check access.
+- [Styling Custom Components](/docs/editor-experience/custom-components/styling): match the admin in light and dark mode.
+- [Typed Component Keys](/docs/editor-experience/custom-components/typed-keys): catch a misspelled or missing key at compile time.
+- [Registration warnings](/docs/editor-experience/custom-components/registration-warnings): what the admin shows when a component is missing, unused, or throws.
+- [Replacing a Built-in Layout](/docs/editor-experience/custom-components/replacing-built-in-layouts): swap the kanban, table, or another layout everywhere.
+- [Nuxt Auto-Registration](/docs/editor-experience/custom-components/nuxt-auto-registration): register components by dropping files in a folder.
 
 ## Custom field components
 
@@ -126,14 +139,14 @@ If your app is Vue or Nuxt, you register Vue components exactly the same way —
 
 ## What you can't customize this way
 
-It's worth being clear about the edges so you don't go looking for something that isn't there. These two extension points — field components and dashboard/list slots — are the whole surface today. Dyrected does **not** currently support:
+It's worth being clear about the edges so you don't go looking for something that isn't there. Dyrected does **not** currently support:
 
 - Replacing root-level UI (the navigation, header, login screen, or logo as a component — the logo is set with [branding config](/docs/editor-experience/customizing-css), not a component).
 - Injecting custom React context providers around the admin.
-- Replacing or adding whole views (a custom edit view, document tabs, custom routes, or a full list-view replacement).
+- Replacing the document edit form or adding tabs to it. Use a [custom page](/docs/editor-experience/custom-components/custom-pages) for a standalone workflow instead.
 
 If your goal is theming rather than swapping components, that's [Customizing CSS](/docs/editor-experience/customizing-css). If you need one of the unsupported customizations above, it's a genuine gap — raise it rather than working around it.
 
 ## Recommended path
 
-Reach for a **custom field component** when a specific field needs an input the defaults don't offer, and a **slot** when you want to add something alongside the built-in dashboard or list without rebuilding it. Start from this page's pattern — declare a key, register the component — then go to the [Dashboard](/docs/editor-experience/custom-components/dashboard) or [List View](/docs/editor-experience/custom-components/list-view) page for the exact props your slot receives.
+Reach for a **custom field component** when one field needs an input the defaults don't offer, a **slot** to add something alongside a built-in screen, a **view layout** when records need a new shape, and a **[custom page](/docs/editor-experience/custom-components/custom-pages)** for a screen that is a task. Start from this page's pattern (declare a key, register the component), then go to the page for the extension point you chose.

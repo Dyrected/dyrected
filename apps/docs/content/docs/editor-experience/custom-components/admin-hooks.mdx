@@ -1,0 +1,158 @@
+---
+title: Admin Hooks
+description: Read and write documents, move around the admin, show toasts, and check what an editor may do from your own components, without importing a router or a toast library.
+---
+
+Once you write your own admin components, you quickly need the same few things: data for the signed-in editor, a way to send them to another screen, a toast for feedback, and a way to hide a button they may not use. Dyrected gives you four hooks for exactly that, so your components do not import the admin's router, its toast library, or guess its URLs.
+
+By the end of this page you will have a small slot component that checks what the editor may do, loads data with their permissions, shows a toast, and sends them to a custom page.
+
+This page builds on the [Custom Components overview](/docs/editor-experience/custom-components/overview). All four hooks work in custom fields, slots, [view layouts](/docs/editor-experience/custom-components/view-layouts), and [pages](/docs/editor-experience/custom-components/custom-pages), in React and Vue. They are marked experimental, so expect small refinements.
+
+## The four hooks at a glance
+
+| You need to | Hook (React) | Vue |
+| --- | --- | --- |
+| Read or write documents as the signed-in editor | `useAdminClient()` | `useDyrectedClient()` |
+| Move to another admin screen | `useAdminNavigate()` | `useAdminNavigate()` |
+| Show a success, error, or info toast | `useAdminNotify()` | `useAdminNotify()` |
+| Hide or disable what the editor may not use | `useAccess()` | `useAccess()` |
+
+## A worked example
+
+This button belongs in a view's header slot. It only renders for editors who can update guests, counts the guests who have arrived, tells the editor with a toast, and opens the check-in station page:
+
+```tsx
+// CheckInShortcut.tsx
+import { useAccess, useAdminClient, useAdminNavigate, useAdminNotify } from "@dyrected/react";
+
+export function CheckInShortcut() {
+  const client = useAdminClient();
+  const { navigate, to } = useAdminNavigate();
+  const notify = useAdminNotify();
+  const { can } = useAccess();
+
+  if (!can("update", "guest-responses")) return null;
+
+  async function openStation() {
+    try {
+      const arrived = await client
+        .collection("guest-responses")
+        .find({ where: { checkedIn: { equals: true } }, limit: 1 });
+      notify.info(`${arrived.total} guests have arrived`, { description: "Opening the check-in station" });
+      navigate(to.page("check-in-station"));
+    } catch (error) {
+      notify.error("Could not load arrivals", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }
+
+  return (
+    <button type="button" onClick={() => void openStation()}>
+      Open check-in station
+    </button>
+  );
+}
+```
+
+Register it as a view slot (see [List View](/docs/editor-experience/custom-components/list-view)), and open the view. The button should appear for editors who can update guests and disappear for the rest. Clicking it shows the toast and takes you to the page.
+
+## Reading and writing data with `useAdminClient()`
+
+`useAdminClient()` returns the SDK client the admin itself is signed in with. Every call it makes carries the current editor's permissions, so an editor only reads and changes what they could in the admin. You do not manage a token.
+
+```tsx
+const client = useAdminClient();
+const { docs } = await client.collection("guest-responses").find({ limit: 10 });
+await client.collection("guest-responses").update(id, { checkedIn: true });
+```
+
+<Callout type="warn">
+  `useAdminClient()` is not `useDyrected()` from `@dyrected/react`. That one gives your **public site** a client and needs
+  its own `DyrectedProvider`, which the admin does not mount. Calling it inside a custom admin component throws.
+</Callout>
+
+In Vue, `useDyrectedClient()` already returns the admin's client inside custom components, so there is nothing new to learn.
+
+The hook throws a clear error if it is used outside the admin or before the editor has signed in. Components rendered by the admin only appear after sign-in, so you will not normally see that.
+
+## Moving around with `useAdminNavigate()`
+
+It returns `navigate`, plus `to`, a set of helpers that build admin addresses. Use them instead of typing paths, because the admin may be mounted with a hash router, under a prefix, or inside a Nuxt or Next app.
+
+| Helper | Goes to |
+| --- | --- |
+| `to.collection(slug)` | A collection's list |
+| `to.document(slug, id)` | One document |
+| `to.view(slug, viewSlug)` | An operational view on a collection |
+| `to.workspace(slug, viewSlug?)` | A workspace, optionally on one of its views |
+| `to.page(slug, subPath?)` | A [custom page](/docs/editor-experience/custom-components/custom-pages), optionally below its root |
+
+```tsx
+const { navigate, to } = useAdminNavigate();
+
+navigate(to.document("guest-responses", guest.id));
+navigate(to.page("reports", "2026-08"), { replace: true });
+```
+
+Pass `{ replace: true }` to replace the current history entry instead of adding one. `to.*` returns an address for `navigate`, not a link you can put in an `href`.
+
+## Toasts with `useAdminNotify()`
+
+It returns `success`, `error`, and `info`. Each takes a message and an optional `description` for a second line:
+
+```tsx
+const notify = useAdminNotify();
+
+notify.success("Guest checked in", { description: "Table 4" });
+```
+
+The toasts look and behave like the admin's own, and you do not import a toast library.
+
+## Hiding what the editor may not use with `useAccess()`
+
+`can(operation, collection, doc?)` answers whether the current editor may `create`, `read`, `update`, or `delete` in a collection. Pass a document when the rule depends on it.
+
+```tsx
+const { can } = useAccess();
+
+<button disabled={!can("delete", "guest-responses", guest)}>Remove</button>
+```
+
+<Callout type="warn">
+  `useAccess()` is for what to show, not for security. It evaluates the collection's access rules in the browser, and
+  rules it cannot evaluate there, such as ones that run server code, answer `true`. The server enforces access on every
+  request no matter what your component shows.
+</Callout>
+
+## Vue
+
+The names are the same and the results are plain objects:
+
+```vue
+<script setup lang="ts">
+import { useAccess, useAdminNavigate, useAdminNotify, useDyrectedClient } from "@dyrected/vue";
+
+const client = useDyrectedClient();
+const { navigate, to } = useAdminNavigate();
+const notify = useAdminNotify();
+const { can } = useAccess();
+
+async function openStation() {
+  const arrived = await client.collection("guest-responses").find({ where: { checkedIn: { equals: true } }, limit: 1 });
+  notify.info(`${arrived.total} guests have arrived`);
+  navigate(to.page("check-in-station"));
+}
+</script>
+
+<template>
+  <button v-if="can('update', 'guest-responses')" type="button" @click="openStation">
+    Open check-in station
+  </button>
+</template>
+```
+
+## Recommended path
+
+Use `useAdminClient()` for data so permissions are applied for you, `useAdminNavigate()` and its `to` helpers for every link, `useAdminNotify()` for feedback, and `useAccess()` only to decide what to show. Keep real protection in your collection access rules.

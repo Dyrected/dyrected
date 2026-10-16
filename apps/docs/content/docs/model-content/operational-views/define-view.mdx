@@ -16,7 +16,7 @@ flowchart LR
     end
     V[defineView]
     V --> S["slug + label + icon"]
-    V --> L["layout: table | kanban | calendar | cards | spreadsheet"]
+    V --> L["layout: table | kanban | calendar | cards | spreadsheet | custom"]
     V --> Q["filter + groupBy + dateField"]
     V --> C["columns + sort"]
     V --> A["actions + features + actionOrder"]
@@ -176,7 +176,8 @@ All options are optional except `slug` and `label`:
 | `slug` | `string` **required** | Stable path segment for the view. Used in URLs, sidebar keys, and preference persistence. | Always |
 | `label` | `string` **required** | Human-readable title shown in the sidebar and view header. | Always |
 | `icon` | `string` | Lucide icon name (e.g. `"UserCheck"`, `"Shirt"`, `"Calendar"`). | When you want the sidebar item to scan faster |
-| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, or `"gantt"`. | Set explicitly to clarify design intent |
+| `layout` | `ViewLayout` | `"table"` (default), `"kanban"`, `"calendar"`, `"cards"`, `"spreadsheet"`, `"gantt"`, or `"custom"`. | Set explicitly to clarify design intent |
+| `component` / `options` / `data` | `string` / `object` / `{ pageSize?, fetchAll? }` | For `layout: "custom"`: the key of your layout component (required), serializable settings it can read, and how records load. See [Custom View Layouts](/docs/editor-experience/custom-components/view-layouts). | Only with `"custom"` |
 | `filter` | `WhereClause \| string` | Base filter applied before toolbar filters. Type-safe Where object (`{ attending: { equals: true } }`) or JEXL string. | When this view is a specialized subset |
 | `groupBy` | `string` | Field name whose distinct values organize records into columns (`kanban`) or collapsible sections (`table`, `cards`, `spreadsheet`). | Required for `"kanban"`, optional for section grouping |
 | `dateField` | `string` | Field name holding the ISO date string for placement. | Required for `"calendar"` |
@@ -197,6 +198,7 @@ All options are optional except `slug` and `label`:
 
 ## Next steps
 
+- Draw records your own way — [Custom View Layouts](/docs/editor-experience/custom-components/view-layouts)
 - Layout details — [Table](/docs/model-content/operational-views/layouts/table), [Kanban](/docs/model-content/operational-views/layouts/kanban), [Calendar](/docs/model-content/operational-views/layouts/calendar), [Cards](/docs/model-content/operational-views/layouts/cards), [Spreadsheet](/docs/model-content/operational-views/layouts/spreadsheet)
 - Add workflow buttons — [Actions](/docs/model-content/operational-views/actions)
 - Add KPI summary cards — [Metrics](/docs/model-content/operational-views/metrics)

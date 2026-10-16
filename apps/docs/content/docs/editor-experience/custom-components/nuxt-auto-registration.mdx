@@ -1,0 +1,98 @@
+---
+title: Nuxt Auto-Registration
+description: Drop a Vue file in components/dyrected and the Nuxt module registers it for you, so you stop maintaining a hand-written map of component keys.
+---
+
+In a Nuxt app you can skip the `components` map entirely. Put each custom component in a folder that names where it belongs, call the file after its key, and the Dyrected module registers it. A new component becomes one new file instead of one new file plus an edit to a long map.
+
+By the end of this page you will have a custom field and a custom page registered just by creating two files.
+
+This page is for Nuxt. In other frameworks, or when you want the registration to be explicit, use the `components` prop as shown in the [Custom Components overview](/docs/editor-experience/custom-components/overview). Auto-registration is a convenience on top of that prop, never a requirement.
+
+## The folder convention
+
+Create files at `components/dyrected/<group>/<key>.vue` in your Nuxt source directory, which is `app/` in Nuxt 4 and the project root in Nuxt 3. The folder is the group (where the component is registered) and the file name, without `.vue`, is the key your config references.
+
+```text
+app/
+└── components/
+    └── dyrected/
+        ├── fields/
+        │   └── orders.statusPill.vue
+        └── pages/
+            └── reports.vue
+```
+
+Those two files register a field component under the key `orders.statusPill` and a page component under the key `reports`. Dots in the file name are fine, so you can keep the `collection.component` style of key used elsewhere in these docs.
+
+The groups you can use are the same as in the `components` prop: `fields`, `dashboard`, `collectionList`, `collectionView`, `forms`, `viewLayouts`, `pages`, and `customComponents`. Folders with any other name are ignored, and so are files that are not `.vue`.
+
+## Use the keys in your config
+
+Reference the keys exactly as you would with a hand-written map:
+
+```ts
+export default defineConfig({
+  collections: [
+    defineCollection({
+      slug: "orders",
+      fields: [
+        defineTextField({
+          name: "status",
+          label: "Status",
+          admin: { component: "orders.statusPill" },
+        }),
+      ],
+    }),
+  ],
+  globals: [],
+  admin: {
+    navigation: [
+      definePage({
+        slug: "reports",
+        label: "Reports",
+        icon: "BarChart3",
+        component: "reports",
+      }),
+    ],
+  },
+});
+```
+
+Mount the admin without passing any components:
+
+```vue
+<template>
+  <DyrectedAdmin />
+</template>
+```
+
+Open the admin. The orders form shows your status pill, and **Reports** appears in the sidebar. In development, adding or removing a file in `components/dyrected` updates the registration without restarting.
+
+{/* NEEDS-HUMAN-VERIFY: Live updates rely on a `builder:watch` hook in the module and were not exercised against a running dev server. Generation of the registry from files was verified with `nuxi prepare` on the Nuxt example (Nuxt 4, app/ source directory). Nuxt 3 (project-root source directory) is untested. */}
+
+## Mixing it with the components prop
+
+The prop still works, and it wins. If the same key exists in both places, the component you pass in `components` replaces the auto-registered one, key by key, and everything else keeps registering from the folder:
+
+```vue
+<script setup lang="ts">
+import CustomStatusPill from "~/components/CustomStatusPill.vue";
+</script>
+
+<template>
+  <DyrectedAdmin :components="{ fields: { 'orders.statusPill': CustomStatusPill } }" />
+</template>
+```
+
+That is a handy way to override one component for a single admin page.
+
+## Good to know
+
+- **Nuxt also auto-imports these files as components.** You will see names such as `DyrectedFieldsOrdersStatusPill` in your editor's component hints. That is Nuxt's normal behaviour for any file under `components/`. It is harmless, and you do not use those names.
+- **Typed keys still work.** Auto-registration does not change what the generator reads from your config, so the keys in your config are still checked. Add [typed keys](/docs/editor-experience/custom-components/typed-keys) if you want a compile error for a key that has no file.
+- **Unused and missing keys are still flagged.** A file nobody references triggers the [unused-component warning](/docs/editor-experience/custom-components/registration-warnings), and a key with no file shows the missing-key placeholder.
+
+## Recommended path
+
+Use the folder for the components that belong to your config, one file per key, named after the key. Reach for the `components` prop only when you want to override a single component or register one that cannot live under `components/dyrected`.

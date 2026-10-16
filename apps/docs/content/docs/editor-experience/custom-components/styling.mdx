@@ -1,0 +1,154 @@
+---
+title: Styling Custom Components
+description: Make your own field, slot, and layout components look at home in the admin, in light and dark mode, using the admin's theme variables and your app's own CSS.
+---
+
+A custom component is yours, so you style it with your own CSS. The part that trips people up is making it match the admin around it, especially when the editor flips between light and dark mode. This page shows the one approach that follows the admin's theme automatically, and the surprises worth knowing about before you hit them.
+
+By the end of this page you should have a component whose card, border, and text colors change with the admin's light and dark toggle, and you should know how to fix it when something looks wrong.
+
+This page assumes you already registered a component using the pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview). "Your app" means the project you embedded the admin into.
+
+## How custom components are styled
+
+Your component renders inside the admin's shell, but it is not made of admin classes. Two things follow from that:
+
+- **Your app's CSS applies to it.** Tailwind, CSS Modules, plain CSS, or inline styles all work, the same as anywhere else in your app.
+- **The admin's own classes don't.** The `dy-` classes you may spot in the page markup belong to the admin's stylesheet. They are internal, so don't copy them into your components.
+
+What the admin *does* share with you is its theme. It describes its colors as CSS variables on the `.dy-admin-ui` root element and swaps their values when the theme changes. Because your component renders inside that root, you can read those variables and your component will follow the theme without any extra code.
+
+## The recommended path: read the admin's theme variables
+
+Use the admin's color variables for any surface, border, or text color you want to match the admin. Each one holds three bare HSL numbers, so wrap it in `hsl(...)` when you use it. That is the one detail that matters here: `var(--card)` on its own is not a valid color and the browser quietly ignores it.
+
+This component shows a summary line below a collection's list. It is a card whose background, border, and text all come from the admin's variables:
+
+```tsx
+// PostsSummary.tsx
+import type { CSSProperties } from "react";
+
+const card: CSSProperties = {
+  background: "hsl(var(--card))",
+  color: "hsl(var(--card-foreground))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: "var(--radius)",
+  padding: 12,
+};
+
+export function PostsSummary({ documents }: { documents: Array<{ id: string }> }) {
+  return (
+    <div style={card}>
+      <strong>{documents.length}</strong>{" "}
+      <span style={{ color: "hsl(var(--muted-foreground))" }}>posts on this page</span>
+    </div>
+  );
+}
+```
+
+Register it as a list slot, the same way as any other slot component:
+
+```tsx
+<DyrectedAdmin components={{ collectionList: { "posts-summary": PostsSummary } }} />
+```
+
+Open the collection and switch the admin between light and dark from the sidebar. The card should change with it, and no `if (dark)` logic exists anywhere in your component. If the card stays white or stays dark, jump to [Troubleshooting](#troubleshooting).
+
+### The same thing in Tailwind
+
+If your app uses Tailwind, write the same values as arbitrary values:
+
+```tsx
+<div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 text-[hsl(var(--card-foreground))]">
+  <span className="text-[hsl(var(--muted-foreground))]">12 posts on this page</span>
+</div>
+```
+
+### Which variables to use
+
+These are the ones that come up most often. The full list, and how to override them, is in [Customizing CSS](/docs/editor-experience/customizing-css#the-tokens-youll-reach-for-most).
+
+| Variable                          | Use it for                          |
+| --------------------------------- | ----------------------------------- |
+| `--background` / `--foreground`   | Page surface and default text       |
+| `--card` / `--card-foreground`    | Panels and cards                    |
+| `--muted` / `--muted-foreground`  | Tinted areas, helper text           |
+| `--border`                        | Dividers and outlines               |
+| `--primary` / `--primary-foreground` | Filled, committed actions        |
+| `--ring`                          | Focus outlines                      |
+| `--radius`                        | Corner radius                       |
+
+These variables are part of what Dyrected supports for component authors. Renaming or removing one of the variables in this table is treated as a breaking change and is called out in the changelog. Variables that are not in this table can change without notice.
+
+## Light and dark mode
+
+The admin resolves its own theme from the editor's choice and falls back to their operating system setting. Your component doesn't need to do anything for that, as long as it reads the variables above: they hold different values in light and dark mode.
+
+### Don't use your site's `dark:` styles here
+
+If you hard-code dark colors with Tailwind's `dark:` prefix, you are following your *site's* theme, not the admin's. The two can disagree. For example, a site that sets `class="dark"` on `<html>` all the time makes every `dark:` class apply permanently, so a card turns dark even while the admin is in light mode.
+
+Prefer the variables. If you really need your own light and dark values, key them off the admin's theme instead of the site's. The admin marks its root with `data-theme="light"` or `data-theme="dark"`, so this plain CSS works:
+
+```css
+.my-card {
+  background: white;
+}
+
+[data-theme="dark"] .my-card {
+  background: #111114;
+}
+```
+
+Or read the resolved theme in code with `useAdminTheme()`, which is covered in [Theme Hooks](/docs/editor-experience/theme-hooks):
+
+```tsx
+import { useAdminTheme } from "@dyrected/react";
+
+export function Badge({ children }: { children: React.ReactNode }) {
+  const { resolvedTheme } = useAdminTheme();
+
+  return (
+    <span style={{ background: resolvedTheme === "dark" ? "#27272a" : "#f4f4f5", padding: "2px 8px" }}>
+      {children}
+    </span>
+  );
+}
+```
+
+In Vue, `useAdminTheme()` from `@dyrected/vue` returns the same values as refs, so read `resolvedTheme.value`.
+
+## Popovers and dialogs you build yourself
+
+Menus, dialogs, and tooltips from libraries such as Radix render in a portal at the end of `<body>`. That puts them outside `.dy-admin-ui`, so the theme variables don't exist there and your colors fall back to nothing.
+
+The fix is to re-apply the admin's theme class and attribute on the portal's content. `useAdminTheme()` gives you both:
+
+```tsx
+import { useAdminTheme } from "@dyrected/react";
+
+export function ThemedPortalContent({ children }: { children: React.ReactNode }) {
+  const { themeClassName, resolvedTheme } = useAdminTheme();
+
+  return (
+    <div className={themeClassName} data-theme={resolvedTheme}>
+      {children}
+    </div>
+  );
+}
+```
+
+Wrap whatever you render into the portal with it. The admin's own dialogs do exactly this.
+
+## Troubleshooting
+
+| What you see | Likely cause | Fix |
+| --- | --- | --- |
+| A color has no effect | `var(--card)` used without `hsl(...)` | Write `hsl(var(--card))` |
+| Card is dark in light mode (or the reverse) | A `dark:` class is following your site's theme | Use the admin variables, or `[data-theme="dark"]` |
+| Colors are blank inside a dialog or menu | The portal renders outside `.dy-admin-ui` | Wrap the content with `themeClassName` and `data-theme` |
+| Tailwind classes in your component do nothing | Tailwind isn't scanning the component's folder | Add the folder to your Tailwind sources |
+
+## Recommended path
+
+Build your component with your app's normal CSS, and take every color that should match the admin from its variables, wrapped in `hsl(...)`. Avoid `dark:` unless your site's theme and the admin's are guaranteed to move together. For deeper retheming of the admin itself, see [Customizing CSS](/docs/editor-experience/customizing-css).

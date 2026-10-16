@@ -1,0 +1,509 @@
+---
+title: Custom Admin Pages
+description: Add a screen of your own to the admin sidebar, such as a door check-in station or a reconciliation tool, with the admin's header, breadcrumbs, and navigation around it, in React or Vue.
+---
+
+Some screens are not a record and not a list of records. A door check-in station, a reconciliation tool, an "invite guests" wizard, an integrations hub, or a reporting screen are tasks, and they do not belong on a collection. A custom page is a screen whose content you fully control, with a place in the sidebar and the admin's usual header around it.
+
+By the end of this page you will have a **check-in station** in the sidebar: a search box, one row per matching guest, and a button that checks the guest in. It reads and writes through the admin's own signed-in client, so it respects exactly what the editor is allowed to do.
+
+This page assumes you know the declare-then-provide pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview). Throughout, "your app" means the project you embedded the admin into.
+
+## Which extension point do you need?
+
+| You want to | Use |
+| --- | --- |
+| Show a set of records in a different shape | A [custom view layout](/docs/editor-experience/custom-components/view-layouts) |
+| Change how one field is edited | A custom field component |
+| A screen that is neither of those | **A custom page** |
+
+A page has no collection attached, so it also has no filters, columns, or paging to share with the admin. If you find yourself recreating those, a view layout is probably the better fit.
+
+## The mental model
+
+Adding a page follows the same two steps as every custom component: **declare** it in your config, then **provide** the component in your app.
+
+- **Declare:** In `dyrected.config.ts`, add the page to `admin.navigation` with `definePage()`. That gives it a route, a sidebar label and icon, and a component key.
+- **Provide:** Register your component under that key in `components.pages`.
+
+Once both are in place, Dyrected adds the sidebar link, serves the page at `/pages/<slug>` (under wherever your admin is mounted), and wraps it in a header with breadcrumbs, a title, and optional action buttons. Everything below the header is yours.
+
+## Quickstart: a check-in station
+
+### 1. Declare the page
+
+Add it to `admin.navigation`. The `component` value is the key you will register in step 2, and the name is yours to choose:
+
+```ts
+import { defineConfig, definePage } from "@dyrected/core";
+
+export default defineConfig({
+  collections: [],
+  globals: [],
+  admin: {
+    navigation: [
+      definePage({
+        slug: "check-in-station",
+        label: "Check-in Station",
+        icon: "ScanSearch",
+        group: "Operations",
+        order: 4,
+        component: "ops.checkInStation",
+      }),
+    ],
+  },
+});
+```
+
+The page appears in the sidebar under **Operations**. `slug`, `label`, and `component` are required. A slug must be unique among pages, and a few system names such as `pages`, `admin`, `settings`, and `trash` are reserved. Dyrected throws when your config loads if either rule is broken, so you find out immediately.
+
+### 2. Register the component
+
+Register it under the same key, in `components.pages`. Your component receives `slug`, the page's slug, as a prop.
+
+<Tabs items={['React (Next.js)', 'Vue (Nuxt / Vite)']}>
+<Tab value="React (Next.js)">
+
+```tsx
+"use client";
+
+import { DyrectedAdmin } from "@dyrected/next/admin";
+import { defineAdminComponents } from "@dyrected/react";
+import { CheckInStation } from "./CheckInStation";
+
+const components = defineAdminComponents({
+  pages: { "ops.checkInStation": CheckInStation },
+});
+
+export function AdminClient() {
+  return <DyrectedAdmin components={components} />;
+}
+```
+
+In Next.js, components are functions, so they cannot be passed from a server component. Keep the registration in a small client component like this one and render it from your admin page.
+
+</Tab>
+<Tab value="Vue (Nuxt / Vite)">
+
+```vue
+<script setup lang="ts">
+import { DyrectedAdmin, defineAdminComponents } from "@dyrected/vue";
+import CheckInStation from "~/components/admin-components/CheckInStation.vue";
+
+const components = defineAdminComponents({
+  pages: { "ops.checkInStation": CheckInStation },
+});
+</script>
+
+<template>
+  <DyrectedAdmin :components="components" />
+</template>
+```
+
+In Nuxt you can also skip the map and drop the file in `components/dyrected/pages/`. See [Nuxt Auto-Registration](/docs/editor-experience/custom-components/nuxt-auto-registration).
+
+</Tab>
+</Tabs>
+
+### 3. Write the page
+
+Your component renders the screen. Dyrected supplies the breadcrumb trail and the page header, and you fill them in with `usePageMeta`. This one searches guests as you type and checks a guest in with one tap.
+
+<Tabs items={['React', 'Vue']}>
+<Tab value="React">
+
+```tsx
+// CheckInStation.tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  useAccess,
+  useAdminClient,
+  useAdminNavigate,
+  useAdminNotify,
+  usePageMeta,
+  usePageRoute,
+  type AdminPageProps,
+} from "@dyrected/react";
+
+interface Guest {
+  id: string;
+  name: string;
+  guestCount?: number;
+  tableNumber?: number;
+  checkedIn?: boolean;
+}
+
+type Status = "idle" | "loading" | "error";
+
+/**
+ * A door check-in station: one search box, big result rows, one tap to check a
+ * guest in. It is a page and not a view because it is a task, not a list of
+ * records: it has no filters, columns or pagination to share with the admin.
+ */
+export function CheckInStation(_props: AdminPageProps) {
+  const client = useAdminClient();
+  const notify = useAdminNotify();
+  const { can } = useAccess();
+  const { navigate, to } = useAdminNavigate();
+  const { searchParams, setSearchParams } = usePageRoute();
+
+  // The search text lives in the URL, so a refresh or a shared link keeps it.
+  const query = searchParams.get("q") ?? "";
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [status, setStatus] = useState<Status>("idle");
+
+  usePageMeta({
+    title: "Check-in station",
+    description: "Find a guest and check them in at the door.",
+    actions: [
+      {
+        label: "Open full roster",
+        variant: "outline",
+        onClick: () => navigate(to.workspace("door-checkin")),
+      },
+    ],
+  });
+
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setGuests([]);
+      setStatus("idle");
+      return;
+    }
+
+    // Ignore answers to searches the editor has already typed past.
+    let cancelled = false;
+    setStatus("loading");
+    const timer = setTimeout(async () => {
+      try {
+        const result = await client
+          .collection("guest-responses")
+          .find({ search: query.trim(), where: { attending: { equals: true } }, limit: 8 });
+        if (!cancelled) {
+          // With generated types (`npx dyrected generate:types`) this cast is not needed.
+          setGuests(result.docs as unknown as Guest[]);
+          setStatus("idle");
+        }
+      } catch {
+        if (!cancelled) setStatus("error");
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [client, query]);
+
+  async function checkIn(guest: Guest) {
+    try {
+      await client.collection("guest-responses").update(guest.id, { checkedIn: true });
+      setGuests((current) => current.map((g) => (g.id === guest.id ? { ...g, checkedIn: true } : g)));
+      notify.success(`${guest.name} is checked in`, {
+        description: guest.tableNumber ? `Table ${guest.tableNumber}` : "No table assigned yet",
+      });
+    } catch (error) {
+      notify.error(`Could not check in ${guest.name}`, {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }
+
+  return (
+    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+      <input
+        autoFocus
+        type="search"
+        value={query}
+        onChange={(event) =>
+          setSearchParams(event.target.value ? { q: event.target.value } : {}, { replace: true })
+        }
+        placeholder="Start typing a guest's name…"
+        aria-label="Search guests"
+        className="h-12 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 text-lg"
+      />
+
+      {status === "error" ? (
+        <p role="alert" className="text-sm text-[hsl(var(--muted-foreground))]">
+          Could not search just now. Check your connection and keep typing to try again.
+        </p>
+      ) : null}
+
+      <ul className="flex flex-col gap-2">
+        {guests.map((guest) => (
+          <li
+            key={guest.id}
+            className="flex items-center justify-between gap-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3"
+          >
+            <div>
+              <p className="font-medium">{guest.name}</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                {guest.guestCount ?? 1} {(guest.guestCount ?? 1) === 1 ? "person" : "people"}
+                {guest.tableNumber ? ` · Table ${guest.tableNumber}` : ""}
+              </p>
+            </div>
+            {guest.checkedIn ? (
+              <span className="text-sm font-medium">Checked in</span>
+            ) : (
+              <button
+                type="button"
+                disabled={!can("update", "guest-responses")}
+                onClick={() => void checkIn(guest)}
+                className="h-10 rounded-md bg-[hsl(var(--primary))] px-4 text-sm font-medium text-[hsl(var(--primary-foreground))] disabled:opacity-50"
+              >
+                Check in
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {query.trim().length >= 2 && status === "idle" && guests.length === 0 ? (
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">No attending guest matches “{query}”.</p>
+      ) : null}
+    </div>
+  );
+}
+```
+
+The classes are Tailwind from your own app. Use whatever CSS you already use.
+
+</Tab>
+<Tab value="Vue">
+
+```vue
+<!-- CheckInStation.vue -->
+<script setup lang="ts">
+import { onBeforeUnmount, ref, watch } from "vue";
+import { useAccess, useAdminNotify, useDyrectedClient, usePageMeta } from "@dyrected/vue";
+
+interface Guest {
+  id: string;
+  name: string;
+  guestCount?: number;
+  tableNumber?: number;
+  checkedIn?: boolean;
+}
+
+defineProps<{ slug: string }>();
+
+const client = useDyrectedClient();
+const notify = useAdminNotify();
+const { can } = useAccess();
+
+usePageMeta({
+  title: "Check-in station",
+  description: "Find a guest and check them in at the door.",
+});
+
+const query = ref("");
+const guests = ref<Guest[]>([]);
+let timer: ReturnType<typeof setTimeout> | undefined;
+let latest = 0;
+
+watch(query, (value) => {
+  clearTimeout(timer);
+  const text = value.trim();
+  if (text.length < 2) {
+    guests.value = [];
+    return;
+  }
+
+  // Ignore answers to searches the editor has already typed past.
+  const run = ++latest;
+  timer = setTimeout(async () => {
+    const result = await client
+      .collection("guest-responses")
+      .find({ search: text, where: { attending: { equals: true } }, limit: 8 });
+    if (run === latest) guests.value = result.docs as unknown as Guest[];
+  }, 250);
+});
+
+onBeforeUnmount(() => clearTimeout(timer));
+
+async function checkIn(guest: Guest) {
+  try {
+    await client.collection("guest-responses").update(guest.id, { checkedIn: true });
+    guest.checkedIn = true;
+    notify.success(`${guest.name} is checked in`);
+  } catch (error) {
+    notify.error(`Could not check in ${guest.name}`, {
+      description: error instanceof Error ? error.message : undefined,
+    });
+  }
+}
+</script>
+
+<template>
+  <div>
+    <input v-model="query" type="search" placeholder="Start typing a guest's name…" aria-label="Search guests" />
+    <ul>
+      <li v-for="guest in guests" :key="guest.id">
+        {{ guest.name }}
+        <span v-if="guest.checkedIn">Checked in</span>
+        <button v-else type="button" :disabled="!can('update', 'guest-responses')" @click="checkIn(guest)">
+          Check in
+        </button>
+      </li>
+    </ul>
+  </div>
+</template>
+```
+
+</Tab>
+</Tabs>
+
+Open **Check-in Station** in the sidebar and type two letters of a guest's name. You should see matching guests, and **Check in** should show a toast and mark the guest. If the admin says the page cannot be found, the slug in the URL does not match a page in `admin.navigation`.
+
+A few things in that code are worth pointing out:
+
+- `useAdminClient()` (React) and `useDyrectedClient()` (Vue) return the SDK client the admin is signed in with, so every call carries the editor's permissions. In React this is **not** `useDyrected()` from `@dyrected/react`, which belongs to your public site and needs its own provider. See [Admin Hooks](/docs/editor-experience/custom-components/admin-hooks).
+- The search ignores answers to searches the editor has already typed past, so fast typing never shows stale rows.
+- `useAccess().can(...)` disables the button for editors who cannot update guests, and `useAdminNotify()` shows the same toasts as the rest of the admin.
+- The React version keeps the search text in the URL with `usePageRoute`, so a refresh or a shared link keeps it. See [URL state and sub-routes](#url-state-and-sub-routes).
+
+## The page header
+
+Custom pages get the admin's page chrome: a breadcrumb trail, a title, an optional description, and action buttons. Set them from inside your component with `usePageMeta`:
+
+```tsx
+import { useState } from "react";
+import { usePageMeta } from "@dyrected/react";
+
+export function Reports() {
+  const [exporting, setExporting] = useState(false);
+
+  usePageMeta({
+    title: "Monthly reports",
+    description: "Check-ins and RSVPs by month",
+    breadcrumbs: [
+      { label: "Admin", to: "/" },
+      { label: "Operations" },
+      { label: "Reports" },
+    ],
+    actions: [
+      {
+        label: exporting ? "Exporting…" : "Export CSV",
+        icon: "Download",
+        variant: "outline",
+        disabled: exporting,
+        onClick: () => {
+          setExporting(true);
+          setTimeout(() => setExporting(false), 800);
+        },
+      },
+    ],
+  });
+
+  return <p>Report contents go here.</p>;
+}
+```
+
+Without `breadcrumbs`, the trail is "Admin", then your sidebar group, then the page title. The title also sets the browser tab title, using your configured `meta.titleSuffix`.
+
+Each action takes:
+
+| Property | Type | What it does |
+| --- | --- | --- |
+| `label` | `string` | Button text |
+| `icon` | `string` (optional) | A Lucide icon name, such as `"Download"` or `"RefreshCw"` |
+| `variant` | `"default"`, `"secondary"`, `"outline"`, `"ghost"`, `"destructive"`, or `"link"` | Button style. Defaults to `"default"` |
+| `disabled` | `boolean` (optional) | Disables the button |
+| `onClick` | `() => void` | Runs when the button is clicked |
+
+`usePageMeta` also returns the page's `options`, which is how a page reads the settings you gave `definePage`. In Vue, pass a ref or a getter so the header follows your state: `usePageMeta(() => ({ title: title.value }))`.
+
+## URL state and sub-routes
+
+Everything after `/pages/<slug>/` is passed to your page as `splat`, so one page can show different content for different paths without importing the admin's router. `usePageRoute` also gives you the query string and a way to move around inside the page:
+
+```tsx
+import { usePageRoute } from "@dyrected/react";
+
+export function Reports() {
+  const { splat, navigate } = usePageRoute();
+  const month = splat || "2026-09";
+
+  return (
+    <div>
+      <button type="button" onClick={() => navigate("2026-08")}>August</button>
+      <button type="button" onClick={() => navigate("2026-09")}>September</button>
+      <p>Showing {month}</p>
+    </div>
+  );
+}
+```
+
+`usePageRoute()` returns:
+
+- `splat`: the path after the page's slug, without a leading slash. For `/pages/reports/2026-08`, it is `"2026-08"`.
+- `navigate(subPath, { replace? })`: moves to a path below this page. `navigate("")` returns to the page's root.
+- `searchParams`: the current query string as a `URLSearchParams`.
+- `setSearchParams(next, { replace? })`: updates the query string.
+
+Keep state that should survive a refresh, such as a search or a selected tab, in `searchParams` or the sub-path.
+
+{/* NEEDS-HUMAN-VERIFY: In Vue, usePageRoute returns values read from a non-reactive bridge, so a computed built from route.splat does not update after navigate(). The Vue sub-route example from the earlier draft was therefore removed. Confirm and either make the Vue composable reactive or document the limitation. */}
+
+## Linking to other admin screens
+
+Use `useAdminNavigate` instead of typing addresses, because the admin may be mounted under a prefix or a hash router:
+
+```tsx
+import { useAdminNavigate } from "@dyrected/react";
+
+export function QuickLinks() {
+  const { navigate, to } = useAdminNavigate();
+
+  return (
+    <div>
+      <button type="button" onClick={() => navigate(to.collection("guest-responses"))}>All guests</button>
+      <button type="button" onClick={() => navigate(to.view("guest-responses", "seating-chart"))}>Seating chart</button>
+      <button type="button" onClick={() => navigate(to.workspace("door-checkin"))}>Door check-in</button>
+      <button type="button" onClick={() => navigate(to.page("reports", "2026-08"))}>August report</button>
+    </div>
+  );
+}
+```
+
+`to.collection`, `to.document`, `to.view`, `to.workspace`, and `to.page` build admin addresses for `navigate`. They are not links for an `href`. Toasts (`useAdminNotify`) and permission checks (`useAccess`) work in pages exactly as in any custom component, and are covered in [Admin Hooks](/docs/editor-experience/custom-components/admin-hooks).
+
+## Page options
+
+`definePage` accepts these options:
+
+| Option | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `slug` | `string` | required | Unique URL segment, `/pages/<slug>` |
+| `label` | `string` | required | Sidebar label and default title |
+| `component` | `string` | required | The key in `components.pages` |
+| `icon` | `string` | `"FileText"` | A Lucide icon name for the sidebar and header |
+| `group` | `string` | none | The sidebar group to place the page in |
+| `order`, `after`, `before`, `position` | | | Where it sits in the group, with the same meaning as for [workspaces](/docs/model-content/operational-views/workspaces-and-navigation) |
+| `badge` | | none | A live badge in the sidebar |
+| `access` | | none | Hides the sidebar item from editors who fail the rule. See [Access](#access) |
+| `layout` | `"contained"` or `"full"` | `"contained"` | Padded with a maximum width, or edge to edge. Use `"full"` for maps, boards, and split panes |
+| `chrome` | `boolean` | `true` | `false` hides the admin's breadcrumbs and header, for kiosk-style screens |
+| `options` | `Record<string, unknown>` | none | Serializable settings your component reads from `usePageMeta().options` |
+
+## Access
+
+`access` on a page hides its sidebar item from editors who do not pass the rule. Treat that as a convenience, not as security. Someone who knows the URL is not stopped by the sidebar, and a page runs in the browser, so anything sensitive it reads or writes must be protected by the access rules on your collections. The check-in station is safe because its reads and writes go through the admin's client, where those rules apply.
+
+{/* NEEDS-HUMAN-VERIFY: CustomPageRoute resolves the page from the navigation tree with hidden items included, so a direct visit to /pages/<slug> renders the page even when `access` hides the sidebar item. Confirm this is the intended behaviour and whether a route-level read check should be added. */}
+
+## Styling
+
+Your page is styled with your app's own CSS, and it can read the admin's theme variables so it follows light and dark mode. The `dy-` classes you may see in the admin's markup are internal to it, so do not rely on them in your own components. [Styling Custom Components](/docs/editor-experience/custom-components/styling) shows how to match the admin.
+
+## When something is wrong
+
+- **The component key is not registered.** The page area shows a placeholder in development and nothing in production. See [Registration warnings](/docs/editor-experience/custom-components/registration-warnings).
+- **Your component throws.** An inline error card with a **Retry** button replaces it, and the header and sidebar keep working.
+- **The slug does not exist.** The admin shows a "Page not found" screen.
+
+## Recommended path
+
+Reach for a custom page when the screen is a task rather than a record or a list. Declare it with `definePage` in `admin.navigation`, set its title and actions with `usePageMeta`, keep state that should survive a refresh in the URL with `usePageRoute`, and read and write through the admin's client so every call carries the editor's permissions.

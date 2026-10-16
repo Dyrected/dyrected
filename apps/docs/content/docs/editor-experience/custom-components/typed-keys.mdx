@@ -1,0 +1,113 @@
+---
+title: Typed Component Keys
+description: Catch a misspelled or missing component key at compile time instead of finding a blank spot in the admin, using generated types and defineAdminComponents.
+---
+
+Custom components are connected to your config by string keys, such as `"guest-responses.seatingChart"`. A typo in either place, or a component you forgot to register, shows up later as an empty spot in the admin. Typed component keys move that mistake to your editor: the compiler tells you which key is wrong before you run anything.
+
+By the end of this page you will have type generation producing a list of the keys your config uses, and a registration map that fails to compile when a key is misspelled or missing.
+
+This page assumes you already register components with the pattern in the [Custom Components overview](/docs/editor-experience/custom-components/overview). Typing is optional: if you never generate types, everything works and keys are plain strings.
+
+## Step 1: generate types
+
+Run your project's type generation. If you used `dyrected init`, that is the `generate:types` script, and the command underneath is:
+
+```bash
+npx dyrected generate:types
+```
+
+Besides your document types, the generated file now lists every component key your config references, grouped by where the component is registered. For a config with a seating chart view, a custom page, and a view slot, the end of the file looks like this:
+
+```ts
+declare module "@dyrected/sdk" {
+  interface Register {
+    schema: DyrectedSchema;
+    componentKeys: {
+      fields: string;
+      dashboard: string;
+      collectionList: string;
+      collectionView: "guestHeadcount";
+      forms: string;
+      viewLayouts: "guest-responses.seatingChart";
+      pages: "ops.executiveHub" | "ops.checkInStation";
+      customComponents: string;
+    };
+  }
+}
+```
+
+A group that your config does not reference at all stays `string`, so nothing is enforced there. The generated file must be part of your TypeScript program, the same requirement as for the rest of the generated types. See [Generating Types](/docs/reference/typescript/generating-types) for where the file is written.
+
+Run generation again whenever you add or rename a key in your config.
+
+{/* NEEDS-HUMAN-VERIFY: Keys are collected from the local config. Generating from a running site (`--url`) reads the schema the API serves, which may not include every component reference. Confirm and, if so, say here that component keys need a local config. */}
+
+## Step 2: register with `defineAdminComponents`
+
+Wrap your registration map in `defineAdminComponents`. It checks each group against the keys your config uses:
+
+```tsx
+"use client";
+
+import { DyrectedAdmin } from "@dyrected/next/admin";
+import { defineAdminComponents } from "@dyrected/react";
+import { CheckInStation } from "./CheckInStation";
+import { ExecutiveHub } from "./ExecutiveHub";
+import { GuestHeadcountBanner } from "./GuestHeadcountBanner";
+import { SeatingChart } from "./SeatingChart";
+
+const components = defineAdminComponents({
+  viewLayouts: { "guest-responses.seatingChart": SeatingChart },
+  collectionView: { guestHeadcount: GuestHeadcountBanner },
+  pages: {
+    "ops.executiveHub": ExecutiveHub,
+    "ops.checkInStation": CheckInStation,
+  },
+});
+
+export function AdminClient() {
+  return <DyrectedAdmin components={components} />;
+}
+```
+
+Because the groups are typed from your config, the compiler now catches two kinds of mistake. A key that your config never mentions fails:
+
+```text
+error TS2353: Object literal may only specify known properties, and
+'"guest-responses.seatingChar"' does not exist in type
+'Record<"guest-responses.seatingChart", ComponentType<AdminViewLayoutProps>>'.
+```
+
+And a key that your config references but you did not register fails too:
+
+```text
+error TS2741: Property '"ops.checkInStation"' is missing in type
+'{ "ops.executiveHub": ... }' but required in type
+'Record<"ops.executiveHub" | "ops.checkInStation", ComponentType<AdminPageProps>>'.
+```
+
+Fix the key, or register the component, and the error goes away.
+
+## What counts as a reference
+
+The generator reads these places in your config:
+
+| Group | Where the key comes from |
+| --- | --- |
+| `fields` | A field's `admin.component`, including fields nested in groups, arrays, blocks, and tabs |
+| `dashboard` | `admin.components.beforeDashboard` and `afterDashboard` |
+| `collectionList` | A collection's `admin.components` list slots, such as `beforeList` |
+| `collectionView` | View slots on a collection or on a single view (`beforeViewHeader`, `afterViewContent`, and so on) |
+| `viewLayouts` | The `component` of any view with `layout: "custom"` |
+| `pages` | A page declared in `admin.navigation` |
+| `customComponents` | A name used with `displayCustom` in a detail view |
+| `forms` | Reserved. It stays `string` for now |
+
+## When you do not generate types
+
+Without generated types, `defineAdminComponents` accepts any string key and returns your map unchanged. Nothing breaks, and you simply do not get the compile-time checks. The runtime still warns about unregistered and unused keys in development, covered in [Registration warnings](/docs/editor-experience/custom-components/registration-warnings).
+
+## Recommended path
+
+Add `generate:types` to your build or `postinstall`, wrap your registration map in `defineAdminComponents`, and let the compiler guard your keys. Keep one map per admin mount so every key appears in exactly one place.
