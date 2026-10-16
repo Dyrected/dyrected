@@ -7,11 +7,8 @@ import { DefaultsService } from "../services/defaults.service.js";
 import { AuditService } from "../services/audit.service.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { revokeAllAuthSessions } from "../auth/sessions.js";
-import {
-  runCollectionHooks,
-  executeFieldBeforeChange,
-  executeFieldAfterRead,
-} from "../utils/hooks.js";
+import { getFunctionRuntime, isFunctionRef } from "../runtime/function-runtime.js";
+import { hookSet, runFieldAfterRead, runFieldBeforeChange, runHooks } from "./hook-runtime.js";
 import { createReadonlyDb } from "../utils/readonly-db.js";
 import { assertImmutableFieldsUnchanged, normalizeMoneyFields } from "../utils/field-integrity.js";
 import {
@@ -261,8 +258,8 @@ export class CollectionController {
     }
 
     // Run beforeRead collection hook
-    const beforeReadResult = await runCollectionHooks(
-      this.collection.hooks?.beforeRead,
+    const beforeReadResult = await runHooks(c, 
+      hookSet("collection", this.collection, "beforeRead"),
       {
         req: c.req,
         query: where,
@@ -374,8 +371,8 @@ export class CollectionController {
         this.collection.fields,
         doc,
       );
-      const docWithCollectionHooks = await runCollectionHooks(
-        this.collection.hooks?.afterRead,
+      const docWithCollectionHooks = await runHooks(c, 
+        hookSet("collection", this.collection, "afterRead"),
         {
           doc: docWithDefaults,
           req: c.req,
@@ -383,7 +380,7 @@ export class CollectionController {
           db: readonlyDb,
         },
       );
-      const docWithFieldHooks = await executeFieldAfterRead(
+      const docWithFieldHooks = await runFieldAfterRead(c, 
         this.collection.fields,
         docWithCollectionHooks,
         user,
@@ -504,8 +501,8 @@ export class CollectionController {
       effectiveDoc,
     );
     const readonlyDb = createReadonlyDb(db);
-    const docWithCollectionHooks = await runCollectionHooks(
-      this.collection.hooks?.afterRead,
+    const docWithCollectionHooks = await runHooks(c, 
+      hookSet("collection", this.collection, "afterRead"),
       {
         doc: docWithDefaults,
         req: c.req,
@@ -513,7 +510,7 @@ export class CollectionController {
         db: readonlyDb,
       },
     );
-    const docWithFieldHooks = await executeFieldAfterRead(
+    const docWithFieldHooks = await runFieldAfterRead(c, 
       this.collection.fields,
       docWithCollectionHooks,
       user,
@@ -543,7 +540,7 @@ export class CollectionController {
     }
 
     if (finalDoc && this.collection.detail) {
-      finalDoc = await evaluateDetailComputed(this.collection.detail, finalDoc, user, readonlyDb);
+      finalDoc = await evaluateDetailComputed(this.collection.detail, finalDoc, user, readonlyDb, getFunctionRuntime(c.get("config")));
     }
 
     return c.json(this.sanitizeDoc(finalDoc));
@@ -633,14 +630,14 @@ export class CollectionController {
     );
 
     // Run beforeChange hooks (field-level then collection-level)
-    data = await executeFieldBeforeChange(
+    data = await runFieldBeforeChange(c, 
       this.collection.fields,
       data,
       null,
       user,
       readonlyDb,
     );
-    data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
+    data = await runHooks(c, hookSet("collection", this.collection, "beforeChange"), {
       data,
       req: c.req,
       user,
@@ -684,8 +681,8 @@ export class CollectionController {
     }
 
     // Run afterChange collection hooks (full db access)
-    await runCollectionHooks(
-      this.collection.hooks?.afterChange,
+    await runHooks(c, 
+      hookSet("collection", this.collection, "afterChange"),
       {
         doc,
         user,
@@ -712,7 +709,7 @@ export class CollectionController {
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
       : doc;
-    const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
+    const readDoc = await runHooks(c, hookSet("collection", this.collection, "afterRead"), {
       doc: responseDoc,
       req: c.req,
       user,
@@ -721,7 +718,7 @@ export class CollectionController {
       surface: "collection.afterRead",
       path: `collection:${this.collection.slug}.hooks.afterRead`,
     });
-    const finalDoc = await executeFieldAfterRead(
+    const finalDoc = await runFieldAfterRead(c, 
       this.collection.fields,
       readDoc,
       user,
@@ -828,14 +825,14 @@ export class CollectionController {
     );
 
     // Run beforeChange hooks for upload too
-    data = await executeFieldBeforeChange(
+    data = await runFieldBeforeChange(c, 
       this.collection.fields,
       data,
       null,
       user,
       readonlyDb,
     );
-    data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
+    data = await runHooks(c, hookSet("collection", this.collection, "beforeChange"), {
       data,
       req: c.req,
       user,
@@ -856,8 +853,8 @@ export class CollectionController {
     });
 
     // Run afterChange hooks for uploads (full db access)
-    await runCollectionHooks(
-      this.collection.hooks?.afterChange,
+    await runHooks(c, 
+      hookSet("collection", this.collection, "afterChange"),
       {
         doc,
         user,
@@ -884,7 +881,7 @@ export class CollectionController {
     const responseDoc = this.collection.workflow
       ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
       : doc;
-    const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
+    const readDoc = await runHooks(c, hookSet("collection", this.collection, "afterRead"), {
       doc: responseDoc,
       req: c.req,
       user,
@@ -893,7 +890,7 @@ export class CollectionController {
       surface: "collection.afterRead",
       path: `collection:${this.collection.slug}.hooks.afterRead`,
     });
-    const finalDoc = await executeFieldAfterRead(
+    const finalDoc = await runFieldAfterRead(c, 
       this.collection.fields,
       readDoc,
       user,
@@ -1066,14 +1063,14 @@ export class CollectionController {
     );
 
     // Run beforeChange hooks (field-level then collection-level)
-    data = await executeFieldBeforeChange(
+    data = await runFieldBeforeChange(c, 
       this.collection.fields,
       data,
       originalDoc,
       user,
       readonlyDb,
     );
-    data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
+    data = await runHooks(c, hookSet("collection", this.collection, "beforeChange"), {
       data,
       doc: originalDoc,
       req: c.req,
@@ -1119,8 +1116,8 @@ export class CollectionController {
     }
 
     // Run afterChange collection hooks (full db access)
-    await runCollectionHooks(
-      this.collection.hooks?.afterChange,
+    await runHooks(c, 
+      hookSet("collection", this.collection, "afterChange"),
       {
         doc,
         previousDoc: originalDoc,
@@ -1149,7 +1146,7 @@ export class CollectionController {
       : doc;
 
     // Run afterRead hooks
-    const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
+    const readDoc = await runHooks(c, hookSet("collection", this.collection, "afterRead"), {
       doc: responseDoc,
       req: c.req,
       user,
@@ -1158,7 +1155,7 @@ export class CollectionController {
       surface: "collection.afterRead",
       path: `collection:${this.collection.slug}.hooks.afterRead`,
     });
-    const finalDoc = await executeFieldAfterRead(
+    const finalDoc = await runFieldAfterRead(c, 
       this.collection.fields,
       readDoc,
       user,
@@ -1264,9 +1261,11 @@ export class CollectionController {
     }
 
     if (isHeaderAction && !requestedIds.length) {
-      if (typeof action.handler === "function") {
+      if (typeof action.handler === "function" || isFunctionRef(action.handler)) {
         try {
-          const handlerResult = await action.handler({
+          const handlerResult = await getFunctionRuntime(c.get("config")).invoke<Record<string, unknown> | void>(
+            (typeof action.handler === "function" ? action.handler.bind(action) : action.handler) as any,
+            [{
             doc: null,
             docs: [],
             user: (user as unknown as Record<string, unknown>) ?? null,
@@ -1275,7 +1274,9 @@ export class CollectionController {
               slug: this.collection.slug,
               label: this.collection.labels?.singular ?? this.collection.slug,
             },
-          });
+            }],
+            { surface: "action", path: `collections.${this.collection.slug}.actions.${action.name}`, collection: this.collection.slug },
+          );
           return c.json((handlerResult ?? { success: true }) as any);
         } catch (error) {
           const status =
@@ -1301,15 +1302,19 @@ export class CollectionController {
       }
 
       let resolvedData: Record<string, unknown>;
-      if (typeof action.handler === "function") {
+      if (typeof action.handler === "function" || isFunctionRef(action.handler)) {
         try {
-          const handlerResult = await action.handler({
+          const handlerResult = await getFunctionRuntime(c.get("config")).invoke<Record<string, unknown> | void>(
+            (typeof action.handler === "function" ? action.handler.bind(action) : action.handler) as any,
+            [{
             doc: targetDoc as Record<string, unknown>,
             docs: [targetDoc as Record<string, unknown>],
             user: (user as unknown as Record<string, unknown>) ?? null,
             input,
             collection: { slug: this.collection.slug, label: this.collection.labels?.singular ?? this.collection.slug },
-          });
+            }],
+            { surface: "action", path: `collections.${this.collection.slug}.actions.${action.name}`, collection: this.collection.slug },
+          );
           resolvedData = (handlerResult ?? {}) as Record<string, unknown>;
         } catch (error) {
           const status =
@@ -1619,7 +1624,7 @@ export class CollectionController {
       }
 
       // Run beforeDelete collection hook with mode: "trash"
-      await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+      await runHooks(c, hookSet("collection", this.collection, "beforeDelete"), {
         id,
         doc,
         user,
@@ -1629,7 +1634,7 @@ export class CollectionController {
       });
 
       // Run beforeTrash collection hook
-      await runCollectionHooks(this.collection.hooks?.beforeTrash, {
+      await runHooks(c, hookSet("collection", this.collection, "beforeTrash"), {
         id,
         doc,
         user,
@@ -1686,8 +1691,8 @@ export class CollectionController {
       }
 
       // Run afterTrash collection hook
-      await runCollectionHooks(
-        this.collection.hooks?.afterTrash,
+      await runHooks(c, 
+        hookSet("collection", this.collection, "afterTrash"),
         {
           id,
           doc,
@@ -1740,7 +1745,7 @@ export class CollectionController {
     }
 
     // Run beforeDelete collection hook with mode: "permanent"
-    await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+    await runHooks(c, hookSet("collection", this.collection, "beforeDelete"), {
       id,
       doc,
       user,
@@ -1784,8 +1789,8 @@ export class CollectionController {
     }
 
     // Run afterDelete collection hook (full db access)
-    await runCollectionHooks(
-      this.collection.hooks?.afterDelete,
+    await runHooks(c, 
+      hookSet("collection", this.collection, "afterDelete"),
       {
         id,
         doc,
@@ -1903,7 +1908,7 @@ export class CollectionController {
         }
 
         if (resolvedTrash.enabled && !isPermanent) {
-          await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+          await runHooks(c, hookSet("collection", this.collection, "beforeDelete"), {
             id,
             doc,
             user,
@@ -1911,7 +1916,7 @@ export class CollectionController {
             db: readonlyDb,
             mode: "trash",
           });
-          await runCollectionHooks(this.collection.hooks?.beforeTrash, {
+          await runHooks(c, hookSet("collection", this.collection, "beforeTrash"), {
             id,
             doc,
             user,
@@ -1969,8 +1974,8 @@ export class CollectionController {
             );
           }
 
-          await runCollectionHooks(
-            this.collection.hooks?.afterTrash,
+          await runHooks(c, 
+            hookSet("collection", this.collection, "afterTrash"),
             {
               id,
               doc,
@@ -1987,7 +1992,7 @@ export class CollectionController {
           }
 
           // Run beforeDelete hooks (mode: "permanent")
-          await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+          await runHooks(c, hookSet("collection", this.collection, "beforeDelete"), {
             id,
             doc,
             user,
@@ -2032,8 +2037,8 @@ export class CollectionController {
           }
 
           // Run afterDelete hooks (full db access)
-          await runCollectionHooks(
-            this.collection.hooks?.afterDelete,
+          await runHooks(c, 
+            hookSet("collection", this.collection, "afterDelete"),
             {
               id,
               doc,
@@ -2312,7 +2317,7 @@ export class CollectionController {
 
     const hookReq = this.toHookRequestContext(c);
     // Run beforeRestore hook (can veto by throwing)
-    await runCollectionHooks(this.collection.hooks?.beforeRestore, {
+    await runHooks(c, hookSet("collection", this.collection, "beforeRestore"), {
       id: entry.docId as string,
       doc: docToRestore,
       snapshot: docToRestore,
@@ -2349,8 +2354,8 @@ export class CollectionController {
     }
 
     // Run afterRestore hook
-    await runCollectionHooks(
-      this.collection.hooks?.afterRestore,
+    await runHooks(c, 
+      hookSet("collection", this.collection, "afterRestore"),
       {
         id: entry.docId as string,
         doc: docToRestore,
@@ -2451,7 +2456,7 @@ export class CollectionController {
         }
 
         const readonlyDb = createReadonlyDb(db);
-        await runCollectionHooks(this.collection.hooks?.beforeRestore, {
+        await runHooks(c, hookSet("collection", this.collection, "beforeRestore"), {
           id: entry.docId as string,
           doc: docToRestore,
           snapshot: docToRestore,
@@ -2488,8 +2493,8 @@ export class CollectionController {
           );
         }
 
-        await runCollectionHooks(
-          this.collection.hooks?.afterRestore,
+        await runHooks(c, 
+          hookSet("collection", this.collection, "afterRestore"),
           {
             id: entry.docId as string,
             doc: docToRestore,
@@ -2647,8 +2652,8 @@ export class CollectionController {
       );
     }
 
-    await runCollectionHooks(
-      this.collection.hooks?.afterDelete,
+    await runHooks(c, 
+      hookSet("collection", this.collection, "afterDelete"),
       {
         id: entry.docId as string,
         doc: snapshot,
@@ -2728,8 +2733,8 @@ export class CollectionController {
         }
       }
 
-      await runCollectionHooks(
-        this.collection.hooks?.afterDelete,
+      await runHooks(c, 
+        hookSet("collection", this.collection, "afterDelete"),
         {
           id: entry.docId as string,
           doc: snapshot,

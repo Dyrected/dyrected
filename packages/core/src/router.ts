@@ -1,3 +1,4 @@
+import { getFunctionRuntime } from "./runtime/function-runtime.js";
 import { Hono } from "hono";
 import type { DyrectedContext } from "./app.js";
 import type { DyrectedConfig, CompiledNavItem } from "./types/index.js";
@@ -621,10 +622,10 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         }
       }
 
-      const result = await resolver({
-        db,
-        user,
-        req: reqContext,
+      const result = await getFunctionRuntime(config).invoke(resolver, [{ db, user, req: reqContext }], {
+        surface: "resolver",
+        path: `collections.${colSlug}.fields.${fieldName}.options`,
+        collection: colSlug,
       });
 
       if (shouldCache) {
