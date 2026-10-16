@@ -1,5 +1,123 @@
 # @dyrected/admin
 
+## 2.23.0
+
+### Minor Changes
+
+- 6d67088: Custom admin components are now easier to write, harder to get wrong, and no longer need provider boilerplate in Vue.
+
+  **For app developers**
+
+  - **Vue custom components just work.** `useDyrectedForm()`, `useField()`, `useAdminTheme()` and the new `useAdminNavigate()`, `useAdminNotify()` and `useAccess()` work inside any custom field or slot component with no `provideDyrectedForm` call. Prop updates patch the component in place, so local state and input focus are kept.
+  - **New hooks and composables.** `useAdminNavigate()` (`navigate` plus `to.collection/document/view/page`), `useAdminNotify()` (`success/error/info`) and `useAccess().can(operation, collection, doc?)` ship in `@dyrected/react` and `@dyrected/vue`. They are marked experimental. `useAccess` is a UI hint only; the server stays authoritative.
+  - **Typed component keys.** Run `npx dyrected generate:types` and `defineAdminComponents({ fields: { ... } })` checks your keys against what your schema references. Untyped apps are unaffected.
+  - **Better failure modes.** A component that throws shows an inline error card with a Retry button, and the rest of the admin keeps working. This includes errors thrown inside a Vue component. An unregistered key shows a placeholder in development and a warning (a generic placeholder in production).
+  - **Unused registrations are flagged.** In development the admin warns once for each registered component the schema never references. Pass `warnUnusedComponents={false}` (or `:warn-unused-components="false"` in Vue) to silence it.
+  - **Lazy components.** `React.lazy` and `defineAsyncComponent` components show a skeleton while they load.
+  - **Nuxt auto-registration.** Drop a file at `components/dyrected/<registry>/<key>.vue` (for example `components/dyrected/fields/check_ins.scanner.vue`) and it is registered under that key. The `components` prop still wins on a clash, and nothing changes if you don't use the folder.
+
+  **For plugin and integration authors**
+
+  - `AdminComponents` gains `forms`, `viewLayouts`, `pages` and `customComponents`, plus the identity prop types `AdminFormComponentProps`, `AdminViewLayoutProps` and `AdminPageProps`. The first three are declared but not rendered yet; they are reserved for the custom forms, view layouts and pages work.
+  - `@dyrected/sdk` exports `RegisteredComponentKeys`, and `Register` accepts `componentKeys`.
+  - `@dyrected/core` exports `collectReferencedComponentKeys(schema)`, the scan the CLI and the admin both use.
+  - `@dyrected/admin/public` exports `AdminBridgeProvider`, `useAdminBridgeContext`, `AdminComponentErrorBoundary`, `AdminComponentFallback` and the new hooks.
+
+  **Upgrade notes**
+
+  - No breaking changes. Existing registries (`fields`, `dashboard`, `collectionList`, `collectionView`) keep their props.
+  - Regenerate types to get `Register.componentKeys`. If you hand-maintain a large `components` map in `admin.vue`, you can move entries into `components/dyrected/<registry>/` one at a time.
+
+- 2dd2276: Operational views can now render documents with your own component, while Dyrected keeps the header, KPI metrics, search, pagination, selection, bulk actions and action dialogs.
+
+  **For app developers**
+
+  - **Add a custom layout.** Define a view with `layout: "custom"` and a `component` key, then register a component under that key in `components.viewLayouts`:
+
+    ```ts
+    defineView({
+      slug: "seating",
+      label: "Seating Chart",
+      layout: "custom",
+      component: "guests.seatingChart",
+      options: { tableField: "tableNumber" },
+      data: { fetchAll: true },
+    });
+    ```
+
+  - **Read everything through a hook.** `useCollectionView()` gives you `documents`, `total`, `isLoading`, `pagination`, `sort`, `search`, `filters`, `selection`, `permissions` and `open()`. `useViewActions()` runs the view's actions and shows Dyrected's own confirm dialog and input form. `useGroupedDocuments(field)` groups documents with select and relationship labels resolved. The same three exist in `@dyrected/vue` as composables, with state as refs, and work with no manual `provide`.
+  - **Save changes from your layout.** `updateDocument(id, patch)` updates optimistically and rolls back with an error toast if the server rejects the change. Hooks, access rules and validation still run.
+  - **Load everything when you need to.** Set `data.fetchAll` to load up to 1,000 documents. Past that, the user sees a notice that the list was truncated.
+  - **Safe fallback.** If the component key is not registered, the view shows a message with a **Show as table** button instead of a blank page.
+
+  **Built-in layouts and custom layouts now share one foundation**
+
+  - **Filters everywhere.** Custom layouts get the same filter bar as the table: search, per-field filters and match all/any. Table, kanban, cards and custom layouts now use one implementation, so a filter means the same thing in each.
+  - **Slots see the documents.** Components registered in `beforeViewContent`, `afterViewHeader` and the other view slots now receive the documents the active layout loaded, and can call `useCollectionView()`. `documents` was always an empty list before.
+  - **Replace a built-in layout.** Register a component under a built-in layout's name, such as `viewLayouts.kanban`, and views with that layout render it in Dyrected's shell, with the same hooks as a custom layout.
+  - **One place that describes layouts.** The navigation customizer, the view header icon and the page's dispatch read a single layout registry. `gantt` still renders as a table.
+
+  **For plugin and integration authors**
+
+  - `ViewLayout` gains `"custom"`, and `@dyrected/core` exports `CustomViewConfig`, `CustomViewDataConfig`, `defineCustomView` and `CUSTOM_VIEW_FETCH_ALL_LIMIT`. Views serialized to the admin now carry `component`, `options` and `data`.
+  - `@dyrected/admin/public` exports `ViewControllerContext`, `createViewController` and `DYRECTED_VIEW_KEY` for hosts that embed the controller. The controller is subscribable, like the form controller.
+  - `npx dyrected generate:types` now includes custom layout components in `Register.componentKeys.viewLayouts`.
+
+  **Upgrade notes**
+
+  - No breaking changes. Existing layouts are untouched.
+  - The hooks are marked experimental.
+  - If a slot component checked `documents.length === 0` because the list was always empty, it will now see real data.
+  - Built-in layouts no longer take `actions`, `onRunAction` and `isRunningAction` props. They read them from the view controller. Only code that rendered `TableLayout`, `KanbanLayout`, `CardsLayout` or `CalendarLayout` directly is affected, and none of them are public exports.
+  - A custom view's `component` is required. `defineView` throws at config load if it is missing.
+
+- ab95e13: Custom pages, view layouts and fields in React can now read and write documents with the editor's own permissions.
+
+  **For app developers**
+
+  - New `useAdminClient()` hook, exported from `@dyrected/react`. It returns the SDK client the admin is already signed in with, so a custom component can call `client.collection("orders").find(...)` or `.update(...)` without handling a token, and only sees what that editor is allowed to see.
+  - It is different from `useDyrected()` in `@dyrected/react`, which gives a public site's client and needs its own `DyrectedProvider`. Calling `useDyrected()` inside the admin throws, because the admin does not mount that provider.
+  - In Vue, `useDyrectedClient()` already returns the admin's client inside custom components, so nothing changes there.
+  - The hook is marked experimental.
+
+  **For integration authors**
+
+  - `useAdminClient` is also exported from `@dyrected/admin/public`. It reads the admin's own context and throws a clear error outside the admin or before sign-in.
+
+### Patch Changes
+
+- 6e53782: Your own components inside the admin now keep their styles when your app uses Tailwind v4.
+
+  **For app developers**
+
+  - Before this fix, the admin's stylesheet beat Tailwind v4 utility classes on your own components rendered inside it, because Tailwind v4 puts utilities in a CSS layer and unlayered CSS always wins over layered CSS. A custom field, slot, page or view layout lost its `border`, `bg-*`, `font-bold`, `text-2xl`, `mb-4` and even `ring` or `shadow` classes. The admin now puts its element defaults in `@layer base`, so your classes apply as you wrote them.
+  - You no longer need `!important`, inline styles or box-shadow tricks to draw a border inside a custom component.
+  - The admin's own appearance is unchanged. Its `dy-*` classes are not layered and still take priority over those defaults.
+  - Apps on Tailwind v3 or plain CSS are unaffected, since unlayered host styles already beat layered ones.
+
+  **For integration authors**
+
+  - The scoped reset, the heading, button and field defaults, and the `--tw-*` variable initialisers in `admin.css` are now inside `@layer base`. Layers are supported by all current browsers.
+  - Rules that target admin classes, such as `.dy-admin-ui .dy-text-primary`, stay unlayered.
+
+- 51ec5e0: The development warnings for custom components now actually appear in your app.
+
+  **For app developers**
+
+  - A custom component key that is not registered now shows a placeholder card and a console warning in development, as intended. The same applies to a registered component the schema never references, and to a custom view layout whose component key is missing, which now names the missing key in development.
+  - These were switched on by Vite's `import.meta.env.DEV`, which Vite fixes when the admin package is built, so in your app they were always off. They now follow your own `NODE_ENV` and are silent in production builds.
+  - The Nuxt `<DyrectedAdmin>` now accepts `warn-unused-components` and passes it through, so `:warn-unused-components="false"` works in Nuxt too.
+
+  **For integration authors**
+
+  - Do not use `import.meta.env.DEV` in code that ships in a library bundle and should follow the host's mode. The admin now has an internal `isDevelopment()` that reads `process.env.NODE_ENV`, which the host's bundler resolves.
+
+- Updated dependencies [8c8c654]
+- Updated dependencies [6d67088]
+- Updated dependencies [2dd2276]
+  - @dyrected/core@2.23.0
+  - @dyrected/sdk@2.23.0
+
 ## 2.22.0
 
 ### Minor Changes
