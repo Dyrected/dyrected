@@ -607,6 +607,9 @@ const Pages = defineCollection({
   labels: { singular: "Page", plural: "Pages" },
   admin: {
     useAsTitle: "title",
+    // The home page lives at "/", and the assessment results page sits under /assessment.
+    previewUrl:
+      'slug == "home" ? "/" : slug == "assessment-results" ? "/assessment/results" : "/" + slug',
   },
   detail: false,
   /*[
@@ -982,6 +985,7 @@ const BlogArticles = defineCollection({
   admin: {
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "date", "category", "readTime"],
+    previewUrl: '"/blog/" + slug',
   },
   fields: [
     defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
