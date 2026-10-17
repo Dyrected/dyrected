@@ -16,7 +16,7 @@ import { VUE_AUTO_IMPORTS, vueSfcPlugin } from "./vue-sfc-plugin.js";
 
 export const SHARED_MODULES_GLOBAL = "__DYRECTED_SHARED__";
 
-/** Modules the admin provides. `@dyrected/react` is the same public API under its other name. */
+/** Modules the admin provides to the bundle, so the bundle shares its React and its admin context. */
 export const SHARED_SPECIFIERS = [
   "react",
   "react/jsx-runtime",
@@ -25,7 +25,6 @@ export const SHARED_SPECIFIERS = [
   "react-dom/client",
   "@dyrected/admin",
   "@dyrected/admin/public",
-  "@dyrected/react",
 ] as const;
 
 /** Modules that only exist inside a Nuxt app. They cannot work in the Cloud-hosted admin, so using one is an error. */
@@ -37,8 +36,10 @@ const sharedPlugin: Plugin = {
     const filter = new RegExp(`^(${SHARED_SPECIFIERS.map((s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|")})$`);
     b.onResolve({ filter }, (args) => ({ path: args.path, namespace: "dyrected-shared" }));
     b.onLoad({ filter: /.*/, namespace: "dyrected-shared" }, (args) => {
-      // `@dyrected/react` and the admin's `/public` entry are the same API the admin passes in as `@dyrected/admin`.
-      const key = args.path === "@dyrected/react" || args.path === "@dyrected/admin/public" ? "@dyrected/admin" : args.path;
+      // The admin's `/public` entry is the same API the admin passes in as `@dyrected/admin`. `@dyrected/react` and
+      // `@dyrected/vue` are bundled normally: their own code comes along, and what they re-export from the admin
+      // resolves back to the shared copy through this plugin.
+      const key = args.path === "@dyrected/admin/public" ? "@dyrected/admin" : args.path;
       return {
         contents: `
           const shared = globalThis[${JSON.stringify(SHARED_MODULES_GLOBAL)}] && globalThis[${JSON.stringify(SHARED_MODULES_GLOBAL)}][${JSON.stringify(key)}];

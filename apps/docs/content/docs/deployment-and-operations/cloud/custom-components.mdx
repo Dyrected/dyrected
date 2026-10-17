@@ -1,0 +1,307 @@
+---
+title: Custom Components in Dyrected Cloud
+description: Take the custom fields, forms and pages you already use in your own app and run them in the admin that Dyrected Cloud hosts for your project, with React or Vue.
+runtime: cloud
+---
+
+You can keep using your own components with the admin that Dyrected Cloud hosts for your project. You build them into one file, deploy it, and open the project's admin: your custom field, form or page is there, running next to your content.
+
+By the end of this page you will have a `brand-color-picker` field running in the Cloud admin for a `products` collection. You will write it once as a React component, or as a Vue component if that is what your app uses, and the steps after that are the same.
+
+This page assumes you already have custom components in an embedded admin. If you have not written one yet, start with the [Custom Components overview](/docs/editor-experience/custom-components/overview) and come back.
+
+{/* NEEDS-HUMAN-VERIFY: availability. `dyrected deploy`, `dyrected bundle --components` and `componentsUrl` are on unreleased branches (feat/function-runtime-seam and feat/components-url). Confirm the release version to name here, and that hosted project addresses (`<slug>.dyrected.app`) and the Open admin button are live for readers. */}
+
+## How it works
+
+In your own app, your components are part of the app, so the admin imports them directly. Cloud has no app of yours around the admin, so your components have to be uploaded instead.
+
+Three things happen:
+
+1. **You build.** `dyrected bundle` packs your component registry into one file, `components.js`.
+2. **You deploy.** `dyrected deploy` uploads it with your schema. Cloud keeps every build, and one of them is live.
+3. **The admin loads it.** When you open the project's admin, it downloads `components.js`, checks it against a fingerprint (an integrity hash) recorded at build time, and only then runs it.
+
+Your components run at your **project's own address** (`https://<slug>.dyrected.app/admin`), not on the Dyrected dashboard. The dashboard is where you manage the project, the team and your keys, and your component code never runs there. If you want the reasoning, see [Where your code runs](#where-your-code-runs).
+
+## Step 1: Put your components in a registry file
+
+A registry is the same map of keys to components you would pass to the admin in your own app, written as the default export of a file. Create `dyrected.components.ts` next to your `dyrected.config.ts`:
+
+<Tabs items={["React", "Vue"]}>
+<Tab value="React">
+
+First the component, in `BrandColorPicker.tsx`:
+
+```tsx
+import type { AdminFieldComponentProps } from "@dyrected/react";
+
+export function BrandColorPicker({ value, onChange, disabled }: AdminFieldComponentProps) {
+  return (
+    <input
+      type="color"
+      value={typeof value === "string" ? value : "#6366f1"}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+```
+
+Then the registry, in `dyrected.components.ts`:
+
+```ts
+import { defineAdminComponents } from "@dyrected/react";
+import { BrandColorPicker } from "./BrandColorPicker";
+
+export default defineAdminComponents({
+  fields: { "brand-color-picker": BrandColorPicker },
+});
+```
+
+</Tab>
+<Tab value="Vue">
+
+First the component, in `BrandColorPicker.vue`:
+
+```vue
+<script setup lang="ts">
+const props = defineProps<{
+  value?: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}>();
+</script>
+
+<template>
+  <input
+    type="color"
+    :value="props.value || '#6366f1'"
+    :disabled="props.disabled"
+    @input="props.onChange(($event.target as HTMLInputElement).value)"
+  />
+</template>
+```
+
+Then the registry, in `dyrected.components.ts`:
+
+```ts
+import { defineAdminComponents } from "@dyrected/vue";
+import BrandColorPicker from "./BrandColorPicker.vue";
+
+export default defineAdminComponents({
+  fields: { "brand-color-picker": BrandColorPicker },
+});
+```
+
+</Tab>
+</Tabs>
+
+{/* NEEDS-HUMAN-VERIFY: the Vue prop style (`value` and an `onChange` function prop declared with defineProps) mirrors how the bridge passes props (`h(VueComp, innerProps)`) but was not rendered in a browser. Confirm against a real Nuxt field component. */}
+
+The component receives the same props as in any embedded admin: `value`, `onChange`, `disabled` and the rest listed in [Custom field components](/docs/editor-experience/custom-components/overview#custom-field-components). Nothing about writing it changes for Cloud.
+
+The field opts in through your config exactly as before, with `admin.component`, in `dyrected.config.ts`:
+
+```ts
+export const Products = defineCollection({
+  slug: "products",
+  fields: [
+    {
+      name: "brandColor",
+      label: "Brand color",
+      type: "text",
+      admin: { component: "brand-color-picker" },
+    },
+  ],
+});
+```
+
+Dyrected finds the registry on its own if the file is named `dyrected.components.ts` (or `.tsx`, `.jsx`, `.js`) next to your config. If you keep it somewhere else, point to it from `dyrected.config.ts`:
+
+```ts
+export default defineConfig({
+  collections: [Products],
+  globals: [],
+  admin: { componentsEntry: "./src/admin-components.ts" },
+});
+```
+
+You can also pass `--components ./src/admin-components.ts` to the commands below, which wins over both.
+
+## Step 2: Build and check
+
+Run the build with `--check` first. It compiles everything, reports anything that cannot run in Cloud, and writes nothing, so it is safe to run as often as you like:
+
+```bash
+npx dyrected bundle --check
+```
+
+When everything is fine you see a line like this:
+
+```text
+✓ 0 function(s) compatible with Dyrected Cloud.
+```
+
+If something cannot run in Cloud, each problem is listed with the file and what to do about it, and the command exits with an error. Most of the time that is a [Nuxt-only import](#convert-a-nuxt-component), covered below.
+
+Drop `--check` to write the files:
+
+```bash
+npx dyrected bundle
+```
+
+Dyrected writes a folder named after the build's content hash under `.dyrected/bundles/`. Your components are in `components.js` inside it, next to `manifest.json`, which records the fingerprint the admin will check.
+
+## Step 3: Deploy
+
+Set the two values that tie the command to your project. You can copy both from the project's settings page in the dashboard:
+
+```bash
+export DYRECTED_API_KEY="<your project API key>"
+export DYRECTED_SITE_ID="<your project ID>"
+npx dyrected deploy
+```
+
+`deploy` builds, runs the same check, uploads, and makes the new build live. It stops before uploading if the check finds a problem, so nothing broken goes up. When it finishes you see:
+
+```text
+✔  Deployed 3f9a1c2b7d41 (0 function(s)) to project <your project ID>
+```
+
+Uploading identical code again just makes that build live again. Only project admins and developers can deploy, and a CI job can deploy with the project API key.
+
+{/* NEEDS-HUMAN-VERIFY: the exact success line and the "(0 function(s))" wording come from the CLI source, not from a real run against Cloud. */}
+
+## Step 4: Open the admin
+
+In the dashboard, open your project and choose **Open admin**. You land on your project's own address, signed in as yourself. Open a product: **Brand color** is now a color picker.
+
+{/* NEEDS-SCREENSHOT: Open admin button in the project header, and the product form showing the color picker. */}
+
+If the picker is not there, the admin shows a notice at the top that custom components could not be loaded, and the rest of the admin still works. See [If something goes wrong](#if-something-goes-wrong).
+
+## What works in Cloud
+
+You can use every kind of custom component the admin supports in your own app: fields, dashboard and list slots, view layouts, create and edit forms, and pages. They get the same props and the same [admin hooks](/docs/editor-experience/custom-components/admin-hooks).
+
+React and Vue are both supported. They differ in what they bring with them:
+
+| | React components | Vue components |
+| --- | --- | --- |
+| React | Shared with the admin, not bundled | Shared with the admin, not bundled |
+| Vue | Not needed | Bundled into `components.js` (Vue's runtime-only build) |
+| Templates | n/a | Compiled at build time, never at run time |
+| Import hooks and helpers from | `@dyrected/react` | `@dyrected/vue` |
+
+**Do not bundle your own React.** The admin passes its copy of React (and `react-dom`, the JSX runtime and the admin's own API) to your bundle, so hooks work. Import React the way you always do, and the build reads it from the admin instead of packing a second copy. Packages like `@dyrected/react` and `@dyrected/vue` are packed into the bundle as normal, and what they take from the admin is the admin's own copy.
+
+### Vue components
+
+Dyrected compiles `.vue` files for you when it builds `components.js`:
+
+- `<script setup>` and plain `<script>`, in JavaScript or TypeScript
+- `<template>`, compiled at build time
+- plain CSS in `<style>`, global or `scoped`
+- Vue's core APIs (`ref`, `computed`, `watch`, `onMounted`, and the rest) without an import, as in Nuxt
+- the `~/`, `~~/` and `@/` path aliases: `~~/` is your project root, and `~/` and `@/` are your source directory (`app/` in Nuxt 4, `src/` in a Vite app, otherwise the project root)
+
+Sass, Less and Pug are not compiled. Use plain CSS and plain HTML templates, or the build stops with a message naming the file.
+
+### Where your Vue components differ from Nuxt
+
+In Nuxt, your components run inside your app, and the app has extra tools installed that components can use without importing them. In the Cloud admin, each Vue component runs on its own as a small island, and none of those tools are installed. A component that relies on one finds nothing there.
+
+| Your component uses | In the Cloud admin |
+| --- | --- |
+| Props, its own state, `fetch`, the Dyrected composables (`useDyrectedForm`, `useAdminNavigate`, `useAccess`, and so on) | Works. The Dyrected composables are provided for you. |
+| `useRoute()`, `<NuxtLink>`, `navigateTo` | Does not work. There is no Nuxt router. |
+| Translations (`$t`, an i18n plugin) | Does not work. |
+| A Pinia or Vuex store | Does not work. The store is never created. |
+| `useRuntimeConfig()`, `useFetch`, or anything from `#imports`, `#app` or `nuxt/app` | Reported as an error when you build. |
+
+A component that fails at run time shows an error card where it should be, not a blank admin.
+
+{/* NEEDS-HUMAN-VERIFY: "error card" behaviour for a Vue island that throws is taken from the bridge source (errors are rethrown into React's error boundary). Confirm what editors see. Also confirm no supported way yet to install app plugins (router, i18n, Pinia) into islands; a setup hook was proposed but not built. */}
+
+## Convert a Nuxt component
+
+If a component reaches for something Nuxt-only, the build tells you, and you replace it with one of these:
+
+1. **Pass the value in as a prop.** If the component needs a site URL or a flag from `useRuntimeConfig()`, set it in your config, or read it from the field's `context`, and give it to the component through props.
+2. **Use the Dyrected composables** for the form, navigation, notifications and access checks. They are the same ones you use in Nuxt, and they work in the Cloud admin too.
+3. **Use the Dyrected client** (`useDyrectedClient()` from `@dyrected/vue`) to read and write content instead of a Nuxt-specific data helper. In a Nuxt app you may have been getting it from `#imports`; import it from `@dyrected/vue` instead.
+
+Then run `npx dyrected bundle --check` again. It names each remaining Nuxt-only import and the file it comes from, so you can work through them one at a time.
+
+## If something goes wrong
+
+| What you see | What it means | What to do |
+| --- | --- | --- |
+| The build stops with `uses "scss"` (or `less`, `pug`) | A component uses a style or template language the build cannot compile. | Switch that block to plain CSS or HTML. |
+| The build reports a Nuxt-only import | A component imports from `#imports`, `#app`, or `nuxt/app`. | Follow [Convert a Nuxt component](#convert-a-nuxt-component). |
+| The build says to update `@dyrected/vue` | Your installed `@dyrected/vue` does not have the `./bridge` entry point that Vue components need. | Update `@dyrected/vue` to the latest version. |
+| The bundle is over 5 MB | The build and Cloud both reject it. | Remove unused dependencies, or load heavy libraries lazily with dynamic `import()`. |
+| The admin shows "Custom components could not be loaded" | The file did not download, or did not match its fingerprint, so it was not run. | Open the browser console for the exact reason, then deploy again. |
+| A component shows an error card | It threw while rendering. | Check the console, and compare against the [Vue table](#where-your-vue-components-differ-from-nuxt) if it is a Vue component. |
+
+## Where your code runs
+
+Custom components are your code, and the admin runs them with the signed-in person's permissions. If they ran on the same page as the dashboard, a mistake in one of them, or in a package it depends on, could act as that person in the dashboard too: invite someone to the team, change billing, open other projects.
+
+Dyrected keeps the two apart. The dashboard (`app.dyrected.com`) is where you manage the project, and it never loads your components. Your project's admin runs on the project's own address, which the browser treats as a different website from the dashboard, with its own sign-in. The admin page can only load scripts from itself and from the verified bundle, and can only contact itself and the origins you list as allowed for the project.
+
+The two are joined by links: **Open admin** in the dashboard takes you to your project's admin, and the admin has **Dashboard** and **Project settings** links back.
+
+## Reference
+
+### Commands
+
+| Command | Use it to |
+| --- | --- |
+| `npx dyrected bundle --check` | Build and check without writing anything. Use it in CI. |
+| `npx dyrected bundle` | Write the build to `.dyrected/bundles/<hash>/`. |
+| `npx dyrected deploy` | Build, check, upload, and make the build live. |
+
+`bundle` and `deploy` both accept:
+
+| Option | What it does |
+| --- | --- |
+| `--components <path>` | The file whose default export is your registry. |
+| `-c, --config <path>` | Your `dyrected.config.ts`, if it is not in the default place. |
+| `-o, --out <dir>` | Where to write builds. Defaults to `.dyrected/bundles`. |
+| `--env-path <path>` | An env file to load first. |
+
+`deploy` also accepts `-k, --api-key`, `-s, --site-id` and `-u, --url`. They default to `DYRECTED_API_KEY`, `DYRECTED_SITE_ID`, and `DYRECTED_URL` (then Dyrected Cloud).
+
+### How Dyrected finds your registry
+
+In order, the first that exists wins:
+
+1. `--components <path>`
+2. `admin.componentsEntry` in your config, relative to the config file
+3. `dyrected.components.tsx`, `.ts`, `.jsx` or `.js` next to the config
+
+If none exists, no components bundle is built and the admin uses its built-in screens.
+
+### Limits
+
+| Limit | Value |
+| --- | --- |
+| Size of `components.js` | 5 MB |
+| Template and style languages for Vue | HTML and plain CSS |
+| Who can deploy | Project admins and developers, or a CI job with the project API key |
+
+### Loading components yourself
+
+The Cloud admin does the loading for you. If you embed `@dyrected/admin` in your own app and want to load a built bundle from a URL instead of importing your components, use `componentsUrl` and `componentsIntegrity`:
+
+```tsx
+<AdminUI
+  baseUrl="/dyrected"
+  componentsUrl="https://assets.example.com/components.js"
+  componentsIntegrity="sha384-<value from manifest.json>"
+/>
+```
+
+The bundle is downloaded, checked against `componentsIntegrity`, and run from those verified bytes. Plain `http:` URLs are refused unless you also set `allowInsecureComponents`, for local development only. Components you pass in `components` win over loaded ones for any key both define.

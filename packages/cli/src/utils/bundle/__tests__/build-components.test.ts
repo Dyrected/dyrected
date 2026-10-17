@@ -68,9 +68,9 @@ describe("buildComponents", () => {
     expect(element.props["data-form"]).toBe("object");
   });
 
-  it("maps @dyrected/react to the same API as @dyrected/admin", async () => {
+  it("maps @dyrected/admin/public to the same API as @dyrected/admin", async () => {
     const built = await buildComponents(
-      await write("dyrected.components.ts", `import { useThing } from "@dyrected/react"; export default { fields: { x: () => useThing() } };`),
+      await write("dyrected.components.ts", `import { useThing } from "@dyrected/admin/public"; export default { fields: { x: () => useThing() } };`),
     );
     const mod = await loadBuilt(built.js, { "@dyrected/admin": { useThing: () => "from-admin" } });
     expect(mod.default.fields.x()).toBe("from-admin");
