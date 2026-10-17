@@ -3,6 +3,7 @@ import path from "node:path";
 import { build, type Plugin } from "esbuild";
 import fs from "fs-extra";
 import type { CompatFinding } from "./compat-check.js";
+import { VUE_AUTO_IMPORTS, vueSfcPlugin } from "./vue-sfc-plugin.js";
 
 /**
  * Builds the browser half of a deployment: the custom admin components (fields, forms, pages, view layouts,
@@ -23,8 +24,12 @@ export const SHARED_SPECIFIERS = [
   "react-dom",
   "react-dom/client",
   "@dyrected/admin",
+  "@dyrected/admin/public",
   "@dyrected/react",
 ] as const;
+
+/** Modules that only exist inside a Nuxt app. They cannot work in the Cloud-hosted admin, so using one is an error. */
+const NUXT_ONLY = /^(#imports|#app|#components|#build|#head|nuxt\/app|nuxt\/schema|@nuxt\/.*)$/;
 
 const sharedPlugin: Plugin = {
   name: "dyrected-shared-modules",
@@ -32,7 +37,8 @@ const sharedPlugin: Plugin = {
     const filter = new RegExp(`^(${SHARED_SPECIFIERS.map((s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|")})$`);
     b.onResolve({ filter }, (args) => ({ path: args.path, namespace: "dyrected-shared" }));
     b.onLoad({ filter: /.*/, namespace: "dyrected-shared" }, (args) => {
-      const key = args.path === "@dyrected/react" ? "@dyrected/admin" : args.path;
+      // `@dyrected/react` and the admin's `/public` entry are the same API the admin passes in as `@dyrected/admin`.
+      const key = args.path === "@dyrected/react" || args.path === "@dyrected/admin/public" ? "@dyrected/admin" : args.path;
       return {
         contents: `
           const shared = globalThis[${JSON.stringify(SHARED_MODULES_GLOBAL)}] && globalThis[${JSON.stringify(SHARED_MODULES_GLOBAL)}][${JSON.stringify(key)}];
@@ -45,7 +51,72 @@ const sharedPlugin: Plugin = {
   },
 };
 
+/** Records Nuxt-only imports as findings and resolves them to a module that throws a clear error if it is ever run. */
+function nuxtOnlyPlugin(found: Set<string>): Plugin {
+  return {
+    name: "dyrected-nuxt-only",
+    setup(b) {
+      b.onResolve({ filter: NUXT_ONLY }, (args) => {
+        found.add(args.path);
+        return { path: args.path, namespace: "dyrected-nuxt-only" };
+      });
+      b.onLoad({ filter: /.*/, namespace: "dyrected-nuxt-only" }, (args) => ({
+        contents: `const fail = () => { throw new Error(${JSON.stringify(`"${args.path}" is only available inside a Nuxt app and cannot run in the Cloud-hosted admin.`)}); };
+          module.exports = new Proxy(function () {}, { get: (_t, key) => (key === "__esModule" ? false : fail), apply: fail });`,
+        loader: "js",
+      }));
+    },
+  };
+}
+
+/**
+ * Resolves the path conventions Nuxt and Vite projects use: `~~/x` is the project root, `~/x` and `@/x` are the
+ * source directory (`app/` in Nuxt 4, `src/` in Vite, otherwise the root). Without this, a component that imports
+ * `~/utils/format` would only build where the framework's own tooling has generated its path map.
+ */
+function projectAliasPlugin(roots: ProjectRoots): Plugin {
+  return {
+    name: "dyrected-project-aliases",
+    setup(b) {
+      b.onResolve({ filter: /^(~~|~|@)\// }, (args) => {
+        const [prefix, ...rest] = args.path.split("/");
+        return b.resolve(`./${rest.join("/")}`, {
+          resolveDir: prefix === "~~" ? roots.rootDir : roots.srcDir,
+          kind: args.kind,
+          importer: args.importer,
+          namespace: args.namespace,
+        });
+      });
+    },
+  };
+}
+
+/** Gives free uses of Vue's core APIs (`ref`, `computed`, ...) the same automatic import Nuxt provides. */
+const VUE_AUTO_IMPORT_ID = "dyrected:vue-auto-imports";
+function vueAutoImportPlugin(resolveDir: string): Plugin {
+  return {
+    name: "dyrected-vue-auto-imports",
+    setup(b) {
+      b.onResolve({ filter: /^dyrected:vue-auto-imports$/ }, () => ({ path: VUE_AUTO_IMPORT_ID, namespace: "dyrected-vue-auto" }));
+      b.onLoad({ filter: /.*/, namespace: "dyrected-vue-auto" }, () => ({
+        contents: `export { ${VUE_AUTO_IMPORTS.join(", ")} } from "vue";`,
+        loader: "js",
+        resolveDir,
+      }));
+    },
+  };
+}
+
+export interface ProjectRoots {
+  /** The project root (where the config lives). `~~/` resolves here. */
+  rootDir: string;
+  /** The source directory. `~/` and `@/` resolve here. */
+  srcDir: string;
+}
+
 export interface ComponentsBuild {
+  /** Which UI framework the registry was written in. Vue registries are wrapped for the React admin. */
+  framework: "react" | "vue";
   js: string;
   map: string;
   sha256: string;
@@ -74,62 +145,128 @@ export async function resolveComponentsEntry(args: {
   return null;
 }
 
-export async function buildComponents(entry: string): Promise<ComponentsBuild> {
+export async function buildComponents(entry: string, roots?: ProjectRoots): Promise<ComponentsBuild> {
   if (!(await fs.pathExists(entry))) {
     throw new Error(`Components entry not found: ${path.relative(process.cwd(), entry)}`);
   }
 
-  let result;
-  try {
-    result = await build({
-      entryPoints: [entry],
+  const entryDir = path.dirname(entry);
+  const projectRoots = roots ?? { rootDir: entryDir, srcDir: entryDir };
+  const nuxtOnly = new Set<string>();
+
+  const run = async (options: { vue: boolean }) => {
+    const common = {
       bundle: true,
       write: false,
-      format: "esm",
-      platform: "browser",
+      format: "esm" as const,
+      platform: "browser" as const,
       target: "es2020",
-      jsx: "automatic",
+      jsx: "automatic" as const,
       minify: true,
-      sourcemap: "external",
+      sourcemap: "external" as const,
       metafile: true,
       outfile: "components.js",
-      logLevel: "silent",
-      define: { "process.env.NODE_ENV": '"production"' },
-      plugins: [sharedPlugin],
+      logLevel: "silent" as const,
+      define: {
+        "process.env.NODE_ENV": '"production"',
+        // Vue's feature flags: keep the options API, drop devtools and hydration diagnostics.
+        __VUE_OPTIONS_API__: "true",
+        __VUE_PROD_DEVTOOLS__: "false",
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false",
+      },
+      plugins: [sharedPlugin, nuxtOnlyPlugin(nuxtOnly), projectAliasPlugin(projectRoots), vueSfcPlugin, vueAutoImportPlugin(entryDir)],
+      inject: [VUE_AUTO_IMPORT_ID],
+    };
+
+    if (!options.vue) return build({ ...common, entryPoints: [entry], inject: [] });
+
+    // A Vue registry holds Vue components, which the React admin cannot render directly. The bridge turns each one
+    // into a React component that mounts it as an island; only its entry point is bundled, not the Nuxt-facing parts.
+    return build({
+      ...common,
+      stdin: {
+        contents: `import registry from ${JSON.stringify(entry)};
+          import { wrapComponents } from "@dyrected/vue/bridge";
+          export default wrapComponents(registry, null);`,
+        resolveDir: entryDir,
+        sourcefile: "dyrected-vue-entry.js",
+        loader: "js",
+      },
     });
-  } catch (error: any) {
+  };
+
+  const fail = (error: any): never => {
     const lines = (error?.errors as Array<{ text: string; location?: { file: string; line: number } }> | undefined)
-      ?.map((e) => `  ${e.location ? `${e.location.file}:${e.location.line} ` : ""}${e.text}`)
+      ?.map((e) => `  ${e.location ? `${path.relative(process.cwd(), e.location.file)}:${e.location.line} ` : ""}${e.text}`)
       .join("\n");
-    throw new Error(`Could not bundle components from ${path.relative(process.cwd(), entry)}:\n${lines ?? error?.message ?? error}`);
+    const hint = /@dyrected\/vue\/bridge/.test(lines ?? "")
+      ? "\n  Update @dyrected/vue to a version that includes the ./bridge entry point."
+      : "";
+    throw new Error(`Could not bundle components from ${path.relative(process.cwd(), entry)}:\n${lines ?? error?.message ?? error}${hint}`);
+  };
+
+  type BuildOutput = Awaited<ReturnType<typeof run>>;
+  const usesVue = (output: BuildOutput) =>
+    Object.keys(output.metafile!.inputs).some(
+      (input) =>
+        /\.vue$/.test(input) || /(^|[\\/])node_modules[\\/](\.pnpm[\\/][^\\/]+[\\/]node_modules[\\/])?@dyrected[\\/]vue[\\/]/.test(input),
+    );
+
+  // The first pass decides the framework: any Vue component, or the Vue package, in the graph makes this a Vue registry.
+  let output: BuildOutput;
+  let framework: "react" | "vue" = "react";
+  let wrapped = false;
+  try {
+    output = await run({ vue: false });
+    if (usesVue(output)) framework = "vue";
+  } catch (firstError) {
+    // A Vue registry can fail the plain pass only because the Vue wrapper was not applied; confirm by trying as Vue.
+    try {
+      output = await run({ vue: true });
+      framework = "vue";
+      wrapped = true;
+    } catch {
+      return fail(firstError);
+    }
   }
 
-  const js = result.outputFiles!.find((file) => file.path.endsWith("components.js"))!.text;
-  const map = result.outputFiles!.find((file) => file.path.endsWith("components.js.map"))!.text;
-  const digest = createHash("sha256").update(js).digest();
+  if (framework === "vue" && !wrapped) {
+    try {
+      output = await run({ vue: true });
+    } catch (error) {
+      return fail(error);
+    }
+  }
+  return finish(output, framework);
 
-  return {
-    js,
-    map,
-    sha256: digest.toString("hex"),
-    integrity: `sha384-${createHash("sha384").update(js).digest("base64")}`,
-    bytes: Buffer.byteLength(js),
-    findings: componentFindings(Object.keys(result.metafile!.inputs), js),
-  };
+  function finish(output: BuildOutput, framework: "react" | "vue"): ComponentsBuild {
+    const js = output.outputFiles!.find((file) => file.path.endsWith("components.js"))!.text;
+    const map = output.outputFiles!.find((file) => file.path.endsWith("components.js.map"))!.text;
+    return {
+      framework,
+      js,
+      map,
+      sha256: createHash("sha256").update(js).digest("hex"),
+      integrity: `sha384-${createHash("sha384").update(js).digest("base64")}`,
+      bytes: Buffer.byteLength(js),
+      findings: componentFindings(js, [...nuxtOnly]),
+    };
+  }
 }
 
 const MAX_COMPONENTS_BYTES = 5 * 1024 * 1024;
 
 /** What would stop a components bundle working in the Cloud-hosted admin. */
-export function componentFindings(inputs: string[], js: string): CompatFinding[] {
+export function componentFindings(js: string, nuxtOnlyImports: string[] = []): CompatFinding[] {
   const findings: CompatFinding[] = [];
 
-  if (inputs.some((input) => /(^|[\\/])node_modules[\\/](\.pnpm[\\/][^\\/]+[\\/]node_modules[\\/])?vue[\\/]/.test(input))) {
+  for (const specifier of nuxtOnlyImports) {
     findings.push({
       severity: "error",
-      code: "vue-components",
-      message: "The components bundle includes Vue, which the Cloud-hosted admin cannot run yet.",
-      suggestion: "Cloud-hosted components must be React. Vue components work in your own Nuxt app, where the admin is embedded with the Vue bridge.",
+      code: "nuxt-only-import",
+      message: `A component imports "${specifier}", which only exists inside a Nuxt app.`,
+      suggestion:
+        "The Cloud-hosted admin is not a Nuxt app. Pass what the component needs as props, use the Dyrected composables (useDyrectedForm, useAdminNavigate, ...), or call the API with the Dyrected client.",
     });
   }
 

@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import path from "node:path";
 import fs from "fs-extra";
+import { resolveAppSrcDir } from "../detect.js";
 import { build, type Plugin } from "esbuild";
 import { buildComponents, resolveComponentsEntry, type ComponentsBuild } from "./build-components.js";
 import { checkCloudCompatibility, type CompatFinding } from "./compat-check.js";
@@ -65,7 +66,7 @@ export interface BundleManifest {
   schema: { file: string; sha256: string; bytes: number };
   server: { file: string; map: string; sha256: string; bytes: number };
   /** The browser bundle of custom admin components, when the project has any. */
-  components?: { file: string; map: string; sha256: string; integrity: string; bytes: number };
+  components?: { file: string; map: string; sha256: string; integrity: string; bytes: number; framework: "react" | "vue" };
   /** Every function in the config, by the id used in `schema.json`. */
   functions: string[];
   compatibility: { ok: boolean; findings: CompatFinding[] };
@@ -173,7 +174,9 @@ export async function buildBundle(options: BuildBundleOptions): Promise<BuildBun
     configDir: projectDir,
     cwd: process.cwd(),
   });
-  const components: ComponentsBuild | null = componentsEntry ? await buildComponents(componentsEntry) : null;
+  const components: ComponentsBuild | null = componentsEntry
+    ? await buildComponents(componentsEntry, { rootDir: projectDir, srcDir: path.resolve(projectDir, resolveAppSrcDir(projectDir)) })
+    : null;
   if (components) findings.push(...components.findings);
 
   // The components hash is part of the version, so changing only a component still produces a new deployment.
@@ -196,6 +199,7 @@ export async function buildBundle(options: BuildBundleOptions): Promise<BuildBun
             sha256: components.sha256,
             integrity: components.integrity,
             bytes: components.bytes,
+            framework: components.framework,
           },
         }
       : {}),

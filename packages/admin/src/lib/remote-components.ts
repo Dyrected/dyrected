@@ -14,13 +14,15 @@ import type { AdminComponents } from "../types/admin-components";
 
 export const SHARED_MODULES_GLOBAL = "__DYRECTED_SHARED__";
 
+export type RemoteComponentsErrorCode = "FETCH_FAILED" | "INTEGRITY_FAILED" | "INVALID_INTEGRITY" | "INVALID_MODULE" | "INSECURE_URL";
+
 export class RemoteComponentsError extends Error {
-  constructor(
-    message: string,
-    readonly code: "FETCH_FAILED" | "INTEGRITY_FAILED" | "INVALID_INTEGRITY" | "INVALID_MODULE" | "INSECURE_URL",
-  ) {
+  readonly code: RemoteComponentsErrorCode;
+
+  constructor(message: string, code: RemoteComponentsErrorCode) {
     super(message);
     this.name = "RemoteComponentsError";
+    this.code = code;
   }
 }
 

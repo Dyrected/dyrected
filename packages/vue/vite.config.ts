@@ -13,10 +13,12 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'DyrectedVue',
-      fileName: 'index',
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        bridge: resolve(__dirname, 'src/bridge-entry.ts'),
+      },
       formats: ['es', 'cjs'],
+      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'js' : 'cjs'}`,
     },
     rollupOptions: {
       external: [
