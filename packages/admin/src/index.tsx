@@ -32,6 +32,9 @@ import { useQuery } from "@tanstack/react-query";
 import { DyrectedProvider, type DyrectedProviderProps } from "./providers/dyrected-provider";
 import { useDyrected } from "./providers/dyrected-context";
 import { QueryProvider } from "./providers/query-provider";
+import { useRemoteComponents } from "./hooks/use-remote-components";
+import { mergeComponents } from "./lib/remote-components";
+import type { AdminComponents } from "./types/admin-components";
 import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
 import { OperationalViewRoute } from "./pages/collections/operational-view-route";
@@ -415,6 +418,20 @@ export interface AdminUIProps {
   isEmbedded?: boolean;
   /** Custom component overrides for fields, dashboard slots, and collection list views. */
   components?: DyrectedProviderProps['components'];
+  /**
+   * URL of a components bundle built with `dyrected bundle`, loaded at run time instead of imported at build time.
+   * Use it when the host cannot import your components directly, such as the Cloud-hosted admin. Its registry is
+   * merged with `components`, and `components` wins for any key both define. Must be https (or http with
+   * `allowInsecureComponents` for local development).
+   */
+  componentsUrl?: string;
+  /**
+   * Subresource Integrity hash of the bundle at `componentsUrl` (for example `sha384-...`). The bundle is not
+   * run if it does not match. Strongly recommended: without it you trust whatever the URL serves.
+   */
+  componentsIntegrity?: string;
+  /** Allow `componentsUrl` to be a plain http URL. For local development only. */
+  allowInsecureComponents?: boolean;
   /** Warn in development about registered components the schema never references. @default true */
   warnUnusedComponents?: boolean;
   // @internal – not for public docs. Used by Dyrected Cloud to bypass admin-level
@@ -453,6 +470,9 @@ export function AdminUI({
   onNavigate,
   isEmbedded,
   components,
+  componentsUrl,
+  componentsIntegrity,
+  allowInsecureComponents,
   warnUnusedComponents,
   initialToken,
   defaultTechStack,
@@ -462,6 +482,11 @@ export function AdminUI({
   onThemeChange,
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
+  const remote = useRemoteComponents({ url: componentsUrl, integrity: componentsIntegrity, allowInsecure: allowInsecureComponents });
+  const resolvedComponents = React.useMemo(
+    () => mergeComponents(remote.components, components as AdminComponents | undefined),
+    [remote.components, components],
+  );
   const isThemeControlled =
     theme !== undefined || systemTheme !== undefined || onThemeChange !== undefined;
   const activeThemeController = React.useMemo(() => {
@@ -479,7 +504,7 @@ export function AdminUI({
     });
   }, []);
 
-  if (!mounted) {
+  if (!mounted || remote.status === "loading") {
     // Theme context isn't available pre-mount, so best-effort match the system
     // scheme to avoid a light flash for dark-mode users. Wrapping in
     // `.dy-admin-ui` gives the splash its themed tokens (same visual as the
@@ -498,7 +523,12 @@ export function AdminUI({
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
         <QueryProvider>
-          <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} warnUnusedComponents={warnUnusedComponents} initialToken={initialToken} defaultTechStack={defaultTechStack}>
+          {remote.status === "error" ? (
+            <div role="alert" className="dy-bg-destructive/10 dy-text-destructive dy-px-4 dy-py-2 dy-text-sm">
+              Custom components could not be loaded, so some screens show defaults. Check the browser console for details.
+            </div>
+          ) : null}
+          <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={resolvedComponents as DyrectedProviderProps['components']} warnUnusedComponents={warnUnusedComponents && remote.status !== "error"} initialToken={initialToken} defaultTechStack={defaultTechStack}>
             <AdminThemeProvider controller={activeThemeController}>
               <AdminThemedRoot>
                 <HashRouter>

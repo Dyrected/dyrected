@@ -1,3 +1,4 @@
+import { getFunctionRuntime } from "./runtime/function-runtime.js";
 import type { CollectionConfig, DyrectedConfig, TaskConfig, TaskLogger, TaskRunResult } from "./types/index.js";
 import { createTrashPurgeTask, resolveTrashConfig } from "./trash.js";
 
@@ -321,7 +322,13 @@ export function createTaskRunner(config: DyrectedConfig): TaskRunner {
 
     try {
       await Promise.race([
-        Promise.resolve(task.run({ db: db!, logger, signal: controller.signal, scheduledFor })),
+        Promise.resolve(
+          getFunctionRuntime(config).invoke(
+            (typeof task.run === "function" ? task.run.bind(task) : task.run) as any,
+            [{ db: db!, logger, signal: controller.signal, scheduledFor }],
+            { surface: "task", path: `tasks.${task.name}` },
+          ),
+        ),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(() => {
             // Reject first so the timeout wins even if the abort listener lets the task resolve.

@@ -10,6 +10,12 @@ import type {
 } from "../types/index.js";
 import jexl from "jexl";
 import {
+  defaultFunctionRuntime,
+  type FunctionRef,
+  type FunctionRuntime,
+  type FunctionSurface,
+} from "../runtime/function-runtime.js";
+import {
   assertValidDeclarativeHookExpression,
   assertValidDeclarativeHookResult,
 } from "./declarative-hooks.js";
@@ -19,7 +25,7 @@ import {
 // parameter contravariance would otherwise prevent specific hook types
 // (CollectionBeforeChangeHook, etc.) from being assigned here.
 type AnyHookFn = (args: any) => any;
-type AnyHook = AnyHookFn | DeclarativeHookExpression;
+type AnyHook = AnyHookFn | DeclarativeHookExpression | FunctionRef;
 
 type AnyFieldBeforeChangeHook = FieldBeforeChangeHook<
   unknown,
@@ -64,8 +70,15 @@ export async function runCollectionHooks(
       | "global.afterRead"
       | "global.beforeChange";
     path?: string;
+    /** Where the functions run. Defaults to calling them in-process. */
+    runtime?: FunctionRuntime;
+    /** Which lifecycle point this is, for runtimes that apply per-surface budgets. Defaults to `surface`. */
+    invocationSurface?: FunctionSurface;
+    collection?: string;
+    global?: string;
   } = {},
 ): Promise<any> {
+  const runtime = options.runtime ?? defaultFunctionRuntime;
   if (!hooks || hooks.length === 0) {
     return args.data ?? args.doc ?? args.query ?? undefined;
   }
@@ -99,7 +112,13 @@ export async function runCollectionHooks(
               }
               return jexl.eval(hook, hookArgs);
             })()
-          : await hook(hookArgs);
+          : await runtime.invoke(hook, [hookArgs], {
+              surface: options.invocationSurface ?? options.surface ?? "collection.beforeChange",
+              path: options.path,
+              collection: options.collection,
+              global: options.global,
+              operation: typeof args.operation === "string" ? args.operation : undefined,
+            });
 
       if (result !== undefined) {
         if (typeof hook === "string" && options.surface) {
@@ -148,6 +167,7 @@ export async function executeFieldBeforeChange(
   user: unknown,
   db?: unknown,
   pathPrefix = "",
+  runtime: FunctionRuntime = defaultFunctionRuntime,
 ): Promise<Record<string, unknown>> {
   if (!data || typeof data !== "object") return data;
 
@@ -183,7 +203,10 @@ export async function executeFieldBeforeChange(
                 );
                 return jexl.eval(hook, hookArgs);
               })()
-            : await (hook as unknown as AnyFieldBeforeChangeHook)(hookArgs);
+            : await runtime.invoke(hook as unknown as AnyFieldBeforeChangeHook, [hookArgs], {
+                surface: "field.beforeChange",
+                path: fieldPath,
+              });
       }
       result[field.name] = updatedValue;
     }
@@ -198,6 +221,7 @@ export async function executeFieldBeforeChange(
           user,
           db,
           fieldPath,
+          runtime,
         );
       } else if (
         field.type === "array" &&
@@ -218,6 +242,7 @@ export async function executeFieldBeforeChange(
               user,
               db,
               fieldPath,
+              runtime,
             ),
           );
         }
@@ -245,6 +270,7 @@ export async function executeFieldBeforeChange(
                 user,
                 db,
                 fieldPath,
+                runtime,
               ),
             );
           } else {
@@ -270,6 +296,8 @@ export async function executeFieldAfterRead(
   doc: Record<string, unknown>,
   user: unknown,
   db?: unknown,
+  runtime: FunctionRuntime = defaultFunctionRuntime,
+  pathPrefix = "",
 ): Promise<Record<string, unknown>> {
   if (!doc || typeof doc !== "object") return doc;
 
@@ -277,6 +305,7 @@ export async function executeFieldAfterRead(
 
   for (const field of fields) {
     if (!field.name) continue;
+    const fieldPath = pathPrefix ? `${pathPrefix}.${field.name}` : field.name;
 
     const value = result[field.name];
 
@@ -293,7 +322,10 @@ export async function executeFieldAfterRead(
           user: user as AuthenticatedUser | undefined,
           db: db as ReadonlyDatabaseAdapter,
         };
-        updatedValue = await typedHook(hookArgs);
+        updatedValue = await runtime.invoke(typedHook, [hookArgs], {
+          surface: "field.afterRead",
+          path: fieldPath,
+        });
       }
       result[field.name] = updatedValue;
     }
@@ -306,6 +338,8 @@ export async function executeFieldAfterRead(
           updatedValue as Record<string, unknown>,
           user,
           db,
+          runtime,
+          fieldPath,
         );
       } else if (
         field.type === "array" &&
@@ -320,6 +354,8 @@ export async function executeFieldAfterRead(
               item as Record<string, unknown>,
               user,
               db,
+              runtime,
+              fieldPath,
             ),
           );
         }
@@ -342,6 +378,8 @@ export async function executeFieldAfterRead(
                 typedBlock,
                 user,
                 db,
+                runtime,
+                fieldPath,
               ),
             );
           } else {

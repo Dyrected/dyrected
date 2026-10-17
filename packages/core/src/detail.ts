@@ -1,3 +1,4 @@
+import { defaultFunctionRuntime, isFunctionRef, type FunctionRuntime } from "./runtime/function-runtime.js";
 import type {
   DetailComputed,
   DetailComputedOptions,
@@ -287,6 +288,7 @@ export async function evaluateDetailComputed(
   doc: any,
   user: any,
   db: any,
+  runtime: FunctionRuntime = defaultFunctionRuntime,
 ): Promise<any> {
   if (!doc || !detail || !Array.isArray(detail)) {
     return doc;
@@ -332,8 +334,11 @@ export async function evaluateDetailComputed(
   const evaluated: Record<string, any> = {};
   for (const item of computedItems) {
     try {
-      if (typeof item.handler === "function") {
-        evaluated[item.id] = await item.handler({ doc, user, db });
+      if (typeof item.handler === "function" || isFunctionRef(item.handler)) {
+        evaluated[item.id] = await runtime.invoke(item.handler, [{ doc, user, db }], {
+          surface: "computed",
+          path: `detail.${item.id}`,
+        });
       } else if (item.expression) {
         evaluated[item.id] = await evaluateJexl(item.expression, { doc, user });
       }
