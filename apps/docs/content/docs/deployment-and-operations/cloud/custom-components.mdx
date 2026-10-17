@@ -10,7 +10,7 @@ By the end of this page you will have a `brand-color-picker` field running in th
 
 This page assumes you already have custom components in an embedded admin. If you have not written one yet, start with the [Custom Components overview](/docs/editor-experience/custom-components/overview) and come back.
 
-{/* NEEDS-HUMAN-VERIFY: availability. `dyrected deploy`, `dyrected bundle --components` and `componentsUrl` are on unreleased branches (feat/function-runtime-seam and feat/components-url). Confirm the release version to name here, and that hosted project addresses (`<slug>.dyrected.app`) and the Open admin button are live for readers. */}
+{/* NEEDS-HUMAN-VERIFY: availability. Checked 2026-10-17: npm `latest` is 2.24.0 for dyrected, @dyrected/core, @dyrected/admin and @dyrected/vue, and the published `dyrected` 2.24.0 CLI has no `bundle`, `deploy` or `secrets` command (it ships doctor, generate:types, init, nav, sync:schema, upgrade). `dyrected.app` has no DNS record, and the live cloud.dyrected.com answers 404 for the deployments and handoff endpoints. Publish this page with the release that ships these features, name that version here, and confirm hosted project addresses and the Open admin button are live. */}
 
 ## How it works
 
@@ -97,7 +97,7 @@ export default defineAdminComponents({
 </Tab>
 </Tabs>
 
-{/* NEEDS-HUMAN-VERIFY: the Vue prop style (`value` and an `onChange` function prop declared with defineProps) mirrors how the bridge passes props (`h(VueComp, innerProps)`) but was not rendered in a browser. Confirm against a real Nuxt field component. */}
+{/* Verified 2026-10-17 by packages/cli/src/utils/bundle/__tests__/vue-bundle-in-admin.test.ts: this exact Vue field, built by `dyrected bundle`, renders in a real React tree through the bridge; receives `value`, `onChange` and `disabled`; calls `onChange` on input; falls back to the default colour; and follows prop updates. Not yet checked in a real browser or against a live Cloud admin. */}
 
 The component receives the same props as in any embedded admin: `value`, `onChange`, `disabled` and the rest listed in [Custom field components](/docs/editor-experience/custom-components/overview#custom-field-components). Nothing about writing it changes for Cloud.
 
@@ -220,9 +220,9 @@ In Nuxt, your components run inside your app, and the app has extra tools instal
 | A Pinia or Vuex store | Does not work. The store is never created. |
 | `useRuntimeConfig()`, `useFetch`, or anything from `#imports`, `#app` or `nuxt/app` | Reported as an error when you build. |
 
-A component that fails at run time shows an error card where it should be, not a blank admin.
+A component that fails shows an error card in its place that names the component, shows the error message, and offers **Retry**. The rest of the admin keeps working. This holds for an error thrown while the component renders and for one thrown later, such as in a click handler.
 
-{/* NEEDS-HUMAN-VERIFY: "error card" behaviour for a Vue island that throws is taken from the bridge source (errors are rethrown into React's error boundary). Confirm what editors see. Also confirm no supported way yet to install app plugins (router, i18n, Pinia) into islands; a setup hook was proposed but not built. */}
+{/* Error card verified 2026-10-17 by the same test: a Vue component that throws in `setup`, or in a click handler, shows the admin's error card ("Component “crashy” crashed in field", the message, Retry) and a sibling component keeps rendering. NEEDS-HUMAN-VERIFY remains for: no supported way yet to install app plugins (router, i18n, Pinia) into the islands. A setup hook was proposed but not built. */}
 
 ## Convert a Nuxt component
 
@@ -243,7 +243,7 @@ Then run `npx dyrected bundle --check` again. It names each remaining Nuxt-only 
 | The build says to update `@dyrected/vue` | Your installed `@dyrected/vue` does not have the `./bridge` entry point that Vue components need. | Update `@dyrected/vue` to the latest version. |
 | The bundle is over 5 MB | The build and Cloud both reject it. | Remove unused dependencies, or load heavy libraries lazily with dynamic `import()`. |
 | The admin shows "Custom components could not be loaded" | The file did not download, or did not match its fingerprint, so it was not run. | Open the browser console for the exact reason, then deploy again. |
-| A component shows an error card | It threw while rendering. | Check the console, and compare against the [Vue table](#where-your-vue-components-differ-from-nuxt) if it is a Vue component. |
+| A component shows an error card | It threw while rendering or in an event handler. The card shows the message. | Check the console for the stack, and compare against the [Vue table](#where-your-vue-components-differ-from-nuxt) if it is a Vue component. **Retry** re-renders it once you have fixed the cause. |
 
 ## Where your code runs
 

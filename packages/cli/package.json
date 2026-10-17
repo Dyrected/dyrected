@@ -28,9 +28,13 @@
     "prompts": "^2.4.2"
   },
   "devDependencies": {
+    "@dyrected/admin": "workspace:^",
     "@dyrected/vue": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.12.12",
+    "jsdom": "^24.0.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "typescript": "^5.4.5",
     "vitest": "^1.6.1",
     "vue": "^3.5.0"
