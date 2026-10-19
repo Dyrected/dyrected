@@ -26,7 +26,6 @@ import {
   Route,
   Navigate,
   useParams,
-  Outlet,
   useLocation,
 } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
