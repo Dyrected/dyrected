@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { DyrectedContext } from "./app.js";
-import type { DyrectedConfig, CompiledNavItem } from "./types/index.js";
+import type { DyrectedConfig, CompiledNavItem, ViewConfig } from "./types/index.js";
 import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";
@@ -15,9 +15,10 @@ import { aiRateLimit } from "./middleware/ai-rate-limit.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig, isUserAdmin } from "./utils/admin-auth.js";
-import { compileNavigation, pruneNavigationForUser, resolveAllCollectionViews } from "./utils/navigation.js";
+import { compileNavigation, pruneNavigationByAccess, resolveAllCollectionViews } from "./utils/navigation.js";
 import { reconcileNavigation } from "./utils/navigation-reconciler.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
+import { resolveAccess } from "./auth/access.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
 import { resolveTrashConfig, TRASH_COLLECTION, INTERNAL_SYSTEM_COLLECTIONS } from "./trash.js";
 import {
@@ -307,6 +308,24 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       return resolveBooleanAccess(requestConfig, access, accessArgs);
     };
 
+    // A view's `access.read` decides whether the user can open it at all, so
+    // views they cannot read are left out of the schema instead of being sent
+    // down and hidden by the client.
+    const filterReadableViews = async (views: any[]) => {
+      const readable = await Promise.all(
+        views.map(async (view) => {
+          if (view?.access?.read === undefined) return true;
+          try {
+            const result = await resolveAccess(requestConfig, view.access.read, accessArgs);
+            return result === undefined || result !== false;
+          } catch {
+            return false;
+          }
+        }),
+      );
+      return views.filter((_, i) => readable[i]);
+    };
+
     const filteredCollections = await Promise.all(
       collections
         .filter((col) => !INTERNAL_SYSTEM_COLLECTIONS.has(col.slug) && (!siteId || col.shared || !col.siteId || col.siteId === siteId))
@@ -365,7 +384,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           audit: !!col.audit,
           drafts: !!col.drafts,
           defaultView: col.defaultView ?? col.admin?.defaultView,
-          views: await Promise.all((col.views || []).map((view: any) => serializeViewForApi(view, serializeAccess))),
+          views: await Promise.all(
+            (await filterReadableViews(col.views || [])).map((view: any) => serializeViewForApi(view, serializeAccess)),
+          ),
           actions: await serializeActionsForApi(col.actions, serializeAccess),
           admin: col.admin,
           detail: serializeDetailForApi(col.detail),
@@ -925,11 +946,36 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.json({ success: true });
   });
 
+  // Decides whether the current request's user may see a navigation item or
+  // one of its views. Role arrays match against user.role/roles; every other
+  // rule (boolean, Jexl, function, named policy) goes through the same
+  // resolver the API enforces. Row-level constraints still allow the item (the
+  // user can read some rows); anything that fails to resolve is denied.
+  const createNavAccessChecker = (c: any) => {
+    const user = c.get("user");
+    const roles = new Set<string>([...(user?.role ? [user.role] : []), ...(Array.isArray(user?.roles) ? user.roles : [])]);
+    const args = { user, req: toHookRequestContext(c.req) };
+    const allows = async (rule: unknown): Promise<boolean> => {
+      if (rule === undefined || rule === null) return true;
+      if (Array.isArray(rule)) return rule.length === 0 || rule.some((r) => roles.has(r));
+      try {
+        const result = await resolveAccess(config, rule as any, args);
+        return result === undefined || result !== false;
+      } catch {
+        return false;
+      }
+    };
+    return {
+      canAccess: (item: CompiledNavItem) => allows(item.access),
+      canAccessView: (view: ViewConfig) => allows(view.access?.read),
+    };
+  };
+
   // Dynamic Navigation and Badges endpoints
   app.get("/api/admin/navigation", optionalAuth(config), async (c) => {
-    const user = c.get("user");
     const compiled = compileNavigation(config);
-    const pruned = pruneNavigationForUser(compiled, user);
+    const { canAccess, canAccessView } = createNavAccessChecker(c);
+    const pruned = await pruneNavigationByAccess(compiled, canAccess, canAccessView);
     return c.json(pruned);
   });
 
@@ -990,11 +1036,19 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         ...(reconciled.groups || []).flatMap((g) => g.items || []),
       ];
     } else {
-      const pruned = pruneNavigationForUser(compiled, user);
+      const pruned = await pruneNavigationByAccess(compiled, createNavAccessChecker(c).canAccess);
       allItems = [
         ...pruned.ungrouped,
         ...pruned.groups.flatMap((g) => g.items),
       ];
+    }
+
+    // Reconciled (user-customized) navigation bypasses compile-time pruning,
+    // so enforce access here too and never compute badges for hidden items.
+    if (userNavPrefs) {
+      const { canAccess } = createNavAccessChecker(c);
+      const allowed = await Promise.all(allItems.map((item) => canAccess(item)));
+      allItems = allItems.filter((_, i) => allowed[i]);
     }
 
     const badges: Record<string, { count: number | string; variant?: string }> = {};

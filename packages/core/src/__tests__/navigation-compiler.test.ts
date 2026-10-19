@@ -8,6 +8,7 @@ import {
   definePage,
   compileNavigation,
   pruneNavigationForUser,
+  pruneNavigationByAccess,
   assertValidNavigationSlugs,
 } from "../index.js";
 import { InMemoryAdapter } from "./mocks.js";
@@ -384,6 +385,60 @@ describe("Navigation Compiler Pipeline", () => {
         }),
       ]);
     }).toThrow(/reserved system path/i);
+  });
+
+  it("pruneNavigationByAccess drops items the resolver denies and empties groups", async () => {
+    const mk = (slug: string, group?: string): any => ({
+      id: slug, type: "collection", slug, label: slug, group, order: 1, views: [],
+    });
+    const tree: any = {
+      groups: [
+        { id: "a", name: "A", order: 1, items: [mk("open", "A"), mk("secret", "A")] },
+        { id: "b", name: "B", order: 2, items: [mk("hidden", "B")] },
+      ],
+      ungrouped: [mk("loose"), mk("secret-loose")],
+    };
+    const deny = new Set(["secret", "hidden", "secret-loose"]);
+    const result = await pruneNavigationByAccess(tree, async (item) => !deny.has(item.slug));
+    expect(result.groups.map((g) => g.name)).toEqual(["A"]);
+    expect(result.groups[0].items.map((i) => i.slug)).toEqual(["open"]);
+    expect(result.ungrouped.map((i) => i.slug)).toEqual(["loose"]);
+  });
+
+  it("pruneNavigationByAccess prunes views and drops workspaces with no readable views", async () => {
+    const view = (slug: string): any => ({ slug, label: slug, layout: "table" });
+    const item = (slug: string, type: string, views: any[]): any => ({
+      id: slug, type, slug, label: slug, order: 1, views,
+    });
+    const tree: any = {
+      groups: [],
+      ungrouped: [
+        item("orders", "collection", [view("all"), view("internal")]),
+        item("ops", "workspace", [view("internal")]),
+        item("page", "page", []),
+      ],
+    };
+    const result = await pruneNavigationByAccess(
+      tree,
+      async () => true,
+      async (v) => v.slug !== "internal",
+    );
+    expect(result.ungrouped.map((i) => i.slug)).toEqual(["orders", "page"]);
+    expect(result.ungrouped[0].views.map((v) => v.slug)).toEqual(["all"]);
+  });
+
+  it("denies custom pages whose function access rule rejects the user", async () => {
+    const tree: any = {
+      groups: [],
+      ungrouped: [
+        { id: "page:a", type: "page", slug: "a", label: "A", order: 1, views: [], access: () => false },
+        { id: "page:b", type: "page", slug: "b", label: "B", order: 2, views: [] },
+      ],
+    };
+    const result = await pruneNavigationByAccess(tree, async (i) =>
+      typeof i.access === "function" ? (i.access as any)({}) : true,
+    );
+    expect(result.ungrouped.map((i) => i.slug)).toEqual(["b"]);
   });
 });
 

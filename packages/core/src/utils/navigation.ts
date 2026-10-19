@@ -246,7 +246,7 @@ export function compileNavigation(
         order: item.order ?? 100,
         views: [],
         badge: item.badge,
-        access: item.access,
+        access: item.access || (gl?.access?.read as any),
       });
       continue;
     }
@@ -370,6 +370,7 @@ export function compileNavigation(
       group: groupName,
       order: 100,
       views: [],
+      access: gl.access?.read as any,
     });
   }
 
@@ -471,7 +472,46 @@ export function compileNavigation(
 }
 
 /**
- * Filter compiled navigation based on user access rules.
+ * Filter compiled navigation using an async access check.
+ *
+ * Unlike {@link pruneNavigationForUser}, which only understands role arrays,
+ * this accepts any resolver so function, Jexl and named-policy rules can be
+ * evaluated against the current request. Groups left with no visible items
+ * are removed.
+ */
+export async function pruneNavigationByAccess(
+  tree: CompiledNavTree,
+  canAccess: (item: CompiledNavItem) => Promise<boolean>,
+  canAccessView?: (view: ViewConfig, item: CompiledNavItem) => Promise<boolean>,
+): Promise<CompiledNavTree> {
+  // Views carry their own `access.read`. Items that expose views (workspaces,
+  // collections with operational views) lose the ones the user cannot open, and
+  // a workspace whose views are all hidden disappears entirely.
+  const resolveItem = async (item: CompiledNavItem): Promise<CompiledNavItem | null> => {
+    if (!(await canAccess(item))) return null;
+    if (!canAccessView || !item.views?.length) return item;
+    const allowed = await Promise.all(item.views.map((view) => canAccessView(view, item)));
+    const views = item.views.filter((_, i) => allowed[i]);
+    if (views.length === item.views.length) return item;
+    if (views.length === 0 && item.type === "workspace") return null;
+    return { ...item, views };
+  };
+
+  const filterItems = async (items: CompiledNavItem[]) =>
+    (await Promise.all(items.map(resolveItem))).filter((item): item is CompiledNavItem => item !== null);
+
+  const groups: CompiledNavGroup[] = [];
+  for (const group of tree.groups) {
+    const items = await filterItems(group.items);
+    if (items.length > 0) groups.push({ ...group, items });
+  }
+
+  return { groups, ungrouped: await filterItems(tree.ungrouped) };
+}
+
+/**
+ * Filter compiled navigation based on user role arrays only.
+ * Non-array rules are kept; use {@link pruneNavigationByAccess} to evaluate them.
  */
 export function pruneNavigationForUser(
   tree: CompiledNavTree,

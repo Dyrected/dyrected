@@ -4,6 +4,7 @@ import { useDyrected } from "../../providers/dyrected-context"
 import { usePreference } from "../../hooks/use-preferences"
 import { reconcileNavigation } from "../../utils/navigation-reconciler"
 import { DEFAULT_USER_NAV_PREFERENCES } from "../../types/preferences"
+import { canReadSchema } from "../../utils/schema-access"
 import { AdminNotFound, AdminNotFoundSkeleton } from "../../components/layout/admin-not-found"
 import { OperationalViewPage } from "../collections/views/operational-view-page"
 import type { CompiledNavItem } from "@dyrected/sdk"
@@ -80,7 +81,7 @@ export function WorkspaceRedirectRoute() {
  */
 export function WorkspaceRoute() {
   const { workspaceSlug, viewSlug } = useParams<{ workspaceSlug: string; viewSlug: string }>()
-  const { navigation: baseTree, schemas } = useDyrected()
+  const { navigation: baseTree, schemas, user } = useDyrected()
   const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
 
   const activeNavigation = React.useMemo(() => {
@@ -104,7 +105,7 @@ export function WorkspaceRoute() {
 
   const view = item.views?.find((v: any) => v.slug === viewSlug)
 
-  if (!view) {
+  if (!view || !canReadSchema(view as any, user)) {
     return (
       <AdminNotFound
         title="View not found"

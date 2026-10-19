@@ -46,7 +46,7 @@ export type AccessResult = boolean | Record<string, unknown>;
  * @example
  * // Jexl string — evaluated server-side
  * access: {
- *   update: "user.roles contains 'editor'",
+ *   update: "'editor' in user.roles",
  * }
  */
 export type AccessFunction<

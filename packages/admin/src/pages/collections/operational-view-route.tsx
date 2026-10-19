@@ -1,12 +1,13 @@
 import { useDyrected } from "../../providers/dyrected-context"
 import { AdminNotFound, AdminNotFoundSkeleton } from "../../components/layout/admin-not-found"
 import { useParams } from "react-router-dom"
+import { canReadSchema } from "../../utils/schema-access"
 
 import { OperationalViewPage } from "./views/operational-view-page"
 
 export function OperationalViewRoute() {
   const { slug, viewSlug } = useParams()
-  const { schemas } = useDyrected()
+  const { schemas, user } = useDyrected()
 
   if (!schemas) {
     return <AdminNotFoundSkeleton />
@@ -25,7 +26,9 @@ export function OperationalViewRoute() {
 
   const view = schema.views?.find((v: any) => v.slug === viewSlug)
 
-  if (!view) {
+  // The server omits views the user cannot read; this also covers Jexl rules
+  // and keeps the page from rendering if a stale schema still lists one.
+  if (!view || !canReadSchema(view, user)) {
     return (
       <AdminNotFound
         title="View not found"
