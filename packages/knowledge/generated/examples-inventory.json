@@ -7542,8 +7542,8 @@
     "id": "/start-here/changelog#example-1",
     "page": "/start-here/changelog",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/start-here/changelog#example-2",
@@ -7556,11 +7556,18 @@
     "id": "/start-here/changelog#example-3",
     "page": "/start-here/changelog",
     "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/start-here/changelog#example-4",
+    "page": "/start-here/changelog",
+    "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/start-here/changelog#example-4",
+    "id": "/start-here/changelog#example-5",
     "page": "/start-here/changelog",
     "language": "tsx",
     "classification": "syntax-checked",

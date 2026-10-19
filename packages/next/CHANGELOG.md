@@ -1,5 +1,14 @@
 # @dyrected/next
 
+## 2.24.1
+
+### Patch Changes
+
+- Updated dependencies [0f6cd54]
+  - @dyrected/core@2.24.1
+  - @dyrected/react@2.24.1
+  - @dyrected/sdk@2.24.1
+
 ## 2.24.0
 
 ### Patch Changes

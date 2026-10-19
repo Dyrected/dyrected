@@ -31952,6 +31952,47 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.24.1
+
+- The admin no longer shows navigation entries a user can't open. Collections, globals, custom pages, workspaces, views and actions are now hidden when your access rules deny them, and opening one by URL shows a "no access" page instead of the screen.
+
+  **What was wrong**
+
+  Navigation was only filtered by role arrays like `access: ['admin']`. Rules written as functions, Jexl strings or named policies were ignored, so the sidebar listed collections and globals the user couldn't read. View and action access rules were sent to the admin but never used to hide anything, and a global's `access.read` never reached the navigation at all.
+
+  **What changed**
+
+  - `/api/admin/navigation` evaluates every kind of rule with the same resolver the API uses. A rule that throws hides the item. A rule that returns a row-level filter (`{ owner: { equals: user.sub } }`) keeps it visible, because the user can read some rows.
+  - `/api/schemas` leaves out views the user can't read, and `/api/admin/navigation/badges` no longer counts items they can't see, including when they've customized their navigation.
+  - Workspaces whose views are all hidden disappear, and so do groups left empty.
+  - The admin sidebar and routes hide collections, globals and views you can't read, and hide actions you can't run. This uses `access.update`, the rule the server already checks when an action runs.
+
+  This only affects what people see. Your access rules were already enforced by the API, so no data was exposed before and none is newly protected now.
+
+  **Docs fix**
+
+  The `AccessFunction` example used `user.roles contains 'editor'`, but Jexl has no `contains` operator, so that rule always denied. Use `'editor' in user.roles`. (`@dyrected/admin`, `@dyrected/core`)
+
+- Production Nuxt builds no longer return a 500 on `/admin` with `ERR_MODULE_NOT_FOUND` for `react-router/dist/development/dom-export.mjs`.
+
+  **What was wrong**
+
+  `@dyrected/admin` lists `react-router-dom` as a peer dependency, so a server install decides which copy of it you get. On a server with no lockfile (for example when you deploy only one app out of a monorepo), Nitro could leave `react-router` as an external import and then not copy its files into `.output/server/node_modules`. The server started, then failed on the first request to any Admin route. Local builds with a lockfile bundled the router and never showed the problem.
+
+  **What changed**
+
+  `@dyrected/nuxt` now tells Nitro to bundle `react-router` and `react-router-dom` into the server build, so the result no longer depends on how your server lays out `node_modules`. You can remove this workaround from `nuxt.config.ts` if you added it:
+
+  ```ts
+  nitro: {
+    externals: { inline: [/^react-router(-dom)?($|\/)/] },
+  }
+  ```
+
+  Rules you already have in `nitro.externals.inline` are kept. (`@dyrected/nuxt`)
+
+---
+
 ## v2.24.0
 
 - A collection or global can now replace its create and edit screens with your own component, while saving still goes through the normal pipeline: validation, access rules, hooks and drafts.
@@ -32828,16 +32869,6 @@ Release notes and version history across all Dyrected packages.
 - Improve workflow editing UX in the Admin for workflow-enabled and `drafts: true` collections. Editors now get faster transition actions in the entry header and list view, clearer live-vs-draft status messaging, desktop labels for header action buttons, and a manual "save draft" fallback alongside workflow transitions.
 
   Add workflow-aware draft autosave config to collection admin options with `admin.autosave` and `admin.autosaveDelayMs`. Workflow-enabled collections now default to autosaving draft revisions without changing the published snapshot, while projects can still disable autosave per collection when they need explicit manual saves. (`@dyrected/admin`, `@dyrected/core`)
-
----
-
-## v2.6.0
-
-- Add typed collection search config and backend-powered admin search across core, admin, and SDK.
-
-  Improve admin document titles and list cell rendering for relationship, object, and array values, including nested relation title chains and nested field `admin.useAsTitle`.
-
-  Add join-field admin actions to show or hide `Create new` and `View all`, with `View all` opening the related collection list pre-filtered by the join relationship. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
 
 ---
 
