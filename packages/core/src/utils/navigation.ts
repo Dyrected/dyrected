@@ -246,7 +246,7 @@ export function compileNavigation(
         order: item.order ?? 100,
         views: [],
         badge: item.badge,
-        access: item.access,
+        access: item.access || (gl?.access?.read as any),
       });
       continue;
     }
@@ -370,6 +370,7 @@ export function compileNavigation(
       group: groupName,
       order: 100,
       views: [],
+      access: gl.access?.read as any,
     });
   }
 

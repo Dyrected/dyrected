@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { WorkspaceRoute, WorkspaceRedirectRoute } from "../workspace-route"
 
 const useDyrectedMock = vi.fn()
@@ -17,6 +17,8 @@ vi.mock("../../collections/views/operational-view-page", () => ({
     </div>
   ),
 }))
+
+afterEach(cleanup)
 
 describe("WorkspaceRoute & WorkspaceRedirectRoute", () => {
   const mockSchemas = {
@@ -171,6 +173,50 @@ describe("WorkspaceRoute & WorkspaceRedirectRoute", () => {
 
     expect(screen.getAllByTestId("operational-view-page").length).toBeGreaterThan(0)
     expect(screen.getByText("View: Guest Directory")).toBeTruthy()
+  })
+
+  it("renders 404 for a workspace view the user is not allowed to read", () => {
+    const restricted = {
+      groups: [
+        {
+          id: "finance",
+          label: "Finance",
+          items: [
+            {
+              id: "billing",
+              slug: "billing",
+              label: "Billing Workspace",
+              collection: "invoices",
+              views: [
+                {
+                  id: "audit",
+                  slug: "audit",
+                  label: "Audit",
+                  collection: "invoices",
+                  access: { read: false },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+    useDyrectedMock.mockReturnValue({
+      navigation: restricted,
+      schemas: mockSchemas,
+      user: { roles: ["viewer"] },
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/billing/audit"]}>
+        <Routes>
+          <Route path="/:workspaceSlug/:viewSlug" element={<WorkspaceRoute />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.queryByTestId("operational-view-page")).toBeNull()
+    expect(screen.getByText("View not found")).toBeTruthy()
   })
 })
 

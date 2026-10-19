@@ -242,15 +242,16 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
 
   const resolvedActions = useMemo(
     () =>
-      resolveViewActions(view, {
-        canCreate,
-        canDelete,
-        hasDetail,
-        trash: schema?.trash,
-      }),
-    // `view` fields are stable per route; features/order ride along on it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [customActions, canCreate, canDelete, hasDetail, view.features, view.actionOrder],
+      resolveViewActions(
+        { actions: customActions, features: view.features, actionOrder: view.actionOrder },
+        {
+          canCreate,
+          canDelete,
+          hasDetail,
+          trash: schema?.trash,
+        },
+      ),
+    [customActions, canCreate, canDelete, hasDetail, view.features, view.actionOrder, schema?.trash],
   )
   const actions = resolvedActions.all
 
