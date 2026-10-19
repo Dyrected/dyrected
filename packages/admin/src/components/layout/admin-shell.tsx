@@ -55,6 +55,7 @@ import type { AdminSchemas } from "../../types/admin-components"
 import { usePreference } from "../../hooks/use-preferences"
 import { DEFAULT_USER_NAV_PREFERENCES } from "../../types/preferences"
 import { reconcileNavigation } from "../../utils/navigation-reconciler"
+import { canReadSchema } from "../../utils/schema-access"
 import { NavigationCustomizer } from "../navigation/navigation-customizer"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -695,9 +696,26 @@ function SidebarInner({
   const [userToggledOpen, setUserToggledOpen] = useState<Set<string>>(() => new Set())
   const [userToggledClosed, setUserToggledClosed] = useState<Set<string>>(() => new Set())
 
+  // Defense in depth: the server already prunes navigation per user, but user
+  // preferences are reconciled against the full schema list on the client, so
+  // drop any collection/global the user cannot read.
   const activeNavigation = React.useMemo(() => {
-    return reconcileNavigation(navigation, userNavPrefs, schemas as any)
-  }, [navigation, userNavPrefs, schemas])
+    const reconciled = reconcileNavigation(navigation, userNavPrefs, schemas as any)
+    if (!reconciled) return reconciled
+    const isVisible = (item: { type: string; slug: string }) => {
+      if (item.type === "collection") return canReadSchema(schemas?.collections?.find((c: any) => c.slug === item.slug), user)
+      if (item.type === "global") return canReadSchema(schemas?.globals?.find((g: any) => g.slug === item.slug), user)
+      return true
+    }
+    return {
+      ...reconciled,
+      groups: (reconciled.groups ?? [])
+        .map((g) => ({ ...g, items: (g.items ?? []).filter(isVisible) }))
+        .filter((g) => g.items.length > 0),
+      ungrouped: reconciled.ungrouped?.filter(isVisible),
+      pinnedItems: reconciled.pinnedItems?.filter(isVisible),
+    }
+  }, [navigation, userNavPrefs, schemas, user])
 
   const toggleCollection = (slug: string, isCollectionActive: boolean) => {
     if (isCollectionActive) {
@@ -717,8 +735,8 @@ function SidebarInner({
     }
   }
 
-  const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
-  const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
+  const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_') && canReadSchema(c as any, user)) ?? []
+  const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_') && canReadSchema(g as any, user)) ?? []
   const uploadCollections = collections.filter((c) => c.upload)
   const standardCollections = collections.filter((c) => !c.upload && !c.auth)
   const authCollections = collections.filter((c) => !c.upload && c.auth)

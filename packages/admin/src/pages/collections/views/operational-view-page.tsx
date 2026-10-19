@@ -79,7 +79,15 @@ export function OperationalViewPage({ slug, schema, view, schemas }: Operational
   })
   const layout = isTabular ? viewMode.mode : authoredLayout
 
-  const customActions = useMemo(() => (view.actions ?? []) as SerializedAction[], [view.actions])
+  // Actions mutate data, so they follow the same `update` rule the server
+  // enforces when the action runs; hide the ones this user would be denied.
+  const customActions = useMemo(
+    () =>
+      ((view.actions ?? []) as SerializedAction[]).filter((action) =>
+        evaluateAccess((action as any).access?.update, user),
+      ),
+    [view.actions, user],
+  )
 
   // Extract active toolbar filters and search query from URL search parameters
   const activeFilters = useMemo(() => {

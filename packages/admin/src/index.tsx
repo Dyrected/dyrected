@@ -26,6 +26,7 @@ import {
   Route,
   Navigate,
   useParams,
+  Outlet,
   useLocation,
 } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -57,6 +58,7 @@ import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provide
 import type { AdminThemePreference, ResolvedAdminTheme } from "./hooks/admin-theme";
 import { AdminBridgeProvider } from "./providers/admin-bridge-provider";
 import { cn } from "./lib/utils";
+import { canReadSchema } from "./utils/schema-access";
 import { createAdminThemeController, type AdminThemeController } from "./controllers/theme";
 
 export type {
@@ -190,6 +192,26 @@ export type {
 // the canonical list view. `resolveSchemas` ensures every collection has at
 // least a synthesized `list` view, so this route can render directly without
 // redirecting to `/views/:viewSlug`.
+
+/**
+ * Layout route that blocks direct URLs to a collection or global the current
+ * user cannot read, so hidden navigation entries cannot be reached by typing
+ * the address. Unknown slugs fall through to each page's own not-found state.
+ */
+function ReadAccessGuard({ kind }: { kind: "collections" | "globals" }) {
+  const { slug } = useParams();
+  const { schemas, user } = useDyrected();
+  const schema = (schemas as any)?.[kind]?.find((s: any) => s.slug === slug);
+  if (schema && !canReadSchema(schema, user)) {
+    return (
+      <AdminNotFound
+        title="You don't have access to this"
+        description="Your role doesn't include permission to view this area. If you think that's a mistake, ask an administrator to update your access."
+      />
+    );
+  }
+  return <Outlet />;
+}
 
 function CollectionRoute() {
   const { slug } = useParams();
@@ -356,6 +378,7 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
           <Routes>
             <Route path="/" element={<RootLandingRoute />} />
             <Route path="/trash" element={<GlobalTrashPage />} />
+            <Route element={<ReadAccessGuard kind="collections" />}>
             <Route path="/collections/:slug" element={<CollectionRoute />} />
             <Route path="/collections/:slug/views/:viewSlug" element={<OperationalViewRoute />} />
             <Route path="/collections/:slug/trash" element={<CollectionTrashPage />} />
@@ -363,8 +386,11 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
             <Route path="/collections/:slug/new" element={<EditEntryPage />} />
             <Route path="/collections/:slug/edit/:id" element={<LegacyCollectionEditRedirect />} />
             <Route path="/collections/:slug/:id/edit" element={<EditEntryPage />} />
+            </Route>
+            <Route element={<ReadAccessGuard kind="globals" />}>
             <Route path="/globals/:slug" element={<GlobalDetailPage />} />
             <Route path="/globals/:slug/edit" element={<GlobalEditorPage />} />
+            </Route>
             <Route path="/setup" element={<SetupPage />} />
             {/* Custom Admin Pages under reserved /pages prefix */}
             <Route path="/pages/:slug/*" element={<CustomPageRoute />} />
