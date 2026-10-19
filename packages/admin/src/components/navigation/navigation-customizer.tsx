@@ -42,6 +42,7 @@ import {
 } from "lucide-react"
 
 import { USER_SELECTABLE_LAYOUTS } from "../../pages/collections/views/layout-registry"
+import { isUserAdmin } from "@dyrected/core"
 import type { CompiledNavGroup, CompiledNavItem, DefineWorkspaceOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
 import { ViewFilterBuilder } from "./view-filter-builder"
 import { ViewMetricsBuilder } from "./view-metrics-builder"
@@ -663,8 +664,11 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
     }
   }
 
-  const userRoles = Array.isArray(user?.roles) ? user.roles : []
-  const isUserAdmin = userRoles.includes("admin") || (user as any)?.role === "admin"
+  // Same check the server runs on PUT /api/preferences/:key?scope=role, so the
+  // button shows for exactly the users the server will accept (super_admin,
+  // owner and the collection's configured admin role, not only "admin").
+  const userCollection = (schemas?.collections as any[] | undefined)?.find((c) => c.slug === (user as any)?.collection)
+  const canPublishRoleDefault = isUserAdmin(user, userCollection)
 
   // Filter groups according to search input
   const filteredGroups = React.useMemo(() => {
@@ -1675,7 +1679,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             Reset
           </Button>
 
-          {isUserAdmin && (
+          {canPublishRoleDefault && (
             <Button
               variant={publishRoleOpen ? "secondary" : "outline"}
               size="sm"
