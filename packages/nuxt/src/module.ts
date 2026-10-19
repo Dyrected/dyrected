@@ -51,6 +51,7 @@ export interface ModuleOptions extends DyrectedConfig {
 
 import { NuxtModule } from "@nuxt/schema";
 import { discoverComponents, renderComponentRegistry } from "./utils/component-registry";
+import { addNitroInlineExternals } from "./utils/nitro-externals";
 
 const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   meta: {
@@ -490,14 +491,12 @@ export default defineNitroPlugin(async (nitroApp) => {
     // 8. Transpile Dyrected packages
     nuxt.options.build.transpile.push("@dyrected/sdk", "@dyrected/vue", "@dyrected/admin");
 
-    // Inline `@dyrected/nuxt` in Nitro so its server plugin resolves `#imports` correctly
+    // Inline `@dyrected/nuxt` in Nitro so its server plugin resolves `#imports`
+    // correctly, and bundle the Admin's router so production builds don't depend
+    // on how a server install happens to lay out `react-router`.
     const optionsAny = nuxt.options as any;
     optionsAny.nitro = optionsAny.nitro || {};
-    optionsAny.nitro.externals = optionsAny.nitro.externals || {};
-    optionsAny.nitro.externals.inline = optionsAny.nitro.externals.inline || [];
-    if (!optionsAny.nitro.externals.inline.includes("@dyrected/nuxt")) {
-      optionsAny.nitro.externals.inline.push("@dyrected/nuxt");
-    }
+    addNitroInlineExternals(optionsAny.nitro);
 
     // 9. Patch the unctx:transform plugin to skip @dyrected/admin's dist bundle.
     // unctx injects Vue composable identifiers (toValue, h, ref, …) at the top of
