@@ -9,6 +9,10 @@ By the end of this page you will have a **check-in station** in the sidebar: a s
 
 This page assumes you know the declare-then-provide pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview). Throughout, "your app" means the project you embedded the admin into.
 
+<Callout type="warn">
+  A page's `access` rule decides who sees it in the sidebar. It does not protect anything your page calls. If your page talks to an endpoint in your own app, that endpoint has to check who is asking. [Protecting your own endpoints](#protecting-your-own-endpoints) shows how.
+</Callout>
+
 ## Which extension point do you need?
 
 | You want to | Use |
@@ -490,9 +494,57 @@ export function QuickLinks() {
 
 ## Access
 
-`access` on a page hides its sidebar item from editors who do not pass the rule. Treat that as a convenience, not as security. Someone who knows the URL is not stopped by the sidebar, and a page runs in the browser, so anything sensitive it reads or writes must be protected by the access rules on your collections. The check-in station is safe because its reads and writes go through the admin's client, where those rules apply.
+`access` on a page controls who can open it. An editor who fails the rule does not see the page in the sidebar, and typing the page's address shows "Page not found" instead of the screen. It accepts a list of roles, a Jexl string, or a function:
 
-{/* NEEDS-HUMAN-VERIFY: CustomPageRoute resolves the page from the navigation tree with hidden items included, so a direct visit to /pages/<slug> renders the page even when `access` hides the sidebar item. Confirm this is the intended behaviour and whether a route-level read check should be added. */}
+```ts
+definePage({
+  slug: "payouts",
+  label: "Payouts",
+  component: "finance.payouts",
+  access: ["finance", "super_admin"],
+});
+```
+
+Only editors with the `finance` or `super_admin` role see **Payouts** and can open it.
+
+This is a convenience for tidy menus, not a security boundary. The page's code is part of the admin your editors download, so a determined user can still read it and call whatever it calls. What actually protects your data is the access rules on your collections, which Dyrected runs on the server for every request. A page that only reads and writes through the admin's client, like the check-in station above, is safe for that reason.
+
+### Protecting your own endpoints
+
+A page often needs more than collections: it posts to a route in your own app to run a payout, send an email, or call a third-party service. Dyrected's collection rules do not apply to that route, so the route has to check who is calling. Ask Dyrected who the token belongs to, then check their role:
+
+```ts
+// app/api/payouts/route.ts (Next.js route handler)
+import { cookies } from "next/headers";
+import { createClient } from "@dyrected/sdk";
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! });
+
+export async function POST() {
+  const token = cookies().get("dyrected-token")?.value;
+  if (!token) return Response.json({ error: "Sign in first" }, { status: 401 });
+
+  client.setToken(token);
+  let user;
+  try {
+    user = await client.collection("users").me();
+  } catch {
+    return Response.json({ error: "Your session has expired" }, { status: 401 });
+  }
+
+  const roles: string[] = Array.isArray(user.roles) ? user.roles : [];
+  if (!roles.includes("finance")) {
+    return Response.json({ error: "Not allowed" }, { status: 403 });
+  }
+
+  // Safe to run the payout here.
+  return Response.json({ ok: true });
+}
+```
+
+`me()` makes Dyrected verify the token and load the live user, so a revoked session or a changed role takes effect on the next request. Keep the role check in the route even when the page already hides itself with `access`. If you want the same rule in both places, define it once and import it into the config and the route.
+
+The cookie name above is the one from the [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy) page. If you store the token somewhere else, read it from there.
 
 ## Styling
 
