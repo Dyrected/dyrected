@@ -43,6 +43,7 @@ import {
 
 import { USER_SELECTABLE_LAYOUTS } from "../../pages/collections/views/layout-registry"
 import { isUserAdmin } from "@dyrected/core"
+import { resolveRoleOptions } from "../../utils/role-options"
 import type { CompiledNavGroup, CompiledNavItem, DefineWorkspaceOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
 import { ViewFilterBuilder } from "./view-filter-builder"
 import { ViewMetricsBuilder } from "./view-metrics-builder"
@@ -99,7 +100,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   const [newItemOpen, setNewItemOpen] = React.useState(false)
   const [activeItemForNewView, setActiveItemForNewView] = React.useState<string | null>(null)
   const [publishRoleOpen, setPublishRoleOpen] = React.useState(false)
-  const [selectedRoleToPublish, setSelectedRoleToPublish] = React.useState<string>("editor")
+  const [selectedRoleToPublish, setSelectedRoleToPublish] = React.useState<string>("")
   const [publishStatus, setPublishStatus] = React.useState<string | null>(null)
 
   // Form states for New Group
@@ -650,13 +651,13 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   }
 
   const handlePublishForRole = async () => {
-    if (!client || !selectedRoleToPublish) return
+    if (!client || !roleToPublish) return
     try {
       await client.setPreference("admin:navigation", prefs, {
         scope: "role",
-        role: selectedRoleToPublish,
+        role: roleToPublish,
       })
-      setPublishStatus(`Successfully published layout as default for role [${selectedRoleToPublish}]!`)
+      setPublishStatus(`Successfully published layout as default for role [${roleToPublish}]!`)
       setTimeout(() => setPublishStatus(null), 3500)
       setPublishRoleOpen(false)
     } catch (e: any) {
@@ -669,6 +670,11 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   // owner and the collection's configured admin role, not only "admin").
   const userCollection = (schemas?.collections as any[] | undefined)?.find((c) => c.slug === (user as any)?.collection)
   const canPublishRoleDefault = isUserAdmin(user, userCollection)
+
+  // Offer the roles this project actually defines. When the role field has no
+  // fixed options (free text or JSON), the editor types the role instead.
+  const roleOptions = React.useMemo(() => resolveRoleOptions(userCollection), [userCollection])
+  const roleToPublish = (selectedRoleToPublish || roleOptions[0]?.value || "").trim()
 
   // Filter groups according to search input
   const filteredGroups = React.useMemo(() => {
@@ -1637,17 +1643,28 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             <p className="dy-text-[10px] dy-text-muted-foreground">
               Save layout as default for all users with this role.
             </p>
-            <Select value={selectedRoleToPublish} onValueChange={setSelectedRoleToPublish}>
-              <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
-                <SelectValue placeholder="Select role..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin" className="dy-text-xs">Administrator (admin)</SelectItem>
-                <SelectItem value="editor" className="dy-text-xs">Editor (editor)</SelectItem>
-                <SelectItem value="operator" className="dy-text-xs">Operator (operator)</SelectItem>
-                <SelectItem value="compliance" className="dy-text-xs">Compliance (compliance)</SelectItem>
-              </SelectContent>
-            </Select>
+            {roleOptions.length > 0 ? (
+              <Select value={roleToPublish} onValueChange={setSelectedRoleToPublish}>
+                <SelectTrigger className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background">
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((role) => (
+                    <SelectItem key={role.value} value={role.value} className="dy-text-xs">
+                      {role.label === role.value ? role.value : `${role.label} (${role.value})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={selectedRoleToPublish}
+                onChange={(e) => setSelectedRoleToPublish(e.target.value)}
+                placeholder="Role name, e.g. field_ops"
+                aria-label="Role name"
+                className="dy-h-7 dy-px-2 dy-text-xs dy-bg-background"
+              />
+            )}
             <div className="dy-flex dy-items-center dy-justify-end dy-gap-1 dy-pt-0.5">
               <Button
                 variant="ghost"
@@ -1660,6 +1677,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
               <Button
                 size="sm"
                 className="dy-h-6 dy-px-2.5 dy-text-xs"
+                disabled={!roleToPublish}
                 onClick={handlePublishForRole}
               >
                 Publish
