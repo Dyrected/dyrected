@@ -1,5 +1,16 @@
 # @dyrected/nuxt
 
+## 2.24.3
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [e10cada]
+  - @dyrected/admin@2.24.3
+  - @dyrected/vue@2.24.3
+  - @dyrected/core@2.24.3
+  - @dyrected/sdk@2.24.3
+
 ## 2.24.2
 
 ### Patch Changes

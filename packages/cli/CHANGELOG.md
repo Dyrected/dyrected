@@ -1,5 +1,12 @@
 # dyrected
 
+## 2.24.3
+
+### Patch Changes
+
+- @dyrected/core@2.24.3
+- @dyrected/sdk@2.24.3
+
 ## 2.24.2
 
 ### Patch Changes

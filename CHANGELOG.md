@@ -2,6 +2,31 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.24.3
+
+- The "Protecting your own endpoints" section of the Custom Admin Pages guide now has a Nuxt server route next to the Next.js route handler. Both verify the session with `me()` and check the user's role, and both build the SDK client per request so one editor's token is never shared with another request. (`@dyrected/admin`)
+
+- The "Publish as Role Default" dropdown in the navigation editor now lists your project's own roles instead of four fixed names.
+
+  **What was wrong**
+
+  The dropdown only offered `admin`, `editor`, `operator` and `compliance`, so you could not publish a menu for a role like `external`, `finance` or `field_ops` from the admin.
+
+  **What changed**
+
+  - The roles come from the role field on your auth collection: the field named `roles` or `role`, or a select marked `admin.inviteRole`. Plain string options and `{ label, value }` options both work, and the first role is selected by default.
+  - If the role field has no fixed options (for example a free-text or JSON field), the dropdown becomes a text box where you type the role name. **Publish** stays disabled until you enter one.
+  - @dyrected/core@2.24.3
+  - @dyrected/sdk@2.24.3 (`@dyrected/admin`)
+
+- @dyrected/core@2.24.3
+
+- @dyrected/sdk@2.24.3 (`dyrected`, `@dyrected/next`)
+
+- @dyrected/react@2.24.3 (`@dyrected/next`)
+
+---
+
 ## v2.24.2
 
 - The Custom Admin Pages guide now says clearly what a page's `access` rule does and does not protect.
