@@ -2261,6 +2261,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/custom-components/custom-pages#example-9",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/custom-components/custom-pages#example-10",
+    "page": "/editor-experience/custom-components/custom-pages",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/custom-components/dashboard#example-1",
     "page": "/editor-experience/custom-components/dashboard",
     "language": "ts",

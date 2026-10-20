@@ -1,5 +1,25 @@
 # @dyrected/admin
 
+## 2.24.2
+
+### Patch Changes
+
+- 26cbfb7: The Custom Admin Pages guide now says clearly what a page's `access` rule does and does not protect.
+
+  `access` decides who sees a page in the sidebar and who can open it by address. It is not a security boundary, because the page's code ships with the admin. If a page calls an endpoint in your own app, that endpoint has to check who is asking. The guide has a new "Protecting your own endpoints" section with a Next.js route handler that verifies the session with `me()` and checks the user's role.
+
+- 584b404: The "Role Default" button in the navigation editor now shows for every user the server will accept, not only users whose role is exactly `admin`.
+
+  **What was wrong**
+
+  The server lets `admin`, `super_admin`, `superadmin`, `owner` and the collection's configured admin role publish a navigation layout for a role. The editor only checked for `admin`, so a `super_admin` could never see the button, even though saving would have worked.
+
+  **What changed**
+
+  The editor now uses the same `isUserAdmin` check as the server, so the button and the permission always agree.
+  - @dyrected/core@2.24.2
+  - @dyrected/sdk@2.24.2
+
 ## 2.24.1
 
 ### Patch Changes

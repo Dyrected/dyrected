@@ -1,5 +1,13 @@
 # @dyrected/next
 
+## 2.24.2
+
+### Patch Changes
+
+- @dyrected/react@2.24.2
+- @dyrected/core@2.24.2
+- @dyrected/sdk@2.24.2
+
 ## 2.24.1
 
 ### Patch Changes

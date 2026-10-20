@@ -6,6 +6,32 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
+## v2.24.2
+
+- The Custom Admin Pages guide now says clearly what a page's `access` rule does and does not protect.
+
+  `access` decides who sees a page in the sidebar and who can open it by address. It is not a security boundary, because the page's code ships with the admin. If a page calls an endpoint in your own app, that endpoint has to check who is asking. The guide has a new "Protecting your own endpoints" section with a Next.js route handler that verifies the session with `me()` and checks the user's role. (`@dyrected/admin`)
+
+- The "Role Default" button in the navigation editor now shows for every user the server will accept, not only users whose role is exactly `admin`.
+
+  **What was wrong**
+
+  The server lets `admin`, `super_admin`, `superadmin`, `owner` and the collection's configured admin role publish a navigation layout for a role. The editor only checked for `admin`, so a `super_admin` could never see the button, even though saving would have worked.
+
+  **What changed**
+
+  The editor now uses the same `isUserAdmin` check as the server, so the button and the permission always agree.
+  - @dyrected/core@2.24.2
+  - @dyrected/sdk@2.24.2 (`@dyrected/admin`)
+
+- @dyrected/core@2.24.2
+
+- @dyrected/sdk@2.24.2 (`dyrected`, `@dyrected/next`)
+
+- @dyrected/react@2.24.2 (`@dyrected/next`)
+
+---
+
 ## v2.24.1
 
 - The admin no longer shows navigation entries a user can't open. Collections, globals, custom pages, workspaces, views and actions are now hidden when your access rules deny them, and opening one by URL shows a "no access" page instead of the screen.
@@ -915,14 +941,6 @@ Release notes and version history across all Dyrected packages.
   - Rework the overview for hooks and composables so it starts from the jobs developers are trying to get done, such as media uploads, media picking, document editing, custom fields, and theme-aware shells.
   - Add focused documentation pages for media, form and field, and theme APIs in `apps/docs`, with practical guidance for custom components, dashboards, and host apps rather than framing them only as admin internals.
   - Keep the lower-level controller layer documented only as supporting context, while steering most readers toward the public React hooks in `@dyrected/react` and Vue composables in `@dyrected/vue`. (`@dyrected/react`, `@dyrected/vue`)
-
----
-
-## v2.6.1
-
-- Improve workflow editing UX in the Admin for workflow-enabled and `drafts: true` collections. Editors now get faster transition actions in the entry header and list view, clearer live-vs-draft status messaging, desktop labels for header action buttons, and a manual "save draft" fallback alongside workflow transitions.
-
-  Add workflow-aware draft autosave config to collection admin options with `admin.autosave` and `admin.autosaveDelayMs`. Workflow-enabled collections now default to autosaving draft revisions without changing the published snapshot, while projects can still disable autosave per collection when they need explicit manual saves. (`@dyrected/admin`, `@dyrected/core`)
 
 ---
 
