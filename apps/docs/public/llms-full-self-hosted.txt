@@ -32527,6 +32527,17 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.26.0
+
+- Explain metrics with `description`.
+
+  - `ViewMetric` and `ViewSubMetric` accept an optional `description`. Cards that have one show an info icon: a tooltip on hover (or keyboard focus) for mouse and trackpad users, and a bottom sheet on touch screens. The choice follows the input device, not the window width.
+  - Descriptions support `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`. Only `http`, `https` and `mailto` links are active, and everything is rendered as React elements, never HTML.
+  - Sub-metric descriptions are listed under the card's description in the same tooltip or sheet.
+  - `InfoHint` and `InlineMarkdown` are exported from `@dyrected/admin` and `@dyrected/admin/public` so custom React dashboard components can reuse the same behaviour. (`@dyrected/admin`, `@dyrected/core`)
+
+---
+
 ## v2.25.0
 
 - White-label the admin and enforce role menus.
@@ -33354,28 +33365,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/react@2.7.0 (`@dyrected/next`)
 
 - @dyrected/sdk@2.7.0 (`@dyrected/next`)
-
----
-
-## v2.6.4
-
-- Improve admin safety and auth onboarding across admin, core, and SDK.
-
-  - add a professional invite dialog in admin with copyable invite URLs and role selection for new invites
-  - support invite acceptance directly from admin invite links
-  - pre-create pending invited users in auth collections so they appear in admin lists before acceptance
-  - let invite and reset emails use clickable URLs with stronger email-client-safe HTML and visible link fallbacks
-  - expand dashboard "Needs attention" checks with backend health and invite-related signals
-  - replace browser delete alerts with admin dialogs, including typed confirmation before deleting auth users (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
-
-- Add Cloud-safe declarative hooks, broader declarative-expression validation, and clearer config diagnostics across core, admin, Nuxt, SDK, and CLI.
-
-  - add declarative string hook support for collection/global `beforeRead`, `afterRead`, and `beforeChange`, field `beforeChange`, and field `admin.hooks.onChange`
-  - preserve supported declarative hook strings during `sync:schema`, strip function hooks from Cloud payloads intentionally, and warn with exact schema paths
-  - validate declarative access rules, string access policies, declarative hooks, `admin.condition`, and `admin.previewUrl` early with exact config paths and cleaner diagnostics
-  - expose config diagnostics from `/api/schemas` so admin surfaces can consume them, and improve admin dashboard attention signals around config issues
-  - improve Nuxt startup and reload reporting for invalid declarative config with formatted diagnostics instead of noisy raw errors
-  - document the Cloud-safe access and hooks model more clearly, including synced string policies, `createdByCurrentUser` vs `isOwner`, declarative hook contexts, and short notes about early validation for access, hooks, preview, and `admin.condition`
 
 ---
 

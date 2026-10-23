@@ -1,5 +1,7 @@
 # @dyrected/sdk
 
+## 2.26.0
+
 ## 2.25.0
 
 ### Minor Changes
