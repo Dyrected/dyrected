@@ -7,6 +7,9 @@ import { registerSyncSchema } from "./commands/sync-schema.js";
 import { registerUpgrade } from "./commands/upgrade.js";
 import { registerNav } from "./commands/nav.js";
 import { registerDoctor } from "./commands/doctor.js";
+import { registerBundle } from "./commands/bundle.js";
+import { registerDeploy } from "./commands/deploy.js";
+import { registerSecrets } from "./commands/secrets.js";
 
 const program = new Command();
 program
@@ -25,6 +28,9 @@ Commands:
   nav pull          Pull UI navigation preferences into dyrected.config.ts
   nav push          Push code navigation to remote/server preferences
   doctor            Check health and diagnostics of your Dyrected configuration
+  bundle            Build the deployable bundle and check Cloud compatibility
+  deploy            Bundle your config and deploy it to your Cloud project
+  secrets           Manage secrets your deployed functions read as process.env
 
 Run \`npx dyrected <command> --help\` for detailed usage and examples.
 `,
@@ -37,5 +43,8 @@ registerGenerateAiRules(program);
 registerSyncSchema(program);
 registerNav(program);
 registerDoctor(program);
+registerBundle(program);
+registerDeploy(program);
+registerSecrets(program);
 
 program.parse();

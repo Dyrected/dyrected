@@ -1071,6 +1071,7 @@ export function defineTab<const T extends readonly Field[]>(args: {
 }
 
 export * from "./types/index.js";
+export * from "./runtime/index.js";
 export * from "./utils/config.js";
 export * from "./utils/admin-auth.js";
 export * from "./utils/errors.js";

@@ -1,3 +1,4 @@
+import type { FunctionRuntime } from "../runtime/function-runtime.js";
 import type { AdminAuthConfig } from "./admin-auth.js";
 import type { AdminConfig } from "./admin.js";
 import type { AccessPolicyResolver } from "./access.js";
@@ -144,6 +145,16 @@ export interface DyrectedConfig<
 
   /** Collection definitions. Each collection maps to a database table/collection. */
   collections: CollectionConfig<any>[];
+
+  /**
+   * How user-authored functions (hooks, access rules, action handlers, tasks, computed values) are called.
+   *
+   * Leave unset to call them in-process, which is what self-hosted apps want. A hosting platform sets this
+   * to run them somewhere else (for example in an isolate) while the dispatcher itself stays the same.
+   *
+   * @see FunctionRuntime
+   */
+  functionRuntime?: FunctionRuntime;
 
   /** Global (singleton) definitions. Each global maps to a single document. */
   globals: GlobalConfig<any>[];
