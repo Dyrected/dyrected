@@ -19,6 +19,7 @@ import {
 } from "../../providers/page-context";
 import type { CompiledNavItem } from "@dyrected/sdk";
 import { isMetaShallowEqual } from "../../hooks/use-page-meta";
+import { usePublishDocumentTitle } from "../../components/document-meta";
 
 function findPageItem(navigation: any, slug: string): CompiledNavItem | undefined {
   if (!navigation) return undefined;
@@ -61,10 +62,13 @@ function CustomPageContent() {
   const navigate = useNavigate();
 
   const { navigation: baseTree, schemas, components } = useDyrected();
-  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES);
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES, { scope: "auto" });
 
   const activeNavigation = React.useMemo(() => {
-    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, { includeHidden: true });
+    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, {
+      includeHidden: true,
+      allowUserItems: !baseTree?.locked,
+    });
   }, [baseTree, userNavPrefs, schemas]);
 
   const navItem = React.useMemo(() => {
@@ -85,15 +89,7 @@ function CustomPageContent() {
 
   const [pageMeta, setPageMeta] = React.useState<PageMeta>(defaultMeta);
 
-  React.useEffect(() => {
-    if (pageMeta.title && typeof document !== "undefined") {
-      const suffix = schemas?.admin?.meta?.titleSuffix ?? "- Dyrected";
-      const next = [pageMeta.title, suffix].filter(Boolean).join(" ");
-      if (document.title !== next) {
-        document.title = next;
-      }
-    }
-  }, [pageMeta.title, schemas?.admin?.meta?.titleSuffix]);
+  usePublishDocumentTitle(pageMeta.title);
 
   const pageNavigate = React.useCallback(
     (subPath: string, opts?: { replace?: boolean }) => {

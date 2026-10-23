@@ -214,7 +214,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getPreference</code> (optional) |  |
 | <code>setPreference</code> (optional) |  |
 | <code>deletePreference</code> (optional) |  |
-| <code>getNavigation</code> (required) | Fetches the dynamic runtime navigation tree compiled for the current user. |
+| <code>getNavigation</code> (optional) | Fetches the dynamic runtime navigation tree compiled for the current user.  The tree is already pruned by &#96;access&#96; and narrowed by the role menu policy. When &#96;locked&#96; is true an administrator has enforced the menu for the user's role and it must not be extended from personal preferences.  Administrators can pass &#96;asRole&#96; to preview the menu another role receives (read-only). With &#96;raw: true&#96; the role policy is skipped, which lists every item the role could be given. Non-administrators get a 403 for &#96;asRole&#96;. |
 | <code>getNavigationBadges</code> (optional) | Fetches real-time badge counts and status for navigation items. |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |

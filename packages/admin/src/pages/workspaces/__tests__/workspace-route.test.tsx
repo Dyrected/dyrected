@@ -138,7 +138,7 @@ describe("WorkspaceRoute & WorkspaceRedirectRoute", () => {
 
   it("resolves custom operational workspace created via user navigation preferences", () => {
     window.localStorage.setItem(
-      "dyrected_pref_personal_admin:navigation",
+      "dyrected_pref_u::u1:auto_admin:navigation",
       JSON.stringify({
         items: [
           {
@@ -161,6 +161,7 @@ describe("WorkspaceRoute & WorkspaceRedirectRoute", () => {
     useDyrectedMock.mockReturnValue({
       navigation: mockNavigation,
       schemas: mockSchemas,
+      user: { id: "u1" },
     })
 
     render(
@@ -173,6 +174,43 @@ describe("WorkspaceRoute & WorkspaceRedirectRoute", () => {
 
     expect(screen.getAllByTestId("operational-view-page").length).toBeGreaterThan(0)
     expect(screen.getByText("View: Guest Directory")).toBeTruthy()
+  })
+
+  it("does not resolve a preference workspace that points at a collection the user cannot read", () => {
+    window.localStorage.setItem(
+      "dyrected_pref_u::u1:auto_admin:navigation",
+      JSON.stringify({
+        items: [
+          {
+            slug: "secrets",
+            label: "Secrets",
+            collection: "invoices",
+            views: [{ slug: "all", label: "All", layout: "table", collection: "invoices" }],
+          },
+        ],
+      })
+    )
+
+    useDyrectedMock.mockReturnValue({
+      navigation: mockNavigation,
+      schemas: {
+        ...mockSchemas,
+        collections: mockSchemas.collections.map((c: any) =>
+          c.slug === "invoices" ? { ...c, access: { read: false } } : c
+        ),
+      },
+      user: { id: "u1" },
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/secrets/all"]}>
+        <Routes>
+          <Route path="/:workspaceSlug/:viewSlug" element={<WorkspaceRoute />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.queryByTestId("operational-view-page")).toBeNull()
   })
 
   it("renders 404 for a workspace view the user is not allowed to read", () => {

@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { toast } from "sonner";
+import { AuthBrandMark, AuthPoweredBy, useAuthBranding } from "../../components/auth/auth-branding";
 
 export function FirstUserPage({
   collectionSlug,
@@ -13,6 +14,7 @@ export function FirstUserPage({
   onComplete: (data: any) => void
 }) {
   const { client } = useDyrected();
+  const { text } = useAuthBranding();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,12 +51,14 @@ export function FirstUserPage({
   return (
     <div className="dy-flex dy-min-h-screen dy-items-center dy-justify-center dy-bg-background dy-px-4">
       <div className="dy-w-full dy-max-w-sm dy-space-y-8">
+        <AuthBrandMark />
         <div className="dy-space-y-2 dy-text-center">
-          <div className="dy-mx-auto dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/5 dy-flex dy-items-center dy-justify-center dy-mb-4">
-            <div className="dy-h-6 dy-w-6 dy-rounded-full dy-border-2 dy-border-primary dy-border-t-transparent dy-animate-pulse" />
-          </div>
-          <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Setup Admin Account</h1>
-          <p className="dy-text-sm dy-text-muted-foreground">Create the first administrative user to get started</p>
+          <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">
+            {text("auth.firstUser.title", "Setup Admin Account")}
+          </h1>
+          <p className="dy-text-sm dy-text-muted-foreground">
+            {text("auth.firstUser.subtitle", "Create the first administrative user to get started")}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="dy-space-y-4">
@@ -105,9 +109,10 @@ export function FirstUserPage({
         </form>
 
         <div className="dy-pt-4 dy-border-t dy-text-center dy-space-y-2">
-          <p className="dy-text-[10px] dy-text-muted-foreground dy-uppercase dy-tracking-widest">
-            <a target="_blank" rel="noreferrer" href="https://dyrected.com?utm_source=admin&utm_medium=auth&utm_campaign=first-user">Dyrected CMS</a> | Initial Setup
-          </p>
+          <AuthPoweredBy
+            href="https://dyrected.com?utm_source=admin&utm_medium=auth&utm_campaign=first-user"
+            suffix="Initial Setup"
+          />
         </div>
       </div>
     </div>

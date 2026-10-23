@@ -30,7 +30,7 @@ The admin combines the current page with your suffix and updates the tab as the 
 - `New Post — Acme CMS` while creating a post
 - `Edit Post — Acme CMS` while editing one
 
-The page part comes from your collection and global labels, so it stays readable without any extra configuration. If you don't set `titleSuffix`, the admin uses `- Dyrected` as the default.
+The page part comes from your collection and global labels, so it stays readable without any extra configuration. If you don't set `titleSuffix`, the admin builds one from your app name (`- Acme` when `admin.branding.appName` is `"Acme"`), and shows no suffix at all if no name is configured. It never adds `- Dyrected`. See [White-Labeling](/docs/editor-experience/white-labeling) for the app name.
 
 ## The favicon
 
@@ -54,4 +54,4 @@ If you run the admin inside your own app (rather than the hosted admin), it take
 
 ## Recommended path
 
-Set `admin.meta.titleSuffix` to your product name so every admin tab is recognizable, and set `admin.branding.favicon` to match. Both are one line each, and together they make the admin feel like part of your product the moment an editor opens it.
+Set `admin.branding.appName` to your product name so every admin tab is recognizable (or `admin.meta.titleSuffix` if you want a custom separator), and set `admin.branding.favicon` to match. Both are one line each, and together they make the admin feel like part of your product the moment an editor opens it.

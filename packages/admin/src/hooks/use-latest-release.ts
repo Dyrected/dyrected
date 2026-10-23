@@ -54,8 +54,15 @@ export function isNewerVersion(candidate: string, current: string) {
   return false;
 }
 
-export function useLatestRelease() {
+/**
+ * Latest published version of Dyrected, cached for a day.
+ *
+ * Pass `enabled: false` to skip the network request, for example when the host has
+ * switched the update panel off or the signed-in user is not an administrator.
+ */
+export function useLatestRelease({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
+    enabled,
     queryKey: RELEASE_QUERY_KEY,
     queryFn: fetchLatestRelease,
     staleTime: ONE_DAY_MS,

@@ -1095,3 +1095,4 @@ export * from "./trash.js";
 export * from "./services/email-template.js";
 export * from "./types/ai.js";
 export { z } from "zod";
+export * from "./utils/app-name.js";

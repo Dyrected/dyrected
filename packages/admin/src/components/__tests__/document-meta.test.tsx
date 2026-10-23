@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { DocumentMeta, pageLabel, humanize } from "../document-meta";
+import { DocumentMeta, pageLabel, humanize, usePublishDocumentTitle } from "../document-meta";
 import { DyrectedContext } from "../../providers/dyrected-context";
 import type { CompiledNavTree, CollectionConfig, GlobalConfig, AdminConfig } from "@dyrected/core";
 
@@ -185,6 +185,8 @@ describe("DocumentMeta & pageLabel", () => {
           admin: mockAdmin,
         },
         navigation: mockNavTree,
+        isAuthenticated: true,
+        isResolvingStoredSession: false,
       };
 
       const { unmount } = render(
@@ -198,6 +200,84 @@ describe("DocumentMeta & pageLabel", () => {
       expect(document.title).toBe("In Transit · Logistics Hub - Acme Admin");
 
       unmount();
+      expect(document.title).toBe("Host App");
+    });
+
+    const renderMeta = (context: Record<string, unknown>, path = "/collections/orders") =>
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <DyrectedContext.Provider
+            value={{ isAuthenticated: true, isResolvingStoredSession: false, navigation: mockNavTree, ...context } as any}
+          >
+            <DocumentMeta />
+          </DyrectedContext.Provider>
+        </MemoryRouter>
+      );
+    const schemasWith = (admin: AdminConfig) => ({ collections: mockCollections, globals: mockGlobals, admin });
+
+    it("never writes the Dyrected name when the host has not configured one", () => {
+      renderMeta({ schemas: schemasWith({}) });
+      expect(document.title).toBe("Orders");
+    });
+
+    it("derives the suffix from branding.appName", () => {
+      renderMeta({ schemas: schemasWith({ branding: { appName: "Acme" } }) });
+      expect(document.title).toBe("Orders - Acme");
+    });
+
+    it("uses logoText when no app name or suffix is set", () => {
+      renderMeta({ schemas: schemasWith({ branding: { logoText: "Acme" } }) });
+      expect(document.title).toBe("Orders - Acme");
+    });
+
+    it("lets an explicit suffix win, and honours an empty one", () => {
+      const { unmount } = renderMeta({
+        schemas: schemasWith({ branding: { appName: "Acme" }, meta: { titleSuffix: "— Acme Admin" } }),
+      });
+      expect(document.title).toBe("Orders — Acme Admin");
+      unmount();
+      renderMeta({ schemas: schemasWith({ branding: { appName: "Acme" }, meta: { titleSuffix: "" } }) });
+      expect(document.title).toBe("Orders");
+    });
+
+    it("does not touch the title until the schemas have loaded", () => {
+      renderMeta({ schemas: null });
+      expect(document.title).toBe("Host App");
+    });
+
+    it("does not touch the title while the stored session is still resolving", () => {
+      renderMeta({ schemas: schemasWith({ branding: { appName: "Acme" } }), isResolvingStoredSession: true });
+      expect(document.title).toBe("Host App");
+    });
+
+    it("titles the sign-in screens with the app name", () => {
+      renderMeta({ schemas: schemasWith({ branding: { appName: "Acme" } }), isAuthenticated: false }, "/");
+      expect(document.title).toBe("Sign in - Acme");
+    });
+
+    it("shows a title published by a page instead of assigning document.title itself", () => {
+      function Page() {
+        usePublishDocumentTitle("Revenue Overview");
+        return null;
+      }
+      const { unmount } = render(
+        <MemoryRouter initialEntries={["/pages/revenue"]}>
+          <DyrectedContext.Provider
+            value={{
+              isAuthenticated: true,
+              isResolvingStoredSession: false,
+              navigation: mockNavTree,
+              schemas: schemasWith({ branding: { appName: "Acme" } }),
+            } as any}
+          >
+            <DocumentMeta />
+            <Page />
+          </DyrectedContext.Provider>
+        </MemoryRouter>
+      );
+      expect(document.title).toBe("Revenue Overview - Acme");
+
+      act(() => unmount());
       expect(document.title).toBe("Host App");
     });
   });

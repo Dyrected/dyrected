@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Dyrected API",
+    "title": "API",
     "version": "1.0.0",
-    "description": "Automatically generated OpenAPI specification for the Dyrected project."
+    "description": "Automatically generated OpenAPI specification for this project."
   },
   "components": {
     "schemas": {
@@ -361,7 +361,7 @@
         "tags": [
           "System"
         ],
-        "summary": "Get the serialized Dyrected schema",
+        "summary": "Get the serialized schema",
         "security": [],
         "responses": {
           "200": {

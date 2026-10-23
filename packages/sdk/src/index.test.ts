@@ -287,6 +287,25 @@ describe('DyrectedClient', () => {
     expect(delRes).toEqual({ success: true });
   });
 
+  it('requests the navigation as another role for administrators', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ groups: [], ungrouped: [] }) });
+    await client.getNavigation({ asRole: 'external' });
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/admin/navigation?asRole=external',
+      expect.any(Object),
+    );
+    await client.getNavigation({ asRole: 'external', raw: true });
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/admin/navigation?asRole=external&raw=true',
+      expect.any(Object),
+    );
+    await client.getNavigation({ raw: true });
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'http://api.test/api/admin/navigation',
+      expect.any(Object),
+    );
+  });
+
   it('fetches navigation tree and badge counters via getNavigation and getNavigationBadges', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

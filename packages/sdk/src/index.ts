@@ -657,9 +657,21 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 
   /**
    * Fetches the dynamic runtime navigation tree compiled for the current user.
+   *
+   * The tree is already pruned by `access` and narrowed by the role menu policy.
+   * When `locked` is true an administrator has enforced the menu for the user's
+   * role and it must not be extended from personal preferences.
+   *
+   * Administrators can pass `asRole` to preview the menu another role receives
+   * (read-only). With `raw: true` the role policy is skipped, which lists every
+   * item the role could be given. Non-administrators get a 403 for `asRole`.
    */
-  async getNavigation(): Promise<CompiledNavTree> {
-    return this.request("/api/admin/navigation");
+  async getNavigation(options?: { asRole?: string; raw?: boolean }): Promise<CompiledNavTree> {
+    const params = new URLSearchParams();
+    if (options?.asRole) params.set("asRole", options.asRole);
+    if (options?.asRole && options.raw) params.set("raw", "true");
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/admin/navigation${qs}`);
   }
 
   /**

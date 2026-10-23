@@ -1894,10 +1894,14 @@ export default defineConfig({
   }),
   admin: {
     branding: {
-      logoText: "Future You Coaching",
+      // One name for the tab title, sign-in screens, sidebar, emails and API docs.
+      appName: "Future You Coaching",
+      logo: "/favicon.svg",
+      hidePoweredBy: true,
     },
-    meta: {
-      titleSuffix: "- Future You Coaching",
+    strings: {
+      "auth.signIn.title": "Welcome to {appName}",
+      "auth.signIn.subtitle": "Sign in to manage your coaching site.",
     },
     navigation: [
       // 1. Multi-view Operational Workspace:

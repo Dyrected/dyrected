@@ -17,6 +17,7 @@ import {
   spacer,
 } from "./email-template.js";
 import { getConfigLogger, getObservabilityRuntime } from "../observability.js";
+import { resolveAppName } from "../utils/app-name.js";
 
 type SendFn = (args: { to: string; subject: string; html: string }) => Promise<{ previewUrl?: string } | void>;
 
@@ -253,7 +254,7 @@ function enrichArgs<T extends Record<string, unknown>>(
     collection: slug,
     collectionLabel: collection?.labels?.singular || collection?.labels?.plural || fallbackLabel,
     collectionLabels: collection?.labels,
-    siteName: config.admin?.branding?.logoText ?? "Dyrected",
+    siteName: resolveAppName(config.admin),
   };
 }
 
@@ -321,7 +322,7 @@ export function buildWelcomeEmail(
     subject: "Welcome — your account is ready",
     html: layout({
       siteName: enriched.siteName,
-      preheader: `Your ${enriched.siteName} account is ready.`,
+      preheader: enriched.siteName ? `Your ${enriched.siteName} account is ready.` : "Your account is ready.",
       title: "Welcome — your account is ready",
       content: [
         paragraph("Your account has been created. You can now log in with:"),
@@ -365,7 +366,7 @@ export function buildInviteEmail(
     subject: "You've been invited",
     html: layout({
       siteName: enriched.siteName,
-      preheader: `You've been invited to join ${enriched.siteName}.`,
+      preheader: enriched.siteName ? `You've been invited to join ${enriched.siteName}.` : "You've been invited to join.",
       title: "You've been invited",
       content: [
         args.invitedByEmail && paragraph(`You were invited by ${args.invitedByEmail}.`),
@@ -416,7 +417,7 @@ export function buildResetPasswordEmail(
     subject: "Reset your password",
     html: layout({
       siteName: enriched.siteName,
-      preheader: `Reset your ${enriched.siteName} password.`,
+      preheader: enriched.siteName ? `Reset your ${enriched.siteName} password.` : "Reset your password.",
       title: "Reset your password",
       content: [
         resetLink
@@ -464,7 +465,7 @@ export function buildPasswordChangedEmail(
     subject: "Your password has been changed",
     html: layout({
       siteName: enriched.siteName,
-      preheader: `Your ${enriched.siteName} password was changed.`,
+      preheader: enriched.siteName ? `Your ${enriched.siteName} password was changed.` : "Your password was changed.",
       title: "Password changed",
       content: [
         paragraph("The password for this account was just changed:"),

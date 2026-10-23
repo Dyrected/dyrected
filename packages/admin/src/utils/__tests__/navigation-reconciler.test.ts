@@ -249,4 +249,111 @@ describe("Navigation Delta Reconciler", () => {
     expect(view?.metrics?.[0].scope).toBe("filtered")
     expect(view?.metrics?.[0].groupBy).toBe("tableNumber")
   })
+
+  describe("server-owned policy", () => {
+    const guarded: CompiledNavTree = {
+      groups: [
+        {
+          id: "group_ops",
+          name: "Operations",
+          slug: "operations",
+          order: 1,
+          items: [
+            {
+              id: "workspace_kyc",
+              type: "workspace",
+              slug: "kyc",
+              label: "KYC Review",
+              order: 1,
+              collection: "customers",
+              access: ["compliance"],
+              badge: "3",
+              views: [{ slug: "pending", label: "Pending", collection: "customers", access: { read: ["compliance"] } } as any],
+            },
+          ],
+        },
+      ],
+      ungrouped: [
+        { id: "link_home", type: "link", slug: "home", label: "Home", order: 1, views: [], access: ["staff"] },
+      ],
+    }
+
+    it("never lets a preference replace the access, badge or view access of a server item", () => {
+      const prefs = {
+        _version: 1,
+        items: [
+          {
+            slug: "kyc",
+            label: "Mine",
+            collection: "orders",
+            access: [],
+            badge: "999",
+            views: [{ slug: "pending", label: "Pending", access: { read: true } }],
+          },
+        ],
+      } as unknown as UserNavigationPreferences
+
+      const item = reconcileNavigation(guarded, prefs).groups[0].items[0] as any
+      expect(item.label).toBe("Mine")
+      expect(item.access).toEqual(["compliance"])
+      expect(item.badge).toBe("3")
+      expect(item.collection).toBe("customers")
+      expect(item.userDefined).toBeUndefined()
+      expect(item.views[0].access).toEqual({ read: ["compliance"] })
+    })
+
+    it("flags items injected from preferences as userDefined and drops their access and badge", () => {
+      const prefs = {
+        _version: 1,
+        items: [{ slug: "mine", label: "Mine", collection: "orders", access: [], badge: "9", views: [] }],
+      } as unknown as UserNavigationPreferences
+
+      const injected = reconcileNavigation(guarded, prefs)
+        .groups.flatMap((g) => g.items)
+        .find((i) => i.slug === "mine") as any
+      expect(injected.userDefined).toBe(true)
+      expect(injected.access).toBeUndefined()
+      expect(injected.badge).toBeUndefined()
+    })
+
+    it("does not duplicate or override a server item that lives in the ungrouped list", () => {
+      const prefs = {
+        _version: 1,
+        items: [{ slug: "home", label: "Hijacked", group: "Custom", access: [] }],
+      } as unknown as UserNavigationPreferences
+
+      const res = reconcileNavigation(guarded, prefs)
+      expect(res.groups.flatMap((g) => g.items).some((i) => i.slug === "home")).toBe(false)
+      expect(res.ungrouped[0].access).toEqual(["staff"])
+      expect(res.ungrouped[0].label).toBe("Home")
+    })
+  })
+
+  describe("allowUserItems: false (menu locked to a role policy)", () => {
+    it("ignores injected items and pins but still reorders and hides existing ones", () => {
+      const prefs = {
+        _version: 1,
+        hidden: ["collection_articles"],
+        items: [{ slug: "smuggled", label: "Smuggled", collection: "orders" }],
+        pinned: [{ type: "collection", slug: "secret" }],
+        itemOrder: { group_ops: ["collection_orders", "workspace_kyc"] },
+      } as unknown as UserNavigationPreferences
+
+      const res = reconcileNavigation(baseTree, prefs, undefined, { allowUserItems: false })
+      const slugs = res.groups.flatMap((g) => g.items.map((i) => i.slug))
+      expect(slugs).not.toContain("smuggled")
+      expect(slugs).not.toContain("articles")
+      expect(res.groups[0].items.map((i) => i.slug)).toEqual(["orders", "kyc"])
+      expect(res.pinnedItems).toHaveLength(0)
+    })
+
+    it("still lets a user rename and regroup an item the server returned", () => {
+      const prefs = {
+        _version: 1,
+        items: [{ slug: "kyc", label: "My KYC" }],
+      } as unknown as UserNavigationPreferences
+      const res = reconcileNavigation(baseTree, prefs, undefined, { allowUserItems: false })
+      expect(res.groups.flatMap((g) => g.items).find((i) => i.slug === "kyc")?.label).toBe("My KYC")
+    })
+  })
 })

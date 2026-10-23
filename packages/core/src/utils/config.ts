@@ -5,6 +5,7 @@ import { TASK_LOCKS_COLLECTION, TASK_LOCKS_COLLECTION_CONFIG } from "../tasks.js
 import { TRASH_COLLECTION, TRASH_COLLECTION_CONFIG, assertValidTrashInConfig, resolveTrashConfig } from "../trash.js";
 import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
 import { getAdminAuthCollection, isUserAdmin } from "./admin-auth.js";
+import { resolveAppName } from "./app-name.js";
 import { normalizeSchemaFragment } from "./block-references.js";
 import {
   assertValidAdminConditionsInConfig,
@@ -251,7 +252,7 @@ export const EMAIL_TEMPLATES_COLLECTION_CONFIG: CollectionConfig = {
     beforeChange: [
       async ({ data, req }: any) => {
         if (data && data.format === "html") {
-          const siteName = req?.config?.admin?.branding?.logoText || "Dyrected";
+          const siteName = resolveAppName(req?.config?.admin);
           const defaults = getDefaultEmailTemplate(data.purpose || "invite", { siteName });
           if (!data.subject) {
             data.subject = defaults.subject;

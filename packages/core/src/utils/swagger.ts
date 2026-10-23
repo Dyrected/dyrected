@@ -1,13 +1,19 @@
+const escapeTitle = (value: string) =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 /**
  * Returns a standalone HTML string for Swagger UI loading from a CDN.
  *
+ * @param options.appName - Product name shown in the page title (`<appName> API Documentation`).
+ *   When omitted the title is just "API Documentation".
  * @param specUrl - Explicit URL to the OpenAPI JSON. When omitted, the spec is
  *   resolved **at runtime, relative to the docs page** (`/api/docs` →
  *   `/api/openapi.json`). This preserves any mount prefix the app is served
  *   under (e.g. a Nuxt `apiBase: "/dyrected"` serving `/dyrected/api/docs`),
  *   which an absolute `/api/openapi.json` would drop.
  */
-export function getSwaggerHtml(specUrl?: string) {
+export function getSwaggerHtml(specUrl?: string, options?: { appName?: string }) {
+  const title = [options?.appName?.trim(), "API Documentation"].filter(Boolean).join(" ");
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -15,7 +21,7 @@ export function getSwaggerHtml(specUrl?: string) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="SwaggerUI" />
-  <title>Dyrected API Documentation</title>
+  <title>${escapeTitle(title)}</title>
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
 </head>
 <body>

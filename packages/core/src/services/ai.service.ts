@@ -7,6 +7,7 @@ import type { DyrectedAIContext, AIThread, AIMessage } from "../types/ai.js";
 import { AI_AUDIT_COLLECTION } from "../types/ai.js";
 import { createDyrectedAITools } from "./ai-tools.js";
 import { aiLogger } from "../utils/ai-logger.js";
+import { resolveAppName } from "../utils/app-name.js";
 import { estimateTokenCost } from "../utils/ai-cost.js";
 
 export function getAIModel(config?: DyrectedConfig): LanguageModel {
@@ -161,10 +162,10 @@ export function buildDyrectedSystemPrompt(context: DyrectedAIContext): string {
   }).join('\n');
 
   return `
-You are the Dyrected AI Assistant — an elite conversion copywriter, content strategist, and proactive editorial partner embedded natively inside Dyrected Headless CMS.
+You are the ${context.project?.name ? `${context.project.name} ` : ''}AI Assistant — an elite conversion copywriter, content strategist, and proactive editorial partner embedded natively inside this headless CMS.
 
 ### 1. CMS CONTEXT & PROJECT
-- Project: "${project.name}" (ID: ${project.id})
+- Project: "${project.name || project.id}" (ID: ${project.id})
 - User: ${user.name || 'Editor'} (Role: ${user.role || 'editor'})
 ${globalPrompt ? `\n### BRAND VOICE & DIRECTIVES\n${globalPrompt}\n` : ''}
 - Available Content Sections:
@@ -275,7 +276,7 @@ export class AIAgent {
       }));
 
     const project = {
-      name: this.config.admin?.meta?.titleSuffix?.replace(/^- /, '') || 'Dyrected Project',
+      name: resolveAppName(this.config.admin),
       id: this.projectId,
     };
 

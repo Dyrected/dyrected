@@ -56,6 +56,9 @@ import { usePreference } from "../../hooks/use-preferences"
 import { DEFAULT_USER_NAV_PREFERENCES } from "../../types/preferences"
 import { reconcileNavigation } from "../../utils/navigation-reconciler"
 import { canReadSchema } from "../../utils/schema-access"
+import { isNavItemVisible } from "../../utils/nav-item-visibility"
+import { resolveSidebarBrand } from "./sidebar-brand"
+import { useAdminFeatures } from "../../hooks/use-admin-features"
 import { NavigationCustomizer } from "../navigation/navigation-customizer"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -683,7 +686,8 @@ function SidebarInner({
   className?: string
 }) {
   const { client, user, navigation, badges } = useDyrected()
-  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
+  const { setupPageVisible } = useAdminFeatures()
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES, { scope: "auto" })
   const [internalCustomizing, setInternalCustomizing] = useState(false)
   const isCustomizing = isCustomizingProp !== undefined ? isCustomizingProp : internalCustomizing
   const setIsCustomizing = (val: boolean) => {
@@ -700,13 +704,11 @@ function SidebarInner({
   // preferences are reconciled against the full schema list on the client, so
   // drop any collection/global the user cannot read.
   const activeNavigation = React.useMemo(() => {
-    const reconciled = reconcileNavigation(navigation, userNavPrefs, schemas as any)
+    const reconciled = reconcileNavigation(navigation, userNavPrefs, schemas as any, {
+      allowUserItems: !navigation?.locked,
+    })
     if (!reconciled) return reconciled
-    const isVisible = (item: { type: string; slug: string }) => {
-      if (item.type === "collection") return canReadSchema(schemas?.collections?.find((c: any) => c.slug === item.slug), user)
-      if (item.type === "global") return canReadSchema(schemas?.globals?.find((g: any) => g.slug === item.slug), user)
-      return true
-    }
+    const isVisible = (item: CompiledNavItem) => isNavItemVisible(item, schemas as any, user)
     return {
       ...reconciled,
       groups: (reconciled.groups ?? [])
@@ -1075,7 +1077,7 @@ function SidebarInner({
 
   const hasCompiledDashboard = activeNavigation?.groups?.some((g) => g.items?.some((i) => i.type === "dashboard"))
   const branding = schemas?.admin?.branding;
-  const meta = schemas?.admin?.meta;
+  const { appName, brandText, logoAlt } = resolveSidebarBrand(schemas?.admin);
 
   if (isCustomizing) {
     return (
@@ -1097,12 +1099,12 @@ function SidebarInner({
           )}
         >
           <div className="dy-flex dy-items-center dy-gap-2.5 dy-min-w-0 dy-flex-1">
-            {branding?.logoText ? (
+            {brandText ? (
               collapsed ? (
                 // Collapsed: show initials in a styled pill
                 <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-rounded-md dy-bg-primary/10 dy-shrink-0">
                   <span className="dy-text-[11px] dy-font-bold dy-text-primary dy-uppercase dy-tracking-tight dy-leading-none">
-                    {branding.logoText
+                    {brandText
                       .split(" ")
                       .slice(0, 2)
                       .map((w: string) => w[0])
@@ -1112,7 +1114,7 @@ function SidebarInner({
               ) : (
                 // Expanded: full text wordmark
                 <span className="dy-font-serif dy-text-lg dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate dy-leading-none">
-                  {branding.logoText}
+                  {brandText}
                 </span>
               )
             ) : branding?.logo || branding?.logoMark ? (
@@ -1124,19 +1126,29 @@ function SidebarInner({
                       : (branding.logo || branding.logoMark),
                     client?.getBaseUrl() || ""
                   )}
-                  alt="Logo"
-                  className="dy-max-h-full dy-max-w-full dy-object-contain"
+                  alt={logoAlt}
+                  className={cn(
+                    "dy-max-h-full dy-max-w-full dy-object-contain",
+                    branding.logoDark && !collapsed && "dark:dy-hidden"
+                  )}
                 />
+                {branding.logoDark && !collapsed && (
+                  <img
+                    src={getMediaUrl(branding.logoDark, client?.getBaseUrl() || "")}
+                    alt={logoAlt}
+                    className="dy-hidden dark:dy-block dy-max-h-full dy-max-w-full dy-object-contain"
+                  />
+                )}
               </div>
             ) : (
               <div className="dy-h-7 dy-w-auto dy-flex dy-items-center dy-justify-center dy-shrink-0">
-                <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto dark:dy-hidden" />
-                <img src={logoDark} alt="Dyrected" className="dy-h-8 dy-w-auto dy-hidden dark:dy-block" />
+                <img src={logo} alt={logoAlt || "Dyrected"} className="dy-h-8 dy-w-auto dark:dy-hidden" />
+                <img src={logoDark} alt={logoAlt || "Dyrected"} className="dy-h-8 dy-w-auto dy-hidden dark:dy-block" />
               </div>
             )}
-            {!collapsed && !branding?.logoText && (
+            {!collapsed && !brandText && appName && (
               <span className="dy-font-serif dy-text-lg dy-tracking-tight dy-text-foreground dy-flex-1 dy-truncate">
-                {meta?.titleSuffix?.replace(/^- /, '') || ''}
+                {appName}
               </span>
             )}
           </div>
@@ -1391,6 +1403,7 @@ function SidebarInner({
           collapsed ? "dy-flex-col dy-gap-1.5 dy-items-center" : "dy-justify-between dy-gap-1"
         )}>
           <div className={collapsed ? "dy-w-full" : "dy-flex-1 dy-min-w-0"}>
+            {setupPageVisible && (
             <NavItem
               to="/setup"
               icon={Settings}
@@ -1407,6 +1420,7 @@ function SidebarInner({
               collapsed={collapsed}
               onClick={onNavigate}
             />
+            )}
           </div>
 
           <div className="dy-flex dy-items-center dy-gap-1">
@@ -1432,9 +1446,11 @@ function SidebarInner({
 
 function useUpdateCheck() {
   const currentVersion = (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION || "0.0.0";
-  const { data } = useLatestRelease();
+  const { systemInfo } = useAdminFeatures();
+  const { data } = useLatestRelease({ enabled: systemInfo });
 
-  if (!data?.version) return null;
+  // Update notices are for administrators who have not switched the panel off.
+  if (!systemInfo || !data?.version) return null;
 
   return {
     latestVersion: data.version,

@@ -7,6 +7,7 @@ import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
 import { decodeTokenPayload, getAdminCollectionSlug, normalizeAdminUser, type AdminUser } from "./admin-auth";
 import { DyrectedContext, type DyrectedContextType } from "./dyrected-context";
+import { clearCachedUserPreferences } from "../hooks/use-preferences";
 
 function resolveBlock(block: Block, registry: Map<string, Block>): Block {
   return {
@@ -301,6 +302,7 @@ export function DyrectedProvider({
     (nextClient?: DyrectedClient | null) => {
       localStorage.removeItem("dyrected_token");
       localStorage.removeItem("dyrected_admin_auth_collection");
+      clearCachedUserPreferences();
       try {
         document.cookie = "__dyrected_token=; path=/; max-age=0; SameSite=Lax";
         document.cookie = "dyrected_token=; path=/; max-age=0; SameSite=Lax";

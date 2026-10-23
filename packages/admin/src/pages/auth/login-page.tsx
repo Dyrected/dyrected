@@ -5,6 +5,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, KeyRound, Mail, CheckCircle2, UserPlus } from "lucide-react";
+import { AuthBrandMark, AuthPoweredBy, useAuthBranding } from "../../components/auth/auth-branding";
 
 type ViewMode = "signIn" | "forgotPassword" | "resetPassword" | "acceptInvite";
 
@@ -16,6 +17,7 @@ export function LoginPage({
   onLogin: (data: unknown) => void 
 }) {
   const { client } = useDyrected();
+  const { appName, text } = useAuthBranding();
   const [viewMode, setViewMode] = useState<ViewMode>("signIn");
   
   // Form fields
@@ -177,12 +179,17 @@ export function LoginPage({
   return (
     <div className="dy-flex dy-min-h-screen dy-items-center dy-justify-center dy-bg-background dy-px-4">
       <div className="dy-w-full dy-max-w-sm dy-space-y-8">
-        
+        <AuthBrandMark />
+
         {/* Render Title/Header according to view mode */}
         {viewMode === "signIn" && (
           <div className="dy-space-y-2 dy-text-center">
-            <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Welcome back</h1>
-            <p className="dy-text-sm dy-text-muted-foreground">Enter your credentials to access the dashboard</p>
+            <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">
+              {text("auth.signIn.title", "Welcome back")}
+            </h1>
+            <p className="dy-text-sm dy-text-muted-foreground">
+              {text("auth.signIn.subtitle", "Enter your credentials to access the dashboard")}
+            </p>
           </div>
         )}
 
@@ -203,7 +210,12 @@ export function LoginPage({
         {viewMode === "acceptInvite" && (
           <div className="dy-space-y-2 dy-text-center">
             <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Accept Invitation</h1>
-            <p className="dy-text-sm dy-text-muted-foreground">Create your password to activate your Dyrected account</p>
+            <p className="dy-text-sm dy-text-muted-foreground">
+              {text(
+                "auth.activate.subtitle",
+                appName ? `Create your password to activate your ${appName} account` : "Create your password to activate your account",
+              )}
+            </p>
           </div>
         )}
 
@@ -472,9 +484,7 @@ export function LoginPage({
           </form>
         )}
 
-        <p className="dy-text-center dy-text-xs dy-text-muted-foreground dy-uppercase dy-tracking-widest">
-          Dyrected CMS
-        </p>
+        <AuthPoweredBy />
       </div>
     </div>
   );

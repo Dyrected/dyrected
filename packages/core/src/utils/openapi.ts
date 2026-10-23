@@ -4,6 +4,7 @@ import type {
   CollectionConfig,
   GlobalConfig,
 } from "../types/index.js";
+import { resolveAppName } from "./app-name.js";
 
 function getCollectionLabels(collection: CollectionConfig) {
   return (
@@ -23,13 +24,15 @@ function getGlobalTag(global: GlobalConfig) {
  * Generate an OpenAPI 3.0 specification based on the Dyrected configuration.
  */
 export function generateOpenApi(config: DyrectedConfig) {
+  const appName = resolveAppName(config.admin);
   const spec: any = {
     openapi: "3.0.0",
     info: {
-      title: "Dyrected API",
+      title: appName ? `${appName} API` : "API",
       version: "1.0.0",
-      description:
-        "Automatically generated OpenAPI specification for the Dyrected project.",
+      description: appName
+        ? `Automatically generated OpenAPI specification for ${appName}.`
+        : "Automatically generated OpenAPI specification for this project.",
     },
     components: {
       schemas: {
@@ -141,7 +144,7 @@ export function generateOpenApi(config: DyrectedConfig) {
   spec.paths["/api/schemas"] = {
     get: {
       tags: ["System"],
-      summary: "Get the serialized Dyrected schema",
+      summary: "Get the serialized schema",
       security: [],
       responses: {
         200: { description: "Collection and global schema definitions" },

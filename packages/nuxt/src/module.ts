@@ -47,11 +47,17 @@ export interface ModuleOptions extends DyrectedConfig {
    * @default false
    */
   runTasks?: boolean;
+  /**
+   * Skip the "admin" and "API" URLs that are printed when the dev server starts.
+   * @default false
+   */
+  silent?: boolean;
 }
 
 import { NuxtModule } from "@nuxt/schema";
 import { discoverComponents, renderComponentRegistry } from "./utils/component-registry";
 import { addNitroInlineExternals } from "./utils/nitro-externals";
+import { formatStartupLines } from "./utils/startup-log";
 
 const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   meta: {
@@ -353,14 +359,11 @@ export default defineNitroPlugin(async (nitroApp) => {
     }
 
     // Log admin + API URLs when the dev server starts listening
-    nuxt.hook("listen", (_server, listener) => {
-      const base = listener.url.replace(/\/$/, "");
-      const adminSlug = options.adminPath || "cms";
-      const apiSlug = options.apiBase || "/dyrected";
-      const apiUrl = apiSlug.startsWith("http") ? apiSlug : `${base}${apiSlug}`;
-      console.log(`\n  ➜  Dyrected admin:  ${base}/${adminSlug}`);
-      console.log(`  ➜  Dyrected API:    ${apiUrl}\n`);
-    });
+    if (!options.silent) {
+      nuxt.hook("listen", (_server, listener) => {
+        for (const line of formatStartupLines(listener.url, options)) console.log(line);
+      });
+    }
 
     // Teardown database adapters & connection pools when Nuxt closes (e.g. after build or shutdown)
     nuxt.hook("close", async () => {

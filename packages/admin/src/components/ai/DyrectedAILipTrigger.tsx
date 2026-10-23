@@ -54,14 +54,23 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useDyrected } from '@/providers/dyrected-context';
+import { resolveAppName } from '@dyrected/core';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PANEL_WIDTH = 440;
 const MIN_PANEL_WIDTH = 340;
 
+/** Product name and assistant label shown to editors, from the host's configured app name. */
+function useAssistantLabels() {
+  const { schemas } = useDyrected();
+  const appName = resolveAppName(schemas?.admin);
+  return { appName, assistantName: appName ? `${appName} AI Assistant` : 'AI Assistant' };
+}
+
 export function DyrectedAILipTrigger() {
   const { schemas } = useDyrected();
+  const { assistantName } = useAssistantLabels();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const aiThreadParam = searchParams.get('aiThread');
@@ -198,7 +207,7 @@ export function DyrectedAILipTrigger() {
           {/* Docked Right Sidebar (Desktop, when Open) */}
           {isOpen && (
             <aside
-              aria-label="Dyrected AI Assistant"
+              aria-label={assistantName}
               style={{ width: `${panelWidth}px` }}
               className={cn(
                 'dy-flex dy-flex-col dy-h-full dy-border-l dy-border-border/60 dy-bg-background dy-shrink-0 dy-relative dy-z-20 dy-animate-in dy-slide-in-from-right-6 dy-duration-200',
@@ -259,7 +268,7 @@ export function DyrectedAILipTrigger() {
             <button
               type="button"
               onClick={() => handleOpen(activeThreadId)}
-              aria-label="Open Dyrected AI Assistant"
+              aria-label={`Open ${assistantName}`}
               className="dy-fixed dy-bottom-5 dy-right-5 dy-z-40 dy-flex dy-p-3.5 dy-bg-primary dy-text-primary-foreground dy-rounded-full dy-shadow-2xl active:dy-scale-95 dy-transition-transform"
             >
               <Sparkles className="dy-w-5 dy-h-5" />
@@ -1186,6 +1195,7 @@ export function DyrectedAIChatPanel({
   onClose?: () => void;
 }) {
   const { client } = useDyrected();
+  const { appName, assistantName } = useAssistantLabels();
   const queryClient = useQueryClient();
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState('');
@@ -1409,14 +1419,14 @@ export function DyrectedAIChatPanel({
   });
 
   const activeTitle = useMemo(() => {
-    if (!threadId) return 'Dyrected Assistant';
+    if (!threadId) return assistantName;
     const found = threads.find((t: any) => t.id === threadId);
     if (found?.title && found.title !== 'New Conversation') return found.title;
     if (threadMessagesData?.thread?.title && threadMessagesData.thread.title !== 'New Conversation') {
       return threadMessagesData.thread.title;
     }
-    return 'Dyrected Assistant';
-  }, [threadId, threads, threadMessagesData]);
+    return assistantName;
+  }, [threadId, threads, threadMessagesData, assistantName]);
 
   return (
     <div className="dy-flex dy-flex-col dy-h-full dy-bg-background dy-overflow-hidden">
@@ -1837,7 +1847,7 @@ export function DyrectedAIChatPanel({
                     handleSend();
                   }
                 }}
-                placeholder="Ask Dyrected anything... (Shift+Enter for newline)"
+                placeholder={`Ask ${appName || 'the assistant'} anything... (Shift+Enter for newline)`}
                 className="dy-min-h-[44px] dy-max-h-32"
               />
               <PromptInputActions>

@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "../../ui/table"
 import { useDyrected } from "../../../providers/dyrected-context"
-import { getDefaultEmailTemplate } from '@dyrected/core';
+import { getDefaultEmailTemplate, resolveAppName } from '@dyrected/core';
 
 const TEMPLATE_VARIABLES = [
   { tag: "{{url}}", label: "Action URL", description: "Invite or password reset link" },
@@ -103,7 +103,7 @@ export function EmailTemplateEditor({
   siblingData,
 }: EmailTemplateEditorProps) {
   const { user, schemas, client } = useDyrected()
-  const siteName = schemas?.admin?.branding?.logoText || "Dyrected"
+  const siteName = resolveAppName(schemas?.admin)
   const [viewMode, setViewMode] = React.useState<"split" | "editor" | "preview">("split")
   const [previewDevice, setPreviewDevice] = React.useState<"desktop" | "mobile">("desktop")
   const [isTestEmailOpen, setIsTestEmailOpen] = React.useState(false)
@@ -309,7 +309,7 @@ export function EmailTemplateEditor({
               </TableRow>
               <TableRow>
                 <TableCell className="dy-font-mono dy-text-xs dy-font-medium">siteName</TableCell>
-                <TableCell className="dy-text-xs">Dyrected App</TableCell>
+                <TableCell className="dy-text-xs">{siteName || "Your app name"}</TableCell>
                 <TableCell className="dy-text-xs dy-text-muted-foreground">
                   Application display name
                 </TableCell>
