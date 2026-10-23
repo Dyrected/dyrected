@@ -1,6 +1,6 @@
-import { render, screen, fireEvent, cleanup } from "@testing-library/react"
-import { describe, expect, it, vi, afterEach } from "vitest"
-import { MetricCards } from "../metric-cards"
+import { render, screen, fireEvent, cleanup, act } from "@testing-library/react"
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest"
+import { MetricCards, collectSubMetricNotes } from "../metric-cards"
 import type { ResolvedMetric } from "../use-view-metrics"
 
 describe("MetricCards Component", () => {
@@ -325,5 +325,77 @@ describe("MetricCards Component", () => {
     expect(subTrend.textContent).toContain("-3.5%")
     expect(subTrend.className).toContain("dy-text-rose-600")
   })
-})
 
+  describe("descriptions", () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn().mockImplementation((query: string) => ({
+          matches: true,
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      )
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    const described: ResolvedMetric[] = [
+      {
+        label: "Collected",
+        description: "Payments **received** in the last `30` days.",
+        value: 10,
+        formatted: "10",
+        filterTarget: { columnId: "status", value: "paid", operator: "eq" },
+        subMetrics: [{ label: "Cash", description: "Paid at the till.", value: 4, formatted: "4" }],
+      },
+      { label: "Plain", value: 1, formatted: "1" },
+    ]
+
+    it("shows an info button only on cards that have something to explain", () => {
+      render(<MetricCards metrics={described} />)
+      expect(screen.getByRole("button", { name: "About Collected" })).toBeTruthy()
+      expect(screen.queryByRole("button", { name: "About Plain" })).toBeNull()
+    })
+
+    it("explains the sub-metrics too, in the same popover", async () => {
+      render(<MetricCards metrics={described} />)
+      act(() => {
+        screen.getByRole("button", { name: "About Collected" }).focus()
+      })
+      expect((await screen.findAllByText(/Paid at the till\./))[0]).toBeTruthy()
+    })
+
+    it("does not toggle the card filter when the info button is used", () => {
+      const onToggleFilter = vi.fn()
+      render(<MetricCards metrics={described} onToggleFilter={onToggleFilter} />)
+      const info = screen.getByRole("button", { name: "About Collected" })
+      fireEvent.click(info)
+      fireEvent.keyDown(info, { key: "Enter" })
+      expect(onToggleFilter).not.toHaveBeenCalled()
+    })
+
+    it("lists rows that share a description once, under all their labels", () => {
+      expect(
+        collectSubMetricNotes([
+          { label: "Lagos", description: "Open orders.", value: 1, formatted: "1" },
+          { label: "Abuja", description: "Open orders.", value: 2, formatted: "2" },
+          { label: "Kano", value: 3, formatted: "3" },
+        ]),
+      ).toEqual([{ label: "Lagos, Abuja", description: "Open orders." }])
+    })
+
+    it("shortens a long label list", () => {
+      const rows = ["A", "B", "C", "D", "E"].map((label) => ({ label, description: "Same.", value: 1, formatted: "1" }))
+      expect(collectSubMetricNotes(rows)[0].label).toBe("A, B, C…")
+    })
+
+    it("returns no notes when no row has a description", () => {
+      expect(collectSubMetricNotes([{ label: "A", value: 1, formatted: "1" }])).toEqual([])
+      expect(collectSubMetricNotes(undefined)).toEqual([])
+    })
+  })
+})

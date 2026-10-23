@@ -127,6 +127,8 @@ export {
   isExternalMedia,
   resolveActiveMediaCollection,
 } from "./lib/media-utils";
+export { InfoHint, type InfoHintItem, type InfoHintProps } from "./components/ui/info-hint";
+export { InlineMarkdown } from "./lib/inline-markdown";
 export {
   DyrectedMedia,
   isMediaValue,

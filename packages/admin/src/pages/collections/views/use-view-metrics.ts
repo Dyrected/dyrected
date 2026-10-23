@@ -30,6 +30,7 @@ export interface ResolvedSubMetricGroup {
 
 export interface ResolvedSubMetric {
   label: string
+  description?: string
   value: number | string | null
   formatted: string
   color?: string
@@ -42,6 +43,7 @@ export interface ResolvedSubMetric {
 
 export interface ResolvedMetric {
   label: string
+  description?: string
   value: number | string | null
   formatted: string
   color?: string
@@ -675,6 +677,7 @@ export function useViewMetrics({
 
           return {
             label: subMetric.label,
+            description: subMetric.description,
             value: subValue,
             formatted: formatMetricValue(subValue, subMetric.format, subMetric.currency),
             color: subMetric.color,
@@ -712,6 +715,7 @@ export function useViewMetrics({
 
         return {
           label: metric.label,
+          description: metric.description,
           value,
           formatted: formatMetricValue(value, metric.format, metric.currency),
           color: metric.color,
@@ -785,6 +789,7 @@ function emptyMetric(metric: SerializedViewMetric, defaultScope?: "view" | "filt
   const effectiveScope = metric.scope ?? defaultScope ?? "view"
   return {
     label: metric.label,
+    description: metric.description,
     value: null,
     formatted: "—",
     color: metric.color,
@@ -795,6 +800,7 @@ function emptyMetric(metric: SerializedViewMetric, defaultScope?: "view" | "filt
     filterTarget: (metric as any)._filterTarget || inferFilterTargetFromWhere(metric.aggregate?.where),
     subMetrics: metric.subMetrics?.map((sub) => ({
       label: sub.label,
+      description: sub.description,
       value: null,
       formatted: "—",
       color: sub.color,

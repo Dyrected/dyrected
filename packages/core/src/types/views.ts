@@ -119,6 +119,12 @@ export interface ViewMetricTrendConfig {
 export interface ViewSubMetric {
   /** Short label for the sub-metric (e.g. "Pending", "Collected"). Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string;
+  /**
+   * Explains what this breakdown row means. Shown in the card's info popover (a tooltip on desktop,
+   * a bottom sheet on touch screens) next to the main metric description.
+   * Supports `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`.
+   */
+  description?: string;
   /** Filter scope override for this sub-metric: `'view' | 'filtered' | 'collection'`. Defaults to parent metric's scope. */
   scope?: 'view' | 'filtered' | 'collection';
   /** Dynamic breakdown: groups this sub-metric by a field or relationship, expanding into multiple sub-metric rows in the card footer. */
@@ -160,6 +166,15 @@ export interface ViewSubMetric {
 export interface ViewMetric {
   /** Title displayed on the metric card header. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string;
+  /**
+   * Explains what this number means, so people do not have to guess. Adds an info icon to the card:
+   * hovering it shows a tooltip on desktop, and tapping it opens a bottom sheet on touch screens.
+   * Supports `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`. Keep it to a short definition:
+   * what is counted, over what period, and with which filter.
+   *
+   * @example "Payments **received** in the last `30` days, before refunds."
+   */
+  description?: string;
   /** Accent color for the card's visual indicator. */
   color?: MetricColor;
   /** Unit badge shown alongside the numeric value (e.g. `"Guests"`, `"Orders"`, `"Tables"`). */

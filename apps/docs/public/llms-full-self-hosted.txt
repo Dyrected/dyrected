@@ -30874,6 +30874,98 @@ export const checkInMetric = {
 };
 ```
 
+## Explaining a metric with `description`
+
+A number is only useful if everyone reads it the same way. Add a `description` to say what a card counts, over what period, and with which filter:
+
+```ts
+
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    navigation: [
+      {
+        slug: "billing",
+        label: "Billing",
+        collection: "invoices",
+        views: [
+          defineView({
+            slug: "overview",
+            label: "Overview",
+            collection: "invoices",
+            metrics: [
+              {
+                label: "Collected",
+                description: "Payments **received** in the last `30` days, before refunds.",
+                aggregate: { sum: "amount", cast: "number", where: { status: "paid" } },
+                format: "currency",
+                currency: "USD",
+                subMetrics: [
+                  {
+                    label: "Cash",
+                    description: "Paid at the till. Card payments are counted separately.",
+                    aggregate: { sum: "amount", cast: "number", where: { method: "cash" } },
+                  },
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    ],
+  },
+});
+```
+
+Cards that have a description show a small **i** icon next to their title. Cards without one look exactly as before.
+
+- **On a computer with a mouse or trackpad:** hover the icon (or tab to it) to see a tooltip.
+- **On a phone or tablet:** tap the icon and a sheet slides up from the bottom of the screen with the title and the explanation. Tap outside it or use the close button to dismiss it.
+
+The choice follows the input device, not the window width, so a narrow desktop window still gets the tooltip. Tapping or pressing the icon never filters the view, even when the card itself is clickable.
+
+A sub-metric's `description` is listed under the card's own description in the same tooltip or sheet. If several breakdown rows share one description, which is what a `groupBy` breakdown produces, it is shown once with all their labels.
+
+### What you can write in a description
+
+Descriptions are plain text with a small, safe subset of markdown:
+
+| You write | It shows |
+| --- | --- |
+| `**bold**` | **bold** |
+| `*italic*` | *italic* |
+| `` `code` `` | `code`, useful for formulas such as `` `paid ÷ billed` `` |
+| `[the guide](https://example.com/guide)` | a link that opens in a new tab |
+
+Symbols such as `÷ × ≥ ≤ %` work as ordinary text. Headings, lists, images and HTML are not supported and appear as written.
+
+Keep links in mind:
+
+- Only full `https://`, `http://` and `mailto:` addresses become links. Anything else, such as a relative path or a `javascript:` address, shows as plain text.
+- On a computer, a description with a link opens when you click the icon instead of on hover, so you can reach the link.
+- Keep descriptions short. If a metric needs a paragraph, link to a page that explains it.
+
+### Using the same hint in your own dashboard
+
+The built-in dashboard shows recent edits and items that need attention, not numeric metrics, so there is nothing to describe there. If you build your own stats in a React [custom dashboard component](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/dashboard), reuse the same hint so it behaves identically on desktop and mobile:
+
+```tsx
+
+
+export function RevenueStat({ value }: { value: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span>Revenue</span>
+      <InfoHint title="Revenue" description="Payments **received** this month." />
+      <strong>{value}</strong>
+    </div>
+  );
+}
+```
+
+`InfoHint` and `InlineMarkdown` are exported for React components only. Vue components in a Nuxt project do not have an equivalent yet, so build the tooltip with your own markup there.
+
 ## Customizing metrics in the Admin UI
 
 Operators and administrators can customize metrics directly in the Dyrected Admin UI without editing code.
@@ -30901,6 +30993,7 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | Property | Type | Description |
 | --- | --- | --- |
 | `label` | `string` **required** | Title displayed on the metric card. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is set. |
+| `description` | `string` | Explains what the number means. Shows an info icon: a tooltip on hover, a bottom sheet on touch screens. Supports `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`. |
 | `color` | `MetricColor` | Theme palette accent (`"purple"`, `"emerald"`, `"amber"`, `"rose"`, `"blue"`, `"indigo"`, `"cyan"`, `"orange"`). |
 | `span` | `1 \| 2 \| 3 \| 4 \| 'full'` | Responsive grid column span. Defaults to `1`. Set to `2`, `3`, `4`, or `'full'` for wide hero cards. |
 | `unit` | `string` | Optional unit badge displayed alongside the hero value (e.g. `"Guests"`, `"Orders"`, `"Tables"`). |
@@ -30921,6 +31014,7 @@ Operators and administrators can customize metrics directly in the Dyrected Admi
 | Property | Type | Description |
 | --- | --- | --- |
 | `label` | `string` **required** | Label for the breakdown row. Supports `{{group.label}}` and `{{group.value}}`. |
+| `description` | `string` | Explains this breakdown row. Listed under the card's description in the same tooltip or sheet. Same inline markdown as the card. |
 | `color` | `MetricColor` | Theme accent color for this sub-metric item and its distribution bar segment. |
 | `scope` | `'view' \| 'filtered' \| 'collection'` | Scoping override for this sub-metric row. Defaults to the parent card's scope. |
 | `groupBy` | `string \| ViewMetricGroupByConfig` | Groups this sub-metric by field, relationship, or time bucket, expanding into multiple footer rows. |

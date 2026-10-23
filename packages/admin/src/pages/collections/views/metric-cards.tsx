@@ -4,6 +4,7 @@ import { Skeleton } from "../../../components/ui/skeleton"
 import { Card, CardContent } from "../../../components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover"
 import { Input } from "../../../components/ui/input"
+import { InfoHint, type InfoHintItem } from "../../../components/ui/info-hint"
 import { cn } from "../../../lib/utils"
 import type { ResolvedMetric, ResolvedSubMetric, MetricFilterTarget } from "./use-view-metrics"
 
@@ -593,6 +594,12 @@ function MetricCardItem({
               {metric.label}
             </p>
             <MetricScopeIcon scope={metric.scope} />
+            <InfoHint
+              title={metric.label}
+              description={metric.description}
+              items={collectSubMetricNotes(metric.subMetrics)}
+              className={colorStyles.header}
+            />
             {isCardActive && (
               <span className={cn("dy-inline-flex dy-items-center dy-text-[9px] dy-font-semibold dy-px-1.5 dy-py-0.5 dy-rounded-full", colorStyles.activeBadge)}>
                 Active
@@ -824,6 +831,23 @@ function MetricCardItem({
       </CardContent>
     </Card>
   )
+}
+
+/**
+ * Descriptions of a card's breakdown rows, for its info popover. Rows that share one description
+ * (which is what a `groupBy` breakdown produces) are listed once under all their labels.
+ */
+export function collectSubMetricNotes(subMetrics?: ResolvedSubMetric[]): InfoHintItem[] {
+  const byDescription = new Map<string, string[]>()
+  for (const sub of subMetrics ?? []) {
+    const description = sub.description?.trim()
+    if (!description) continue
+    byDescription.set(description, [...(byDescription.get(description) ?? []), sub.label])
+  }
+  return [...byDescription].map(([description, labels]) => ({
+    label: labels.length > 3 ? `${labels.slice(0, 3).join(", ")}…` : labels.join(", "),
+    description,
+  }))
 }
 
 export function MetricCards({

@@ -7322,6 +7322,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/model-content/operational-views/metrics#example-19",
+    "page": "/model-content/operational-views/metrics",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/model-content/operational-views/metrics#example-20",
+    "page": "/model-content/operational-views/metrics",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/model-content/operational-views/overview#example-1",
     "page": "/model-content/operational-views/overview",
     "language": "mermaid",

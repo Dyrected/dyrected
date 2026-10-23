@@ -129,6 +129,8 @@ export interface SerializedViewMetricTrendConfig {
 export interface SerializedViewSubMetric {
   /** Label describing the sub-metric value. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string
+  /** Explains what this breakdown row means. Shown in the card's info popover. Supports the same inline markdown as the metric description. */
+  description?: string
   /**
    * Filter scope override for this sub-metric:
    * - `"view"`: evaluates within the view's base filter (default)
@@ -179,6 +181,8 @@ export interface SerializedViewSubMetric {
 export interface SerializedViewMetric {
   /** Title displayed at the top of the KPI card. Supports `{{group.label}}` and `{{group.value}}` when `groupBy` is used. */
   label: string
+  /** Explains what the number means. Shown behind an info icon. Supports `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`. */
+  description?: string
   /** Visual accent color for the metric card (e.g. `"blue"`, `"emerald"`, `"amber"`, `"rose"`). */
   color?: string
   /** Unit suffix displayed after the primary value (e.g. `"guests"`, `"orders"`, `"hrs"`). */

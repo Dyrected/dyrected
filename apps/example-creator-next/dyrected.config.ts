@@ -1282,6 +1282,7 @@ const attendingGuestsView = defineView({
   metrics: [
     {
       label: "Attending Guests",
+      description: "Everyone who said **yes**, counting each guest plus their plus-ones: `leads + plus-ones`. Follows the filters you have applied.",
       color: "purple",
       unit: "Headcount",
       scope: "filtered",
@@ -1297,6 +1298,7 @@ const attendingGuestsView = defineView({
       subMetrics: [
         {
           label: "Leads",
+          description: "Guests who replied yes, not counting their plus-ones.",
           aggregate: { count: "*", where: { attending: { equals: true } } },
           trend: { dateField: "appointmentDate", period: "previous_week" },
         },
@@ -1384,6 +1386,7 @@ const asoebiPipelineView = defineKanbanView({
   metrics: [
     {
       label: "Total Orders",
+      description: "Outfits requested for the family fabric. See the [ordering guide](https://example.com/asoebi) for how orders move to *ready*.",
       color: "purple",
       unit: "Outfits",
       aggregate: { count: "*", where: { asoebi: { equals: true } } },

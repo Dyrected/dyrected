@@ -260,3 +260,6 @@ export type {
   DyrectedDefaultFormProps,
 } from "../components/forms/embedded-fields";
 export type { FormShell } from "@dyrected/core";
+
+export { InfoHint, type InfoHintItem, type InfoHintProps } from "../components/ui/info-hint";
+export { InlineMarkdown } from "../lib/inline-markdown";

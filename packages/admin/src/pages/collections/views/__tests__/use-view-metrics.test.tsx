@@ -1170,4 +1170,53 @@ describe("useViewMetrics Period-over-Period Trend Deltas (trend)", () => {
   })
 })
 
+describe("useViewMetrics descriptions", () => {
+  beforeEach(() => {
+    aggregateMock.mockReset()
+    useDyrectedMock.mockReturnValue({ client: { collection: () => ({ aggregate: aggregateMock }) } })
+  })
+
+  it("carries metric and sub-metric descriptions through to the resolved cards", async () => {
+    aggregateMock.mockResolvedValue({ m0: 10, s0_0: 4 })
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "orders",
+          viewSlug: "pending",
+          metrics: [
+            {
+              label: "Orders",
+              description: "All **open** orders.",
+              aggregate: { count: "*" },
+              subMetrics: [{ label: "Urgent", description: "Marked urgent.", aggregate: { count: "*" } }],
+            },
+          ],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    const card = result.current.data![0]
+    expect(card.description).toBe("All **open** orders.")
+    expect(card.subMetrics?.[0].description).toBe("Marked urgent.")
+  })
+
+  it("keeps the description on a card even when its numbers fail to load", async () => {
+    aggregateMock.mockRejectedValue(new Error("boom"))
+
+    const { result } = renderHook(
+      () =>
+        useViewMetrics({
+          slug: "orders",
+          viewSlug: "pending",
+          metrics: [{ label: "Orders", description: "All open orders.", aggregate: { count: "*" } }],
+        }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => expect(result.current.data?.[0]?.formatted).toBe("—"))
+    expect(result.current.data![0].description).toBe("All open orders.")
+  })
+})
 
