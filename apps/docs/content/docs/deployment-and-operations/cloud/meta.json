@@ -2,6 +2,7 @@
   "title": "Cloud",
   "runtimeDefault": "cloud",
   "pages": [
-    "overview"
+    "overview",
+    "custom-components"
   ]
 }

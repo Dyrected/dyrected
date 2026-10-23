@@ -3,11 +3,8 @@ import type { DyrectedContext } from "../app.js";
 import type { GlobalConfig } from "../types/index.js";
 import { PopulationService } from "../services/population.service.js";
 import { DefaultsService } from "../services/defaults.service.js";
-import {
-  runCollectionHooks,
-  executeFieldBeforeChange,
-  executeFieldAfterRead,
-} from "../utils/hooks.js";
+import { getFunctionRuntime } from "../runtime/function-runtime.js";
+import { hookSet, runFieldAfterRead, runFieldBeforeChange, runHooks } from "./hook-runtime.js";
 import { createReadonlyDb } from "../utils/readonly-db.js";
 import {
   applyFieldReadAccess,
@@ -75,7 +72,7 @@ export class GlobalController {
     const user = c.get("user");
 
     // Run beforeRead collection hook
-    await runCollectionHooks(this.global.hooks?.beforeRead, {
+    await runHooks(c, hookSet("global", this.global, "beforeRead"), {
       req: c.req,
       query: undefined,
       user,
@@ -119,8 +116,8 @@ export class GlobalController {
     const dataWithDefaults = DefaultsService.apply(this.global.fields, data);
 
     // Run afterRead hooks
-    const docWithCollectionHooks = await runCollectionHooks(
-      this.global.hooks?.afterRead,
+    const docWithCollectionHooks = await runHooks(c, 
+      hookSet("global", this.global, "afterRead"),
       {
         doc: dataWithDefaults,
         req: c.req,
@@ -132,7 +129,7 @@ export class GlobalController {
         path: `global:${this.global.slug}.hooks.afterRead`,
       },
     );
-    const docWithFieldHooks = await executeFieldAfterRead(
+    const docWithFieldHooks = await runFieldAfterRead(c, 
       this.global.fields,
       docWithCollectionHooks,
       user,
@@ -167,6 +164,7 @@ export class GlobalController {
         finalDoc,
         user,
         readonlyDb,
+        getFunctionRuntime(c.get("config")),
       );
     }
 
@@ -220,14 +218,14 @@ export class GlobalController {
     );
 
     // Run beforeChange hooks (field-level then collection-level)
-    let data = await executeFieldBeforeChange(
+    let data = await runFieldBeforeChange(c, 
       this.global.fields,
       sanitizedBody,
       originalDoc,
       user,
       readonlyDb,
     );
-    data = await runCollectionHooks(this.global.hooks?.beforeChange, {
+    data = await runHooks(c, hookSet("global", this.global, "beforeChange"), {
       data,
       doc: originalDoc,
       req: c.req,
@@ -242,8 +240,8 @@ export class GlobalController {
     const updated = await db.updateGlobal({ slug: this.global.slug, data });
 
     // Run afterChange global hooks (full db access)
-    await runCollectionHooks(
-      this.global.hooks?.afterChange,
+    await runHooks(c, 
+      hookSet("global", this.global, "afterChange"),
       {
         doc: updated,
         previousDoc: originalDoc,
@@ -256,7 +254,7 @@ export class GlobalController {
     );
 
     // Run afterRead hooks
-    const readDoc = await runCollectionHooks(this.global.hooks?.afterRead, {
+    const readDoc = await runHooks(c, hookSet("global", this.global, "afterRead"), {
       doc: updated,
       req: c.req,
       user,
@@ -265,7 +263,7 @@ export class GlobalController {
       surface: "global.afterRead",
       path: `global:${this.global.slug}.hooks.afterRead`,
     });
-    const finalDoc = await executeFieldAfterRead(
+    const finalDoc = await runFieldAfterRead(c, 
       this.global.fields,
       readDoc,
       user,

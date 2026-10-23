@@ -1,3 +1,4 @@
+import { getFunctionRuntime } from "./runtime/function-runtime.js";
 import type {
   CollectionConfig,
   DyrectedConfig,
@@ -266,7 +267,7 @@ export function createTrashPurgeTask(config: DyrectedConfig): TaskConfig {
                   db,
                   mode: "permanent",
                 },
-                { isolated: true },
+                { isolated: true, runtime: getFunctionRuntime(config), invocationSurface: "collection.afterDelete", collection: colSlug },
               );
             }
 

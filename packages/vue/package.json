@@ -12,7 +12,12 @@
       "require": "./dist/index.cjs"
     },
     "./dist/*.css": "./dist/*.css",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./bridge": {
+      "types": "./dist/bridge-entry.d.ts",
+      "import": "./dist/bridge.js",
+      "require": "./dist/bridge.cjs"
+    }
   },
   "files": [
     "dist"
@@ -59,5 +64,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "description": "Vue 3 integration for Dyrected CMS"
+  "description": "Vue 3 integration for Dyrected CMS",
+  "sideEffects": [
+    "**/*.css"
+  ]
 }
