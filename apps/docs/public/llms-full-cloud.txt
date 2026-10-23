@@ -8368,7 +8368,7 @@ You need to be an administrator (the same people who can publish a role default)
 4. Untick what the role should not see. Use the arrows to reorder items and groups.
 5. Turn on **Enforce this menu** and select **Save menu**.
 
-The panel at the bottom shows **What <role> sees today**, which is the menu that role actually receives right now. If you turn enforcement off, the menu is saved as a draft and the role keeps its normal menu.
+The panel at the bottom shows `What <role> sees today`, which is the menu that role actually receives right now. If you turn enforcement off, the menu is saved as a draft and the role keeps its normal menu.
 
 If you hold the role you are enforcing, the panel warns you, because the menu will limit your own sidebar too.
 
@@ -8452,7 +8452,7 @@ Workspaces that a person creates in the customizer are shown only if the person 
 
 ## Recommended path
 
-Use `access` in `dyrected.config.ts` for what a role may reach, then use a role menu to shape and enforce what it sees. Keep the role menu to the items a role needs, and check it with **What <role> sees today** before telling anyone.
+Use `access` in `dyrected.config.ts` for what a role may reach, then use a role menu to shape and enforce what it sees. Keep the role menu to the items a role needs, and check it with `What <role> sees today` before telling anyone.
 
 ---
 
@@ -29880,6 +29880,28 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/start-here/changelog
 
 Release notes and version history across all Dyrected packages.
 
+## v2.25.0
+
+- White-label the admin and enforce role menus.
+
+  **Behaviour changes to know about**
+
+  - The admin no longer adds `- Dyrected` to the browser tab title. The suffix is now `meta.titleSuffix` if set, otherwise `- <app name>`, otherwise nothing. Projects that set `titleSuffix` or `branding.logoText` see no change.
+  - Transactional emails, the API docs page, the OpenAPI title and the AI assistant no longer name "Dyrected" when no app name is configured. Set `admin.branding.appName` to name your product.
+  - Cached navigation preferences are now kept per signed-in user and cleared on sign-out. Previously one user's layout could appear for the next user on the same browser, including items they should not see.
+  - A `null` response from the preferences endpoint now resets to the default instead of keeping a stale local copy.
+
+  **New**
+
+  - `admin.branding.appName`, `logoDark`, `logoAlt`, `hidePoweredBy`; `admin.features.systemInfo` / `setupPrompt`; `admin.links.docs`; `admin.strings` for sign-in and storage copy. New helpers `resolveAppName`, `resolveTitleSuffix` and `resolveAdminString` in `@dyrected/core`.
+  - Sign-in, first-user and single sign-on screens show the configured logo and app name, and the title and favicon apply before login.
+  - Role menus: administrators can design and enforce the sidebar for a role (`admin:navigation-policy`, role scope), and preview any role with `GET /api/admin/navigation?asRole=<role>` (`client.getNavigation({ asRole, raw })`). Menus only narrow `access`, never grant it. Personal layouts cannot add items to an enforced menu.
+  - "Role Default" now takes effect: the sidebar reads personal, then role, then global, and publishing a role or global default strips the publisher's pins and own items.
+  - `silent` option for `@dyrected/nuxt` to skip the dev-server URL banner.
+  - The version lookup only runs for administrators when `features.systemInfo` is on. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/nuxt`, `@dyrected/sdk`)
+
+---
+
 ## v2.24.3
 
 - The "Protecting your own endpoints" section of the Custom Admin Pages guide now has a Nuxt server route next to the Next.js route handler. Both verify the session with `me()` and check the user's role, and both build the SDK client per request so one editor's token is never shared with another request. (`@dyrected/admin`)
@@ -30707,29 +30729,6 @@ Release notes and version history across all Dyrected packages.
   - expose config diagnostics from `/api/schemas` so admin surfaces can consume them, and improve admin dashboard attention signals around config issues
   - improve Nuxt startup and reload reporting for invalid declarative config with formatted diagnostics instead of noisy raw errors
   - document the Cloud-safe access and hooks model more clearly, including synced string policies, `createdByCurrentUser` vs `isOwner`, declarative hook contexts, and short notes about early validation for access, hooks, preview, and `admin.condition`
-
----
-
-## v2.6.3
-
-- Polish the admin editing experience with better loading and layout behavior.
-
-  - replace branded and text-only loading states with skeleton loaders across bootstrap, collections, globals, dashboard, and media views
-  - add professional not-found states for missing collections, globals, routes, and missing edit entries after loading resolves
-  - keep the desktop sidebar pinned to the viewport while the main content scrolls independently
-  - remove the nested media-page scroll container so the page uses a single parent scroll area
-  - debounce admin list and media search while keeping existing results mounted so only the results region refreshes during server-side search
-  - add a draggable desktop split view for resizing the live preview and form editor on collection edit pages
-  - make rich text editor prose respect dark mode typography tokens
-  - use configured global `admin.icon` values in the global edit header
-  - @dyrected/core@2.6.3
-  - @dyrected/sdk@2.6.3 (`@dyrected/admin`)
-
-- @dyrected/core@2.6.3
-
-- @dyrected/sdk@2.6.3 (`dyrected`, `@dyrected/next`)
-
-- @dyrected/react@2.6.3 (`@dyrected/next`)
 
 ---
 

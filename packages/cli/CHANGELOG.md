@@ -1,5 +1,13 @@
 # dyrected
 
+## 2.25.0
+
+### Patch Changes
+
+- Updated dependencies [d5ce626]
+  - @dyrected/core@2.25.0
+  - @dyrected/sdk@2.25.0
+
 ## 2.24.3
 
 ### Patch Changes

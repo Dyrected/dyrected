@@ -1623,7 +1623,7 @@
     "id": "editor-experience--white-labeling",
     "relativePath": "editor-experience/white-labeling",
     "title": "White-Labeling",
-    "description": "Make the admin read as your product: one app name for the tab, sign-in screens, sidebar, emails and API docs, plus switches to hide the developer-facing parts.",
+    "description": "Make the admin read as your product with one app name for the tab, sign-in screens, sidebar, emails and API docs, plus switches to hide the developer-facing parts.",
     "runtime": "variant",
     "runtimeGroup": "",
     "runtimeNotes": "",
