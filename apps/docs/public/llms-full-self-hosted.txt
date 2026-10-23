@@ -1064,7 +1064,7 @@ The table below is generated from a representative maximal configuration so it c
 | PUT | `/api/preferences/{key}` | Set an authenticated user preference | Required |
 | GET | `/api/preview-data` | Resolve preview data from a token | Public |
 | POST | `/api/preview-token` | Create a preview token | Required |
-| GET | `/api/schemas` | Get the serialized Dyrected schema | Public |
+| GET | `/api/schemas` | Get the serialized schema | Public |
 
 ---
 
@@ -1676,7 +1676,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
 | <code>getPreference</code> (optional) |  |
 | <code>setPreference</code> (optional) |  |
 | <code>deletePreference</code> (optional) |  |
-| <code>getNavigation</code> (required) | Fetches the dynamic runtime navigation tree compiled for the current user. |
+| <code>getNavigation</code> (optional) | Fetches the dynamic runtime navigation tree compiled for the current user.  The tree is already pruned by &#96;access&#96; and narrowed by the role menu policy. When &#96;locked&#96; is true an administrator has enforced the menu for the user's role and it must not be extended from personal preferences.  Administrators can pass &#96;asRole&#96; to preview the menu another role receives (read-only). With &#96;raw: true&#96; the role policy is skipped, which lists every item the role could be given. Non-administrators get a 403 for &#96;asRole&#96;. |
 | <code>getNavigationBadges</code> (optional) | Fetches real-time badge counts and status for navigation items. |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
@@ -14234,7 +14234,7 @@ The admin combines the current page with your suffix and updates the tab as the 
 - `New Post — Acme CMS` while creating a post
 - `Edit Post — Acme CMS` while editing one
 
-The page part comes from your collection and global labels, so it stays readable without any extra configuration. If you don't set `titleSuffix`, the admin uses `- Dyrected` as the default.
+The page part comes from your collection and global labels, so it stays readable without any extra configuration. If you don't set `titleSuffix`, the admin builds one from your app name (`- Acme` when `admin.branding.appName` is `"Acme"`), and shows no suffix at all if no name is configured. It never adds `- Dyrected`. See [White-Labeling](https://docs.dyrected.com/docs/self-hosted/editor-experience/white-labeling) for the app name.
 
 ## The favicon
 
@@ -14258,7 +14258,7 @@ If you run the admin inside your own app (rather than the hosted admin), it take
 
 ## Recommended path
 
-Set `admin.meta.titleSuffix` to your product name so every admin tab is recognizable, and set `admin.branding.favicon` to match. Both are one line each, and together they make the admin feel like part of your product the moment an editor opens it.
+Set `admin.branding.appName` to your product name so every admin tab is recognizable (or `admin.meta.titleSuffix` if you want a custom separator), and set `admin.branding.favicon` to match. Both are one line each, and together they make the admin feel like part of your product the moment an editor opens it.
 
 ---
 
@@ -14452,6 +14452,15 @@ A `GET` applies the cascade for the signed-in user. Add `?scope=global` to read 
 ## Recommended path
 
 Let editors manage their own views with the **View** button — that's the whole point, and it needs no configuration. Set `admin.defaultColumns` so a fresh list looks right before anyone touches it, and publish a team default with **Save for Everyone** once you've landed on a layout that works for the group. Reach for the SDK only when you're building something custom on top of the same store.
+
+## Navigation layouts
+
+The sidebar layout an editor builds with **Customize Navigation** is a preference too, saved under `admin:navigation`. It resolves through the same cascade: the editor's own layout, then the layout an administrator published for their role, then a global one. **Reset** in the customizer removes the editor's own layout so the shared one shows again.
+
+Two things are worth knowing if you read or write this preference from your own code:
+
+- The browser cache of a layout is kept per signed-in user and cleared on sign-out, so a layout never carries over to the next person on the same browser.
+- A layout can reorder, rename, hide and regroup items the server returned. Items that the server did not return are only shown when the person can read the collection behind them, and not at all when an administrator has enforced a menu for the role. See [Role Menus](https://docs.dyrected.com/docs/self-hosted/editor-experience/role-menus).
 
 ---
 
@@ -16345,6 +16354,122 @@ The controller layer exists underneath these APIs so the behavior stays consiste
 
 ---
 
+## Role Menus
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/role-menus
+
+A role menu is the sidebar you design for a role. When you enforce it, people in that role see exactly that menu. They can reorder and rename what you gave them, but they cannot add anything else, even from a saved layout.
+
+By the end of this page you will have built an enforced menu for a role, previewed it, and know how it interacts with `access` rules and personal layouts.
+
+## What a role menu does and does not do
+
+A role menu only ever narrows the sidebar. Your `access` rules still decide who may see an item, and the role menu is applied after them. The final menu is:
+
+> everything the person can access, limited to what the role menu allows
+
+So adding an item to a role menu can never reveal something the role's `access` rules deny.
+
+A role menu is also not a permission. Hiding a collection from a role's menu does not stop that role from calling its API. To block access, use `access` on the collection.
+
+## Design a menu for a role
+
+You need to be an administrator (the same people who can publish a role default).
+
+1. Open the sidebar and select **Customize Navigation** (the sliders icon).
+2. Select **Role Menu**.
+3. Choose the role. The list shows everything that role could be given, based on its `access` rules.
+4. Untick what the role should not see. Use the arrows to reorder items and groups.
+5. Turn on **Enforce this menu** and select **Save menu**.
+
+The panel at the bottom shows **What <role> sees today**, which is the menu that role actually receives right now. If you turn enforcement off, the menu is saved as a draft and the role keeps its normal menu.
+
+If you hold the role you are enforcing, the panel warns you, because the menu will limit your own sidebar too.
+
+### What people in the role see
+
+- Items you unticked are gone, and so are items you add to your config later. A new collection does not appear for the role until you add it to the menu.
+- They can still reorder, rename and hide items from the menu you gave them.
+- The **Workspace** button in their customizer is hidden, and any workspace or pinned shortcut they saved earlier is ignored.
+
+### When someone has more than one role
+
+A person is limited by a role menu only if every role they hold has an enforced menu. If any of their roles has no enforced menu, they keep their full, access-filtered menu. When all their roles are enforced, they see the combination of what those menus allow.
+
+## Preview a role's menu
+
+Administrators can ask the server for the menu a role receives. This is read-only, and it needs an administrator's token.
+
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+
+```ts
+// app/api/preview-menu/route.ts
+
+
+export async function GET(request: Request) {
+  const role = new URL(request.url).searchParams.get("role") ?? "external";
+  const token = (await cookies()).get("dyrected-token")?.value;
+
+  const response = await fetch(
+    `${process.env.DYRECTED_URL}/api/admin/navigation?asRole=${encodeURIComponent(role)}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+
+  return new Response(response.body, { status: response.status });
+}
+```
+
+</Tab>
+<Tab value="Nuxt">
+
+```ts
+// server/api/preview-menu.get.ts
+export default defineEventHandler(async (event) => {
+  const role = String(getQuery(event).role ?? "external");
+  const token = getCookie(event, "dyrected_token_users");
+
+  return await $fetch(`${process.env.DYRECTED_URL}/api/admin/navigation`, {
+    query: { asRole: role },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+});
+```
+
+</Tab>
+</Tabs>
+
+Add `raw=true` to list everything the role could be given, before its role menu is applied. A non-administrator gets a `403`.
+
+The response is the same tree the sidebar uses. When it has `"locked": true`, an enforced role menu produced it.
+
+## Saved layouts versus enforced menus
+
+There are two ways to give a role a layout, and they behave differently:
+
+| | Role default | Role menu |
+| --- | --- | --- |
+| Where | **Role Default** button in the customizer | **Role Menu** button in the customizer |
+| Enforced | No. It is a starting layout. | Yes, when **Enforce** is on. |
+| Personal changes | A person's own layout overrides it. | Cannot add or restore items. |
+| What it stores | Order, hidden items and groups only | The allowed items plus order |
+
+A role default is used when a person has not saved a layout of their own. Resetting a layout in the customizer removes the person's own version, so the role default shows again.
+
+A role default never carries the publisher's personal shortcuts or workspaces. Only order, hidden items, groups and moves of items that already exist are kept.
+
+## Your layout does not follow you to the next person
+
+Customized layouts are remembered per person, in that person's browser and on the server. When one person signs out and another signs in on the same browser, the second person never starts from the first person's layout.
+
+Workspaces that a person creates in the customizer are shown only if the person can read the collection they point at. They have no access rule of their own, so this check is what keeps them from showing data the person should not see.
+
+## Recommended path
+
+Use `access` in `dyrected.config.ts` for what a role may reach, then use a role menu to shape and enforce what it sees. Keep the role menu to the items a role needs, and check it with **What <role> sees today** before telling anyone.
+
+---
+
 ## Spreadsheet View
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/spreadsheet-view
@@ -16558,6 +16683,199 @@ Then use `useAdminTheme()` anywhere below it for toggles, themed roots, and them
 There is a lower-level controller layer behind this, but most readers can ignore it.
 
 If your product app already has its own theme state and the admin is only one embedded surface inside it, do not promote `useAdminTheme()` to become the app-wide source of truth. Keep the preference at the host-app level and pass it into `DyrectedAdmin` through its theme props instead.
+
+---
+
+## White-Labeling
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/white-labeling
+
+White-labeling means editors see your product's name and logo everywhere, and never the name of the CMS underneath. You set one value, `admin.branding.appName`, and the admin uses it in the browser tab, the sign-in screens, the sidebar, transactional emails, the API documentation page and the AI assistant.
+
+By the end of this page you will have a branded sign-in screen, a branded tab title, and the developer-only parts of the admin switched off for your editors.
+
+## Set your app name
+
+Add `appName` to `admin.branding` in your `dyrected.config.ts`. This works the same in a Next.js app and a Nuxt app, because the config file is shared:
+
+```ts
+
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    branding: {
+      appName: "Acme",
+    },
+  },
+});
+```
+
+That one line is enough to get:
+
+- a tab title like `Posts - Acme`
+- `Acme` shown in the sidebar when you have not set a logo
+- `Create your password to activate your Acme account` on the invite screen
+- `Acme` in the header of invite, reset-password and welcome emails
+- `Acme API Documentation` as the title of the API docs page
+
+If you do not set an app name, the admin shows no product name at all. It never falls back to "Dyrected". The one exception is the small "Dyrected CMS" credit on the sign-in screens, which you hide separately (see [Hide the developer-facing parts](#hide-the-developer-facing-parts)).
+
+### Where the name comes from if you have not set `appName`
+
+Projects that were already branded keep working. The admin looks for a name in this order and uses the first one it finds:
+
+1. `admin.branding.appName`
+2. `admin.branding.logoText`
+3. the name inside `admin.meta.titleSuffix`, without its leading `-` or `—`
+
+So a project with `titleSuffix: "— Acme Admin"` shows `Acme Admin` in the sidebar and emails without any change.
+
+## Add your logo
+
+Set the logo images under `branding`. Put the files in your app's `public/` folder (the same folder in Next.js and Nuxt), so the paths below resolve:
+
+```ts
+
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    branding: {
+      appName: "Acme",
+      logo: "/logo.svg",
+      logoDark: "/logo-dark.svg",
+      logoMark: "/logo-mark.svg",
+      logoAlt: "Acme Studio",
+    },
+  },
+});
+```
+
+| Option | What it does |
+| --- | --- |
+| `logo` | The full logo, shown in the expanded sidebar and above the heading on every sign-in screen. |
+| `logoDark` | The same logo for dark mode. If you leave it out, `logo` is used in both themes. |
+| `logoMark` | A compact square mark for the collapsed sidebar. Also used on sign-in screens when there is no `logo`. |
+| `logoText` | A text wordmark. Used when you have no logo image. |
+| `logoAlt` | The description screen readers announce for the logo. Defaults to the app name. |
+
+The sign-in screens pick the first of `logo`, `logoMark`, `logoText` and the app name that you have set. If you have set none of them, no brand is shown above the heading.
+
+> Sign-in screens show your logo before anyone has signed in. That works because the branding is part of the public schema response, so there is nothing extra to expose or configure.
+
+## The browser tab title
+
+The tab title is the page name plus a suffix. By default the suffix is `- ` followed by your app name:
+
+```ts
+admin: {
+  branding: { appName: "Acme" },
+}
+```
+
+gives `Posts - Acme`. To use a different separator or wording, set the suffix yourself:
+
+```ts
+admin: {
+  branding: { appName: "Acme" },
+  meta: { titleSuffix: "— Acme Admin" },
+}
+```
+
+Set `titleSuffix` to an empty string (`""`) to show the page name alone. The sign-in screens use the same rule, so the tab reads `Sign in - Acme` before login.
+
+You do not need to worry about a flash of the wrong name while the page loads. The admin leaves the title alone until it has loaded your configuration.
+
+## Hide the developer-facing parts
+
+Some screens are for the developer who set the project up, not for your editors. Switch them off with `features` and `links`:
+
+```ts
+
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    branding: {
+      appName: "Acme",
+      hidePoweredBy: true,
+    },
+    features: {
+      systemInfo: false,
+      setupPrompt: false,
+    },
+    links: {
+      docs: false,
+    },
+  },
+});
+```
+
+| Option | Default | What it controls |
+| --- | --- | --- |
+| `branding.hidePoweredBy` | `false` | The "Dyrected CMS" credit at the bottom of the sign-in and first-user screens. |
+| `features.systemInfo` | `true` | The **System Info & Updates** panel: version number, update notices and the upgrade command. Even when on, only administrators see it, and only administrators trigger the version lookup. |
+| `features.setupPrompt` | `true` | The **Setup** screen that generates an AI prompt for wiring up a website. |
+| `links.docs` | `"https://docs.dyrected.com"` | Where "Developer docs" links point. A URL replaces it, and `false` removes the link. |
+
+When both `systemInfo` and `setupPrompt` are off, or when only `systemInfo` is on and the person is not an administrator, the **Setup** entry disappears from the sidebar and `/setup` sends the editor to the dashboard.
+
+## Change the wording
+
+For sign-in headings and a few messages you can replace the text with `admin.strings`. Every key is optional, and `{appName}` is replaced with your app name:
+
+```ts
+admin: {
+  branding: { appName: "Acme" },
+  strings: {
+    "auth.signIn.title": "Welcome to {appName}",
+    "auth.signIn.subtitle": "Sign in to manage your content.",
+  },
+}
+```
+
+| Key | Where it appears |
+| --- | --- |
+| `auth.signIn.title` | Heading on the sign-in screen (and on the single sign-on screen). |
+| `auth.signIn.subtitle` | Text under that heading. |
+| `auth.firstUser.title` | Heading when creating the very first account. |
+| `auth.firstUser.subtitle` | Text under that heading. |
+| `auth.activate.subtitle` | The sentence above the password fields when someone activates an invited account. |
+| `media.storageMissing` | The message shown when file uploads are not configured. |
+
+Anything you do not override keeps the built-in text. Only the strings in this table can be overridden.
+
+## Emails and the API docs page
+
+Transactional emails use your app name in the header and in the subject lines that name the product. If you have not set a name, the emails are worded without one (for example "You've been invited") rather than naming Dyrected. You can still replace any email completely, as described in [Editor accounts](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/overview).
+
+The API documentation page at `/api/docs` and the OpenAPI document at `/api/openapi.json` use `Acme API Documentation` and `Acme API` in the same way.
+
+## Quieter dev server
+
+In a Nuxt project the module prints the admin and API addresses when the dev server starts. Turn that off with `silent`:
+
+```ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    silent: true,
+  },
+});
+```
+
+## Browser storage names
+
+The admin keeps a few values in the browser's `localStorage`, and your own code may read them. These names are stable, so you can rely on them:
+
+| Key | What it holds |
+| --- | --- |
+| `dyrected_token` | The signed-in editor's session token. |
+| `dyrected_pref_u:<collection>:<id>:<scope>_<key>` | A cached preference for one signed-in user (for example their navigation layout). It is removed on sign-out. |
+| `dyrected_pref_<scope>_<key>` | A cached preference that is shared by everyone on this browser, such as the colour theme. |
+
+If you embed the admin in Next.js or Nuxt and need the token on the server, read it from the cookie instead of `localStorage`: `dyrected-token` in a Next.js app and `dyrected_token_<slug>` in a Nuxt app, as described in [Cookie Strategy](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/authentication/cookie-strategy).
 
 ---
 
@@ -23870,8 +24188,35 @@ export interface AdminConfig {
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {
+    /**
+     * The name editors know your product by, for example `"Acme Studio"`.
+     *
+     * This is the one place to set it. It is used in the browser tab title, the
+     * sign-in screens, the sidebar (when no logo is set), transactional emails,
+     * the API documentation page and the AI assistant. When omitted, Dyrected
+     * falls back to {@link logoText}, then to the name in `meta.titleSuffix`, and
+     * finally shows no product name at all. It never falls back to "Dyrected".
+     * @example 'Acme Studio'
+     */
+    appName?: string;
     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
     logo?: string;
+    /**
+     * Logo variant for dark mode, used wherever {@link logo} is shown (sidebar and
+     * sign-in screens). When omitted, {@link logo} is used in both themes.
+     */
+    logoDark?: string;
+    /**
+     * Accessible description of the logo image (its `alt` text). Defaults to the
+     * resolved app name.
+     */
+    logoAlt?: string;
+    /**
+     * Hide the "Dyrected CMS" credit shown at the bottom of the sign-in and
+     * first-user screens.
+     * @default false
+     */
+    hidePoweredBy?: boolean;
     /** Compact logo mark used in the collapsed sidebar state. */
     logoMark?: string;
     /** Text alternative or addition to the logo image. */
@@ -23912,11 +24257,52 @@ export interface AdminConfig {
   };
   meta?: {
     /**
-     * String appended to every Admin page's `<title>`.
-     * @default '- Dyrected'
+     * String appended to every Admin page's `<title>`, for example `'- Acme Studio'`.
+     *
+     * When omitted it is derived from `branding.appName` (as `- <appName>`), so most
+     * projects only need to set the app name. If no name is configured anywhere the
+     * title has no suffix.
      */
     titleSuffix?: string;
   };
+  /**
+   * Switches for parts of the admin that are aimed at developers rather than editors.
+   * Turn them off when you ship the admin to clients under your own brand.
+   */
+  features?: {
+    /**
+     * Show the "System Info & Updates" panel (version, update notices, upgrade command).
+     * The panel is only ever shown to administrators.
+     * @default true
+     */
+    systemInfo?: boolean;
+    /**
+     * Show the "Set up" screen that generates an AI prompt for wiring a website to this CMS.
+     * @default true
+     */
+    setupPrompt?: boolean;
+  };
+  /**
+   * Where help links in the admin point.
+   */
+  links?: {
+    /**
+     * Documentation URL used by "Help" and "Docs" links. Set to `false` to hide them.
+     * @default 'https://docs.dyrected.com'
+     */
+    docs?: string | false;
+  };
+  /**
+   * Overrides for the user-facing wording of the admin. Every key is optional; missing
+   * keys use the built-in text. `{appName}` in a value is replaced with the resolved app name.
+   *
+   * @example
+   * strings: {
+   *   'auth.signIn.title': 'Welcome to {appName}',
+   *   'auth.signIn.subtitle': 'Sign in to manage your content.',
+   * }
+   */
+  strings?: AdminStrings;
   /**
    * The canonical/base URL of the frontend website for links and iframe live previews.
    */
@@ -23937,6 +24323,9 @@ export interface AdminConfig {
 | <code>components</code> (optional) | Custom component slots around the built-in dashboard. |
 | <code>branding</code> (optional) |  |
 | <code>meta</code> (optional) |  |
+| <code>features</code> (optional) | Switches for parts of the admin that are aimed at developers rather than editors. Turn them off when you ship the admin to clients under your own brand. |
+| <code>links</code> (optional) | Where help links in the admin point. |
+| <code>strings</code> (optional) | Overrides for the user-facing wording of the admin. Every key is optional; missing keys use the built-in text. &#96;&#123;appName&#125;&#96; in a value is replaced with the resolved app name. |
 | <code>siteUrl</code> (optional) | The canonical/base URL of the frontend website for links and iframe live previews. |
 | <code>adminUrl</code> (optional) | Public URL of the Admin UI, used for links in invite and password-reset emails. Falls back to the &#96;DYRECTED_ADMIN_URL&#96; env var, then the page the admin is running on, then &#96;/admin&#96; (resolved against the request origin). |
 

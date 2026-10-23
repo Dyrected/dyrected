@@ -177,7 +177,7 @@ export function layout({ preheader, title, content, footer, siteName }: LayoutOp
         row(
           table(
             row("&nbsp;", `height:5px;background:${emailTokens.colors.accent};font-size:0;line-height:0`) +
-              row(`${sectionLabel(siteName ?? "Dyrected")}${heading(title)}`, "padding:30px 32px 24px") +
+              row(`${siteName?.trim() ? sectionLabel(siteName) : ""}${heading(title)}`, "padding:30px 32px 24px") +
               row(resolvedContent, "padding:0 32px 32px") +
               row(
                 `${divider()}${paragraph(resolvedFooter, "20px 0 6px")}${paragraph("Privacy: this message contains account-related information; please avoid forwarding it.", "10px 0px 0px 0px", "12px")}`,
@@ -203,15 +203,17 @@ export function getDefaultEmailTemplate(
   purpose: "invite" | "resetPassword" | "welcome" | "passwordChanged" | string,
   options?: { siteName?: string },
 ): { subject: string; rawHtml: string } {
-  const siteName = options?.siteName ?? "Dyrected";
+  const siteName = options?.siteName?.trim() ?? "";
+  // Without a configured app name the copy stays neutral instead of naming the CMS.
+  const account = siteName ? `${siteName} account` : "account";
 
   switch (purpose) {
     case "invite":
       return {
-        subject: `You've been invited to ${siteName}`,
+        subject: siteName ? `You've been invited to ${siteName}` : "You've been invited",
         rawHtml: layout({
           siteName,
-          preheader: `You've been invited to join ${siteName}.`,
+          preheader: siteName ? `You've been invited to join ${siteName}.` : "You've been invited to join.",
           title: "You've been invited",
           content: [
             paragraph("Use the invitation link below to create your account. The link expires in 7 days."),
@@ -228,7 +230,7 @@ export function getDefaultEmailTemplate(
         subject: "Reset your password",
         rawHtml: layout({
           siteName,
-          preheader: `Reset your ${siteName} password.`,
+          preheader: siteName ? `Reset your ${siteName} password.` : "Reset your password.",
           title: "Reset your password",
           content: [
             paragraph("We received a request to reset your password. The reset link expires in 1 hour."),
@@ -242,10 +244,10 @@ export function getDefaultEmailTemplate(
       };
     case "welcome":
       return {
-        subject: `Welcome to ${siteName} — your account is ready`,
+        subject: siteName ? `Welcome to ${siteName} — your account is ready` : "Welcome — your account is ready",
         rawHtml: layout({
           siteName,
-          preheader: `Your ${siteName} account is ready.`,
+          preheader: `Your ${account} is ready.`,
           title: "Welcome — your account is ready",
           content: [paragraph("Your account has been created. You can now log in with:"), detailBox("{{email}}")],
           footer: "If you didn't create this account, you can safely ignore this email.",
@@ -256,7 +258,7 @@ export function getDefaultEmailTemplate(
         subject: "Your password has been changed",
         rawHtml: layout({
           siteName,
-          preheader: `Your ${siteName} password was changed.`,
+          preheader: siteName ? `Your ${siteName} password was changed.` : "Your password was changed.",
           title: "Password changed",
           content: [
             paragraph("The password for your account has been changed."),
@@ -267,12 +269,12 @@ export function getDefaultEmailTemplate(
       };
     default:
       return {
-        subject: `Notification from ${siteName}`,
+        subject: siteName ? `Notification from ${siteName}` : "Account notification",
         rawHtml: layout({
           siteName,
-          preheader: `Account notification from ${siteName}.`,
+          preheader: siteName ? `Account notification from ${siteName}.` : "Account notification.",
           title: "Account Notification",
-          content: [paragraph(`This is an account notification from ${siteName}.`)],
+          content: [paragraph(siteName ? `This is an account notification from ${siteName}.` : "This is an account notification.")],
           footer: "If you have any questions, please reach out to our team.",
         }),
       };

@@ -79,7 +79,7 @@ export function isStorageNotConfiguredError(error: unknown): boolean {
  */
 export function formatMediaErrorMessage(error: unknown): string {
   if (isStorageNotConfiguredError(error)) {
-    return "Media storage is not configured yet. Please ask your developer to set up a storage provider in Dyrected."
+    return "Media storage is not configured yet. Please ask your developer to set up a storage provider."
   }
   if (error instanceof Error) return error.message
   if (typeof error === "string") return error

@@ -1,6 +1,9 @@
 import { HardDrive, Wrench, ArrowRight } from "lucide-react"
 import { Button } from "../ui/button"
 import { Link } from "react-router-dom"
+import { resolveAdminString } from "@dyrected/core"
+import { useDyrected } from "../../providers/dyrected-context"
+import { useAdminFeatures } from "../../hooks/use-admin-features"
 
 interface StorageNotConfiguredNoticeProps {
   variant?: "banner" | "inline"
@@ -13,6 +16,9 @@ export function StorageNotConfiguredNotice({
   className = "",
   showSetupLink = true,
 }: StorageNotConfiguredNoticeProps) {
+  const { schemas } = useDyrected()
+  const { setupPageVisible } = useAdminFeatures()
+  const admin = schemas?.admin
   if (variant === "inline") {
     return (
       <div className={`dy-rounded-xl dy-border dy-border-amber-500/30 dy-bg-amber-500/10 dy-p-4 dy-text-amber-900 dark:dy-text-amber-200 ${className}`}>
@@ -21,7 +27,11 @@ export function StorageNotConfiguredNotice({
           <div className="dy-space-y-1">
             <p className="dy-text-sm dy-font-semibold">Media storage isn't set up yet</p>
             <p className="dy-text-xs dy-opacity-90 dy-leading-relaxed">
-              File uploads require a storage provider (such as AWS S3, Cloudinary, Backblaze B2, or local storage). Please ask your developer or system administrator to configure media storage in Dyrected.
+              {resolveAdminString(
+                admin,
+                "media.storageMissing",
+                "File uploads require a storage provider (such as AWS S3, Cloudinary, Backblaze B2, or local storage). Please ask your developer or system administrator to configure media storage.",
+              )}
             </p>
           </div>
         </div>
@@ -43,11 +53,15 @@ export function StorageNotConfiguredNotice({
               Media storage isn't set up yet
             </h4>
             <p className="dy-text-xs dy-text-muted-foreground dy-leading-relaxed">
-              File uploads are currently unavailable because a media storage provider (such as AWS S3, Cloudinary, Backblaze B2, or local storage) hasn't been configured. Please ask your developer or system administrator to add a storage adapter to your Dyrected config.
+              {resolveAdminString(
+                admin,
+                "media.storageMissing",
+                "File uploads are currently unavailable because a media storage provider (such as AWS S3, Cloudinary, Backblaze B2, or local storage) hasn't been configured. Please ask your developer or system administrator to add a storage adapter to the project configuration.",
+              )}
             </p>
           </div>
         </div>
-        {showSetupLink && (
+        {showSetupLink && setupPageVisible && (
           <div className="dy-flex-shrink-0">
             <Button asChild variant="outline" size="sm" className="dy-h-9 dy-gap-2 dy-border-amber-500/30 hover:dy-bg-amber-500/10">
               <Link to="/setup">

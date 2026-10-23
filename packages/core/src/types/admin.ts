@@ -68,6 +68,25 @@ export interface CollectionListComponentSlots extends DocumentFormComponentSlots
 }
 
 /**
+ * Keys of the admin copy that can be overridden with `admin.strings`.
+ *
+ * - `auth.signIn.title` / `auth.signIn.subtitle`: heading and subtitle on the sign-in screen.
+ * - `auth.firstUser.title` / `auth.firstUser.subtitle`: heading and subtitle when creating the first account.
+ * - `auth.activate.subtitle`: sentence shown above the password field when activating an account.
+ * - `media.storageMissing`: message shown when file uploads are not configured.
+ */
+export type AdminStringKey =
+  | "auth.signIn.title"
+  | "auth.signIn.subtitle"
+  | "auth.firstUser.title"
+  | "auth.firstUser.subtitle"
+  | "auth.activate.subtitle"
+  | "media.storageMissing";
+
+/** Map of overridable admin copy. See {@link AdminStringKey}. */
+export type AdminStrings = Partial<Record<AdminStringKey, string>>;
+
+/**
  * Branding and metadata options for the Dyrected Admin UI.
  *
  * @example
@@ -92,8 +111,35 @@ export interface AdminConfig {
   /** Custom component slots around the built-in dashboard. */
   components?: AdminDashboardComponentSlots;
   branding?: {
+    /**
+     * The name editors know your product by, for example `"Acme Studio"`.
+     *
+     * This is the one place to set it. It is used in the browser tab title, the
+     * sign-in screens, the sidebar (when no logo is set), transactional emails,
+     * the API documentation page and the AI assistant. When omitted, Dyrected
+     * falls back to {@link logoText}, then to the name in `meta.titleSuffix`, and
+     * finally shows no product name at all. It never falls back to "Dyrected".
+     * @example 'Acme Studio'
+     */
+    appName?: string;
     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
     logo?: string;
+    /**
+     * Logo variant for dark mode, used wherever {@link logo} is shown (sidebar and
+     * sign-in screens). When omitted, {@link logo} is used in both themes.
+     */
+    logoDark?: string;
+    /**
+     * Accessible description of the logo image (its `alt` text). Defaults to the
+     * resolved app name.
+     */
+    logoAlt?: string;
+    /**
+     * Hide the "Dyrected CMS" credit shown at the bottom of the sign-in and
+     * first-user screens.
+     * @default false
+     */
+    hidePoweredBy?: boolean;
     /** Compact logo mark used in the collapsed sidebar state. */
     logoMark?: string;
     /** Text alternative or addition to the logo image. */
@@ -134,11 +180,52 @@ export interface AdminConfig {
   };
   meta?: {
     /**
-     * String appended to every Admin page's `<title>`.
-     * @default '- Dyrected'
+     * String appended to every Admin page's `<title>`, for example `'- Acme Studio'`.
+     *
+     * When omitted it is derived from `branding.appName` (as `- <appName>`), so most
+     * projects only need to set the app name. If no name is configured anywhere the
+     * title has no suffix.
      */
     titleSuffix?: string;
   };
+  /**
+   * Switches for parts of the admin that are aimed at developers rather than editors.
+   * Turn them off when you ship the admin to clients under your own brand.
+   */
+  features?: {
+    /**
+     * Show the "System Info & Updates" panel (version, update notices, upgrade command).
+     * The panel is only ever shown to administrators.
+     * @default true
+     */
+    systemInfo?: boolean;
+    /**
+     * Show the "Set up" screen that generates an AI prompt for wiring a website to this CMS.
+     * @default true
+     */
+    setupPrompt?: boolean;
+  };
+  /**
+   * Where help links in the admin point.
+   */
+  links?: {
+    /**
+     * Documentation URL used by "Help" and "Docs" links. Set to `false` to hide them.
+     * @default 'https://docs.dyrected.com'
+     */
+    docs?: string | false;
+  };
+  /**
+   * Overrides for the user-facing wording of the admin. Every key is optional; missing
+   * keys use the built-in text. `{appName}` in a value is replaced with the resolved app name.
+   *
+   * @example
+   * strings: {
+   *   'auth.signIn.title': 'Welcome to {appName}',
+   *   'auth.signIn.subtitle': 'Sign in to manage your content.',
+   * }
+   */
+  strings?: AdminStrings;
   /**
    * The canonical/base URL of the frontend website for links and iframe live previews.
    */

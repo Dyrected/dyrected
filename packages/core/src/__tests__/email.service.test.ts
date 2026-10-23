@@ -33,7 +33,6 @@ describe('default email templates', () => {
       expect(html).toContain('<title>');
       expect(html).toContain('role="presentation"');
       expect(html).toContain('max-width:600px');
-      expect(html).toContain('Dyrected');
       expect(html).toContain('Privacy:');
       expect(html).not.toContain('<style');
     }
@@ -86,6 +85,7 @@ describe('default email templates', () => {
 
   it('prioritizes collection templates over global config templates', () => {
     const globalConfig = {
+      admin: { branding: { appName: 'Acme' } },
       email: {
         from: 'global@example.com',
         send: vi.fn(),
@@ -111,7 +111,7 @@ describe('default email templates', () => {
 
     const result = buildInviteEmail(globalConfig, { token: 'tok_123' }, collection);
     expect(result).toEqual({
-      subject: 'Investor Invite for Dyrected',
+      subject: 'Investor Invite for Acme',
       html: '<p>Welcome Investor, token is tok_123</p>',
     });
   });
@@ -133,6 +133,7 @@ describe('default email templates', () => {
     ]);
 
     const globalConfig = {
+      admin: { branding: { appName: 'Acme' } },
       email: {
         from: 'global@example.com',
         send: vi.fn(),
@@ -166,7 +167,7 @@ describe('default email templates', () => {
     });
 
     expect(result).toEqual({
-      subject: 'DB Override: Join Dyrected',
+      subject: 'DB Override: Join Acme',
       html: '<h1>Welcome Jane</h1><p>Link: https://invest.app/accept?token=tok_abc</p>',
     });
   });
@@ -326,4 +327,35 @@ describe('POST /api/__email_templates/test', () => {
       }),
     );
   }, 15000);
+});
+
+describe('white-labelled email branding', () => {
+  const html = (msg: any) => (typeof msg.html === 'string' ? msg.html : '');
+
+  it('never names Dyrected when the host has not configured an app name', () => {
+    const empty = {} as unknown as DyrectedConfig;
+    for (const msg of [
+      buildWelcomeEmail(empty, { email: 'person@example.com' }),
+      buildInviteEmail(empty, { token: 't' }),
+      buildResetPasswordEmail(empty, { token: 't', url: 'https://example.com/r' }),
+      buildPasswordChangedEmail(empty, { email: 'person@example.com' }),
+    ]) {
+      expect(html(msg)).not.toContain('Dyrected');
+      expect((msg as any).subject).not.toContain('Dyrected');
+    }
+  });
+
+  it('uses the configured app name in the header and subject', () => {
+    const branded = { admin: { branding: { appName: 'Acme Studio' } } } as unknown as DyrectedConfig;
+    const msg: any = buildInviteEmail(branded, { token: 't' });
+    expect(html(msg)).toContain('Acme Studio');
+    expect(html(msg)).toContain('invited to join Acme Studio.');
+  });
+
+  it('falls back to logoText and then the title suffix', () => {
+    const fromLogo = { admin: { branding: { logoText: 'Acme' } } } as unknown as DyrectedConfig;
+    const fromSuffix = { admin: { meta: { titleSuffix: '— Acme Admin' } } } as unknown as DyrectedConfig;
+    expect(html(buildInviteEmail(fromLogo, { token: 't' }))).toContain('Acme');
+    expect(html(buildInviteEmail(fromSuffix, { token: 't' }))).toContain('Acme Admin');
+  });
 });

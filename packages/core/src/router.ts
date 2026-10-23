@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { DyrectedContext } from "./app.js";
-import type { DyrectedConfig, CompiledNavItem, ViewConfig } from "./types/index.js";
+import type { DyrectedConfig, CompiledNavItem, CompiledNavTree, ViewConfig } from "./types/index.js";
 import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";
@@ -17,6 +17,13 @@ import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig, isUserAdmin } from "./utils/admin-auth.js";
 import { compileNavigation, pruneNavigationByAccess, resolveAllCollectionViews } from "./utils/navigation.js";
 import { reconcileNavigation } from "./utils/navigation-reconciler.js";
+import {
+  applyNavigationRolePolicies,
+  parseNavigationRolePolicy,
+  sanitizeNavigationLayout,
+} from "./utils/navigation-policy.js";
+import { NAVIGATION_POLICY_KEY } from "./types/navigation.js";
+import { resolveAppName } from "./utils/app-name.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
 import { resolveAccess } from "./auth/access.js";
 import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
@@ -677,7 +684,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   });
 
   app.get("/api/docs", (c) => {
-    return c.html(getSwaggerHtml());
+    return c.html(getSwaggerHtml(undefined, { appName: resolveAppName(config.admin) }));
   });
 
   app.get("/api/preferences/:key", optionalAuth(config), async (c) => {
@@ -778,6 +785,27 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     const body = await c.req.json().catch(() => ({}));
+
+    // Shared navigation values (role/global defaults and role policies) reach other
+    // users, so they are validated and stripped of anything user-specific.
+    if (key === NAVIGATION_POLICY_KEY) {
+      if (scope !== "role") {
+        return c.json(
+          { error: true, message: "Navigation policies are stored per role (scope=role)." },
+          400,
+        );
+      }
+      const policy = parseNavigationRolePolicy(body.value, compileNavigation(config));
+      if (!policy) {
+        return c.json(
+          { error: true, message: "Invalid navigation policy: expected { enforced: boolean, allowed: string[] }." },
+          400,
+        );
+      }
+      body.value = policy;
+    } else if (key === "admin:navigation" && (scope === "role" || scope === "global")) {
+      body.value = sanitizeNavigationLayout(body.value, compileNavigation(config));
+    }
 
     if (scope === "global") {
       const userCol = config.collections?.find((col) => col.slug === user?.collection);
@@ -951,8 +979,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   // rule (boolean, Jexl, function, named policy) goes through the same
   // resolver the API enforces. Row-level constraints still allow the item (the
   // user can read some rows); anything that fails to resolve is denied.
-  const createNavAccessChecker = (c: any) => {
-    const user = c.get("user");
+  const createNavAccessChecker = (c: any, userOverride?: any) => {
+    const user = userOverride ?? c.get("user");
     const roles = new Set<string>([...(user?.role ? [user.role] : []), ...(Array.isArray(user?.roles) ? user.roles : [])]);
     const args = { user, req: toHookRequestContext(c.req) };
     const allows = async (rule: unknown): Promise<boolean> => {
@@ -972,11 +1000,55 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   };
 
   // Dynamic Navigation and Badges endpoints
-  app.get("/api/admin/navigation", optionalAuth(config), async (c) => {
+  // Loads the enforced menu policy of each role the user holds (null when a role has none).
+  const loadNavigationPolicies = async (user: any, compiled: CompiledNavTree) => {
+    const db = config.db;
+    const roles: string[] = [
+      ...new Set<string>([
+        ...(typeof user?.role === "string" ? [user.role] : []),
+        ...(Array.isArray(user?.roles) ? user.roles : []),
+      ]),
+    ];
+    if (!db) return [];
+    return Promise.all(
+      roles.map(async (role) => {
+        try {
+          const doc = await db.findOne({
+            collection: "__role_preferences",
+            id: `${role}_${NAVIGATION_POLICY_KEY}`,
+          });
+          return doc ? parseNavigationRolePolicy(doc.value, compiled) : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+  };
+
+  // The menu a user actually gets: the compiled tree pruned by access, then narrowed
+  // by the role menu policy when the administrator has enforced one.
+  const resolveNavigationForUser = async (c: any, user?: any, options?: { ignorePolicy?: boolean }) => {
     const compiled = compileNavigation(config);
-    const { canAccess, canAccessView } = createNavAccessChecker(c);
+    const { canAccess, canAccessView } = createNavAccessChecker(c, user);
     const pruned = await pruneNavigationByAccess(compiled, canAccess, canAccessView);
-    return c.json(pruned);
+    if (options?.ignorePolicy) return pruned;
+    return applyNavigationRolePolicies(pruned, await loadNavigationPolicies(user ?? c.get("user"), compiled));
+  };
+
+  app.get("/api/admin/navigation", optionalAuth(config), async (c) => {
+    const asRole = c.req.query("asRole");
+    if (!asRole) return c.json(await resolveNavigationForUser(c));
+
+    // "View as role": administrators can preview the menu a role receives. `raw=true`
+    // skips the role policy so the editor can list everything the role may be given.
+    const user = c.get("user");
+    if (!user) return c.json({ error: true, message: "Authentication required." }, 401);
+    const userCol = config.collections?.find((col) => col.slug === user.collection);
+    if (!isUserAdmin(user, userCol)) {
+      return c.json({ error: true, message: "Only administrators can view navigation as another role." }, 403);
+    }
+    const asUser = { ...user, role: asRole, roles: [asRole] };
+    return c.json(await resolveNavigationForUser(c, asUser, { ignorePolicy: c.req.query("raw") === "true" }));
   });
 
   app.on(["GET", "POST"], "/api/admin/navigation/badges", optionalAuth(config), async (c) => {
@@ -1013,6 +1085,25 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     }
 
     if (!userNavPrefs) {
+      const userRoles: string[] = [
+        ...(typeof user?.role === "string" ? [user.role] : []),
+        ...(Array.isArray(user?.roles) ? user.roles : []),
+      ];
+      for (const role of userRoles) {
+        try {
+          const roleDoc = await db.findOne({
+            collection: "__role_preferences",
+            id: `${role}_admin:navigation`,
+          });
+          if (roleDoc?.value) {
+            userNavPrefs = roleDoc.value;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    if (!userNavPrefs) {
       try {
         const globalDoc = await db.findOne({
           collection: "__global_preferences",
@@ -1024,31 +1115,36 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       } catch {}
     }
 
+    // The base tree is what this user's menu really contains (access pruned, role
+    // policy applied). Preferences can only rearrange it, and cannot add anything
+    // to a menu locked to a role policy, so badges are never computed for hidden items.
+    const baseTree = await resolveNavigationForUser(c);
     let allItems: CompiledNavItem[];
     if (userNavPrefs) {
-      const reconciled = reconcileNavigation(compiled, userNavPrefs, {
-        collections: config.collections as any,
-        globals: config.globals as any,
-      });
+      const reconciled = reconcileNavigation(
+        baseTree,
+        userNavPrefs,
+        {
+          collections: config.collections as any,
+          globals: config.globals as any,
+        },
+        { allowUserItems: !baseTree.locked },
+      );
       allItems = [
         ...(reconciled.ungrouped || []),
         ...(reconciled.pinnedItems || []),
         ...(reconciled.groups || []).flatMap((g) => g.items || []),
       ];
-    } else {
-      const pruned = await pruneNavigationByAccess(compiled, createNavAccessChecker(c).canAccess);
-      allItems = [
-        ...pruned.ungrouped,
-        ...pruned.groups.flatMap((g) => g.items),
-      ];
-    }
-
-    // Reconciled (user-customized) navigation bypasses compile-time pruning,
-    // so enforce access here too and never compute badges for hidden items.
-    if (userNavPrefs) {
+      // Items a user injected carry no access rule of their own; enforce the ones
+      // the server tree defines.
       const { canAccess } = createNavAccessChecker(c);
       const allowed = await Promise.all(allItems.map((item) => canAccess(item)));
       allItems = allItems.filter((_, i) => allowed[i]);
+    } else {
+      allItems = [
+        ...baseTree.ungrouped,
+        ...baseTree.groups.flatMap((g) => g.items),
+      ];
     }
 
     const badges: Record<string, { count: number | string; variant?: string }> = {};
@@ -1396,7 +1492,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       return c.json({ error: true, message: "A valid recipient email address is required" }, 400);
     }
 
-    const siteName = config.admin?.branding?.logoText || "Dyrected";
+    const siteName = resolveAppName(config.admin);
     let appUrl = config.admin?.siteUrl;
     if (!appUrl) {
       try {

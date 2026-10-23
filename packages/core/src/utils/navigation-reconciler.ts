@@ -16,7 +16,9 @@ const normalizeKey = (val?: string) => (val || "").toLowerCase().replace(/[^a-z0
  * Reconciles developer-defined navigation tree from code (`baseTree`)
  * with operator personal/role preferences (`prefs`), ensuring:
  * 1. Sparse delta merging (newly deployed code resources are never dropped).
- * 2. User-created custom groups and operational workspaces are injected.
+ * 2. User-created custom groups and operational workspaces are injected. Items
+ *    already in the server tree keep the server's `access` and `badge`; a
+ *    preference can never replace them. Injected items are flagged `userDefined`.
  * 3. User visibility overrides (`hidden`) are respected.
  * 4. User ordering overrides (`groupOrder`, `itemOrder`) are applied.
  * 5. Pinned favorite shortcuts are extracted.
@@ -29,6 +31,13 @@ export interface ReconcileNavigationOptions {
    * If false (default), hidden groups, items, and views are omitted.
    */
   includeHidden?: boolean;
+  /**
+   * If false, preferences can only reorder, rename, regroup or hide items that
+   * already exist in the base tree. Items and pins the base tree does not contain
+   * are ignored. Use this when the server has locked the user's menu to a role
+   * policy. Defaults to true.
+   */
+  allowUserItems?: boolean;
 }
 
 export function reconcileNavigation(
@@ -46,6 +55,7 @@ export function reconcileNavigation(
   }
 
   const includeHidden = options?.includeHidden ?? false;
+  const allowUserItems = options?.allowUserItems ?? true;
   const effectivePrefs = prefs || DEFAULT_USER_NAV_PREFERENCES;
   const hiddenSet = new Set(effectivePrefs.hidden || []);
   const knownCollectionSlugs = new Set((schemas?.collections || []).map((c) => c.slug));
@@ -90,9 +100,18 @@ export function reconcileNavigation(
     }
   }
 
+  // Ungrouped server items are not re-homed by preferences; a preference that
+  // names one must not duplicate it or override its access.
+  const ungroupedKeys = new Set<string>();
+  for (const item of baseTree.ungrouped || []) {
+    ungroupedKeys.add(item.id);
+    if (item.slug) ungroupedKeys.add(item.slug);
+  }
+
   // 2. Inject user-created nav items from preferences
   for (const itemOpt of effectivePrefs.items || []) {
     const itemId = itemOpt.slug ? `workspace_${itemOpt.slug}` : (itemOpt.collection ? `collection_${itemOpt.collection}` : `custom_${Math.random()}`);
+    if (ungroupedKeys.has(itemId) || (itemOpt.slug && ungroupedKeys.has(itemOpt.slug))) continue;
 
     // Find if this item already exists in any base group
     let existingItem: CompiledNavItem | undefined;
@@ -105,6 +124,8 @@ export function reconcileNavigation(
         break;
       }
     }
+
+    if (!existingItem && !allowUserItems) continue;
 
     const targetGroup = typeof itemOpt.group === "object" ? itemOpt.group?.name : (itemOpt.group || existingParentGroup?.name || "Custom");
     const groupKey = targetGroup;
@@ -142,7 +163,8 @@ export function reconcileNavigation(
     const baseViews = existingItem?.views || [];
     const userViews = (itemOpt.views || []).map((uv) => {
       const bv = baseViews.find((b) => b.slug === uv.slug);
-      if (!bv) return uv;
+      // View access rules come from the server tree only, never from preferences.
+      if (!bv) return { ...uv, access: undefined };
 
       // Inherit metricsScope from base view if not explicitly set on user view
       const metricsScope = uv.metricsScope ?? bv.metricsScope;
@@ -168,6 +190,7 @@ export function reconcileNavigation(
       return {
         ...bv,
         ...uv,
+        access: bv.access,
         metricsScope,
         metrics,
       };
@@ -210,10 +233,12 @@ export function reconcileNavigation(
       group: group.name,
       order: itemOpt.order ?? existingItem?.order ?? 100,
       views: mergedViews,
-      collection: itemOpt.collection || existingItem?.collection,
-      global: itemOpt.global || existingItem?.global,
-      badge: itemOpt.badge || existingItem?.badge,
-      access: itemOpt.access || existingItem?.access,
+      collection: existingItem?.collection || itemOpt.collection,
+      global: existingItem?.global || itemOpt.global,
+      // Access and badges are policy/server-computed: only the server tree may set them.
+      badge: existingItem?.badge,
+      access: existingItem?.access,
+      ...(existingItem ? (existingItem.userDefined ? { userDefined: true } : {}) : { userDefined: true }),
     };
 
     if (existingIndex >= 0) {
@@ -339,7 +364,7 @@ export function reconcileNavigation(
         label: pin.label || match.label,
         icon: pin.icon || match.icon,
       });
-    } else {
+    } else if (allowUserItems) {
       // Pinned item was custom or direct link
       pinnedItems.push({
         id: `pin_${pin.slug}`,

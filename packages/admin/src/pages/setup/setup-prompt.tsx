@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowUpRight, Check, Copy } from "lucide-react";
 import { buildGuideUrl, buildPrompt } from "./utils";
 import { isNewerVersion, useLatestRelease } from "../../hooks/use-latest-release";
+import { useAdminFeatures } from "../../hooks/use-admin-features";
 
 export interface SetupPromptConfig {
   siteName?: string;
@@ -17,30 +18,29 @@ export interface SetupPromptProps {
   config: SetupPromptConfig;
 }
 
-const DOCS_URL = "https://docs.dyrected.com";
-
 const steps = [
   "Paste the prompt into your AI builder — the same one that owns the website code.",
   'Review the content list the AI sends back. Correct anything missing or wrong, then say "approved".',
-  "Your Dyrected credentials are already in the prompt. The AI will use them at Stage 4.",
-  "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
+  "Your credentials are already in the prompt. The AI will use them at Stage 4.",
+  "Test one real edit in the admin. If the change appears on the website, invite the client.",
 ];
 
 const stepsNoCredentials = [
   "Paste the prompt into your AI builder — the same one that owns the website code.",
   'Review the content list the AI sends back. Correct anything missing or wrong, then say "approved".',
   "When the AI reaches Stage 4, it will ask for your Site ID, Site API key, and Base URL.",
-  "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
+  "Test one real edit in the admin. If the change appears on the website, invite the client.",
 ];
 
 const stepsSelfHosted = [
   "Paste the prompt into your AI builder — the same one that owns the website code.",
   'Review the content list the AI sends back. Correct anything missing or wrong, then say "approved".',
   "When the AI reaches Stage 4, it will ask for the self-hosted connection and security details it still needs.",
-  "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
+  "Test one real edit in the admin. If the change appears on the website, invite the client.",
 ];
 
 export function SetupPromptUI({ config }: SetupPromptProps) {
+  const { setupPrompt, systemInfo, docsUrl } = useAdminFeatures();
   const [copied, setCopied] = useState(false);
   const guideUrl = buildGuideUrl(config);
   const hasCredentials = !!(
@@ -69,13 +69,14 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const currentVersion =
     (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION ||
     "0.0.0";
-  const { data: latestRelease } = useLatestRelease();
+  const { data: latestRelease } = useLatestRelease({ enabled: systemInfo });
   const latestVersion = latestRelease?.version ?? null;
   const hasUpdate = latestVersion ? isNewerVersion(latestVersion, currentVersion) : false;
 
   return (
     <div className="dy-mx-auto dy-max-w-3xl dy-space-y-10 dy-px-4 dy-py-8">
       {/* Version and Updates */}
+      {systemInfo && (
       <div className="dy-rounded-xl dy-border dy-border-border dy-bg-muted/30 dy-p-5 dy-space-y-3">
         <h2 className="dy-text-sm dy-font-semibold dy-text-foreground">
           System Info & Updates
@@ -129,11 +130,14 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           )}
         </div>
       </div>
+      )}
 
+      {setupPrompt && (
+      <>
       {/* Header */}
       <div className="dy-space-y-2">
         <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight dy-text-foreground">
-          Set up Dyrected
+          Set up your site
         </h1>
         <p className="dy-text-sm dy-leading-6 dy-text-muted-foreground">
           Copy the prompt below and paste it into your AI builder. It handles
@@ -161,7 +165,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
         <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border dy-px-4 dy-py-3">
           <div>
             <p className="dy-text-xs dy-font-semibold dy-uppercase dy-tracking-[0.12em] dy-text-muted-foreground">
-              Dyrected setup prompt
+              Setup prompt
             </p>
             {hasCredentials && (
               <p className="dy-mt-0.5 dy-text-xs dy-text-muted-foreground">
@@ -194,7 +198,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
             Paste this into the AI builder or code agent that can edit the
             website code.
             {!hasCredentials &&
-              " The prompt will ask for your Dyrected details at the right stage."}
+              " The prompt will ask for your connection details at the right stage."}
           </p>
         </div>
       </div>
@@ -210,21 +214,25 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           Full guide
           <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
         </a>
-        <span
-          className="dy-hidden dy-text-muted-foreground sm:dy-inline"
-          aria-hidden="true"
-        >
-          ·
-        </span>
-        <a
-          href={DOCS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-sm dy-text-muted-foreground dy-underline-offset-4 hover:dy-text-foreground hover:dy-underline"
-        >
-          Developer docs
-          <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
-        </a>
+        {docsUrl && (
+          <>
+            <span
+              className="dy-hidden dy-text-muted-foreground sm:dy-inline"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-sm dy-text-muted-foreground dy-underline-offset-4 hover:dy-text-foreground hover:dy-underline"
+            >
+              Developer docs
+              <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
+            </a>
+          </>
+        )}
         {apiDocsUrl && (
           <>
             <span
@@ -245,6 +253,8 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           </>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

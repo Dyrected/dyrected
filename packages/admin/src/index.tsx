@@ -47,6 +47,7 @@ import { MediaPage } from "./pages/media/media-page";
 import { GlobalDetailPage } from "./pages/globals/detail-page";
 import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
+import { useAdminFeatures } from "./hooks/use-admin-features";
 import { ErrorBoundary } from "./components/error-boundary";
 import { DocumentMeta } from "./components/document-meta";
 import { AuthGate } from "./components/auth/auth-gate";
@@ -311,6 +312,9 @@ function CollectionRoute() {
 
 function SetupPage() {
   const { config } = useDyrected();
+  const { setupPageVisible } = useAdminFeatures();
+  // The host switched off everything this page shows; send editors home instead of an empty page.
+  if (!setupPageVisible) return <Navigate to="/" replace />;
   return <SetupPromptUI config={config} />;
 }
 
@@ -349,10 +353,11 @@ function RootLandingRoute() {
 
 function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: string) => void, isEmbedded?: boolean }) {
   return (
+    <>
+    <DocumentMeta />
     <AuthGate>
       <AdminShell isEmbedded={isEmbedded}>
         <NavigationSync onNavigate={onNavigate} />
-        <DocumentMeta />
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<RootLandingRoute />} />
@@ -382,6 +387,7 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
         </ErrorBoundary>
       </AdminShell>
     </AuthGate>
+    </>
   );
 }
 

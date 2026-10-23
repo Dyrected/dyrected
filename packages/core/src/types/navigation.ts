@@ -133,6 +133,13 @@ export interface CompiledNavItem {
   global?: string;
   page?: PageConfig;
   views: ViewConfig[];
+  /**
+   * Set by `reconcileNavigation` on items that came from a user's navigation
+   * preferences and do not exist in the server-built tree. They carry no `access`
+   * rule of their own, so consumers must check the user can read the collection
+   * or global they point at before showing them.
+   */
+  userDefined?: boolean;
 }
 
 /**
@@ -154,6 +161,12 @@ export interface CompiledNavGroup {
 export interface CompiledNavTree {
   groups: CompiledNavGroup[];
   ungrouped: CompiledNavItem[];
+  /**
+   * True when an administrator has enforced a menu for the user's role. A locked
+   * tree is the complete menu: clients must not add items from personal
+   * preferences (`reconcileNavigation` with `allowUserItems: false`).
+   */
+  locked?: boolean;
 }
 
 export interface PinnedNavItemRef {
@@ -172,6 +185,26 @@ export interface UserNavigationPreferences {
   itemOrder?: Record<string, string[]>; // groupSlug -> array of nav item slugs/IDs
   groups?: NavGroup[]; // User-created groups
   items?: DefineWorkspaceOptions[]; // User-created nav items / operational workspaces
+}
+
+/** Preference key under which an administrator's enforced menu for a role is stored (role scope). */
+export const NAVIGATION_POLICY_KEY = "admin:navigation-policy";
+
+/**
+ * A menu an administrator has designed for a role.
+ *
+ * When `enforced` is true, users whose roles are all covered by an enforced
+ * policy see only the items listed in `allowed` (that they also pass `access`
+ * for), arranged by `layout`. Personal preferences cannot add anything back.
+ */
+export interface NavigationRolePolicy {
+  _version: number;
+  /** When false the policy is stored but ignored. */
+  enforced: boolean;
+  /** Ids or slugs of the navigation items this role may see. */
+  allowed: string[];
+  /** Order, groups and renames applied to the allowed items. */
+  layout?: Pick<UserNavigationPreferences, "_version" | "hidden" | "groupOrder" | "itemOrder" | "groups" | "items">;
 }
 
 export const CURRENT_NAV_PREFERENCES_VERSION = 1;

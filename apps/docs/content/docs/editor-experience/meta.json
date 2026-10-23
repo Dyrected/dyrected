@@ -21,6 +21,8 @@
     "custom-components",
     "preferences",
     "metadata",
+    "white-labeling",
+    "role-menus",
     "---Hooks & Composables---",
     "react-hooks",
     "form-and-field-hooks",

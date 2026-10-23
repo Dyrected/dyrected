@@ -32,7 +32,7 @@ export function AdminThemeProvider({
   children: React.ReactNode
   controller?: AdminThemeController
 }) {
-  const [theme, setTheme] = usePreferences<AdminThemePreference>("theme", "system")
+  const [theme, setTheme] = usePreferences<AdminThemePreference>("theme", "system", { localScope: "device" })
   const [internalController] = React.useState(() =>
     createAdminThemeController({
       theme,

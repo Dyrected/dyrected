@@ -1,0 +1,191 @@
+---
+title: White-Labeling
+description: Make the admin read as your product: one app name for the tab, sign-in screens, sidebar, emails and API docs, plus switches to hide the developer-facing parts.
+---
+
+White-labeling means editors see your product's name and logo everywhere, and never the name of the CMS underneath. You set one value, `admin.branding.appName`, and the admin uses it in the browser tab, the sign-in screens, the sidebar, transactional emails, the API documentation page and the AI assistant.
+
+By the end of this page you will have a branded sign-in screen, a branded tab title, and the developer-only parts of the admin switched off for your editors.
+
+## Set your app name
+
+Add `appName` to `admin.branding` in your `dyrected.config.ts`. This works the same in a Next.js app and a Nuxt app, because the config file is shared:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    branding: {
+      appName: "Acme",
+    },
+  },
+});
+```
+
+That one line is enough to get:
+
+- a tab title like `Posts - Acme`
+- `Acme` shown in the sidebar when you have not set a logo
+- `Create your password to activate your Acme account` on the invite screen
+- `Acme` in the header of invite, reset-password and welcome emails
+- `Acme API Documentation` as the title of the API docs page
+
+If you do not set an app name, the admin shows no product name at all. It never falls back to "Dyrected". The one exception is the small "Dyrected CMS" credit on the sign-in screens, which you hide separately (see [Hide the developer-facing parts](#hide-the-developer-facing-parts)).
+
+### Where the name comes from if you have not set `appName`
+
+Projects that were already branded keep working. The admin looks for a name in this order and uses the first one it finds:
+
+1. `admin.branding.appName`
+2. `admin.branding.logoText`
+3. the name inside `admin.meta.titleSuffix`, without its leading `-` or `—`
+
+So a project with `titleSuffix: "— Acme Admin"` shows `Acme Admin` in the sidebar and emails without any change.
+
+## Add your logo
+
+Set the logo images under `branding`. Put the files in your app's `public/` folder (the same folder in Next.js and Nuxt), so the paths below resolve:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    branding: {
+      appName: "Acme",
+      logo: "/logo.svg",
+      logoDark: "/logo-dark.svg",
+      logoMark: "/logo-mark.svg",
+      logoAlt: "Acme Studio",
+    },
+  },
+});
+```
+
+| Option | What it does |
+| --- | --- |
+| `logo` | The full logo, shown in the expanded sidebar and above the heading on every sign-in screen. |
+| `logoDark` | The same logo for dark mode. If you leave it out, `logo` is used in both themes. |
+| `logoMark` | A compact square mark for the collapsed sidebar. Also used on sign-in screens when there is no `logo`. |
+| `logoText` | A text wordmark. Used when you have no logo image. |
+| `logoAlt` | The description screen readers announce for the logo. Defaults to the app name. |
+
+The sign-in screens pick the first of `logo`, `logoMark`, `logoText` and the app name that you have set. If you have set none of them, no brand is shown above the heading.
+
+> Sign-in screens show your logo before anyone has signed in. That works because the branding is part of the public schema response, so there is nothing extra to expose or configure.
+
+## The browser tab title
+
+The tab title is the page name plus a suffix. By default the suffix is `- ` followed by your app name:
+
+```ts
+admin: {
+  branding: { appName: "Acme" },
+}
+```
+
+gives `Posts - Acme`. To use a different separator or wording, set the suffix yourself:
+
+```ts
+admin: {
+  branding: { appName: "Acme" },
+  meta: { titleSuffix: "— Acme Admin" },
+}
+```
+
+Set `titleSuffix` to an empty string (`""`) to show the page name alone. The sign-in screens use the same rule, so the tab reads `Sign in - Acme` before login.
+
+You do not need to worry about a flash of the wrong name while the page loads. The admin leaves the title alone until it has loaded your configuration.
+
+## Hide the developer-facing parts
+
+Some screens are for the developer who set the project up, not for your editors. Switch them off with `features` and `links`:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  collections: [],
+  admin: {
+    branding: {
+      appName: "Acme",
+      hidePoweredBy: true,
+    },
+    features: {
+      systemInfo: false,
+      setupPrompt: false,
+    },
+    links: {
+      docs: false,
+    },
+  },
+});
+```
+
+| Option | Default | What it controls |
+| --- | --- | --- |
+| `branding.hidePoweredBy` | `false` | The "Dyrected CMS" credit at the bottom of the sign-in and first-user screens. |
+| `features.systemInfo` | `true` | The **System Info & Updates** panel: version number, update notices and the upgrade command. Even when on, only administrators see it, and only administrators trigger the version lookup. |
+| `features.setupPrompt` | `true` | The **Setup** screen that generates an AI prompt for wiring up a website. |
+| `links.docs` | `"https://docs.dyrected.com"` | Where "Developer docs" links point. A URL replaces it, and `false` removes the link. |
+
+When both `systemInfo` and `setupPrompt` are off, or when only `systemInfo` is on and the person is not an administrator, the **Setup** entry disappears from the sidebar and `/setup` sends the editor to the dashboard.
+
+## Change the wording
+
+For sign-in headings and a few messages you can replace the text with `admin.strings`. Every key is optional, and `{appName}` is replaced with your app name:
+
+```ts
+admin: {
+  branding: { appName: "Acme" },
+  strings: {
+    "auth.signIn.title": "Welcome to {appName}",
+    "auth.signIn.subtitle": "Sign in to manage your content.",
+  },
+}
+```
+
+| Key | Where it appears |
+| --- | --- |
+| `auth.signIn.title` | Heading on the sign-in screen (and on the single sign-on screen). |
+| `auth.signIn.subtitle` | Text under that heading. |
+| `auth.firstUser.title` | Heading when creating the very first account. |
+| `auth.firstUser.subtitle` | Text under that heading. |
+| `auth.activate.subtitle` | The sentence above the password fields when someone activates an invited account. |
+| `media.storageMissing` | The message shown when file uploads are not configured. |
+
+Anything you do not override keeps the built-in text. Only the strings in this table can be overridden.
+
+## Emails and the API docs page
+
+Transactional emails use your app name in the header and in the subject lines that name the product. If you have not set a name, the emails are worded without one (for example "You've been invited") rather than naming Dyrected. You can still replace any email completely, as described in [Editor accounts](/docs/editor-experience/editor-accounts).
+
+The API documentation page at `/api/docs` and the OpenAPI document at `/api/openapi.json` use `Acme API Documentation` and `Acme API` in the same way.
+
+## Quieter dev server
+
+In a Nuxt project the module prints the admin and API addresses when the dev server starts. Turn that off with `silent`:
+
+```ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    silent: true,
+  },
+});
+```
+
+## Browser storage names
+
+The admin keeps a few values in the browser's `localStorage`, and your own code may read them. These names are stable, so you can rely on them:
+
+| Key | What it holds |
+| --- | --- |
+| `dyrected_token` | The signed-in editor's session token. |
+| `dyrected_pref_u:<collection>:<id>:<scope>_<key>` | A cached preference for one signed-in user (for example their navigation layout). It is removed on sign-out. |
+| `dyrected_pref_<scope>_<key>` | A cached preference that is shared by everyone on this browser, such as the colour theme. |
+
+If you embed the admin in Next.js or Nuxt and need the token on the server, read it from the cookie instead of `localStorage`: `dyrected-token` in a Next.js app and `dyrected_token_<slug>` in a Nuxt app, as described in [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy).

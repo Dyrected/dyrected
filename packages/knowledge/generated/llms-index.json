@@ -2525,7 +2525,7 @@
     {
       "method": "GET",
       "path": "/api/schemas",
-      "summary": "Get the serialized Dyrected schema"
+      "summary": "Get the serialized schema"
     }
   ],
   "fieldTypes": [

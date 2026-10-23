@@ -372,7 +372,7 @@ export function Dashboard() {
       ? [{
           key: "storage-not-configured",
           title: "Media storage is not set up",
-          description: "File uploads are disabled. Ask your developer to configure a media storage provider in Dyrected.",
+          description: "File uploads are disabled. Ask your developer to configure a media storage provider.",
           to: "/setup",
         }]
       : []),

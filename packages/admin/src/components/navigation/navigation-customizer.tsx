@@ -42,9 +42,10 @@ import {
 } from "lucide-react"
 
 import { USER_SELECTABLE_LAYOUTS } from "../../pages/collections/views/layout-registry"
-import { isUserAdmin } from "@dyrected/core"
+import { isUserAdmin, sanitizeNavigationLayout } from "@dyrected/core"
 import { resolveRoleOptions } from "../../utils/role-options"
 import type { CompiledNavGroup, CompiledNavItem, DefineWorkspaceOptions, NavGroup, ViewConfig, ViewLayout, ViewMetric } from "@dyrected/core"
+import { RoleMenuPolicyDialog } from "./role-menu-policy-dialog"
 import { ViewFilterBuilder } from "./view-filter-builder"
 import { ViewMetricsBuilder } from "./view-metrics-builder"
 import { cn } from "../../lib/utils"
@@ -90,7 +91,10 @@ function generateUniqueSlug(text: string, existingSlugs: string[]): string {
 
 export function NavigationCustomizer({ onClose, className }: NavigationCustomizerProps) {
   const { navigation: baseTree, schemas, client, user } = useDyrected()
-  const [prefs, setPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
+  const [prefs, setPrefs, resetPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES, {
+    scope: "auto",
+  })
+  const menuLocked = !!baseTree?.locked
 
   const [searchQuery, setSearchQuery] = React.useState("")
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({})
@@ -102,6 +106,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
   const [publishRoleOpen, setPublishRoleOpen] = React.useState(false)
   const [selectedRoleToPublish, setSelectedRoleToPublish] = React.useState<string>("")
   const [publishStatus, setPublishStatus] = React.useState<string | null>(null)
+  const [roleMenuOpen, setRoleMenuOpen] = React.useState(false)
 
   // Form states for New Group
   const [groupName, setGroupName] = React.useState("")
@@ -141,8 +146,11 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
 
   // Reconciled tree for interactive editing
   const tree = React.useMemo(() => {
-    return reconcileNavigation(baseTree, prefs, schemas as any, { includeHidden: true })
-  }, [baseTree, prefs, schemas])
+    return reconcileNavigation(baseTree, prefs, schemas as any, {
+      includeHidden: true,
+      allowUserItems: !menuLocked,
+    })
+  }, [baseTree, prefs, schemas, menuLocked])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -646,14 +654,14 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
 
   const handleResetToDefaults = () => {
     if (confirm("Reset all personal navigation customizations back to system defaults?")) {
-      setPrefs(DEFAULT_USER_NAV_PREFERENCES)
+      void resetPrefs()
     }
   }
 
   const handlePublishForRole = async () => {
     if (!client || !roleToPublish) return
     try {
-      await client.setPreference("admin:navigation", prefs, {
+      await client.setPreference("admin:navigation", sanitizeNavigationLayout(prefs, baseTree ?? { groups: [], ungrouped: [] }), {
         scope: "role",
         role: roleToPublish,
       })
@@ -741,6 +749,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             <FolderPlus className="dy-h-3.5 dy-w-3.5" />
             <span>Group</span>
           </Button>
+          {!menuLocked && (
           <Button
             variant={newItemOpen ? "secondary" : "outline"}
             size="sm"
@@ -753,6 +762,7 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
             <Plus className="dy-h-3.5 dy-w-3.5" />
             <span>Workspace</span>
           </Button>
+          )}
         </div>
         <div className="dy-relative">
           <Search className="dy-absolute dy-left-2 dy-top-2 dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/60" />
@@ -1708,6 +1718,17 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
               Role Default
             </Button>
           )}
+          {canPublishRoleDefault && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="dy-h-7 dy-text-[11px] dy-px-2"
+              onClick={() => setRoleMenuOpen(true)}
+            >
+              <LayoutGrid className="dy-h-3 dy-w-3 dy-mr-1" />
+              Role Menu
+            </Button>
+          )}
         </div>
 
         <Button
@@ -1719,6 +1740,9 @@ export function NavigationCustomizer({ onClose, className }: NavigationCustomize
           <span>Done Customizing</span>
         </Button>
       </div>
+      {canPublishRoleDefault && (
+        <RoleMenuPolicyDialog open={roleMenuOpen} onOpenChange={setRoleMenuOpen} roleOptions={roleOptions} />
+      )}
     </div>
   )
 }

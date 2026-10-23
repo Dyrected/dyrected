@@ -3710,6 +3710,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/role-menus#example-1",
+    "page": "/editor-experience/role-menus",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/role-menus#example-2",
+    "page": "/editor-experience/role-menus",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/theme-hooks#example-1",
     "page": "/editor-experience/theme-hooks",
     "language": "tsx",
@@ -3722,6 +3736,55 @@
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-1",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-2",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-3",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-4",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-5",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-6",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/white-labeling#example-7",
+    "page": "/editor-experience/white-labeling",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/examples-and-recipes/application-patterns/access-control#example-1",

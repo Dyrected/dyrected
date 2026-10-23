@@ -1,0 +1,114 @@
+---
+title: Role Menus
+description: Design the sidebar menu a role receives, enforce it so editors cannot add anything back, and preview it as that role.
+---
+
+A role menu is the sidebar you design for a role. When you enforce it, people in that role see exactly that menu. They can reorder and rename what you gave them, but they cannot add anything else, even from a saved layout.
+
+By the end of this page you will have built an enforced menu for a role, previewed it, and know how it interacts with `access` rules and personal layouts.
+
+## What a role menu does and does not do
+
+A role menu only ever narrows the sidebar. Your `access` rules still decide who may see an item, and the role menu is applied after them. The final menu is:
+
+> everything the person can access, limited to what the role menu allows
+
+So adding an item to a role menu can never reveal something the role's `access` rules deny.
+
+A role menu is also not a permission. Hiding a collection from a role's menu does not stop that role from calling its API. To block access, use `access` on the collection.
+
+## Design a menu for a role
+
+You need to be an administrator (the same people who can publish a role default).
+
+1. Open the sidebar and select **Customize Navigation** (the sliders icon).
+2. Select **Role Menu**.
+3. Choose the role. The list shows everything that role could be given, based on its `access` rules.
+4. Untick what the role should not see. Use the arrows to reorder items and groups.
+5. Turn on **Enforce this menu** and select **Save menu**.
+
+The panel at the bottom shows **What <role> sees today**, which is the menu that role actually receives right now. If you turn enforcement off, the menu is saved as a draft and the role keeps its normal menu.
+
+If you hold the role you are enforcing, the panel warns you, because the menu will limit your own sidebar too.
+
+### What people in the role see
+
+- Items you unticked are gone, and so are items you add to your config later. A new collection does not appear for the role until you add it to the menu.
+- They can still reorder, rename and hide items from the menu you gave them.
+- The **Workspace** button in their customizer is hidden, and any workspace or pinned shortcut they saved earlier is ignored.
+
+### When someone has more than one role
+
+A person is limited by a role menu only if every role they hold has an enforced menu. If any of their roles has no enforced menu, they keep their full, access-filtered menu. When all their roles are enforced, they see the combination of what those menus allow.
+
+## Preview a role's menu
+
+Administrators can ask the server for the menu a role receives. This is read-only, and it needs an administrator's token.
+
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+
+```ts
+// app/api/preview-menu/route.ts
+import { cookies } from "next/headers";
+
+export async function GET(request: Request) {
+  const role = new URL(request.url).searchParams.get("role") ?? "external";
+  const token = (await cookies()).get("dyrected-token")?.value;
+
+  const response = await fetch(
+    `${process.env.DYRECTED_URL}/api/admin/navigation?asRole=${encodeURIComponent(role)}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+
+  return new Response(response.body, { status: response.status });
+}
+```
+
+</Tab>
+<Tab value="Nuxt">
+
+```ts
+// server/api/preview-menu.get.ts
+export default defineEventHandler(async (event) => {
+  const role = String(getQuery(event).role ?? "external");
+  const token = getCookie(event, "dyrected_token_users");
+
+  return await $fetch(`${process.env.DYRECTED_URL}/api/admin/navigation`, {
+    query: { asRole: role },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+});
+```
+
+</Tab>
+</Tabs>
+
+Add `raw=true` to list everything the role could be given, before its role menu is applied. A non-administrator gets a `403`.
+
+The response is the same tree the sidebar uses. When it has `"locked": true`, an enforced role menu produced it.
+
+## Saved layouts versus enforced menus
+
+There are two ways to give a role a layout, and they behave differently:
+
+| | Role default | Role menu |
+| --- | --- | --- |
+| Where | **Role Default** button in the customizer | **Role Menu** button in the customizer |
+| Enforced | No. It is a starting layout. | Yes, when **Enforce** is on. |
+| Personal changes | A person's own layout overrides it. | Cannot add or restore items. |
+| What it stores | Order, hidden items and groups only | The allowed items plus order |
+
+A role default is used when a person has not saved a layout of their own. Resetting a layout in the customizer removes the person's own version, so the role default shows again.
+
+A role default never carries the publisher's personal shortcuts or workspaces. Only order, hidden items, groups and moves of items that already exist are kept.
+
+## Your layout does not follow you to the next person
+
+Customized layouts are remembered per person, in that person's browser and on the server. When one person signs out and another signs in on the same browser, the second person never starts from the first person's layout.
+
+Workspaces that a person creates in the customizer are shown only if the person can read the collection they point at. They have no access rule of their own, so this check is what keeps them from showing data the person should not see.
+
+## Recommended path
+
+Use `access` in `dyrected.config.ts` for what a role may reach, then use a role menu to shape and enforce what it sees. Keep the role menu to the items a role needs, and check it with **What <role> sees today** before telling anyone.

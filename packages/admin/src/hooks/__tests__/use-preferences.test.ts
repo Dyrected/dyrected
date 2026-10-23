@@ -1,6 +1,6 @@
 import { renderHook, act } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { usePreference } from "../use-preferences"
+import { clearCachedUserPreferences, usePreference } from "../use-preferences"
 
 const mockGetPreference = vi.fn()
 const mockSetPreference = vi.fn()
@@ -10,11 +10,12 @@ const mockClient = {
   setPreference: mockSetPreference,
 }
 
-const mockUser = {
+const defaultUser = {
   id: "user-1",
   email: "admin@example.com",
   roles: ["admin"],
 }
+let mockUser: Record<string, unknown> | null = defaultUser
 
 vi.mock("../../providers/dyrected-context", () => ({
   useDyrected: () => ({
@@ -27,6 +28,7 @@ describe("usePreference Hook", () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    mockUser = defaultUser
     window.localStorage.clear()
     mockGetPreference.mockResolvedValue({ key: "test-key", value: null })
     mockSetPreference.mockResolvedValue({ key: "test-key", value: true })
@@ -52,7 +54,7 @@ describe("usePreference Hook", () => {
     expect(result.current[0]).toEqual({ count: 42 })
 
     // localStorage updated immediately
-    const stored = window.localStorage.getItem("dyrected_pref_personal_test-key")
+    const stored = window.localStorage.getItem("dyrected_pref_u::user-1:personal_test-key")
     expect(stored).toBe(JSON.stringify({ count: 42 }))
 
     // Remote client.setPreference NOT called yet (debounced)
@@ -83,7 +85,7 @@ describe("usePreference Hook", () => {
 
   it("falls back to defaultValue if validate function returns false", () => {
     window.localStorage.setItem(
-      "dyrected_pref_personal_test-key",
+      "dyrected_pref_u::user-1:personal_test-key",
       JSON.stringify({ score: -50 })
     )
 
@@ -103,7 +105,7 @@ describe("usePreference Hook", () => {
 
   it("runs migration if stored version is older than options.version", () => {
     window.localStorage.setItem(
-      "dyrected_pref_personal_test-key",
+      "dyrected_pref_u::user-1:personal_test-key",
       JSON.stringify({ _version: 1, oldField: "hello" })
     )
 
@@ -164,5 +166,131 @@ describe("usePreference Hook", () => {
 
     expect(hook1.current[0]).toBe("updated-from-customizer")
     expect(hook2.current[0]).toBe("updated-from-customizer")
+  })
+
+  describe("per-user local cache", () => {
+    it("does not hand one user's cached value to the next user on the same browser", () => {
+      const first = renderHook(() => usePreference("nav", { items: [] as string[] }))
+      act(() => {
+        first.result.current[1]({ items: ["secret"] })
+      })
+      first.unmount()
+
+      mockUser = { id: "user-2", email: "external@example.com", roles: ["external"] }
+      const second = renderHook(() => usePreference("nav", { items: [] as string[] }))
+
+      expect(second.result.current[0]).toEqual({ items: [] })
+    })
+
+    it("resets to the default when the server has no saved value", async () => {
+      window.localStorage.setItem("dyrected_pref_u::user-1:personal_nav", JSON.stringify({ items: ["stale"] }))
+      mockGetPreference.mockResolvedValue({ key: "nav", value: null })
+
+      const { result } = renderHook(() => usePreference("nav", { items: [] as string[] }))
+      expect(result.current[0]).toEqual({ items: ["stale"] })
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      expect(result.current[0]).toEqual({ items: [] })
+      expect(window.localStorage.getItem("dyrected_pref_u::user-1:personal_nav")).toBeNull()
+    })
+
+    it("does not read or write the cache when the user cannot be identified", () => {
+      mockUser = {}
+      window.localStorage.setItem("dyrected_pref_personal_nav", JSON.stringify({ items: ["legacy"] }))
+
+      const { result } = renderHook(() => usePreference("nav", { items: [] as string[] }))
+      expect(result.current[0]).toEqual({ items: [] })
+
+      act(() => {
+        result.current[1]({ items: ["x"] })
+      })
+      expect(window.localStorage.getItem("dyrected_pref_personal_nav")).toBe(JSON.stringify({ items: ["legacy"] }))
+    })
+
+    it("shares one device-level value across users when localScope is device", () => {
+      const first = renderHook(() => usePreference("theme", "system", { localScope: "device" }))
+      act(() => {
+        first.result.current[1]("dark")
+      })
+      first.unmount()
+
+      mockUser = { id: "user-2" }
+      const second = renderHook(() => usePreference("theme", "system", { localScope: "device" }))
+      expect(second.result.current[0]).toBe("dark")
+    })
+
+    it("clearCachedUserPreferences drops user and legacy navigation keys but keeps device keys", () => {
+      window.localStorage.setItem("dyrected_pref_u::user-1:personal_nav", "1")
+      window.localStorage.setItem("dyrected_pref_personal_admin:navigation", "1")
+      window.localStorage.setItem("dyrected_pref_role_editor_admin:navigation", "1")
+      window.localStorage.setItem("dyrected_pref_personal_theme", JSON.stringify("dark"))
+
+      clearCachedUserPreferences()
+
+      expect(window.localStorage.getItem("dyrected_pref_u::user-1:personal_nav")).toBeNull()
+      expect(window.localStorage.getItem("dyrected_pref_personal_admin:navigation")).toBeNull()
+      expect(window.localStorage.getItem("dyrected_pref_role_editor_admin:navigation")).toBeNull()
+      expect(window.localStorage.getItem("dyrected_pref_personal_theme")).toBe(JSON.stringify("dark"))
+    })
+  })
+
+  describe("auto scope", () => {
+    it("reads through the personal, role, global waterfall and writes personally", async () => {
+      mockGetPreference.mockResolvedValue({ key: "nav", value: { items: ["from-role-default"] } })
+      const { result } = renderHook(() => usePreference("nav", { items: [] as string[] }, { scope: "auto" }))
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+      expect(mockGetPreference).toHaveBeenCalledWith("nav", { scope: undefined, role: undefined })
+      expect(result.current[0]).toEqual({ items: ["from-role-default"] })
+
+      act(() => {
+        result.current[1]({ items: ["mine"] })
+      })
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+      expect(mockSetPreference).toHaveBeenCalledWith("nav", { items: ["mine"] }, { scope: "personal", role: undefined })
+    })
+
+    it("reset forgets the personal value and falls back to the shared default", async () => {
+      mockGetPreference.mockResolvedValue({ key: "nav", value: { items: ["mine"] } })
+      const mockDelete = vi.fn().mockResolvedValue({ success: true })
+      ;(mockClient as any).deletePreference = mockDelete
+
+      const { result } = renderHook(() => usePreference("nav", { items: [] as string[] }, { scope: "auto" }))
+      await act(async () => {
+        await Promise.resolve()
+      })
+      expect(result.current[0]).toEqual({ items: ["mine"] })
+
+      mockGetPreference.mockResolvedValue({ key: "nav", value: { items: ["role-default"] } })
+      await act(async () => {
+        await result.current[2]()
+      })
+
+      expect(mockDelete).toHaveBeenCalledWith("nav", { scope: "personal", role: undefined })
+      expect(result.current[0]).toEqual({ items: ["role-default"] })
+    })
+
+    it("reset returns to the hook default when nothing is shared", async () => {
+      mockGetPreference.mockResolvedValue({ key: "nav", value: { items: ["mine"] } })
+      ;(mockClient as any).deletePreference = vi.fn().mockResolvedValue({ success: true })
+
+      const { result } = renderHook(() => usePreference("nav", { items: [] as string[] }, { scope: "auto" }))
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      mockGetPreference.mockResolvedValue({ key: "nav", value: null })
+      await act(async () => {
+        await result.current[2]()
+      })
+      expect(result.current[0]).toEqual({ items: [] })
+    })
   })
 })

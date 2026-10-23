@@ -2,6 +2,7 @@ import * as React from "react"
 import { useParams, Navigate } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-context"
 import { usePreference } from "../../hooks/use-preferences"
+import { isNavItemVisible } from "../../utils/nav-item-visibility"
 import { reconcileNavigation } from "../../utils/navigation-reconciler"
 import { DEFAULT_USER_NAV_PREFERENCES } from "../../types/preferences"
 import { canReadSchema } from "../../utils/schema-access"
@@ -39,18 +40,23 @@ function findWorkspaceItem(navigation: any, slug: string): CompiledNavItem | und
  */
 export function WorkspaceRedirectRoute() {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>()
-  const { navigation: baseTree, schemas } = useDyrected()
-  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
+  const { navigation: baseTree, schemas, user } = useDyrected()
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES, { scope: "auto" })
 
   const activeNavigation = React.useMemo(() => {
-    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, { includeHidden: true })
+    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, {
+      includeHidden: true,
+      allowUserItems: !baseTree?.locked,
+    })
   }, [baseTree, userNavPrefs, schemas])
 
   if (!baseTree || !schemas) {
     return <AdminNotFoundSkeleton />
   }
 
-  const item = findWorkspaceItem(activeNavigation, workspaceSlug!)
+  const foundItem = findWorkspaceItem(activeNavigation, workspaceSlug!)
+  // A workspace injected from saved preferences must still point at something this user can read.
+  const item = foundItem && isNavItemVisible(foundItem, schemas as any, user) ? foundItem : undefined
 
   if (!item) {
     return (
@@ -82,17 +88,22 @@ export function WorkspaceRedirectRoute() {
 export function WorkspaceRoute() {
   const { workspaceSlug, viewSlug } = useParams<{ workspaceSlug: string; viewSlug: string }>()
   const { navigation: baseTree, schemas, user } = useDyrected()
-  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES)
+  const [userNavPrefs] = usePreference("admin:navigation", DEFAULT_USER_NAV_PREFERENCES, { scope: "auto" })
 
   const activeNavigation = React.useMemo(() => {
-    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, { includeHidden: true })
+    return reconcileNavigation(baseTree, userNavPrefs, schemas as any, {
+      includeHidden: true,
+      allowUserItems: !baseTree?.locked,
+    })
   }, [baseTree, userNavPrefs, schemas])
 
   if (!baseTree || !schemas) {
     return <AdminNotFoundSkeleton />
   }
 
-  const item = findWorkspaceItem(activeNavigation, workspaceSlug!)
+  const foundItem = findWorkspaceItem(activeNavigation, workspaceSlug!)
+  // A workspace injected from saved preferences must still point at something this user can read.
+  const item = foundItem && isNavItemVisible(foundItem, schemas as any, user) ? foundItem : undefined
 
   if (!item) {
     return (

@@ -90,3 +90,13 @@ A `GET` applies the cascade for the signed-in user. Add `?scope=global` to read 
 ## Recommended path
 
 Let editors manage their own views with the **View** button — that's the whole point, and it needs no configuration. Set `admin.defaultColumns` so a fresh list looks right before anyone touches it, and publish a team default with **Save for Everyone** once you've landed on a layout that works for the group. Reach for the SDK only when you're building something custom on top of the same store.
+
+## Navigation layouts
+
+The sidebar layout an editor builds with **Customize Navigation** is a preference too, saved under `admin:navigation`. It resolves through the same cascade: the editor's own layout, then the layout an administrator published for their role, then a global one. **Reset** in the customizer removes the editor's own layout so the shared one shows again.
+
+Two things are worth knowing if you read or write this preference from your own code:
+
+- The browser cache of a layout is kept per signed-in user and cleared on sign-out, so a layout never carries over to the next person on the same browser.
+- A layout can reorder, rename, hide and regroup items the server returned. Items that the server did not return are only shown when the person can read the collection behind them, and not at all when an administrator has enforced a menu for the role. See [Role Menus](/docs/editor-experience/role-menus).
+

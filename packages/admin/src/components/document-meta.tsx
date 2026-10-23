@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useLocation } from "react-router-dom";
 import { useDyrected } from "../providers/dyrected-context";
+import { resolveTitleSuffix } from "@dyrected/core";
 import type {
   AdminConfig,
   CollectionConfig,
@@ -8,6 +9,52 @@ import type {
   CompiledNavTree,
   GlobalConfig,
 } from "@dyrected/core";
+
+// ─── Page title published by a page ───────────────────────────────────────────
+//
+// DocumentMeta is the only writer of `document.title`. A page whose title is
+// only known at runtime (a custom page that sets its own meta) publishes it
+// here instead of assigning `document.title` itself.
+
+interface PublishedTitle {
+  pathname: string;
+  title: string;
+}
+
+let publishedTitle: PublishedTitle | null = null;
+const titleListeners = new Set<() => void>();
+
+function setPublishedTitle(next: PublishedTitle | null) {
+  if (publishedTitle?.pathname === next?.pathname && publishedTitle?.title === next?.title) return;
+  publishedTitle = next;
+  titleListeners.forEach((listener) => listener());
+}
+
+function subscribeToTitle(listener: () => void) {
+  titleListeners.add(listener);
+  return () => {
+    titleListeners.delete(listener);
+  };
+}
+
+/**
+ * Publish the title of the page currently on screen, e.g. the label a custom page
+ * resolves at runtime. {@link DocumentMeta} combines it with the title suffix and
+ * writes it to the tab. The title only applies while the route stays the same, and is
+ * withdrawn when the calling component unmounts.
+ */
+export function usePublishDocumentTitle(title: string | undefined) {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (!title) return;
+    setPublishedTitle({ pathname, title });
+    return () => {
+      if (publishedTitle?.pathname === pathname && publishedTitle.title === title) {
+        setPublishedTitle(null);
+      }
+    };
+  }, [pathname, title]);
+}
 
 /** Turn a slug like `blog-posts` into a readable `Blog Posts` fallback. */
 export function humanize(slug: string): string {
@@ -148,18 +195,24 @@ export function pageLabel(
 
 /**
  * Keeps the browser tab in sync with the admin: sets `document.title` from the
- * current page plus `admin.meta.titleSuffix`, updating on every route change,
- * and applies `admin.branding.favicon` to the page favicon.
+ * current page plus the title suffix (`admin.meta.titleSuffix`, or `- <app name>`),
+ * updating on every route change, and applies `admin.branding.favicon` to the
+ * page favicon. It is the only writer of `document.title`; it also covers the
+ * sign-in screens, and waits for the schemas so the app name never flashes.
  *
  * Renders nothing. Must be mounted inside the router (needs `useLocation`) and
  * inside `DyrectedProvider` (needs the loaded schemas).
  */
 export function DocumentMeta() {
   const location = useLocation();
-  const { schemas, navigation } = useDyrected();
+  const { schemas, navigation, isAuthenticated, isResolvingStoredSession } = useDyrected();
+  const published = useSyncExternalStore(
+    subscribeToTitle,
+    () => publishedTitle,
+    () => null,
+  );
 
   const admin = schemas?.admin;
-  const titleSuffix = admin?.meta?.titleSuffix ?? "- Dyrected";
   const favicon = admin?.branding?.favicon;
 
   // Restore the host page's original title when the admin unmounts, so an
@@ -178,19 +231,19 @@ export function DocumentMeta() {
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    const label = pageLabel(
-      location.pathname,
-      schemas?.collections ?? [],
-      schemas?.globals ?? [],
-      navigation,
-      admin,
-    );
-    const next = [label, titleSuffix].filter(Boolean).join(" ");
+    // Until the schemas arrive the app name is unknown, so leave the title alone
+    // rather than flash a suffix that is about to change.
+    if (typeof document === "undefined" || !schemas || isResolvingStoredSession) return;
+    const label = !isAuthenticated
+      ? "Sign in"
+      : published && published.pathname === location.pathname
+        ? published.title
+        : pageLabel(location.pathname, schemas.collections ?? [], schemas.globals ?? [], navigation, admin);
+    const next = [label, resolveTitleSuffix(admin)].filter(Boolean).join(" ");
     if (next && document.title !== next) {
       document.title = next;
     }
-  }, [location.pathname, schemas, navigation, admin, titleSuffix]);
+  }, [location.pathname, schemas, navigation, admin, isAuthenticated, isResolvingStoredSession, published]);
 
   useEffect(() => {
     if (typeof document === "undefined" || !favicon) return;

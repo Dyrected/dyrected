@@ -1578,6 +1578,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "editor-experience--role-menus",
+    "relativePath": "editor-experience/role-menus",
+    "title": "Role Menus",
+    "description": "Design the sidebar menu a role receives, enforce it so editors cannot add anything back, and preview it as that role.",
+    "runtime": "variant",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience",
+    "sourceFile": "apps/docs/content/docs/editor-experience/role-menus.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/role-menus",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/role-menus",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/role-menus",
+    "status": "classified"
+  },
+  {
     "id": "editor-experience--spreadsheet-view",
     "relativePath": "editor-experience/spreadsheet-view",
     "title": "Spreadsheet View",
@@ -1605,6 +1620,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/theme-hooks",
     "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/theme-hooks",
     "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/theme-hooks",
+    "status": "classified"
+  },
+  {
+    "id": "editor-experience--white-labeling",
+    "relativePath": "editor-experience/white-labeling",
+    "title": "White-Labeling",
+    "description": "Make the admin read as your product: one app name for the tab, sign-in screens, sidebar, emails and API docs, plus switches to hide the developer-facing parts.",
+    "runtime": "variant",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience",
+    "sourceFile": "apps/docs/content/docs/editor-experience/white-labeling.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/white-labeling",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/white-labeling",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/white-labeling",
     "status": "classified"
   },
   {
