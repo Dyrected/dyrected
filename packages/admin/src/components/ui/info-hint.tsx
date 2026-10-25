@@ -1,13 +1,13 @@
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { Info } from "lucide-react"
+import { Info, X } from "lucide-react"
 
 import { cn } from "../../lib/utils"
 import { useAdminTheme } from "../../hooks/use-admin-theme"
 import { useHoverCapable } from "../../hooks/use-hover-capable"
 import { hasInlineLink, InlineMarkdown } from "../../lib/inline-markdown"
 import { Popover, PopoverContent, PopoverTrigger } from "./popover"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./sheet"
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "./sheet"
 
 /** One extra explanation shown under the main one, such as a breakdown row of a metric. */
 export interface InfoHintItem {
@@ -25,23 +25,55 @@ export interface InfoHintProps {
   className?: string
 }
 
-function HintBody({ description, items }: Pick<InfoHintProps, "description" | "items">) {
+/**
+ * The explanation itself: the main text, then a "Breakdown" list when rows have their own notes.
+ * `sheet` is sized for reading on a phone; `tooltip` is compact for hovering.
+ */
+function HintBody({
+  description,
+  items,
+  variant,
+}: Pick<InfoHintProps, "description" | "items"> & { variant: "sheet" | "tooltip" }) {
+  const sheet = variant === "sheet"
+  const hasItems = Boolean(items && items.length > 0)
+
   return (
-    <div className="dy-space-y-2 dy-text-sm dy-leading-relaxed">
+    <div className={cn(sheet ? "dy-space-y-4" : "dy-space-y-2")}>
       {description && (
-        <p>
+        <p className={cn(sheet ? "dy-text-[15px] dy-leading-6 dy-text-foreground" : "dy-text-xs dy-leading-5")}>
           <InlineMarkdown text={description} />
         </p>
       )}
-      {items && items.length > 0 && (
-        <ul className="dy-space-y-1.5">
-          {items.map((item) => (
-            <li key={`${item.label}:${item.description}`}>
-              <span className="dy-font-semibold">{item.label}: </span>
-              <InlineMarkdown text={item.description} />
-            </li>
-          ))}
-        </ul>
+      {hasItems && (
+        <div className={cn(description && "dy-border-t dy-border-border/60", description && (sheet ? "dy-pt-4" : "dy-pt-2"))}>
+          {description && (
+            <p
+              className={cn(
+                "dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground",
+                sheet ? "dy-mb-3 dy-text-[11px]" : "dy-mb-1.5 dy-text-[10px]",
+              )}
+            >
+              Breakdown
+            </p>
+          )}
+          <dl className={cn(sheet ? "dy-space-y-3" : "dy-space-y-1.5")}>
+            {items!.map((item) => (
+              <div key={`${item.label}:${item.description}`}>
+                <dt className={cn("dy-font-semibold dy-text-foreground", sheet ? "dy-text-sm" : "dy-text-xs")}>
+                  {item.label}
+                </dt>
+                <dd
+                  className={cn(
+                    "dy-text-muted-foreground",
+                    sheet ? "dy-mt-0.5 dy-text-sm dy-leading-relaxed" : "dy-text-xs dy-leading-5",
+                  )}
+                >
+                  <InlineMarkdown text={item.description} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       )}
     </div>
   )
@@ -89,7 +121,9 @@ export function InfoHint({ title, description, items, className }: InfoHintProps
       aria-label={`About ${title}`}
       {...props}
       className={cn(
-        "dy-inline-flex dy-h-4 dy-w-4 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-text-current dy-opacity-50 dy-transition-opacity",
+        "dy-relative dy-inline-flex dy-h-4 dy-w-4 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-text-current dy-opacity-50 dy-transition-opacity",
+        // Invisible padding around the icon so a fingertip can hit it (about 32px square).
+        "after:dy-absolute after:-dy-inset-2 after:dy-content-['']",
         "hover:dy-opacity-90 focus-visible:dy-opacity-100 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
         className,
       )}
@@ -103,13 +137,26 @@ export function InfoHint({ title, description, items, className }: InfoHintProps
       <>
         {button({ onClick: () => setSheetOpen(true) })}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="bottom" className="dy-max-h-[70vh] dy-overflow-y-auto dy-rounded-t-xl dy-pb-8">
-            <SheetHeader>
-              <SheetTitle>{title}</SheetTitle>
-              <SheetDescription className="dy-sr-only">What {title} means</SheetDescription>
-            </SheetHeader>
-            <div className="dy-mt-3">
-              <HintBody description={description} items={items} />
+          <SheetContent
+            side="bottom"
+            hideCloseButton
+            className="dy-flex dy-max-h-[85dvh] dy-flex-col dy-rounded-t-2xl dy-border-border/60"
+          >
+            <div className="dy-flex dy-justify-center dy-pt-2.5" aria-hidden="true">
+              <span className="dy-h-1 dy-w-10 dy-rounded-full dy-bg-muted-foreground/30" />
+            </div>
+            <div className="dy-flex dy-items-start dy-justify-between dy-gap-4 dy-px-5 dy-pb-3 dy-pt-3">
+              <SheetTitle className="dy-text-left dy-text-base dy-font-semibold dy-leading-6">{title}</SheetTitle>
+              <SheetClose
+                className="dy--mr-2 dy--mt-1 dy-inline-flex dy-h-9 dy-w-9 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-text-muted-foreground dy-transition-colors hover:dy-bg-muted hover:dy-text-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring"
+                aria-label="Close"
+              >
+                <X className="dy-h-4 dy-w-4" aria-hidden="true" />
+              </SheetClose>
+            </div>
+            <SheetDescription className="dy-sr-only">What {title} means</SheetDescription>
+            <div className="dy-overflow-y-auto dy-px-5 dy-pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <HintBody variant="sheet" description={description} items={items} />
             </div>
           </SheetContent>
         </Sheet>
@@ -121,8 +168,8 @@ export function InfoHint({ title, description, items, className }: InfoHintProps
     return isolate(
       <Popover>
         <PopoverTrigger asChild>{button()}</PopoverTrigger>
-        <PopoverContent align="start" className="dy-w-72 dy-p-3">
-          <HintBody description={description} items={items} />
+        <PopoverContent align="start" className="dy-w-80 dy-p-3.5">
+          <HintBody variant="tooltip" description={description} items={items} />
         </PopoverContent>
       </Popover>,
     )
@@ -140,10 +187,10 @@ export function InfoHint({ title, description, items, className }: InfoHintProps
             data-theme={resolvedTheme}
             className={cn(
               themeClassName,
-              "dy-z-[100] dy-max-w-xs dy-rounded-md dy-border dy-border-border/40 dy-bg-popover dy-px-3 dy-py-2 dy-text-popover-foreground dy-shadow-lg",
+              "dy-z-[100] dy-max-w-xs dy-rounded-lg dy-border dy-border-border/60 dy-bg-popover dy-px-3.5 dy-py-3 dy-text-popover-foreground dy-shadow-lg",
             )}
           >
-            <HintBody description={description} items={items} />
+            <HintBody variant="tooltip" description={description} items={items} />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>

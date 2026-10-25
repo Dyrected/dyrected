@@ -58,8 +58,9 @@ describe("InfoHint", () => {
       act(() => {
         screen.getByRole("button", { name: "About Revenue" }).focus()
       })
-      expect((await screen.findAllByText(/Settled invoices\./))[0]).toBeTruthy()
-      expect(screen.getAllByText(/Paid:/)[0]).toBeTruthy()
+      expect((await screen.findAllByText("Settled invoices."))[0]).toBeTruthy()
+      expect(screen.getAllByText("Paid")[0].tagName).toBe("DT")
+      expect(screen.getAllByText("Breakdown")[0]).toBeTruthy()
     })
 
     it("opens on click instead of hover when the text has a link, so the link can be clicked", async () => {
@@ -103,7 +104,27 @@ describe("InfoHint", () => {
       render(<InfoHint title="Revenue" items={[{ label: "Paid", description: "Settled." }]} />)
       fireEvent.click(screen.getByRole("button", { name: "About Revenue" }))
       const dialog = await screen.findByRole("dialog")
-      expect(dialog.textContent).toContain("Paid: Settled.")
+      expect(dialog.querySelector("dt")?.textContent).toBe("Paid")
+      expect(dialog.querySelector("dd")?.textContent).toBe("Settled.")
+      // No main description, so no "Breakdown" heading is needed above a single list.
+      expect(dialog.textContent).not.toContain("Breakdown")
+    })
+
+    it("separates the breakdown from the main description", async () => {
+      render(
+        <InfoHint title="Revenue" description="Total." items={[{ label: "Paid", description: "Settled." }]} />,
+      )
+      fireEvent.click(screen.getByRole("button", { name: "About Revenue" }))
+      const dialog = await screen.findByRole("dialog")
+      expect(dialog.textContent).toContain("Breakdown")
+      expect(dialog.querySelectorAll("dt")).toHaveLength(1)
+    })
+
+    it("has a single, labelled close control", async () => {
+      render(<InfoHint title="Revenue" description="Money in." />)
+      fireEvent.click(screen.getByRole("button", { name: "About Revenue" }))
+      await screen.findByRole("dialog")
+      expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1)
     })
 
     it("closes with the close control", async () => {
